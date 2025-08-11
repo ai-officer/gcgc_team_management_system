@@ -137,7 +137,7 @@ export default function CalendarPage() {
                   allDay: true,
                   color: priorityColors[task.priority],
                   type: 'DEADLINE',
-                  team: task.team,
+                  team: task.team || undefined,
                   task: {
                     id: task.id,
                     title: task.title,

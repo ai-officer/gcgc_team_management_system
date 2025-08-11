@@ -18,6 +18,10 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    if (!session.user.role) {
+      return NextResponse.json({ error: 'User role is required' }, { status: 403 })
+    }
+
     const body = await req.json()
     const { emoji } = reactionSchema.parse(body)
 

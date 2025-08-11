@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (session.user.role !== 'LEADER') {
+    if (!session.user.role || session.user.role !== 'LEADER') {
       return NextResponse.json({ error: 'Only leaders can access this endpoint' }, { status: 403 })
     }
 

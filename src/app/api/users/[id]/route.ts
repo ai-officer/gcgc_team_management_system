@@ -23,7 +23,7 @@ export async function GET(
     }
 
     // Users can only access their own profile unless they're an admin
-    if (session.user.id !== params.id && session.user.role !== 'ADMIN') {
+    if (session.user.id !== params.id && (!session.user.role || session.user.role !== 'ADMIN')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -95,7 +95,7 @@ export async function PATCH(
     }
 
     // Users can only update their own profile unless they're an admin
-    if (session.user.id !== params.id && session.user.role !== 'ADMIN') {
+    if (session.user.id !== params.id && (!session.user.role || session.user.role !== 'ADMIN')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

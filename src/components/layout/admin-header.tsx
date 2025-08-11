@@ -87,12 +87,9 @@ export function AdminHeader() {
                 className="relative h-9 w-9 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 <Avatar className="h-7 w-7">
-                  <AvatarImage src={session?.user?.image || undefined} />
+                  <AvatarImage src={undefined} />
                   <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600 text-white text-xs font-medium">
-                    {session?.user?.name
-                      ? session.user.name.split(' ').map(n => n[0]).join('')
-                      : session?.user?.username?.substring(0, 2).toUpperCase() || session?.user?.email?.[0]?.toUpperCase() || 'AD'
-                    }
+                    {session?.user?.username?.substring(0, 2).toUpperCase() || 'AD'}
                   </AvatarFallback>
                 </Avatar>
               </Button>

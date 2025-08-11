@@ -10,6 +10,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    if (!session.user.role) {
+      return NextResponse.json({ error: 'User role is required' }, { status: 403 })
+    }
+
     const userId = session.user.id
 
     // Get user's teams

@@ -163,6 +163,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Check permissions - only ADMIN and LEADER can create users
+    if (!session.user.role) {
+      return NextResponse.json({ error: 'User role is required' }, { status: 403 })
+    }
+    
     if (!canAccessResource(session.user.role, PERMISSIONS.RESOURCES.USER, 'create')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }

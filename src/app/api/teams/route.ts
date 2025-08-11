@@ -91,6 +91,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Check permissions - only admins can create teams
+    if (!session.user.role) {
+      return NextResponse.json({ error: 'User role is required' }, { status: 403 })
+    }
+    
     if (!hasPermission(session.user.role, PERMISSIONS.RESOURCES.TEAM, 'create')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }

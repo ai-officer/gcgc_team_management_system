@@ -20,6 +20,10 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    if (!session.user.role) {
+      return NextResponse.json({ error: 'User role is required' }, { status: 403 })
+    }
+
     // Check if user has access to this task
     const task = await prisma.task.findUnique({
       where: { id: params.id },
@@ -98,6 +102,10 @@ export async function POST(
     const session = await getServerSession(authOptions)
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (!session.user.role) {
+      return NextResponse.json({ error: 'User role is required' }, { status: 403 })
     }
 
     // Check if user has access to this task

@@ -97,17 +97,6 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 After seeding the database, you can use these credentials:
 
-**Admin Portal:**
-- Email: `admin@gcgc.com`
-- Password: `admin123`
-
-**Leader Portal:**
-- Email: `leader1@gcgc.com`
-- Password: `leader123`
-
-**Member Portal:**
-- Email: `member1@gcgc.com`
-- Password: `member123`
 
 ## 📁 Project Structure
 

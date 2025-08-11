@@ -481,7 +481,7 @@ export default function TeamOverviewPage() {
       setIsCreatingUser(true)
       
       // Prepare user data payload
-      const userPayload = {
+      const userPayload: any = {
         ...newUserData,
         name: finalName,
         role: 'MEMBER',

@@ -458,12 +458,8 @@ export default function MemberManagementPage() {
 
   // Helper function to check if user can delete the task
   const canDeleteTask = (task: Task) => {
-    // Can delete if user created the task
-    if (task.creator?.id === session?.user?.id) {
-      return true
-    }
-    // Can delete if user is a leader and assigned the task
-    if (session?.user?.role === 'LEADER' && task.assignedBy?.id === session?.user?.id) {
+    // Can delete if user is a leader
+    if (session?.user?.role === 'LEADER') {
       return true
     }
     // Admin can delete any task

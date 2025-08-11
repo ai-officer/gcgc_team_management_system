@@ -167,7 +167,7 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
           
           {isExpanded && (
             <div className="ml-6 space-y-1">
-              {item.children.map((child) => {
+              {item.children?.map((child) => {
                 const childIsActive = child.href && (pathname === child.href || pathname.startsWith(child.href + '/'))
                 
                 return (

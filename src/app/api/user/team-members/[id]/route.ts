@@ -13,7 +13,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (session.user.role !== 'LEADER') {
+    if (!session.user.role || session.user.role !== 'LEADER') {
       return NextResponse.json({ error: 'Only leaders can access team member details' }, { status: 403 })
     }
 
@@ -118,8 +118,6 @@ export async function GET(
     console.error('Team member details GET error:', error)
     console.error('Error details:', {
       memberId: params.id,
-      userId: session?.user?.id,
-      userRole: session?.user?.role,
       errorMessage: error instanceof Error ? error.message : 'Unknown error',
       errorStack: error instanceof Error ? error.stack : undefined
     })
@@ -143,7 +141,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (session.user.role !== 'LEADER') {
+    if (!session.user.role || session.user.role !== 'LEADER') {
       return NextResponse.json({ error: 'Only leaders can update team members' }, { status: 403 })
     }
 
@@ -214,7 +212,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (session.user.role !== 'LEADER') {
+    if (!session.user.role || session.user.role !== 'LEADER') {
       return NextResponse.json({ error: 'Only leaders can remove team members' }, { status: 403 })
     }
 

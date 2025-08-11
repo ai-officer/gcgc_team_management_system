@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (session.user.role !== 'LEADER') {
+    if (!session.user.role || session.user.role !== 'LEADER') {
       return NextResponse.json({ error: 'Only leaders can access team data' }, { status: 403 })
     }
 
@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (session.user.role !== 'LEADER') {
+    if (!session.user.role || session.user.role !== 'LEADER') {
       return NextResponse.json({ error: 'Only leaders can add team members' }, { status: 403 })
     }
 

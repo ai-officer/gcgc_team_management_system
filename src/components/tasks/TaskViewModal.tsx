@@ -703,7 +703,7 @@ export default function TaskViewModal({
                           <AvatarImage src={user.image || undefined} />
                           <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium text-xs">
                             {user.name
-                              ? user.name.split(' ').map(n => n[0]).join('')
+                              ? user.name.split(' ').map((n: string) => n[0]).join('')
                               : user.email?.[0]?.toUpperCase()
                             }
                           </AvatarFallback>

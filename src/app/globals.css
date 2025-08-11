@@ -1,0 +1,674 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 84% 4.9%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 94.1%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+  
+  /* Ensure light theme by default */
+  html {
+    color-scheme: light;
+  }
+  
+  html.dark {
+    color-scheme: dark;
+  }
+  
+  /* Force light theme for admin portal */
+  .admin-portal {
+    @apply bg-white text-gray-900;
+  }
+  
+  .admin-portal .bg-card {
+    @apply bg-white;
+  }
+  
+  .admin-portal .text-card-foreground {
+    @apply text-gray-900;
+  }
+}
+
+@layer components {
+  /* Modern glass effect */
+  .glass {
+    @apply bg-white/80 backdrop-blur-lg border border-white/20 shadow-xl;
+  }
+  
+  /* Enhanced card shadows */
+  .card-modern {
+    @apply bg-gradient-to-br from-white to-slate-50/50 border-0 shadow-md hover:shadow-xl transition-all duration-300 backdrop-blur-sm;
+  }
+  
+  /* Improved focus styles */
+  .focus-modern {
+    @apply focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200;
+  }
+  
+  /* Smooth animations */
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+  
+  /* Sidebar specific styles */
+  .sidebar-tooltip {
+    @apply absolute left-full ml-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 whitespace-nowrap;
+  }
+  
+  .sidebar-transition {
+    @apply transition-all duration-300 ease-in-out;
+  }
+  
+  /* Smooth sidebar animations */
+  .sidebar-slide-in {
+    animation: slideInLeft 0.3s ease-out;
+  }
+  
+  .sidebar-slide-out {
+    animation: slideOutLeft 0.3s ease-out;
+  }
+}
+
+@layer utilities {
+  /* Text clamp utilities */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutLeft {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+}
+
+/* FullCalendar Perfect Square Grid Styles - Scoped to prevent conflicts */
+.calendar-square-grid .fc-theme-standard .fc-scrollgrid {
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.calendar-square-grid .fc .fc-toolbar {
+  margin-bottom: 1rem;
+}
+
+.calendar-square-grid .fc .fc-button-primary {
+  background-color: hsl(var(--primary));
+  border-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.calendar-square-grid .fc .fc-button-primary:hover {
+  background-color: hsl(var(--primary)/0.9);
+  border-color: hsl(var(--primary)/0.9);
+}
+
+.calendar-square-grid .fc .fc-button-primary:disabled {
+  background-color: hsl(var(--primary)/0.5);
+  border-color: hsl(var(--primary)/0.5);
+}
+
+.calendar-square-grid .fc .fc-col-header {
+  background: hsl(var(--muted));
+  border-bottom: 2px solid hsl(var(--border));
+}
+
+.calendar-square-grid .fc .fc-col-header-cell {
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  padding: 12px 8px;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+}
+
+.calendar-square-grid .fc .fc-daygrid-day {
+  position: relative;
+}
+
+.calendar-square-grid .fc .fc-daygrid-day-frame {
+  position: relative;
+  min-height: 0;
+}
+
+.calendar-square-grid .fc .fc-daygrid-day-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Perfect Square Calendar Cells */
+.calendar-square-grid .fc-daygrid-body {
+  position: relative;
+}
+
+.calendar-square-grid .fc-daygrid-day {
+  position: relative;
+  aspect-ratio: 1; /* This makes cells square */
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--background));
+  transition: background-color 0.2s ease;
+}
+
+.calendar-square-grid .fc-daygrid-day:hover {
+  background: hsl(var(--muted));
+}
+
+.calendar-square-grid .fc-daygrid-day-frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.calendar-square-grid .fc-daygrid-day-number {
+  padding: 8px 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.calendar-square-grid .fc-daygrid-day-events {
+  flex: 1;
+  overflow: hidden;
+  padding: 0 4px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.calendar-square-grid .fc-daygrid-event {
+  margin: 0;
+  padding: 1px 4px;
+  border-radius: 2px;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  border: none !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  box-shadow: none;
+}
+
+.calendar-square-grid .fc-daygrid-more-link {
+  font-size: 0.7rem;
+  padding: 1px 4px;
+  margin: 0;
+  color: hsl(var(--muted-foreground));
+  text-align: center;
+  background: hsl(var(--secondary));
+  border-radius: 2px;
+}
+
+/* Today highlight */
+.calendar-square-grid .fc-day-today {
+  background: hsl(var(--primary)/0.05) !important;
+  border-color: hsl(var(--primary)) !important;
+}
+
+.calendar-square-grid .fc-day-today .fc-daygrid-day-number {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 4px;
+}
+
+/* Weekend styling */
+.calendar-square-grid .fc-day-sat,
+.calendar-square-grid .fc-day-sun {
+  background: hsl(var(--muted)/0.3);
+}
+
+/* Month view specific styling */
+.calendar-square-grid .fc-dayGridMonth-view .fc-daygrid-day {
+  min-height: 120px; /* Fallback for browsers that don't support aspect-ratio */
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .calendar-square-grid .fc-daygrid-day {
+    min-height: 80px;
+  }
+  
+  .calendar-square-grid .fc-daygrid-day-number {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+  }
+  
+  .calendar-square-grid .fc-daygrid-event {
+    font-size: 0.7rem;
+    padding: 1px 2px;
+  }
+}
+
+@media (max-width: 480px) {
+  .calendar-square-grid .fc-daygrid-day {
+    min-height: 60px;
+  }
+  
+  .calendar-square-grid .fc-daygrid-day-number {
+    padding: 2px 6px;
+    font-size: 0.75rem;
+  }
+  
+  .calendar-square-grid .fc-daygrid-event {
+    font-size: 0.65rem;
+    padding: 0px 2px;
+  }
+}
+
+/* Improved Date Picker Styles for Task Form */
+.date-picker-improved {
+  background: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  padding: 16px;
+}
+
+.date-picker-improved .rdp {
+  margin: 0;
+}
+
+.date-picker-improved .rdp-caption {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.date-picker-improved .rdp-caption_label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.date-picker-improved .rdp-nav {
+  display: flex;
+  gap: 8px;
+}
+
+.date-picker-improved .rdp-nav_button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-size: 0.875rem;
+  transition: all 0.2s ease-in-out;
+}
+
+.date-picker-improved .rdp-nav_button:hover {
+  background: hsl(var(--accent));
+  border-color: hsl(var(--accent-foreground));
+}
+
+.date-picker-improved .rdp-nav_button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.date-picker-improved .rdp-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 2px;
+}
+
+.date-picker-improved .rdp-head_cell {
+  padding: 8px 0;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: hsl(var(--muted-foreground));
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.date-picker-improved .rdp-cell {
+  text-align: center;
+  position: relative;
+}
+
+.date-picker-improved .rdp-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: hsl(var(--foreground));
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.date-picker-improved .rdp-button:hover {
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+
+.date-picker-improved .rdp-button:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+.date-picker-improved .rdp-day_selected {
+  background: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+.date-picker-improved .rdp-day_today {
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+  font-weight: 600;
+}
+
+.date-picker-improved .rdp-day_outside {
+  color: hsl(var(--muted-foreground));
+  opacity: 0.5;
+}
+
+.date-picker-improved .rdp-day_disabled {
+  color: hsl(var(--muted-foreground));
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.date-picker-improved .rdp-day_disabled:hover {
+  background: transparent !important;
+}
+
+/* Date picker trigger button improvements */
+.date-picker-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-size: 0.875rem;
+  transition: all 0.2s ease-in-out;
+  gap: 8px;
+}
+
+.date-picker-trigger:hover {
+  border-color: hsl(var(--ring));
+  outline: none;
+}
+
+.date-picker-trigger:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+  border-color: hsl(var(--ring));
+}
+
+.date-picker-trigger[data-placeholder] {
+  color: hsl(var(--muted-foreground));
+}
+
+.date-picker-trigger .calendar-icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  color: hsl(var(--muted-foreground));
+}
+
+/* Popover content styling for date picker */
+.date-picker-popover {
+  z-index: 50;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--popover));
+  padding: 0;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+/* Responsive date picker improvements */
+@media (max-width: 640px) {
+  .date-picker-improved {
+    padding: 12px;
+  }
+  
+  .date-picker-improved .rdp-button {
+    width: 32px;
+    height: 32px;
+    font-size: 0.8rem;
+  }
+  
+  .date-picker-improved .rdp-head_cell {
+    font-size: 0.7rem;
+    padding: 6px 0;
+  }
+  
+  .date-picker-improved .rdp-nav_button {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .date-picker-improved .rdp-caption_label {
+    font-size: 0.9rem;
+  }
+  
+  .date-picker-trigger {
+    height: 44px; /* Larger touch target on mobile */
+    padding: 0 16px;
+  }
+}
+
+/* Date picker accessibility improvements */
+.date-picker-improved .rdp-button[disabled] {
+  pointer-events: none;
+}
+
+.date-picker-improved .rdp-button[aria-selected="true"] {
+  position: relative;
+}
+
+.date-picker-improved .rdp-button[aria-selected="true"]:focus-visible {
+  outline-color: hsl(var(--primary-foreground));
+}
+
+/* Clear date button styling */
+.clear-date-button {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  transition: all 0.2s ease-in-out;
+}
+
+.clear-date-button:hover {
+  background: hsl(var(--destructive)/0.1);
+  color: hsl(var(--destructive));
+}
+
+/* Additional improvements for better square grid appearance */
+.calendar-square-grid .fc-daygrid-body .fc-scrollgrid-section > * {
+  height: auto;
+}
+
+.calendar-square-grid .fc-scroller {
+  overflow: visible !important;
+}
+
+.calendar-square-grid .fc-daygrid-body-unbalanced .fc-daygrid-day-events {
+  min-height: 0;
+}
+
+/* Event styling improvements */
+.calendar-square-grid .task-event {
+  background: linear-gradient(135deg, var(--color), transparent);
+  font-weight: 500;
+  border-left: 3px solid var(--color);
+  background-color: var(--color);
+  opacity: 0.9;
+}
+
+.calendar-square-grid .regular-event {
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+/* Better month view grid uniformity */
+.calendar-square-grid .fc-dayGridMonth-view .fc-daygrid-day-frame {
+  min-height: 100%;
+}
+
+.calendar-square-grid .fc-dayGridMonth-view .fc-scrollgrid-section-liquid > td {
+  height: 120px; /* Fixed height for all cells */
+}
+
+/* Ensure consistent cell sizing across rows */
+.calendar-square-grid .fc-daygrid-body tr {
+  height: 120px;
+}
+
+.calendar-square-grid .fc-daygrid-body td {
+  height: 120px !important;
+  vertical-align: top;
+}
+
+/* Perfect square enforcement for larger screens */
+@media (min-width: 1024px) {
+  .calendar-square-grid .fc-daygrid-body tr {
+    height: 140px;
+  }
+  
+  .calendar-square-grid .fc-daygrid-body td {
+    height: 140px !important;
+  }
+  
+  .calendar-square-grid .fc-dayGridMonth-view .fc-scrollgrid-section-liquid > td {
+    height: 140px;
+  }
+}

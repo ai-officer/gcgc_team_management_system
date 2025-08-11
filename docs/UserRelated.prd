@@ -1,0 +1,90 @@
+User Related PRD
+
+UserRegisterPortal 
+Fields Must be: 
+- First Name
+- Last Name 
+- Middle Name
+- Contact Number
+- Email 
+- Username
+- reportsTo ( Optional but dropdown to display all the User that is a Leader )
+- Dropdowns ( That have module on Admin Side )
+All fields have validations
+
+UserLogin
+Username & Password
+
+
+
+Dropdown Logic
+
+	GROUP SETUP (small windows, not whole screen)						(Pinned below screen outside of input window: "Click if Leader")		
+Start	Dd1 								
+	Division		>	Dd 2					
+	Other		>	Label					
+									
+	Dd2								
+	Real Property		>	Dd3					
+	Hotel Operations		>	Sector Head Initials		>	Dd4		
+	Hotel Franchising			(For later)					
+	Shared Services - GOLI			Dd5					
+	CSO		>	Dd6					
+									
+	Dd3								
+	ETII		> 	Dd7					
+	ECLI		> 	Dd7					
+	KPPI		> 	Dd7					
+	REIT			(For later)					
+	Other 		>	Inputs	>	Section		>	Team
+									
+	Dd4 (can be multiple choice)				(Result example)				
+	Sogo		>	Code no.	S09	>	Team Label		
+	Eurotel		>	Code no.	E05	>	Team Label		
+	Astrotel		>	Code no.	A03	>	Team Label		
+	DreamWorld		>	Code no.	D02	>	Team Label		
+	Apo View				AVH	>	Team Label		
+	Dormtel		>	Code no.	DT1	>	Team Label		
+	Other 		>	Label	O01	>	Team Label		
+									
+	Dd5								
+	Finance & Accounting		>	Section Input		>	Team Input		
+	HR & Admin		>	Section Input		>	Team Input		
+	IT & Tech Support		>	Section Input		>	Team Input		
+	Engineering		>	Section Input		>	Team Input		
+	Procurement		>	Section Input		>	Team Label		
+	Other 		>	Input	>	Section Input		>	Team Label
+									
+	Dd6								
+	BIG		>	Section Label		>	Team Label		
+	Business Dev		>	Section Label		>	Team Label		
+	Laundry (LDI)		>	Section Label		>	Team Label		
+	Commissary		>	Section Label		>	Team Label		
+	Retail (AllenOne)		>	Section Label		>	Team Label		
+	Gaming		>	Section Label		>	Team Label		
+	Mechanical (CMI)		>	Section Label		>	Team Label		
+	Other 		>	Label	>	Section Label		>	Team Label
+									
+	Dd7								
+	CDG		>	Section Label					
+	F&A		>	Section Label					
+	S&M		>	Section Label					
+									
+	After inputting Team Label (or leave blank) & pressing Enter								
+	Last Name								
+	First Name								
+	Middle Initial								
+	Short Name								
+	Job Level								
+	Position Title								
+	Reports to								
+									
+	After Pressing "Click if Leader"								
+	Personal Details		>	Select Members		>	(goes back to window )		
+	Position Title								
+	Reports to								
+	Job Level								
+	Last Name								
+	First Name								
+	Middle Initial								
+	Short Name								

@@ -19,6 +19,10 @@ export async function GET(req: NextRequest) {
     }
 
     // Check permissions
+    if (!session.user.role) {
+      return NextResponse.json({ error: 'User role is required' }, { status: 403 })
+    }
+    
     if (!hasPermission(session.user.role, PERMISSIONS.RESOURCES.TEAM, 'read')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }

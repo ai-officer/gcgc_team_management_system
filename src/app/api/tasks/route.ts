@@ -41,6 +41,10 @@ export async function GET(req: NextRequest) {
     }
 
     // Check permissions
+    if (!session.user.role) {
+      return NextResponse.json({ error: 'User role is required' }, { status: 403 })
+    }
+    
     if (!hasPermission(session.user.role, PERMISSIONS.RESOURCES.TASK, 'read')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
@@ -340,6 +344,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Check permissions
+    if (!session.user.role) {
+      return NextResponse.json({ error: 'User role is required' }, { status: 403 })
+    }
+    
     if (!hasPermission(session.user.role, PERMISSIONS.RESOURCES.TASK, 'create')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
@@ -401,7 +409,7 @@ export async function POST(req: NextRequest) {
         const teamMemberData = teamMemberIds.map(userId => ({
           taskId: newTask.id,
           userId,
-          role: 'MEMBER', // All are members, current user is the leader by default
+          role: 'MEMBER' as const, // All are members, current user is the leader by default
         }))
 
         await tx.taskTeamMember.createMany({
@@ -497,15 +505,17 @@ export async function POST(req: NextRequest) {
     })
 
     // Log activity
-    await prisma.activity.create({
-      data: {
-        type: 'TASK_CREATED',
-        description: `Created task: ${title}`,
-        userId: session.user.id,
-        entityId: task.id,
-        entityType: 'task',
-      }
-    })
+    if (task) {
+      await prisma.activity.create({
+        data: {
+          type: 'TASK_CREATED',
+          description: `Created task: ${title}`,
+          userId: session.user.id,
+          entityId: task.id,
+          entityType: 'task',
+        }
+      })
+    }
 
     return NextResponse.json(task, { status: 201 })
   } catch (error) {

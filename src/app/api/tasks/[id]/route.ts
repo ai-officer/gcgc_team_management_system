@@ -168,6 +168,10 @@ export async function PATCH(
     
     // If trying to change status, use stricter permissions
     if (updateData.status && updateData.status !== existingTask.status) {
+      if (!session.user.role) {
+        return NextResponse.json({ error: 'User role is required' }, { status: 403 })
+      }
+      
       if (!canChangeTaskStatus(
         session.user.role,
         existingTask.creatorId,
@@ -185,6 +189,10 @@ export async function PATCH(
     }
     
     // For other edits, use general edit permissions
+    if (!session.user.role) {
+      return NextResponse.json({ error: 'User role is required' }, { status: 403 })
+    }
+    
     if (!canEditTask(
       session.user.role,
       existingTask.creatorId,
@@ -239,7 +247,7 @@ export async function PATCH(
           const teamMemberData = updateData.teamMemberIds.map(userId => ({
             taskId: params.id,
             userId,
-            role: 'MEMBER', // All are members, current user is the leader
+            role: 'MEMBER' as const, // All are members, current user is the leader
           }))
 
           await tx.taskTeamMember.createMany({
@@ -313,16 +321,18 @@ export async function PATCH(
     })
 
     // Log activity
-    await prisma.activity.create({
-      data: {
-        type: 'TASK_UPDATED',
-        description: `Updated task: ${updatedTask.title}`,
-        userId: session.user.id,
-        entityId: updatedTask.id,
-        entityType: 'task',
-        metadata: updateData,
-      }
-    })
+    if (updatedTask) {
+      await prisma.activity.create({
+        data: {
+          type: 'TASK_UPDATED',
+          description: `Updated task: ${updatedTask.title}`,
+          userId: session.user.id,
+          entityId: updatedTask.id,
+          entityType: 'task',
+          metadata: updateData,
+        }
+      })
+    }
 
     return NextResponse.json(updatedTask)
   } catch (error) {
@@ -381,6 +391,10 @@ export async function DELETE(
     }
 
     // Check permissions
+    if (!session.user.role) {
+      return NextResponse.json({ error: 'User role is required' }, { status: 403 })
+    }
+    
     if (!canDeleteTask(
       session.user.role,
       existingTask.creatorId,

@@ -91,6 +91,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Find the parent division and return its departments
+    if (!parentId) {
+      return NextResponse.json({ success: false, error: 'Parent ID is required' }, { status: 400 })
+    }
+    
     const division = await prisma.division.findUnique({
       where: { id: parentId },
       include: {

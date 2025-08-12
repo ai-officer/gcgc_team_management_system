@@ -29,6 +29,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Pagination, PaginationInfo } from '@/components/ui/pagination'
 
 interface Team {
   id: string
@@ -73,7 +74,7 @@ export default function AdminTeamsPage() {
   const [editingTeam, setEditingTeam] = useState<Team | null>(null)
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 12,
+    limit: 9,
     total: 0,
     totalPages: 0
   })
@@ -158,10 +159,6 @@ export default function AdminTeamsPage() {
     }
   }
 
-  const filteredTeams = teams.filter(team =>
-    team.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (team.description && team.description.toLowerCase().includes(searchTerm.toLowerCase()))
-  )
 
   return (
     <div className="space-y-6">
@@ -238,7 +235,7 @@ export default function AdminTeamsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredTeams.map((team) => (
+          {teams.map((team) => (
             <Card key={team.id} className="p-6 hover:shadow-lg transition-shadow">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
@@ -407,24 +404,20 @@ export default function AdminTeamsPage() {
 
       {/* Pagination */}
       {pagination.totalPages > 1 && (
-        <div className="flex justify-center space-x-2">
-          <Button
-            variant="outline"
-            onClick={() => setPagination({ ...pagination, page: pagination.page - 1 })}
-            disabled={pagination.page === 1}
-          >
-            Previous
-          </Button>
-          <span className="flex items-center px-4 text-sm text-gray-600">
-            Page {pagination.page} of {pagination.totalPages}
-          </span>
-          <Button
-            variant="outline"
-            onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
-            disabled={pagination.page === pagination.totalPages}
-          >
-            Next
-          </Button>
+        <div className="mt-6">
+          <div className="flex items-center justify-between">
+            <PaginationInfo
+              currentPage={pagination.page}
+              pageSize={pagination.limit}
+              totalItems={pagination.total}
+            />
+            <Pagination
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              onPageChange={(page) => setPagination({ ...pagination, page })}
+              disabled={loading}
+            />
+          </div>
         </div>
       )}
     </div>

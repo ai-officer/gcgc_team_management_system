@@ -1,20 +1,23 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Users, TrendingUp, Building2, Shield, UserPlus, Activity, Calendar, Award, ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import { Users, TrendingUp, Building2, Shield, UserPlus, Activity, Calendar, Award, ArrowUpRight, ArrowDownRight, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
+import { Button } from '@/components/ui/button'
 
 interface DashboardStats {
   totalUsers: number
   newUsersThisMonth: number
+  newUsersLastMonth: number
   activeUsers: number
   leaderCount: number
   memberCount: number
   totalTeams: number
   totalSections: number
+  growthRate: number
   hierarchyDistribution: {
     level: string
     count: number
@@ -26,23 +29,34 @@ interface DashboardStats {
     change: number
   }[]
   recentUsers: {
-    id: string
-    name: string
-    email: string
-    role: string
-    hierarchyLevel?: string
-    createdAt: string
-    isActive: boolean
-  }[]
+    data: {
+      id: string
+      name: string
+      email: string
+      role: string
+      hierarchyLevel?: string
+      createdAt: string
+      isActive: boolean
+    }[]
+    pagination: {
+      page: number
+      limit: number
+      total: number
+      totalPages: number
+      hasMore: boolean
+    }
+  }
 }
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
 
-  const fetchDashboardStats = async () => {
+  const fetchDashboardStats = async (page: number = 1) => {
     try {
-      const response = await fetch('/api/admin/dashboard/stats')
+      setLoading(true)
+      const response = await fetch(`/api/admin/dashboard/stats?page=${page}&limit=5`)
       const data = await response.json()
 
       if (response.ok) {
@@ -55,6 +69,11 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage)
+    fetchDashboardStats(newPage)
   }
 
   useEffect(() => {
@@ -79,9 +98,8 @@ export default function AdminDashboard() {
     )
   }
 
-  const userGrowthPercentage = stats.userGrowth.length > 1 
-    ? ((stats.userGrowth[stats.userGrowth.length - 1].users - stats.userGrowth[stats.userGrowth.length - 2].users) / stats.userGrowth[stats.userGrowth.length - 2].users) * 100
-    : 0
+  // Use the growth rate calculated from the API
+  const userGrowthPercentage = stats.growthRate
 
   return (
     <div className="space-y-6">
@@ -127,15 +145,22 @@ export default function AdminDashboard() {
           <CardContent>
             <div className="flex items-center space-x-2">
               <div className="text-2xl font-bold">
-                {userGrowthPercentage > 0 ? '+' : ''}{userGrowthPercentage.toFixed(1)}%
+                {userGrowthPercentage === 0 ? '0' : 
+                 userGrowthPercentage === 100 ? '+100' :
+                 userGrowthPercentage > 0 ? '+' + userGrowthPercentage.toFixed(1) : 
+                 userGrowthPercentage.toFixed(1)}%
               </div>
               {userGrowthPercentage > 0 ? (
                 <ArrowUpRight className="h-4 w-4 text-green-500" />
-              ) : (
+              ) : userGrowthPercentage < 0 ? (
                 <ArrowDownRight className="h-4 w-4 text-red-500" />
+              ) : (
+                <div className="h-4 w-4" />
               )}
             </div>
-            <p className="text-xs text-muted-foreground">vs last month</p>
+            <p className="text-xs text-muted-foreground">
+              {stats.newUsersThisMonth} this month vs {stats.newUsersLastMonth} last month
+            </p>
           </CardContent>
         </Card>
 
@@ -243,15 +268,20 @@ export default function AdminDashboard() {
       {/* Recent Users */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <UserPlus className="h-5 w-5 text-purple-600" />
-            <span>Recent Users</span>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <UserPlus className="h-5 w-5 text-purple-600" />
+              <span>Recent Users</span>
+            </div>
+            <div className="text-sm text-gray-500">
+              Showing {((stats.recentUsers.pagination.page - 1) * stats.recentUsers.pagination.limit) + 1}-{Math.min(stats.recentUsers.pagination.page * stats.recentUsers.pagination.limit, stats.recentUsers.pagination.total)} of {stats.recentUsers.pagination.total}
+            </div>
           </CardTitle>
           <CardDescription>Recently registered users in the system</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {stats.recentUsers.map((user) => (
+            {stats.recentUsers.data.map((user) => (
               <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
                 <div className="flex items-center space-x-4">
                   <Avatar className="h-10 w-10">
@@ -284,7 +314,44 @@ export default function AdminDashboard() {
                 </div>
               </div>
             ))}
+            
+            {/* No users message */}
+            {stats.recentUsers.data.length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                <Users className="mx-auto h-12 w-12 text-gray-300 mb-4" />
+                <p>No users found</p>
+              </div>
+            )}
           </div>
+          
+          {/* Pagination Controls */}
+          {stats.recentUsers.pagination.totalPages > 1 && (
+            <div className="flex items-center justify-between mt-6 pt-4 border-t">
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1 || loading}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === stats.recentUsers.pagination.totalPages || loading}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+              <div className="text-sm text-gray-500">
+                Page {stats.recentUsers.pagination.page} of {stats.recentUsers.pagination.totalPages}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

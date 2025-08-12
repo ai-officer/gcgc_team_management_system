@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
+import { Pagination, PaginationInfo } from '@/components/ui/pagination'
 import {
   Dialog,
   DialogContent,
@@ -48,7 +49,7 @@ export default function AdminsPage() {
   const [admins, setAdmins] = useState<Admin[]>([])
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
-    limit: 10,
+    limit: 8,
     total: 0,
     totalPages: 0
   })
@@ -550,6 +551,25 @@ export default function AdminsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="mt-6">
+          <div className="flex items-center justify-between">
+            <PaginationInfo
+              currentPage={pagination.page}
+              pageSize={pagination.limit}
+              totalItems={pagination.total}
+            />
+            <Pagination
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              onPageChange={(page) => setPagination({ ...pagination, page })}
+              disabled={loading}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Edit Dialog */}
       <Dialog 

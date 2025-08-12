@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { User, Users, Mail, Calendar, Edit } from 'lucide-react'
+import { User, Users, Mail, Calendar, Edit, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { Pagination, PaginationInfo } from '@/components/ui/pagination'
 import { UserRole, HierarchyLevel } from '@prisma/client'
 
 interface Member {
@@ -34,11 +35,20 @@ export default function AdminMembersPage() {
   const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 8,
+    total: 0,
+    totalPages: 0
+  })
 
   const fetchMembers = async () => {
     try {
+      setLoading(true)
       const params = new URLSearchParams({
         role: 'MEMBER',
+        page: pagination.page.toString(),
+        limit: pagination.limit.toString(),
         ...(searchTerm && { search: searchTerm })
       })
       
@@ -47,6 +57,7 @@ export default function AdminMembersPage() {
 
       if (response.ok) {
         setMembers(data.users)
+        setPagination(data.pagination)
       }
     } catch (error) {
       console.error('Error fetching members:', error)
@@ -57,7 +68,7 @@ export default function AdminMembersPage() {
 
   useEffect(() => {
     fetchMembers()
-  }, [searchTerm])
+  }, [pagination.page, searchTerm])
 
   const getHierarchyColor = (level: HierarchyLevel | null) => {
     if (!level) return 'bg-gray-100 text-gray-700 border-gray-200'
@@ -107,7 +118,7 @@ export default function AdminMembersPage() {
         </div>
         <div className="flex items-center space-x-2">
           <Badge className="bg-green-100 text-green-700">
-            {members.length} Members
+            {pagination.total} Members
           </Badge>
         </div>
       </div>
@@ -115,10 +126,12 @@ export default function AdminMembersPage() {
       {/* Search */}
       <div className="flex items-center space-x-4">
         <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <Input
             placeholder="Search members..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
           />
         </div>
       </div>
@@ -132,7 +145,7 @@ export default function AdminMembersPage() {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Total Members</p>
-              <p className="text-2xl font-bold text-gray-900">{members.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{pagination.total}</p>
             </div>
           </div>
         </Card>
@@ -274,7 +287,26 @@ export default function AdminMembersPage() {
         ))}
       </div>
 
-      {members.length === 0 && (
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="mt-6">
+          <div className="flex items-center justify-between">
+            <PaginationInfo
+              currentPage={pagination.page}
+              pageSize={pagination.limit}
+              totalItems={pagination.total}
+            />
+            <Pagination
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              onPageChange={(page) => setPagination({ ...pagination, page })}
+              disabled={loading}
+            />
+          </div>
+        </div>
+      )}
+
+      {members.length === 0 && !loading && (
         <div className="text-center py-12">
           <User className="mx-auto h-12 w-12 text-gray-400" />
           <h3 className="mt-2 text-sm font-semibold text-gray-900">No members found</h3>

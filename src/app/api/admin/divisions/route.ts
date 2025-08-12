@@ -15,6 +15,9 @@ export async function GET(request: NextRequest) {
     const includeInactive = searchParams.get('includeInactive') === 'true'
     const includeDepartments = searchParams.get('includeDepartments') === 'true'
     const search = searchParams.get('search')
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '10')
+    const skip = (page - 1) * limit
 
     const where: any = {}
     if (!includeInactive) where.isActive = true
@@ -26,27 +29,40 @@ export async function GET(request: NextRequest) {
       ]
     }
 
-    const divisions = await prisma.division.findMany({
-      where,
-      include: {
-        departments: includeDepartments ? {
-          where: { isActive: true },
-          include: {
-            sections: {
-              where: { isActive: true }
+    const [divisions, total] = await Promise.all([
+      prisma.division.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          departments: includeDepartments ? {
+            where: { isActive: true },
+            include: {
+              sections: {
+                where: { isActive: true }
+              }
+            }
+          } : false,
+          _count: {
+            select: {
+              departments: true
             }
           }
-        } : false,
-        _count: {
-          select: {
-            departments: true
-          }
-        }
-      },
-      orderBy: { name: 'asc' }
-    })
+        },
+        orderBy: { name: 'asc' }
+      }),
+      prisma.division.count({ where })
+    ])
 
-    return NextResponse.json({ divisions })
+    const pagination = {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      hasMore: skip + limit < total
+    }
+
+    return NextResponse.json({ divisions, pagination })
   } catch (error) {
     console.error('Error fetching divisions:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

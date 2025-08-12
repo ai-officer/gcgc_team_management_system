@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Pagination, PaginationInfo } from '@/components/ui/pagination'
 
 interface Division {
   id: string
@@ -58,6 +59,12 @@ export default function DivisionsPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [selectedDivision, setSelectedDivision] = useState<Division | null>(null)
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 9,
+    total: 0,
+    totalPages: 0
+  })
   const [newDivision, setNewDivision] = useState({
     name: '',
     code: '',
@@ -68,7 +75,7 @@ export default function DivisionsPage() {
 
   useEffect(() => {
     fetchDivisions()
-  }, [searchTerm])
+  }, [pagination.page, searchTerm])
 
   const fetchDivisions = async () => {
     try {
@@ -76,6 +83,8 @@ export default function DivisionsPage() {
       const params = new URLSearchParams({
         includeDepartments: 'true',
         includeInactive: 'true',
+        page: pagination.page.toString(),
+        limit: pagination.limit.toString(),
         ...(searchTerm && { search: searchTerm })
       })
       
@@ -83,6 +92,9 @@ export default function DivisionsPage() {
       if (response.ok) {
         const data = await response.json()
         setDivisions(data.divisions || [])
+        if (data.pagination) {
+          setPagination(data.pagination)
+        }
       } else {
         setError('Failed to fetch divisions')
       }
@@ -191,11 +203,6 @@ export default function DivisionsPage() {
     return flowTypes[division.code || ''] || flowTypes['OTHER']
   }
 
-  const filteredDivisions = divisions.filter(division =>
-    division.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    division.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    division.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  )
 
   if (loading) {
     return (
@@ -308,7 +315,7 @@ export default function DivisionsPage() {
             <GitBranch className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{divisions.length}</div>
+            <div className="text-2xl font-bold">{pagination.total}</div>
             <p className="text-xs text-muted-foreground">
               Organizational divisions
             </p>
@@ -348,7 +355,7 @@ export default function DivisionsPage() {
 
       {/* Divisions Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredDivisions.map((division) => {
+        {divisions.map((division) => {
           const typeInfo = getDivisionTypeInfo(division)
           
           return (
@@ -429,7 +436,26 @@ export default function DivisionsPage() {
         })}
       </div>
 
-      {filteredDivisions.length === 0 && !loading && (
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="mt-6">
+          <div className="flex items-center justify-between">
+            <PaginationInfo
+              currentPage={pagination.page}
+              pageSize={pagination.limit}
+              totalItems={pagination.total}
+            />
+            <Pagination
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              onPageChange={(page) => setPagination({ ...pagination, page })}
+              disabled={loading}
+            />
+          </div>
+        </div>
+      )}
+
+      {divisions.length === 0 && !loading && (
         <div className="text-center py-12">
           <GitBranch className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No divisions found</h3>

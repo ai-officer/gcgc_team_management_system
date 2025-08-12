@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { Pagination, PaginationInfo } from '@/components/ui/pagination'
 import { UserRole, HierarchyLevel } from '@prisma/client'
 
 interface User {
@@ -84,7 +85,7 @@ export default function AdminUsersPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 10,
+    limit: 8,
     total: 0,
     totalPages: 0
   })
@@ -436,6 +437,25 @@ export default function AdminUsersPage() {
               </div>
             </Card>
           ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="mt-6">
+          <div className="flex items-center justify-between">
+            <PaginationInfo
+              currentPage={pagination.page}
+              pageSize={pagination.limit}
+              totalItems={pagination.total}
+            />
+            <Pagination
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              onPageChange={(page) => setPagination({ ...pagination, page })}
+              disabled={loading}
+            />
+          </div>
         </div>
       )}
 

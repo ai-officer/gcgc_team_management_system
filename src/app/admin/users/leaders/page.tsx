@@ -1,11 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Crown, Shield, Users, Mail, Calendar, Edit, Trash2 } from 'lucide-react'
+import { Crown, Shield, Users, Mail, Calendar, Edit, Trash2, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
+import { Pagination, PaginationInfo } from '@/components/ui/pagination'
 import { UserRole, HierarchyLevel } from '@prisma/client'
 
 interface Leader {
@@ -32,14 +34,30 @@ interface Leader {
 export default function AdminLeadersPage() {
   const [leaders, setLeaders] = useState<Leader[]>([])
   const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 8,
+    total: 0,
+    totalPages: 0
+  })
 
   const fetchLeaders = async () => {
     try {
-      const response = await fetch('/api/admin/users?role=LEADER')
+      setLoading(true)
+      const params = new URLSearchParams({
+        role: 'LEADER',
+        page: pagination.page.toString(),
+        limit: pagination.limit.toString(),
+        ...(searchTerm && { search: searchTerm })
+      })
+
+      const response = await fetch(`/api/admin/users?${params}`)
       const data = await response.json()
 
       if (response.ok) {
         setLeaders(data.users)
+        setPagination(data.pagination)
       }
     } catch (error) {
       console.error('Error fetching leaders:', error)
@@ -50,7 +68,7 @@ export default function AdminLeadersPage() {
 
   useEffect(() => {
     fetchLeaders()
-  }, [])
+  }, [pagination.page, searchTerm])
 
   const getHierarchyColor = (level: HierarchyLevel | null) => {
     if (!level) return 'bg-gray-100 text-gray-700 border-gray-200'
@@ -86,8 +104,21 @@ export default function AdminLeadersPage() {
         </div>
         <div className="flex items-center space-x-2">
           <Badge className="bg-blue-100 text-blue-700">
-            {leaders.length} Leaders
+            {pagination.total} Leaders
           </Badge>
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="flex items-center space-x-4">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Input
+            placeholder="Search leaders..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
         </div>
       </div>
 
@@ -100,7 +131,7 @@ export default function AdminLeadersPage() {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Total Leaders</p>
-              <p className="text-2xl font-bold text-gray-900">{leaders.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{pagination.total}</p>
             </div>
           </div>
         </Card>
@@ -227,7 +258,26 @@ export default function AdminLeadersPage() {
         ))}
       </div>
 
-      {leaders.length === 0 && (
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="mt-6">
+          <div className="flex items-center justify-between">
+            <PaginationInfo
+              currentPage={pagination.page}
+              pageSize={pagination.limit}
+              totalItems={pagination.total}
+            />
+            <Pagination
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              onPageChange={(page) => setPagination({ ...pagination, page })}
+              disabled={loading}
+            />
+          </div>
+        </div>
+      )}
+
+      {leaders.length === 0 && !loading && (
         <div className="text-center py-12">
           <Crown className="mx-auto h-12 w-12 text-gray-400" />
           <h3 className="mt-2 text-sm font-semibold text-gray-900">No leaders found</h3>

@@ -11,15 +11,23 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Get pagination parameters
+    const url = new URL(req.url)
+    const page = parseInt(url.searchParams.get('page') || '1')
+    const limit = parseInt(url.searchParams.get('limit') || '5')
+    const skip = (page - 1) * limit
+
     // Get current date for calculations
     const now = new Date()
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
     const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), 1)
 
     // Basic user counts
     const [
       totalUsers,
       newUsersThisMonth,
+      newUsersLastMonth,
       activeUsers,
       leaderCount,
       memberCount,
@@ -29,6 +37,14 @@ export async function GET(req: NextRequest) {
       prisma.user.count(),
       prisma.user.count({
         where: { createdAt: { gte: startOfMonth } }
+      }),
+      prisma.user.count({
+        where: { 
+          createdAt: { 
+            gte: startOfLastMonth,
+            lt: startOfMonth 
+          } 
+        }
       }),
       prisma.user.count({
         where: { isActive: true }
@@ -93,35 +109,55 @@ export async function GET(req: NextRequest) {
       })
     }
 
-    // Recent users (last 10)
-    const recentUsers = await prisma.user.findMany({
-      take: 10,
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        hierarchyLevel: true,
-        createdAt: true,
-        isActive: true
-      }
-    })
+    // Recent users with pagination
+    const [recentUsers, totalRecentUsers] = await Promise.all([
+      prisma.user.findMany({
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          hierarchyLevel: true,
+          createdAt: true,
+          isActive: true
+        }
+      }),
+      prisma.user.count()
+    ])
+
+    // Calculate growth rate (avoiding division by zero)
+    const growthRate = newUsersLastMonth > 0 
+      ? ((newUsersThisMonth - newUsersLastMonth) / newUsersLastMonth) * 100
+      : newUsersThisMonth > 0 ? 100 : 0
 
     const stats = {
       totalUsers,
       newUsersThisMonth,
+      newUsersLastMonth,
       activeUsers,
       leaderCount,
       memberCount,
       totalTeams,
       totalSections,
+      growthRate,
       hierarchyDistribution,
       userGrowth,
-      recentUsers: recentUsers.map(user => ({
-        ...user,
-        createdAt: user.createdAt.toISOString()
-      }))
+      recentUsers: {
+        data: recentUsers.map(user => ({
+          ...user,
+          createdAt: user.createdAt.toISOString()
+        })),
+        pagination: {
+          page,
+          limit,
+          total: totalRecentUsers,
+          totalPages: Math.ceil(totalRecentUsers / limit),
+          hasMore: skip + limit < totalRecentUsers
+        }
+      }
     }
 
     return NextResponse.json({ stats })

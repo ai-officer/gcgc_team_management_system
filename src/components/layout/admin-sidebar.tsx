@@ -15,7 +15,8 @@ import {
   Layers,
   Briefcase,
   GitBranch,
-  Shield
+  Shield,
+  CheckSquare
 } from 'lucide-react'
 
 interface AdminSidebarProps {
@@ -53,6 +54,11 @@ const navigation: NavigationItem[] = [
         name: 'Members',
         href: '/admin/users/members',
         icon: UserCog
+      },
+      {
+        name: 'User Tasks',
+        href: '/admin/users/tasks',
+        icon: CheckSquare
       }
     ]
   },
@@ -118,8 +124,23 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
 
   const isItemActive = (item: NavigationItem): boolean => {
     if (item.href) {
-      return pathname === item.href || pathname.startsWith(item.href + '/')
+      // For exact matches or when the path continues with a parameter (like /admin/users/123)
+      // but not when it's a different sub-route (like /admin/users/leaders)
+      if (pathname === item.href) {
+        return true
+      }
+      
+      // Check if it's a sub-path with parameters (e.g., /admin/users/123)
+      // but exclude other sub-routes at the same level
+      const pathAfterItem = pathname.replace(item.href, '')
+      if (pathAfterItem.startsWith('/') && !pathAfterItem.includes('/', 1)) {
+        // This is likely a parameter route like /admin/users/[id]
+        return /^\/[^\/]+$/.test(pathAfterItem)
+      }
+      
+      return false
     }
+    
     if (item.children) {
       return item.children.some(child => 
         child.href && (pathname === child.href || pathname.startsWith(child.href + '/'))

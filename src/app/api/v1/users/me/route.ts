@@ -60,7 +60,15 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    return NextResponse.json(user)
+    // Add computed fields that TMS-client expects
+    const response = {
+      ...user,
+      tmsUserId: user.id, // TMS-client expects this field
+      displayName: user.name || `${user.firstName} ${user.lastName}`.trim(),
+      lastSyncedAt: new Date().toISOString(),
+    }
+
+    return NextResponse.json(response)
   } catch (error) {
     console.error('Error fetching current user profile:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

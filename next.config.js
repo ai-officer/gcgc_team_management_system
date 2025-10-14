@@ -19,32 +19,8 @@ const nextConfig = {
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
   },
-  async headers() {
-    return [
-      {
-        // Apply CORS to all API routes  
-        source: '/api/:path*',
-        headers: [
-          {
-            key: 'Access-Control-Allow-Origin',
-            value: 'http://localhost:3000, https://tms-client-staging.up.railway.app' // Team Messaging client URLs
-          },
-          {
-            key: 'Access-Control-Allow-Credentials', 
-            value: 'true'
-          },
-          {
-            key: 'Access-Control-Allow-Methods',
-            value: 'GET, POST, PUT, DELETE, OPTIONS'
-          },
-          {
-            key: 'Access-Control-Allow-Headers',
-            value: 'Content-Type, Authorization, Cookie'
-          }
-        ]
-      }
-    ];
-  },
+  // CORS is handled by middleware.js instead of next.config.js
+  // This prevents conflicts with multiple origin values
 }
 
 module.exports = nextConfig

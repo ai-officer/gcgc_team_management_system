@@ -56,6 +56,11 @@ async function adminMiddleware(req: NextRequest) {
 export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
   
+  // Allow CORS preflight requests (OPTIONS) to pass through without authentication
+  if (req.method === 'OPTIONS') {
+    return NextResponse.next()
+  }
+  
   // First check if this is an admin-related request
   const adminResult = await adminMiddleware(req)
   if (adminResult) {

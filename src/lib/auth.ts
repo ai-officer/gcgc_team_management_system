@@ -48,7 +48,7 @@ export const authOptions: NextAuthOptions = {
           image: user.image,
           role: user.role,
           hierarchyLevel: user.hierarchyLevel,
-        }
+        } as any
       }
     }),
     GoogleProvider({
@@ -58,10 +58,10 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 30 * 24 * 60 * 60, // 30 days (session cookie expiry)
   },
   jwt: {
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 60 * 60, // 1 hour (access token expiry)
   },
   pages: {
     signIn: '/auth/signin',
@@ -69,73 +69,80 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user, account, trigger }) {
+      // Initial login - set token data
       if (user) {
         token.role = user.role
         token.hierarchyLevel = user.hierarchyLevel
         token.id = user.id
         token.image = user.image
+        token.accessTokenExpires = Date.now() + 60 * 60 * 1000 // 1 hour
+        token.refreshTokenExpires = Date.now() + 30 * 24 * 60 * 60 * 1000 // 30 days
       }
 
-      // Always fetch fresh user data on token update/refresh
-      if (token.id && (trigger === 'update' || !token.image)) {
-        try {
-          const freshUser = await prisma.user.findUnique({
-            where: { id: token.id as string },
-            select: { 
-              id: true, 
-              name: true, 
-              email: true, 
-              image: true, 
-              role: true, 
-              hierarchyLevel: true 
+      // Return previous token if access token has not expired
+      if (Date.now() < (token.accessTokenExpires as number)) {
+        return token
+      }
+
+      // Access token has expired, check if refresh token is still valid
+      if (Date.now() < (token.refreshTokenExpires as number)) {
+        // Refresh the token - fetch fresh user data
+        if (token.id) {
+          try {
+            const freshUser = await prisma.user.findUnique({
+              where: { id: token.id as string },
+              select: { 
+                id: true, 
+                name: true, 
+                email: true, 
+                image: true, 
+                role: true, 
+                hierarchyLevel: true,
+                isActive: true
+              }
+            })
+            
+            if (freshUser && freshUser.isActive) {
+              // User is still active, refresh the access token
+              return {
+                ...token,
+                name: freshUser.name,
+                email: freshUser.email,
+                image: freshUser.image,
+                role: freshUser.role,
+                hierarchyLevel: freshUser.hierarchyLevel,
+                accessTokenExpires: Date.now() + 60 * 60 * 1000, // New 1 hour expiry
+                refreshTokenExpires: Date.now() + 30 * 24 * 60 * 60 * 1000, // Reset refresh token to 30 days
+              }
+            } else {
+              // User is deactivated or doesn't exist
+              throw new Error('User account is deactivated or not found')
             }
-          })
-          
-          if (freshUser) {
-            token.name = freshUser.name
-            token.email = freshUser.email
-            token.image = freshUser.image
-            token.role = freshUser.role
-            token.hierarchyLevel = freshUser.hierarchyLevel
+          } catch (error) {
+            console.error('Error refreshing token:', error)
+            // Return error to force sign out
+            return {
+              ...token,
+              error: 'RefreshAccessTokenError',
+            }
           }
-        } catch (error) {
-          console.error('Error fetching fresh user data:', error)
         }
       }
-      
-      // Handle OAuth providers
-      if (account?.provider === 'google') {
-        const existingUser = await prisma.user.findUnique({
-          where: { email: token.email! }
-        })
-        
-        if (existingUser) {
-          token.role = existingUser.role
-          token.hierarchyLevel = existingUser.hierarchyLevel
-          token.id = existingUser.id
-          token.image = existingUser.image
-        } else {
-          // Create new user for OAuth
-          const newUser = await prisma.user.create({
-            data: {
-              email: token.email!,
-              name: token.name!,
-              image: token.picture,
-              role: UserRole.MEMBER,
-              emailVerified: new Date(),
-            }
-          })
-          token.role = newUser.role
-          token.hierarchyLevel = newUser.hierarchyLevel
-          token.id = newUser.id
-          token.image = newUser.image
-        }
+
+      // Refresh token has expired, force sign out
+      return {
+        ...token,
+        error: 'RefreshAccessTokenError',
       }
-      
-      return token
     },
     async session({ session, token }) {
       if (token) {
+        // Check for token refresh errors
+        if (token.error === 'RefreshAccessTokenError') {
+          // Force sign out by returning null session
+          throw new Error('Token refresh failed')
+        }
+        
         session.user.id = token.id as string
         session.user.role = token.role as UserRole
         session.user.hierarchyLevel = token.hierarchyLevel as any
@@ -152,7 +159,7 @@ export const authOptions: NextAuthOptions = {
     }
   },
   events: {
-    async signIn({ user, account, isNewUser }) {
+    async signIn({ user, account }) {
       // Log activity
       if (user.id) {
         await prisma.activity.create({

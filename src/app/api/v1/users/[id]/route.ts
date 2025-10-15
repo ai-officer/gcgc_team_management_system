@@ -3,20 +3,42 @@ import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
 import { authOptions } from '@/lib/auth'
 
+/**
+ * Helper function to verify API Key for server-to-server authentication.
+ * Used by TMS Server backend to fetch user data.
+ */
+function verifyApiKey(request: NextRequest): boolean {
+  const apiKey = request.headers.get('x-api-key')
+  const validApiKey = process.env.API_KEY
+
+  if (!validApiKey) {
+    console.warn('⚠️ API_KEY not configured in environment variables')
+    return false
+  }
+
+  return apiKey === validApiKey
+}
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    // Support two authentication methods:
+    // 1. API Key (for server-to-server from TMS Server)
+    // 2. Session (for authenticated users)
+    const hasValidApiKey = verifyApiKey(req)
     const session = await getServerSession(authOptions)
-    if (!session?.user) {
+
+    // Allow access if either auth method is valid
+    if (!hasValidApiKey && !session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Users can access any user profile for chat integration
-    // Basic security: only return public profile information
+    // Fetch user from database
+    // Include additional fields needed by TMS Server
     const user = await prisma.user.findUnique({
-      where: { 
+      where: {
         id: params.id,
         isActive: true // Only return active users
       },
@@ -26,6 +48,7 @@ export async function GET(
         username: true,
         firstName: true,
         lastName: true,
+        middleName: true,
         name: true,
         image: true,
         role: true,
@@ -34,8 +57,12 @@ export async function GET(
         department: true,
         section: true,
         customTeam: true,
+        hierarchyLevel: true,
+        reportsToId: true,
         isActive: true,
-        createdAt: true
+        isLeader: true,
+        createdAt: true,
+        updatedAt: true
       }
     })
 

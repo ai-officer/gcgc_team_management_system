@@ -74,22 +74,32 @@ export default async function middleware(req: NextRequest) {
   
   // Allow public API routes needed for registration without authentication
   const publicApiRoutes = [
-    '/api/auth', 
-    '/api/organizational-units', 
+    '/api/auth',
+    '/api/organizational-units',
     '/api/job-levels',
     '/api/section-heads',
     '/api/sector-heads',
     '/api/teams-data',
     '/api/users/leaders'
   ]
-  const isPublicApiRoute = publicApiRoutes.some(route => 
+  const isPublicApiRoute = publicApiRoutes.some(route =>
     pathname.startsWith(route)
   )
-  
+
   if (isPublicApiRoute) {
     return NextResponse.next()
   }
-  
+
+  // Check for API Key authentication (server-to-server from TMS Server)
+  const apiKey = req.headers.get('x-api-key')
+  const validApiKey = process.env.API_KEY
+  const hasValidApiKey = apiKey && validApiKey && apiKey === validApiKey
+
+  // Allow API Key authenticated requests to bypass NextAuth session check
+  if (hasValidApiKey) {
+    return NextResponse.next()
+  }
+
   // Get the NextAuth token for user authentication
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
   

@@ -17,6 +17,7 @@ import {
   UserCheck,
   ChevronLeft,
   ChevronRight,
+  MessageSquare,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -49,6 +50,12 @@ const adminNavItems = [
     icon: Calendar,
   },
   {
+    title: 'TMS Chat',
+    href: process.env.NEXT_PUBLIC_TMS_CHAT_URL || 'https://tms-client-staging.up.railway.app',
+    icon: MessageSquare,
+    external: true,
+  },
+  {
     title: 'Settings',
     href: '/admin/settings',
     icon: Settings,
@@ -70,6 +77,12 @@ const userNavItems = [
     title: 'Calendar',
     href: '/user/calendar',
     icon: Calendar,
+  },
+  {
+    title: 'TMS Chat',
+    href: process.env.NEXT_PUBLIC_TMS_CHAT_URL || 'https://tms-client-staging.up.railway.app',
+    icon: MessageSquare,
+    external: true,
   },
   {
     title: 'Profile',
@@ -103,6 +116,12 @@ const leaderNavItems = [
     title: 'Member Management',
     href: '/user/member-management',
     icon: UserCheck,
+  },
+  {
+    title: 'TMS Chat',
+    href: process.env.NEXT_PUBLIC_TMS_CHAT_URL || 'https://tms-client-staging.up.railway.app',
+    icon: MessageSquare,
+    external: true,
   },
   {
     title: 'Profile',
@@ -254,10 +273,15 @@ export function Sidebar({ className }: SidebarProps) {
               {navItems.map((item) => {
                 const Icon = item.icon
                 const isActive = pathname === item.href
+                const linkProps = item.external
+                  ? { target: '_blank', rel: 'noopener noreferrer' }
+                  : {}
+
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
+                    {...linkProps}
                     className={cn(
                       'flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-sm group',
                       isActive

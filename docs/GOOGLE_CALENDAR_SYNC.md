@@ -5,9 +5,12 @@
 The GCGC Team Management System now supports two-way synchronization with Google Calendar. This feature allows users to:
 
 - Export TMS events to their Google Calendar
+- **Export TMS tasks (with due dates) to their Google Calendar**
 - Import Google Calendar events into TMS
 - Maintain sync between both calendars
 - Choose which event types to synchronize
+
+> **New in v1.1:** Tasks with due dates are now automatically synced to Google Calendar! See [Task Calendar Sync Documentation](./TASK_CALENDAR_SYNC.md) for details.
 
 ## Features
 
@@ -18,7 +21,7 @@ The GCGC Team Management System now supports two-way synchronization with Google
 
 ### 2. **Event Type Filtering**
 Control which events are synchronized:
-- **Task Deadlines**: Sync task due dates as calendar events
+- **Task Deadlines**: Sync task due dates as calendar events (now syncs actual Task objects with full details!)
 - **Team Events**: Sync team meetings and events
 - **Personal Events**: Sync personal calendar events
 
@@ -108,10 +111,16 @@ You can manually trigger sync at any time:
 
 ### Automatic Sync
 
-Events are automatically synced when:
-- You create a new event in TMS (if sync is enabled)
-- You modify an existing synced event
+Events and Tasks are automatically synced when:
+- You create a new event or task in TMS (if sync is enabled)
+- You modify an existing synced event or task
+- You delete a synced task (automatically removes from calendar)
 - You manually trigger sync
+
+**Tasks** are synced to Google Calendar if:
+- Task has a due date
+- "Sync Task Deadlines" is enabled
+- You are involved in the task (creator, assignee, team member, or collaborator)
 
 ## Technical Details
 
@@ -142,6 +151,17 @@ New fields added to track Google Calendar sync:
 - `googleCalendarId`: Which Google Calendar the event is synced with
 - `googleCalendarEventId`: The Google Calendar event ID
 - `syncedAt`: Last sync timestamp
+
+#### Task Model Updates (New in v1.1)
+New fields added to track Google Calendar sync:
+- `googleCalendarId`: Which Google Calendar the task is synced with
+- `googleCalendarEventId`: The Google Calendar event ID for this task
+- `syncedAt`: Last sync timestamp
+
+Tasks are synced as calendar events with:
+- Title prefixed with `[Task]`
+- Color-coded by priority (LOW=Green, MEDIUM=Yellow, HIGH=Orange, URGENT=Red)
+- Detailed description including status, progress, assignee, team members, etc.
 
 ### API Endpoints
 

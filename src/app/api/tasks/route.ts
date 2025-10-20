@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { authOptions } from '@/lib/auth'
 import { hasPermission } from '@/lib/permissions'
 import { PERMISSIONS } from '@/constants'
+import { autoSyncTask } from '@/lib/calendar-sync-helper'
 
 const createTaskSchema = z.object({
   title: z.string().min(1).max(100),
@@ -515,6 +516,11 @@ export async function POST(req: NextRequest) {
           entityType: 'task',
         }
       })
+
+      // Auto-sync to Google Calendar if enabled
+      if (task.dueDate) {
+        await autoSyncTask(task.id, session.user.id)
+      }
     }
 
     return NextResponse.json(task, { status: 201 })

@@ -271,6 +271,84 @@ export class GoogleCalendarService {
     return googleEvent
   }
 
+  // Convert TMS task to Google Calendar format
+  convertTMSTaskToGoogle(task: any): GoogleCalendarEvent {
+    const dueDate = task.dueDate ? new Date(task.dueDate) : null
+    const startDate = task.startDate ? new Date(task.startDate) : null
+
+    // Use startDate if available, otherwise use dueDate - 1 hour as start
+    const startTime = startDate || (dueDate ? new Date(dueDate.getTime() - 60 * 60 * 1000) : new Date())
+    const endTime = dueDate || new Date(startTime.getTime() + 60 * 60 * 1000)
+
+    const googleEvent: GoogleCalendarEvent = {
+      summary: `[Task] ${task.title}`,
+      description: this.formatTaskDescription(task),
+      start: { dateTime: startTime.toISOString(), timeZone: 'UTC' },
+      end: { dateTime: endTime.toISOString(), timeZone: 'UTC' },
+    }
+
+    // Map task priority to Google Calendar colors
+    const colorMap: Record<string, string> = {
+      LOW: '2', // Green
+      MEDIUM: '5', // Yellow
+      HIGH: '6', // Orange
+      URGENT: '11', // Red
+    }
+
+    if (task.priority && colorMap[task.priority]) {
+      googleEvent.colorId = colorMap[task.priority]
+    }
+
+    return googleEvent
+  }
+
+  // Format task description with additional details
+  private formatTaskDescription(task: any): string {
+    let description = task.description || ''
+    
+    description += `\n\n--- Task Details ---`
+    description += `\nStatus: ${task.status}`
+    description += `\nPriority: ${task.priority}`
+    description += `\nProgress: ${task.progressPercentage || 0}%`
+    description += `\nType: ${task.taskType}`
+    
+    if (task.assignee) {
+      const assigneeName = task.assignee.firstName && task.assignee.lastName
+        ? `${task.assignee.firstName} ${task.assignee.lastName}`
+        : task.assignee.name || task.assignee.email
+      description += `\nAssignee: ${assigneeName}`
+    }
+
+    if (task.creator) {
+      const creatorName = task.creator.firstName && task.creator.lastName
+        ? `${task.creator.firstName} ${task.creator.lastName}`
+        : task.creator.name || task.creator.email
+      description += `\nCreator: ${creatorName}`
+    }
+
+    if (task.teamMembers && task.teamMembers.length > 0) {
+      const members = task.teamMembers.map((tm: any) => {
+        const user = tm.user
+        return user.firstName && user.lastName
+          ? `${user.firstName} ${user.lastName}`
+          : user.name || user.email
+      }).join(', ')
+      description += `\nTeam Members: ${members}`
+    }
+
+    if (task.collaborators && task.collaborators.length > 0) {
+      const collabs = task.collaborators.map((c: any) => {
+        const user = c.user
+        return user.firstName && user.lastName
+          ? `${user.firstName} ${user.lastName}`
+          : user.name || user.email
+      }).join(', ')
+      description += `\nCollaborators: ${collabs}`
+    }
+
+    return description
+  }
+
   // Convert Google Calendar event to TMS format
   convertGoogleEventToTMS(googleEvent: any, userId: string) {
     return {

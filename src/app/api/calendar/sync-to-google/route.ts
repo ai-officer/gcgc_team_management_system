@@ -50,6 +50,91 @@ export async function POST(req: NextRequest) {
       }
     })
 
+    // Fetch TMS tasks that should be synced
+    const tmsTasks = await prisma.task.findMany({
+      where: {
+        AND: [
+          // User must be involved in the task
+          {
+            OR: [
+              { creatorId: session.user.id },
+              { assigneeId: session.user.id },
+              {
+                teamMembers: {
+                  some: {
+                    userId: session.user.id
+                  }
+                }
+              },
+              {
+                collaborators: {
+                  some: {
+                    userId: session.user.id
+                  }
+                }
+              }
+            ]
+          },
+          // Task must have a due date
+          { dueDate: { not: null } },
+          // Task hasn't been synced yet or needs updating
+          {
+            OR: [
+              { googleCalendarEventId: null },
+              { updatedAt: { gt: syncSettings.lastSyncedAt || new Date(0) } }
+            ]
+          }
+        ]
+      },
+      include: {
+        assignee: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            name: true,
+            email: true,
+          }
+        },
+        creator: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            name: true,
+            email: true,
+          }
+        },
+        teamMembers: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                name: true,
+                email: true,
+              }
+            }
+          }
+        },
+        collaborators: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                name: true,
+                email: true,
+              }
+            }
+          }
+        },
+        team: true,
+      }
+    })
+
     const results = {
       created: 0,
       updated: 0,
@@ -57,6 +142,7 @@ export async function POST(req: NextRequest) {
       errors: [] as string[]
     }
 
+    // Sync Events
     for (const event of tmsEvents) {
       try {
         // Check if should sync this type of event
@@ -110,6 +196,54 @@ export async function POST(req: NextRequest) {
         console.error(`Error syncing event ${event.id}:`, error)
         results.failed++
         results.errors.push(`${event.title}: ${error.message}`)
+      }
+    }
+
+    // Sync Tasks (if syncTaskDeadlines is enabled)
+    if (syncSettings.syncTaskDeadlines) {
+      for (const task of tmsTasks) {
+        try {
+          const googleEvent = googleCalendarService.convertTMSTaskToGoogle(task)
+
+          if (task.googleCalendarEventId) {
+            // Update existing Google Calendar event
+            await googleCalendarService.updateEvent(
+              session.user.id,
+              task.googleCalendarEventId,
+              googleEvent,
+              calendarId
+            )
+
+            await prisma.task.update({
+              where: { id: task.id },
+              data: { syncedAt: new Date() }
+            })
+
+            results.updated++
+          } else {
+            // Create new Google Calendar event
+            const createdEvent = await googleCalendarService.createEvent(
+              session.user.id,
+              googleEvent,
+              calendarId
+            )
+
+            await prisma.task.update({
+              where: { id: task.id },
+              data: {
+                googleCalendarId: calendarId,
+                googleCalendarEventId: createdEvent.id!,
+                syncedAt: new Date()
+              }
+            })
+
+            results.created++
+          }
+        } catch (error: any) {
+          console.error(`Error syncing task ${task.id}:`, error)
+          results.failed++
+          results.errors.push(`[Task] ${task.title}: ${error.message}`)
+        }
       }
     }
 

@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { authOptions } from '@/lib/auth'
 import { canEditTask, canDeleteTask, canChangeTaskStatus } from '@/lib/permissions'
+import { autoSyncTask, deleteSyncedTask } from '@/lib/calendar-sync-helper'
 
 const updateTaskSchema = z.object({
   title: z.string().min(1).max(100).optional(),
@@ -332,6 +333,9 @@ export async function PATCH(
           metadata: updateData,
         }
       })
+
+      // Auto-sync to Google Calendar if enabled
+      await autoSyncTask(updatedTask.id, session.user.id)
     }
 
     return NextResponse.json(updatedTask)
@@ -403,6 +407,9 @@ export async function DELETE(
     )) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
+
+    // Delete from Google Calendar if synced
+    await deleteSyncedTask(params.id, session.user.id)
 
     // Delete task (cascade will handle comments and events)
     await prisma.task.delete({

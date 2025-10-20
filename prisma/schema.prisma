@@ -134,29 +134,32 @@ model TeamMember {
 }
 
 model Task {
-  id                 String             @id @default(cuid())
-  title              String
-  description        String?
-  status             TaskStatus         @default(TODO)
-  priority           Priority           @default(MEDIUM)
-  dueDate            DateTime?
-  startDate          DateTime?
-  assigneeId         String?
-  creatorId          String
-  teamId             String?
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-  assignedById       String?
-  progressPercentage Int                @default(0)
-  taskType           TaskType           @default(INDIVIDUAL)
-  comments           Comment[]
-  events             Event[]
-  collaborators      TaskCollaborator[]
-  teamMembers        TaskTeamMember[]
-  assignedBy         User?              @relation("TaskAssignedBy", fields: [assignedById], references: [id])
-  assignee           User?              @relation("TaskAssignee", fields: [assigneeId], references: [id])
-  creator            User               @relation("TaskCreator", fields: [creatorId], references: [id])
-  team               Team?              @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  id                    String             @id @default(cuid())
+  title                 String
+  description           String?
+  status                TaskStatus         @default(TODO)
+  priority              Priority           @default(MEDIUM)
+  dueDate               DateTime?
+  startDate             DateTime?
+  assigneeId            String?
+  creatorId             String
+  teamId                String?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  assignedById          String?
+  progressPercentage    Int                @default(0)
+  taskType              TaskType           @default(INDIVIDUAL)
+  googleCalendarId      String?
+  googleCalendarEventId String?
+  syncedAt              DateTime?
+  comments              Comment[]
+  events                Event[]
+  collaborators         TaskCollaborator[]
+  teamMembers           TaskTeamMember[]
+  assignedBy            User?              @relation("TaskAssignedBy", fields: [assignedById], references: [id])
+  assignee              User?              @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  creator               User               @relation("TaskCreator", fields: [creatorId], references: [id])
+  team                  Team?              @relation(fields: [teamId], references: [id], onDelete: Cascade)
 
   @@map("tasks")
 }

@@ -76,13 +76,26 @@ export async function PUT(req: NextRequest) {
       syncTaskDeadlines,
       syncTeamEvents,
       syncPersonalEvents,
+      createTMSCalendar, // New flag to create dedicated TMS Calendar
     } = body
+
+    // If user wants to use TMS Calendar, find or create it
+    let calendarId = googleCalendarId
+    if (isEnabled && (createTMSCalendar || !googleCalendarId)) {
+      try {
+        calendarId = await googleCalendarService.findOrCreateTMSCalendar(session.user.id)
+        console.log('Using TMS Calendar:', calendarId)
+      } catch (error) {
+        console.error('Error finding/creating TMS Calendar, falling back to primary:', error)
+        calendarId = googleCalendarId || 'primary'
+      }
+    }
 
     const syncSettings = await prisma.calendarSyncSettings.upsert({
       where: { userId: session.user.id },
       update: {
         isEnabled,
-        googleCalendarId,
+        googleCalendarId: calendarId,
         syncDirection,
         syncTaskDeadlines,
         syncTeamEvents,
@@ -91,7 +104,7 @@ export async function PUT(req: NextRequest) {
       create: {
         userId: session.user.id,
         isEnabled,
-        googleCalendarId,
+        googleCalendarId: calendarId,
         syncDirection,
         syncTaskDeadlines,
         syncTeamEvents,

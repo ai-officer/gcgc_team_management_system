@@ -242,6 +242,57 @@ export class GoogleCalendarService {
     }
   }
 
+  async createTMSCalendar(userId: string) {
+    const calendar = await this.getCalendarClient(userId)
+
+    try {
+      // Check if TMS Calendar already exists
+      const calendars = await this.getCalendarList(userId)
+      const existingTMSCalendar = calendars.find(
+        (cal) => cal.summary === 'TMS Calendar' || cal.summary === 'GCGC Team Management'
+      )
+
+      if (existingTMSCalendar) {
+        return existingTMSCalendar.id || 'primary'
+      }
+
+      // Create new TMS Calendar
+      const response = await calendar.calendars.insert({
+        requestBody: {
+          summary: 'TMS Calendar',
+          description: 'Calendar for GCGC Team Management System - Tasks and Events',
+          timeZone: 'UTC',
+        }
+      })
+
+      return response.data.id || 'primary'
+    } catch (error) {
+      console.error('Error creating TMS Calendar:', error)
+      throw error
+    }
+  }
+
+  async findOrCreateTMSCalendar(userId: string): Promise<string> {
+    try {
+      // First, try to find existing TMS Calendar
+      const calendars = await this.getCalendarList(userId)
+      const tmsCalendar = calendars.find(
+        (cal) => cal.summary === 'TMS Calendar' || cal.summary === 'GCGC Team Management'
+      )
+
+      if (tmsCalendar) {
+        return tmsCalendar.id || 'primary'
+      }
+
+      // If not found, create it
+      return await this.createTMSCalendar(userId)
+    } catch (error) {
+      console.error('Error finding or creating TMS Calendar:', error)
+      // Fall back to primary calendar if there's an error
+      return 'primary'
+    }
+  }
+
   // Convert TMS event to Google Calendar format
   convertTMSEventToGoogle(event: any): GoogleCalendarEvent {
     const googleEvent: GoogleCalendarEvent = {

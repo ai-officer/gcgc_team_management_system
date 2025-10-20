@@ -90,7 +90,10 @@ export default function CalendarSyncSettingsModal({
       const response = await fetch('/api/calendar/sync-settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(settings)
+        body: JSON.stringify({
+          ...settings,
+          createTMSCalendar: false // Don't auto-create when manually saving
+        })
       })
 
       const data = await response.json()
@@ -100,6 +103,7 @@ export default function CalendarSyncSettingsModal({
         if (settings.isEnabled) {
           await setupWebhook()
         }
+        setSettings(data.syncSettings)
         setSuccess('Settings saved successfully!')
         setTimeout(() => setSuccess(null), 3000)
       } else {
@@ -154,20 +158,21 @@ export default function CalendarSyncSettingsModal({
     }
   }
 
-  const enableAutoSync = async () => {
+  const enableAutoSync = async (useTMSCalendar: boolean = true) => {
     setLoading(true)
     setError(null)
     setSuccess(null)
 
     try {
-      // Enable sync with primary calendar automatically
+      // Enable sync with TMS Calendar or primary calendar
       const response = await fetch('/api/calendar/sync-settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           ...settings, 
           isEnabled: true,
-          googleCalendarId: 'primary' // Always use primary Gmail calendar
+          createTMSCalendar: useTMSCalendar, // Flag to create/use dedicated TMS Calendar
+          googleCalendarId: useTMSCalendar ? undefined : 'primary' // Let backend find/create TMS Calendar
         })
       })
 
@@ -180,9 +185,14 @@ export default function CalendarSyncSettingsModal({
         // Automatically trigger initial sync
         await performInitialSync()
         
-        setSettings({ ...settings, isEnabled: true })
-        setSuccess('Automatic calendar sync enabled! Your Gmail calendar is now synced.')
+        setSettings({ ...data.syncSettings })
+        setSuccess(useTMSCalendar 
+          ? 'TMS Calendar created! All your tasks will sync to this dedicated calendar.'
+          : 'Automatic calendar sync enabled! Your Gmail calendar is now synced.'
+        )
         setTimeout(() => setSuccess(null), 5000)
+        // Refresh calendar list to show TMS Calendar
+        await fetchSettings()
       } else {
         setError(data.error || 'Failed to enable automatic sync')
       }
@@ -337,7 +347,10 @@ export default function CalendarSyncSettingsModal({
                   <CheckCircle2 className="h-5 w-5 text-green-600" />
                   <div>
                     <span className="text-green-700 font-medium block">Automatic Sync Enabled</span>
-                    <span className="text-green-600 text-sm">Syncing with your primary Gmail calendar</span>
+                    <span className="text-green-600 text-sm">
+                      Syncing with: {settings.googleCalendarId === 'primary' ? 'Primary Calendar' : 
+                        calendars.find(cal => cal.id === settings.googleCalendarId)?.summary || 'TMS Calendar'}
+                    </span>
                   </div>
                 </div>
                 <Button
@@ -354,13 +367,31 @@ export default function CalendarSyncSettingsModal({
                 <div className="mb-3">
                   <p className="text-blue-700 font-medium">Ready for Automatic Sync</p>
                   <p className="text-sm text-blue-600">
-                    Your Gmail calendar will automatically sync with TMS. All events, tasks, and holidays will be synchronized in real-time.
+                    Choose how to sync your TMS with Google Calendar
                   </p>
                 </div>
-                <Button onClick={enableAutoSync} disabled={loading}>
-                  <CalendarIcon className="h-4 w-4 mr-2" />
-                  {loading ? 'Enabling...' : 'Enable Automatic Sync'}
-                </Button>
+                <div className="space-y-3">
+                  <div className="p-3 bg-white border border-blue-200 rounded-lg">
+                    <p className="font-medium text-sm mb-1">🎯 TMS Calendar (Recommended)</p>
+                    <p className="text-xs text-gray-600 mb-2">
+                      Creates a dedicated "TMS Calendar" in Google Calendar. Keeps your personal calendar clean and organized.
+                    </p>
+                    <Button onClick={() => enableAutoSync(true)} disabled={loading} className="w-full">
+                      <CalendarIcon className="h-4 w-4 mr-2" />
+                      {loading ? 'Creating TMS Calendar...' : 'Use TMS Calendar'}
+                    </Button>
+                  </div>
+                  <div className="p-3 bg-white border border-gray-300 rounded-lg">
+                    <p className="font-medium text-sm mb-1">📅 Primary Calendar</p>
+                    <p className="text-xs text-gray-600 mb-2">
+                      Syncs with your main Google Calendar. All TMS tasks will appear alongside your personal events.
+                    </p>
+                    <Button onClick={() => enableAutoSync(false)} disabled={loading} variant="outline" className="w-full">
+                      <CalendarIcon className="h-4 w-4 mr-2" />
+                      {loading ? 'Enabling...' : 'Use Primary Calendar'}
+                    </Button>
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
@@ -518,3 +549,4 @@ export default function CalendarSyncSettingsModal({
     </Dialog>
   )
 }
+

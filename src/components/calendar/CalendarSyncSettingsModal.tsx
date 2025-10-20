@@ -51,6 +51,7 @@ export default function CalendarSyncSettingsModal({
   })
 
   const [calendars, setCalendars] = useState<any[]>([])
+  const [isConnected, setIsConnected] = useState(false)
 
   useEffect(() => {
     if (isOpen) {
@@ -69,6 +70,7 @@ export default function CalendarSyncSettingsModal({
       if (response.ok) {
         setSettings(data.syncSettings)
         setCalendars(data.calendars || [])
+        setIsConnected(data.syncSettings?.isEnabled && data.syncSettings?.googleAccessToken)
       } else {
         setError(data.error || 'Failed to fetch settings')
       }
@@ -152,6 +154,58 @@ export default function CalendarSyncSettingsModal({
     }
   }
 
+  const enableAutoSync = async () => {
+    setLoading(true)
+    setError(null)
+    setSuccess(null)
+
+    try {
+      // Enable sync with primary calendar automatically
+      const response = await fetch('/api/calendar/sync-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          ...settings, 
+          isEnabled: true,
+          googleCalendarId: 'primary' // Always use primary Gmail calendar
+        })
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        // Set up webhook for real-time sync
+        await setupWebhook()
+        
+        // Automatically trigger initial sync
+        await performInitialSync()
+        
+        setSettings({ ...settings, isEnabled: true })
+        setSuccess('Automatic calendar sync enabled! Your Gmail calendar is now synced.')
+        setTimeout(() => setSuccess(null), 5000)
+      } else {
+        setError(data.error || 'Failed to enable automatic sync')
+      }
+    } catch (err) {
+      setError('Failed to enable automatic sync')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const performInitialSync = async () => {
+    try {
+      // Trigger both import and export for initial sync
+      await Promise.all([
+        fetch('/api/calendar/sync-from-google', { method: 'POST' }),
+        fetch('/api/calendar/sync-to-google', { method: 'POST' })
+      ])
+    } catch (err) {
+      console.error('Initial sync failed:', err)
+      // Don't show error to user, sync will continue automatically
+    }
+  }
+
   const disconnectGoogleCalendar = async () => {
     if (!confirm('Are you sure you want to disconnect Google Calendar? This will delete all imported Google Calendar events from TMS.')) {
       return
@@ -178,6 +232,7 @@ export default function CalendarSyncSettingsModal({
       if (response.ok) {
         const data = await response.json()
         setSettings({ ...settings, isEnabled: false })
+        setIsConnected(false)
         setSuccess(`Google Calendar disconnected! ${data.deletedEvents || 0} imported events removed.`)
         setTimeout(() => {
           setSuccess(null)
@@ -280,7 +335,10 @@ export default function CalendarSyncSettingsModal({
               <div className="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-5 w-5 text-green-600" />
-                  <span className="text-green-700 font-medium">Connected to Google Calendar</span>
+                  <div>
+                    <span className="text-green-700 font-medium block">Automatic Sync Enabled</span>
+                    <span className="text-green-600 text-sm">Syncing with your primary Gmail calendar</span>
+                  </div>
                 </div>
                 <Button
                   variant="outline"
@@ -291,10 +349,23 @@ export default function CalendarSyncSettingsModal({
                   Disconnect
                 </Button>
               </div>
+            ) : isConnected ? (
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="mb-3">
+                  <p className="text-blue-700 font-medium">Ready for Automatic Sync</p>
+                  <p className="text-sm text-blue-600">
+                    Your Gmail calendar will automatically sync with TMS. All events, tasks, and holidays will be synchronized in real-time.
+                  </p>
+                </div>
+                <Button onClick={enableAutoSync} disabled={loading}>
+                  <CalendarIcon className="h-4 w-4 mr-2" />
+                  {loading ? 'Enabling...' : 'Enable Automatic Sync'}
+                </Button>
+              </div>
             ) : (
               <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
                 <p className="text-sm text-gray-600 mb-3">
-                  Connect your Google account to enable calendar synchronization
+                  Connect your Google account to enable automatic calendar synchronization with your Gmail calendar
                 </p>
                 <Button onClick={connectGoogleCalendar} disabled={loading}>
                   <CalendarIcon className="h-4 w-4 mr-2" />
@@ -308,141 +379,134 @@ export default function CalendarSyncSettingsModal({
             <>
               <Separator />
 
-              {/* Calendar Selection */}
-              {calendars.length > 0 && (
-                <div className="space-y-2">
-                  <Label htmlFor="calendar-select">Select Calendar</Label>
-                  <Select
-                    value={settings.googleCalendarId}
-                    onValueChange={(value) =>
-                      setSettings({ ...settings, googleCalendarId: value })
-                    }
-                  >
-                    <SelectTrigger id="calendar-select">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {calendars.map((cal: any) => (
-                        <SelectItem key={cal.id} value={cal.id}>
-                          {cal.summary || cal.id}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              {/* Automatic Sync Info */}
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <CalendarIcon className="h-5 w-5 text-blue-600" />
+                  <span className="text-blue-700 font-medium">Automatic Sync Active</span>
                 </div>
-              )}
-
-              {/* Sync Direction */}
-              <div className="space-y-2">
-                <Label htmlFor="sync-direction">Sync Direction</Label>
-                <Select
-                  value={settings.syncDirection}
-                  onValueChange={(value: any) =>
-                    setSettings({ ...settings, syncDirection: value })
-                  }
-                >
-                  <SelectTrigger id="sync-direction">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="BOTH">Two-way sync (recommended)</SelectItem>
-                    <SelectItem value="TMS_TO_GOOGLE">TMS → Google Calendar only</SelectItem>
-                    <SelectItem value="GOOGLE_TO_TMS">Google Calendar → TMS only</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-sm text-gray-500">
-                  {settings.syncDirection === 'BOTH' && 'Events will be synced in both directions'}
-                  {settings.syncDirection === 'TMS_TO_GOOGLE' && 'Only TMS events will be exported to Google'}
-                  {settings.syncDirection === 'GOOGLE_TO_TMS' && 'Only Google events will be imported to TMS'}
+                <p className="text-sm text-blue-600">
+                  Your TMS calendar is automatically synchronized with your primary Gmail calendar. 
+                  Any changes made in either calendar will be reflected in real-time.
                 </p>
               </div>
 
-              <Separator />
-
-              {/* Event Types to Sync */}
-              <div className="space-y-4">
-                <Label className="text-base font-semibold">Event Types to Sync</Label>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="sync-deadlines">Task Deadlines</Label>
-                    <p className="text-sm text-gray-500">Sync task due dates as calendar events</p>
-                  </div>
-                  <Switch
-                    id="sync-deadlines"
-                    checked={settings.syncTaskDeadlines}
-                    onCheckedChange={(checked) =>
-                      setSettings({ ...settings, syncTaskDeadlines: checked })
+              {/* Sync Direction - Only show when sync is enabled */}
+              {settings.isEnabled && (
+                <div className="space-y-2">
+                  <Label htmlFor="sync-direction">Sync Direction</Label>
+                  <Select
+                    value={settings.syncDirection}
+                    onValueChange={(value: any) =>
+                      setSettings({ ...settings, syncDirection: value })
                     }
-                  />
+                  >
+                    <SelectTrigger id="sync-direction">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="BOTH">Two-way sync (recommended)</SelectItem>
+                      <SelectItem value="TMS_TO_GOOGLE">TMS → Google Calendar only</SelectItem>
+                      <SelectItem value="GOOGLE_TO_TMS">Google Calendar → TMS only</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-gray-500">
+                    {settings.syncDirection === 'BOTH' && 'Events will be synced in both directions'}
+                    {settings.syncDirection === 'TMS_TO_GOOGLE' && 'Only TMS events will be exported to Google'}
+                    {settings.syncDirection === 'GOOGLE_TO_TMS' && 'Only Google events will be imported to TMS'}
+                  </p>
                 </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="sync-team">Team Events</Label>
-                    <p className="text-sm text-gray-500">Sync team meetings and events</p>
-                  </div>
-                  <Switch
-                    id="sync-team"
-                    checked={settings.syncTeamEvents}
-                    onCheckedChange={(checked) =>
-                      setSettings({ ...settings, syncTeamEvents: checked })
-                    }
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="sync-personal">Personal Events</Label>
-                    <p className="text-sm text-gray-500">Sync personal calendar events</p>
-                  </div>
-                  <Switch
-                    id="sync-personal"
-                    checked={settings.syncPersonalEvents}
-                    onCheckedChange={(checked) =>
-                      setSettings({ ...settings, syncPersonalEvents: checked })
-                    }
-                  />
-                </div>
-              </div>
+              )}
 
               <Separator />
 
-              {/* Manual Sync Actions */}
-              <div className="space-y-3">
-                <Label className="text-base font-semibold">Manual Sync</Label>
-                <div className="flex gap-2">
-                  {(settings.syncDirection === 'BOTH' || settings.syncDirection === 'TMS_TO_GOOGLE') && (
-                    <Button
-                      onClick={syncToGoogle}
-                      disabled={syncing || loading}
-                      variant="outline"
-                      className="flex-1"
-                    >
-                      <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
-                      Sync to Google
-                    </Button>
-                  )}
-                  {(settings.syncDirection === 'BOTH' || settings.syncDirection === 'GOOGLE_TO_TMS') && (
-                    <Button
-                      onClick={syncFromGoogle}
-                      disabled={syncing || loading}
-                      variant="outline"
-                      className="flex-1"
-                    >
-                      <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
-                      Import from Google
-                    </Button>
-                  )}
+              {/* Event Types to Sync - Only show when sync is enabled */}
+              {settings.isEnabled && (
+                <div className="space-y-4">
+                  <Label className="text-base font-semibold">Event Types to Sync</Label>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor="sync-deadlines">Task Deadlines</Label>
+                      <p className="text-sm text-gray-500">Sync task due dates as calendar events</p>
+                    </div>
+                    <Switch
+                      id="sync-deadlines"
+                      checked={settings.syncTaskDeadlines}
+                      onCheckedChange={(checked) =>
+                        setSettings({ ...settings, syncTaskDeadlines: checked })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor="sync-team">Team Events</Label>
+                      <p className="text-sm text-gray-500">Sync team meetings and events</p>
+                    </div>
+                    <Switch
+                      id="sync-team"
+                      checked={settings.syncTeamEvents}
+                      onCheckedChange={(checked) =>
+                        setSettings({ ...settings, syncTeamEvents: checked })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor="sync-personal">Personal Events</Label>
+                      <p className="text-sm text-gray-500">Sync personal calendar events</p>
+                    </div>
+                    <Switch
+                      id="sync-personal"
+                      checked={settings.syncPersonalEvents}
+                      onCheckedChange={(checked) =>
+                        setSettings({ ...settings, syncPersonalEvents: checked })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor="sync-holidays">Holidays</Label>
+                      <p className="text-sm text-gray-500">Include holidays from Google Calendar</p>
+                    </div>
+                    <Switch
+                      id="sync-holidays"
+                      checked={settings.syncHolidays}
+                      onCheckedChange={(checked) =>
+                        setSettings({ ...settings, syncHolidays: checked })
+                      }
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
+
+              <Separator />
+
+              {/* Real-time Sync Status */}
+              {settings.isEnabled && (
+                <div className="space-y-3">
+                  <Label className="text-base font-semibold">Real-time Sync Status</Label>
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className="text-green-700 text-sm font-medium">Live Sync Active</span>
+                    </div>
+                    <p className="text-sm text-green-600 mt-1">
+                      All changes in Gmail calendar are automatically reflected in TMS and vice versa.
+                    </p>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            Close
           </Button>
           {settings.isEnabled && (
             <Button onClick={saveSettings} disabled={loading}>

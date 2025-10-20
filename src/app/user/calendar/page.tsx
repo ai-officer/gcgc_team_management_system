@@ -80,23 +80,28 @@ export default function CalendarPage() {
     try {
       setLoading(true)
 
-      const [eventsResponse, tasksResponse] = await Promise.all([
+      // Fetch all data in parallel including Gmail calendar data
+      const [eventsResponse, tasksResponse, syncSettingsResponse, holidaysResponse] = await Promise.all([
         fetch('/api/events'),
-        fetch('/api/tasks?status=TODO,IN_PROGRESS,IN_REVIEW')
+        fetch('/api/tasks?status=TODO,IN_PROGRESS,IN_REVIEW'),
+        fetch('/api/calendar/sync-settings'),
+        fetch('/api/calendar/holidays')
       ])
 
       if (!eventsResponse.ok || !tasksResponse.ok) {
         throw new Error('Failed to fetch calendar data')
       }
 
-      const [eventsData, tasksData] = await Promise.all([
+      const [eventsData, tasksData, syncData, holidaysData] = await Promise.all([
         eventsResponse.json(),
-        tasksResponse.json()
+        tasksResponse.json(),
+        syncSettingsResponse.ok ? syncSettingsResponse.json() : { syncSettings: null },
+        holidaysResponse.ok ? holidaysResponse.json() : { holidays: [] }
       ])
 
       const calendarEvents: CalendarEvent[] = []
 
-      // Add regular events
+      // Add regular TMS events
       if (eventsData.events) {
         eventsData.events.forEach((event: any) => {
           calendarEvents.push({
@@ -112,6 +117,71 @@ export default function CalendarPage() {
             team: event.team
           })
         })
+      }
+
+      // Add holidays as events
+      if (holidaysData.holidays) {
+        holidaysData.holidays.forEach((holiday: any) => {
+          calendarEvents.push({
+            id: `holiday-${holiday.id}`,
+            title: `🎉 ${holiday.title}`,
+            description: holiday.description || 'Holiday',
+            start: holiday.date,
+            end: holiday.date,
+            allDay: true,
+            color: '#dc2626', // Red color for holidays
+            type: 'PERSONAL',
+            creator: undefined,
+            team: undefined
+          })
+        })
+      }
+
+      // If sync is enabled, automatically fetch Gmail calendar events
+      if (syncData.syncSettings?.isEnabled) {
+        try {
+          // Automatically trigger sync from Google to get latest events
+          const syncResponse = await fetch('/api/calendar/sync-from-google', {
+            method: 'POST'
+          })
+          
+          if (syncResponse.ok) {
+            // Refetch events after sync to include Gmail events
+            const updatedEventsResponse = await fetch('/api/events')
+            if (updatedEventsResponse.ok) {
+              const updatedEventsData = await updatedEventsResponse.json()
+              
+              // Clear existing TMS events and re-add with Gmail events
+              const tmsEvents = calendarEvents.filter(e => !e.id.startsWith('event-'))
+              
+              if (updatedEventsData.events) {
+                updatedEventsData.events.forEach((event: any) => {
+                  tmsEvents.push({
+                    id: `event-${event.id}`,
+                    title: event.title,
+                    description: event.description,
+                    start: event.startTime,
+                    end: event.endTime,
+                    allDay: event.allDay,
+                    color: event.googleCalendarEventId 
+                      ? '#10b981' // Green for Gmail events
+                      : EVENT_TYPE_COLORS[event.type as keyof typeof EVENT_TYPE_COLORS] || '#3b82f6',
+                    type: event.type,
+                    creator: event.creator,
+                    team: event.team
+                  })
+                })
+              }
+              
+              // Replace calendar events with updated list
+              calendarEvents.length = 0
+              calendarEvents.push(...tmsEvents)
+            }
+          }
+        } catch (syncError) {
+          console.error('Auto-sync failed:', syncError)
+          // Continue with existing events if sync fails
+        }
       }
 
       // Add task deadlines as events
@@ -296,6 +366,26 @@ export default function CalendarPage() {
       {/* Calendar */}
       <Card>
         <CardContent className="p-6">
+          {/* Event Legend */}
+          <div className="mb-4 flex flex-wrap gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded bg-blue-500"></div>
+              <span>TMS Events</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded bg-green-500"></div>
+              <span>Gmail Events</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded bg-red-500"></div>
+              <span>Holidays</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded bg-orange-500"></div>
+              <span>Task Deadlines</span>
+            </div>
+          </div>
+          
           <div className="calendar-square-grid">
             <FullCalendar
               plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -337,6 +427,10 @@ export default function CalendarPage() {
                 const classes = ['calendar-event']
                 if (arg.event.id.startsWith('task-')) {
                   classes.push('task-event')
+                } else if (arg.event.id.startsWith('holiday-')) {
+                  classes.push('holiday-event')
+                } else if (arg.event.backgroundColor === '#10b981') {
+                  classes.push('gmail-event')
                 } else {
                   classes.push('regular-event')
                 }

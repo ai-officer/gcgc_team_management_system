@@ -129,6 +129,19 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Delete all events imported from Google Calendar
+    const deletedEvents = await prisma.event.deleteMany({
+      where: {
+        creatorId: session.user.id,
+        googleCalendarEventId: {
+          not: null // Only delete events that came from Google Calendar
+        }
+      }
+    })
+
+    console.log(`Deleted ${deletedEvents.count} Google Calendar events for user ${session.user.id}`)
+
+    // Clear sync settings
     await prisma.calendarSyncSettings.update({
       where: { userId: session.user.id },
       data: {
@@ -137,10 +150,17 @@ export async function DELETE(req: NextRequest) {
         googleRefreshToken: null,
         googleTokenExpiry: null,
         googleCalendarId: null,
+        webhookChannelId: null,
+        webhookResourceId: null,
+        webhookExpiration: null,
+        lastSyncedAt: null,
       }
     })
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({
+      success: true,
+      deletedEvents: deletedEvents.count
+    })
   } catch (error) {
     console.error('Error disconnecting Google Calendar:', error)
     return NextResponse.json(

@@ -153,7 +153,7 @@ export default function CalendarSyncSettingsModal({
   }
 
   const disconnectGoogleCalendar = async () => {
-    if (!confirm('Are you sure you want to disconnect Google Calendar? This will disable sync.')) {
+    if (!confirm('Are you sure you want to disconnect Google Calendar? This will delete all imported Google Calendar events from TMS.')) {
       return
     }
 
@@ -176,9 +176,13 @@ export default function CalendarSyncSettingsModal({
       })
 
       if (response.ok) {
+        const data = await response.json()
         setSettings({ ...settings, isEnabled: false })
-        setSuccess('Google Calendar disconnected successfully!')
-        setTimeout(() => setSuccess(null), 3000)
+        setSuccess(`Google Calendar disconnected! ${data.deletedEvents || 0} imported events removed.`)
+        setTimeout(() => {
+          setSuccess(null)
+          onSyncComplete?.() // Refresh calendar view
+        }, 3000)
       } else {
         setError('Failed to disconnect Google Calendar')
       }

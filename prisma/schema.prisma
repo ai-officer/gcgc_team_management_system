@@ -402,6 +402,9 @@ model CalendarSyncSettings {
   googleAccessToken       String?
   googleRefreshToken      String?
   googleTokenExpiry       DateTime?
+  webhookChannelId        String?
+  webhookResourceId       String?
+  webhookExpiration       DateTime?
   lastSyncedAt            DateTime?
   createdAt               DateTime            @default(now())
   updatedAt               DateTime            @updatedAt

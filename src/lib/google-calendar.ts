@@ -177,6 +177,59 @@ export class GoogleCalendarService {
     }
   }
 
+  async listCalendars(userId: string) {
+    const calendar = await this.getCalendarClient(userId)
+
+    try {
+      const response = await calendar.calendarList.list()
+      return response.data.items || []
+    } catch (error) {
+      console.error('Error listing user calendars:', error)
+      throw error
+    }
+  }
+
+  async subscribeToCalendar(userId: string, calendarId: string, webhookUrl: string) {
+    const calendar = await this.getCalendarClient(userId)
+
+    try {
+      const uuid = `${userId}-${Date.now()}`
+      const response = await calendar.events.watch({
+        calendarId: calendarId || 'primary',
+        requestBody: {
+          id: uuid,
+          type: 'web_hook',
+          address: webhookUrl,
+        },
+      })
+
+      return {
+        channelId: response.data.id,
+        resourceId: response.data.resourceId,
+        expiration: response.data.expiration,
+      }
+    } catch (error) {
+      console.error('Error subscribing to calendar:', error)
+      throw error
+    }
+  }
+
+  async stopWatchingCalendar(userId: string, channelId: string, resourceId: string) {
+    const calendar = await this.getCalendarClient(userId)
+
+    try {
+      await calendar.channels.stop({
+        requestBody: {
+          id: channelId,
+          resourceId: resourceId,
+        },
+      })
+    } catch (error) {
+      console.error('Error stopping calendar watch:', error)
+      throw error
+    }
+  }
+
   async getCalendarList(userId: string) {
     const calendar = await this.getCalendarClient(userId)
 

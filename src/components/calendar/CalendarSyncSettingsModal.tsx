@@ -94,6 +94,10 @@ export default function CalendarSyncSettingsModal({
       const data = await response.json()
 
       if (response.ok) {
+        // If sync is being enabled, set up webhook
+        if (settings.isEnabled) {
+          await setupWebhook()
+        }
         setSuccess('Settings saved successfully!')
         setTimeout(() => setSuccess(null), 3000)
       } else {
@@ -103,6 +107,26 @@ export default function CalendarSyncSettingsModal({
       setError('Failed to save settings')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const setupWebhook = async () => {
+    try {
+      const response = await fetch('/api/calendar/webhook-setup', {
+        method: 'POST'
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        console.log('Webhook setup successfully:', data)
+      } else {
+        console.error('Failed to setup webhook:', data.error)
+        // Don't show error to user, webhook setup is automatic
+      }
+    } catch (err) {
+      console.error('Webhook setup error:', err)
+      // Don't show error to user, webhook setup is automatic
     }
   }
 
@@ -137,6 +161,16 @@ export default function CalendarSyncSettingsModal({
     setError(null)
 
     try {
+      // Stop webhook first
+      try {
+        await fetch('/api/calendar/webhook-setup', {
+          method: 'DELETE'
+        })
+      } catch (err) {
+        console.error('Failed to stop webhook:', err)
+      }
+
+      // Then disconnect calendar
       const response = await fetch('/api/calendar/sync-settings', {
         method: 'DELETE'
       })

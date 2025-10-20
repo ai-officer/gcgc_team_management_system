@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
-import { Calendar as CalendarIcon, AlertCircle, Settings } from 'lucide-react'
+import { Calendar as CalendarIcon, AlertCircle, Settings, Wifi, WifiOff, RefreshCw } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dialog'
 import { EVENT_TYPE_COLORS } from '@/constants'
 import CalendarSyncSettingsModal from '@/components/calendar/CalendarSyncSettingsModal'
+import { useCalendarSync } from '@/hooks/useCalendarSync'
 
 interface CalendarEvent {
   id: string
@@ -72,97 +73,98 @@ export default function CalendarPage() {
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false)
   const [isSyncSettingsOpen, setIsSyncSettingsOpen] = useState(false)
 
-  useEffect(() => {
+  // Real-time calendar sync with WebSocket
+  const fetchCalendarData = useCallback(async () => {
     if (!session?.user) return
 
-    const fetchCalendarData = async () => {
-      try {
-        setLoading(true)
-        
-        // Fetch events and task deadlines in parallel
-        const [eventsResponse, tasksResponse] = await Promise.all([
-          fetch('/api/events'),
-          fetch('/api/tasks?status=TODO,IN_PROGRESS,IN_REVIEW')
-        ])
+    try {
+      setLoading(true)
 
-        if (!eventsResponse.ok || !tasksResponse.ok) {
-          throw new Error('Failed to fetch calendar data')
-        }
+      const [eventsResponse, tasksResponse] = await Promise.all([
+        fetch('/api/events'),
+        fetch('/api/tasks?status=TODO,IN_PROGRESS,IN_REVIEW')
+      ])
 
-        const [eventsData, tasksData] = await Promise.all([
-          eventsResponse.json(),
-          tasksResponse.json()
-        ])
-
-        const calendarEvents: CalendarEvent[] = []
-
-        // Add regular events
-        if (eventsData.events) {
-          eventsData.events.forEach((event: any) => {
-            calendarEvents.push({
-              id: `event-${event.id}`,
-              title: event.title,
-              description: event.description,
-              start: event.startTime,
-              end: event.endTime,
-              allDay: event.allDay,
-              color: EVENT_TYPE_COLORS[event.type as keyof typeof EVENT_TYPE_COLORS] || '#3b82f6',
-              type: event.type,
-              creator: event.creator,
-              team: event.team
-            })
-          })
-        }
-
-        // Add task deadlines as events
-        if (tasksData.tasks) {
-          tasksData.tasks.forEach((task: TaskDeadline) => {
-            if (task.dueDate && task.status !== 'COMPLETED') {
-              const isLeaderTask = session?.user?.role === 'LEADER'
-              const isMyTask = task.assignee?.id === session?.user?.id
-              
-              // Show task if it's assigned to me or if I'm a leader and it's a team task
-              if (isMyTask || isLeaderTask) {
-                const priorityColors = {
-                  URGENT: '#dc2626',
-                  HIGH: '#ea580c', 
-                  MEDIUM: '#d97706',
-                  LOW: '#16a34a'
-                }
-
-                calendarEvents.push({
-                  id: `task-${task.id}`,
-                  title: `📋 ${task.title}`,
-                  description: `Due: ${task.team?.name || 'Individual'} task`,
-                  start: task.dueDate,
-                  end: task.dueDate,
-                  allDay: true,
-                  color: priorityColors[task.priority],
-                  type: 'DEADLINE',
-                  team: task.team || undefined,
-                  task: {
-                    id: task.id,
-                    title: task.title,
-                    priority: task.priority,
-                    status: task.status
-                  }
-                })
-              }
-            }
-          })
-        }
-
-        setEvents(calendarEvents)
-      } catch (err) {
-        console.error('Error fetching calendar data:', err)
-        setError('Failed to load calendar data')
-      } finally {
-        setLoading(false)
+      if (!eventsResponse.ok || !tasksResponse.ok) {
+        throw new Error('Failed to fetch calendar data')
       }
-    }
 
-    fetchCalendarData()
+      const [eventsData, tasksData] = await Promise.all([
+        eventsResponse.json(),
+        tasksResponse.json()
+      ])
+
+      const calendarEvents: CalendarEvent[] = []
+
+      // Add regular events
+      if (eventsData.events) {
+        eventsData.events.forEach((event: any) => {
+          calendarEvents.push({
+            id: `event-${event.id}`,
+            title: event.title,
+            description: event.description,
+            start: event.startTime,
+            end: event.endTime,
+            allDay: event.allDay,
+            color: EVENT_TYPE_COLORS[event.type as keyof typeof EVENT_TYPE_COLORS] || '#3b82f6',
+            type: event.type,
+            creator: event.creator,
+            team: event.team
+          })
+        })
+      }
+
+      // Add task deadlines as events
+      if (tasksData.tasks) {
+        tasksData.tasks.forEach((task: TaskDeadline) => {
+          if (task.dueDate && task.status !== 'COMPLETED') {
+            const isLeaderTask = session?.user?.role === 'LEADER'
+            const isMyTask = task.assignee?.id === session?.user?.id
+
+            if (isMyTask || isLeaderTask) {
+              const priorityColors = {
+                URGENT: '#dc2626',
+                HIGH: '#ea580c',
+                MEDIUM: '#d97706',
+                LOW: '#16a34a'
+              }
+
+              calendarEvents.push({
+                id: `task-${task.id}`,
+                title: `📋 ${task.title}`,
+                description: `Due: ${task.team?.name || 'Individual'} task`,
+                start: task.dueDate,
+                end: task.dueDate,
+                allDay: true,
+                color: priorityColors[task.priority],
+                type: 'DEADLINE',
+                team: task.team || undefined,
+                task: {
+                  id: task.id,
+                  title: task.title,
+                  priority: task.priority,
+                  status: task.status
+                }
+              })
+            }
+          }
+        })
+      }
+
+      setEvents(calendarEvents)
+    } catch (err) {
+      console.error('Error fetching calendar data:', err)
+      setError('Failed to load calendar data')
+    } finally {
+      setLoading(false)
+    }
   }, [session])
+
+  const { status, triggerManualSync, isConnected } = useCalendarSync(fetchCalendarData)
+
+  useEffect(() => {
+    fetchCalendarData()
+  }, [fetchCalendarData])
 
   const handleEventClick = (clickInfo: any) => {
     const eventId = clickInfo.event.id
@@ -205,20 +207,55 @@ export default function CalendarPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-foreground mb-2">Calendar</h1>
-          <p className="text-muted-foreground">
-            {isLeader
-              ? "View your schedule and team deadlines"
-              : "View your schedule and task deadlines"
-            }
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="text-muted-foreground">
+              {isLeader
+                ? "View your schedule and team deadlines"
+                : "View your schedule and task deadlines"
+              }
+            </p>
+            {/* Real-time sync status */}
+            <div className="flex items-center gap-2">
+              {isConnected ? (
+                <Badge variant="outline" className="flex items-center gap-1 bg-green-50 text-green-700 border-green-200">
+                  <Wifi className="h-3 w-3" />
+                  Live
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="flex items-center gap-1 bg-gray-50 text-gray-500">
+                  <WifiOff className="h-3 w-3" />
+                  Offline
+                </Badge>
+              )}
+              {status.isSyncing && (
+                <Badge variant="outline" className="flex items-center gap-1">
+                  <RefreshCw className="h-3 w-3 animate-spin" />
+                  Syncing...
+                </Badge>
+              )}
+            </div>
+          </div>
         </div>
-        <Button
-          variant="outline"
-          onClick={() => setIsSyncSettingsOpen(true)}
-        >
-          <Settings className="h-4 w-4 mr-2" />
-          Google Calendar Sync
-        </Button>
+        <div className="flex gap-2">
+          {isConnected && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={triggerManualSync}
+              disabled={status.isSyncing}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${status.isSyncing ? 'animate-spin' : ''}`} />
+              Sync Now
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            onClick={() => setIsSyncSettingsOpen(true)}
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            Google Calendar Sync
+          </Button>
+        </div>
       </div>
 
       {/* Legend */}

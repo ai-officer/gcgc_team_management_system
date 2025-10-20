@@ -19,8 +19,8 @@ const createEventSchema = z.object({
 })
 
 const querySchema = z.object({
-  start: z.string().datetime().optional(),
-  end: z.string().datetime().optional(),
+  start: z.string().optional(),
+  end: z.string().optional(),
   teamId: z.string().optional(),
   type: z.string().optional(),
 })
@@ -38,7 +38,13 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url)
-    const { start, end, teamId, type } = querySchema.parse(Object.fromEntries(searchParams))
+    const params = Object.fromEntries(searchParams)
+
+    // Parse query params (they come as strings, we make them optional)
+    const start = params.start ? params.start : undefined
+    const end = params.end ? params.end : undefined
+    const teamId = params.teamId ? params.teamId : undefined
+    const type = params.type ? params.type : undefined
 
     let where: any = {}
 
@@ -49,7 +55,7 @@ export async function GET(req: NextRequest) {
         where: { userId: session.user.id },
         select: { teamId: true }
       })
-      
+
       // Show events from user's teams OR personal events created by user
       where.OR = [
         {
@@ -62,7 +68,7 @@ export async function GET(req: NextRequest) {
       ]
     }
 
-    // Apply filters
+    // Apply filters with proper date parsing
     if (start && end) {
       where.AND = [
         { startTime: { gte: new Date(start) } },

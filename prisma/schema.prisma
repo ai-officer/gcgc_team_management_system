@@ -218,22 +218,25 @@ model CommentReaction {
 }
 
 model Event {
-  id          String    @id @default(cuid())
-  title       String
-  description String?
-  startTime   DateTime
-  endTime     DateTime
-  allDay      Boolean   @default(false)
-  color       String?
-  type        EventType @default(MEETING)
-  creatorId   String
-  teamId      String?
-  taskId      String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  creator     User      @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  task        Task?     @relation(fields: [taskId], references: [id])
-  team        Team?     @relation(fields: [teamId], references: [id])
+  id                 String    @id @default(cuid())
+  title              String
+  description        String?
+  startTime          DateTime
+  endTime            DateTime
+  allDay             Boolean   @default(false)
+  color              String?
+  type               EventType @default(MEETING)
+  creatorId          String
+  teamId             String?
+  taskId             String?
+  googleCalendarId   String?
+  googleCalendarEventId String?
+  syncedAt           DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  creator            User      @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  task               Task?     @relation(fields: [taskId], references: [id])
+  team               Team?     @relation(fields: [teamId], references: [id])
 
   @@map("events")
 }
@@ -387,6 +390,25 @@ model AdminSettings {
   @@map("admin_settings")
 }
 
+model CalendarSyncSettings {
+  id                      String              @id @default(cuid())
+  userId                  String              @unique
+  isEnabled               Boolean             @default(false)
+  googleCalendarId        String?
+  syncDirection           CalendarSyncDirection @default(BOTH)
+  syncTaskDeadlines       Boolean             @default(true)
+  syncTeamEvents          Boolean             @default(true)
+  syncPersonalEvents      Boolean             @default(true)
+  googleAccessToken       String?
+  googleRefreshToken      String?
+  googleTokenExpiry       DateTime?
+  lastSyncedAt            DateTime?
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+
+  @@map("calendar_sync_settings")
+}
+
 enum UserRole {
   ADMIN
   LEADER
@@ -461,4 +483,10 @@ enum OrganizationalUnitType {
   SECTION
   TEAM
   CUSTOM
+}
+
+enum CalendarSyncDirection {
+  TMS_TO_GOOGLE
+  GOOGLE_TO_TMS
+  BOTH
 }

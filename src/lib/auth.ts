@@ -54,6 +54,14 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          prompt: 'consent',
+          access_type: 'offline',
+          response_type: 'code',
+          scope: 'openid email profile https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events'
+        }
+      }
     })
   ],
   session: {
@@ -77,6 +85,30 @@ export const authOptions: NextAuthOptions = {
         token.image = user.image
         token.accessTokenExpires = Date.now() + 60 * 60 * 1000 // 1 hour
         token.refreshTokenExpires = Date.now() + 30 * 24 * 60 * 60 * 1000 // 30 days
+
+        // Store Google Calendar tokens if available
+        if (account?.provider === 'google' && account.access_token) {
+          try {
+            await prisma.calendarSyncSettings.upsert({
+              where: { userId: user.id },
+              update: {
+                googleAccessToken: account.access_token,
+                googleRefreshToken: account.refresh_token || undefined,
+                googleTokenExpiry: account.expires_at ? new Date(account.expires_at * 1000) : undefined,
+                isEnabled: true,
+              },
+              create: {
+                userId: user.id,
+                googleAccessToken: account.access_token,
+                googleRefreshToken: account.refresh_token || undefined,
+                googleTokenExpiry: account.expires_at ? new Date(account.expires_at * 1000) : undefined,
+                isEnabled: true,
+              }
+            })
+          } catch (error) {
+            console.error('Error storing Google Calendar tokens:', error)
+          }
+        }
       }
 
       // Return previous token if access token has not expired

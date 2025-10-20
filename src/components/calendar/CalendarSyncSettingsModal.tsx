@@ -107,8 +107,25 @@ export default function CalendarSyncSettingsModal({
   }
 
   const connectGoogleCalendar = async () => {
-    // Trigger Google OAuth with calendar scopes
-    await signIn('google', { callbackUrl: window.location.href })
+    setLoading(true)
+    setError(null)
+
+    try {
+      // Get the auth URL from our API
+      const response = await fetch('/api/calendar/connect-google')
+      const data = await response.json()
+
+      if (response.ok && data.authUrl) {
+        // Redirect to Google OAuth
+        window.location.href = data.authUrl
+      } else {
+        setError(data.error || 'Failed to connect Google Calendar')
+      }
+    } catch (err) {
+      setError('Failed to connect Google Calendar')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const disconnectGoogleCalendar = async () => {

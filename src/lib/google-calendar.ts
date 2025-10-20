@@ -163,9 +163,9 @@ export class GoogleCalendarService {
     try {
       const response = await calendar.events.list({
         calendarId: options.calendarId || 'primary',
-        timeMin: options.timeMin || new Date().toISOString(),
+        timeMin: options.timeMin, // No default, fetch all if not specified
         timeMax: options.timeMax,
-        maxResults: options.maxResults || 100,
+        maxResults: options.maxResults || 2500,
         singleEvents: true,
         orderBy: 'startTime',
       })

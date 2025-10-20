@@ -45,14 +45,22 @@ export async function POST(req: NextRequest) {
         })
       }
 
-      // Auto-import the latest events
+      // Auto-import ALL events (past, present, and future)
       try {
+        // Fetch events from 1 year ago to 1 year in the future
+        const oneYearAgo = new Date()
+        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+
+        const oneYearFuture = new Date()
+        oneYearFuture.setFullYear(oneYearFuture.getFullYear() + 1)
+
         const googleEvents = await googleCalendarService.listEvents(
           syncSettings.userId,
           {
             calendarId: syncSettings.googleCalendarId || 'primary',
-            timeMin: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // Last 7 days
-            maxResults: 100
+            timeMin: oneYearAgo.toISOString(),
+            timeMax: oneYearFuture.toISOString(),
+            maxResults: 2500 // Fetch up to 2500 events
           }
         )
 

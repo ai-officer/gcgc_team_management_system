@@ -34,11 +34,18 @@ export async function POST(req: NextRequest) {
 
     const calendarId = syncSettings.googleCalendarId || 'primary'
 
-    // Fetch Google Calendar events
+    // Fetch ALL Google Calendar events (past, present, and future)
+    const oneYearAgo = new Date()
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+
+    const oneYearFuture = new Date()
+    oneYearFuture.setFullYear(oneYearFuture.getFullYear() + 1)
+
     const googleEvents = await googleCalendarService.listEvents(session.user.id, {
       calendarId,
-      timeMin: syncSettings.lastSyncedAt?.toISOString() || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // Last 30 days if no sync
-      maxResults: 100
+      timeMin: oneYearAgo.toISOString(),
+      timeMax: oneYearFuture.toISOString(),
+      maxResults: 2500 // Fetch up to 2500 events
     })
 
     const results = {

@@ -12,12 +12,18 @@ const updateTaskSchema = z.object({
   status: z.enum(['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED']).optional(),
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional(),
   dueDate: z.string().datetime().optional(),
+  startDate: z.string().datetime().optional(),
   progressPercentage: z.number().min(0).max(100).optional(),
   taskType: z.enum(['INDIVIDUAL', 'TEAM', 'COLLABORATION']).optional(),
   assigneeId: z.string().nullish(), // Always current user
   teamMemberIds: z.array(z.string()).optional(),
   collaboratorIds: z.array(z.string()).optional(),
   assignedById: z.string().optional(),
+  // New Google Calendar-compatible fields
+  location: z.string().optional(),
+  meetingLink: z.string().url().optional().or(z.literal('')),
+  allDay: z.boolean().optional(),
+  recurrence: z.string().optional(),
 })
 
 export async function GET(
@@ -224,6 +230,7 @@ export async function PATCH(
       const taskUpdateData: any = {
         ...updateData,
         dueDate: updateData.dueDate ? new Date(updateData.dueDate) : undefined,
+        startDate: updateData.startDate ? new Date(updateData.startDate) : undefined,
       }
 
       // Remove arrays from task update data

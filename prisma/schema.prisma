@@ -152,6 +152,13 @@ model Task {
   googleCalendarId      String?
   googleCalendarEventId String?
   syncedAt              DateTime?
+  // New Google Calendar-compatible fields
+  location              String?            // Physical location or address (e.g., "Conference Room A", "123 Main St")
+  meetingLink           String?            // Virtual meeting link (e.g., Google Meet, Zoom, Teams)
+  allDay                Boolean            @default(false) // All-day task flag
+  recurrence            String?            // Recurrence rule (RRULE format)
+  reminders             Json?              // Notification reminders in JSON format
+  // Relations
   comments              Comment[]
   events                Event[]
   collaborators         TaskCollaborator[]

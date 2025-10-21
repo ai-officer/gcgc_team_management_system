@@ -20,6 +20,11 @@ const createTaskSchema = z.object({
   teamMemberIds: z.array(z.string()).default([]),
   collaboratorIds: z.array(z.string()).default([]),
   assignedById: z.string().optional(),
+  // New Google Calendar-compatible fields
+  location: z.string().optional(),
+  meetingLink: z.string().url().optional().or(z.literal('')),
+  allDay: z.boolean().optional(),
+  recurrence: z.string().optional(),
 })
 
 const querySchema = z.object({
@@ -354,19 +359,24 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { 
-      title, 
-      description, 
-      priority, 
+    const {
+      title,
+      description,
+      priority,
       dueDate,
       startDate,
       status,
       progressPercentage,
       taskType,
-      assigneeId, 
+      assigneeId,
       teamMemberIds,
       collaboratorIds,
-      assignedById
+      assignedById,
+      // New Google Calendar fields
+      location,
+      meetingLink,
+      allDay,
+      recurrence,
     } = createTaskSchema.parse(body)
 
     // No team membership verification needed since we're selecting from all users
@@ -402,6 +412,11 @@ export async function POST(req: NextRequest) {
           creatorId: session.user.id,
           teamId: null, // No longer using teams
           assignedById: assignedById || session.user.id,
+          // New Google Calendar fields
+          location: location || null,
+          meetingLink: meetingLink || null,
+          allDay: allDay || false,
+          recurrence: recurrence || null,
         },
       })
 

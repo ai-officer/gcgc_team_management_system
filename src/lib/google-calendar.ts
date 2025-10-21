@@ -9,17 +9,19 @@ const CALENDAR_SCOPES = [
 interface GoogleCalendarEvent {
   summary: string
   description?: string
-  start: {
+  start?: {
     dateTime?: string
     date?: string
     timeZone?: string
   }
-  end: {
+  end?: {
     dateTime?: string
     date?: string
     timeZone?: string
   }
   colorId?: string
+  location?: string
+  recurrence?: string[]
 }
 
 export class GoogleCalendarService {
@@ -337,8 +339,25 @@ export class GoogleCalendarService {
     const googleEvent: GoogleCalendarEvent = {
       summary: `[Task] ${task.title}`,
       description: this.formatTaskDescription(task),
-      start: { dateTime: startTime.toISOString(), timeZone: 'UTC' },
-      end: { dateTime: endTime.toISOString(), timeZone: 'UTC' },
+    }
+
+    // Handle all-day events
+    if (task.allDay) {
+      googleEvent.start = { date: startTime.toISOString().split('T')[0] }
+      googleEvent.end = { date: endTime.toISOString().split('T')[0] }
+    } else {
+      googleEvent.start = { dateTime: startTime.toISOString(), timeZone: 'UTC' }
+      googleEvent.end = { dateTime: endTime.toISOString(), timeZone: 'UTC' }
+    }
+
+    // Add location if provided
+    if (task.location) {
+      googleEvent.location = task.location
+    }
+
+    // Add recurrence if provided
+    if (task.recurrence) {
+      googleEvent.recurrence = [task.recurrence]
     }
 
     // Map task priority to Google Calendar colors
@@ -359,7 +378,12 @@ export class GoogleCalendarService {
   // Format task description with additional details
   private formatTaskDescription(task: any): string {
     let description = task.description || ''
-    
+
+    // Add meeting link at the top if available
+    if (task.meetingLink) {
+      description += `\n\n🔗 Meeting Link: ${task.meetingLink}`
+    }
+
     description += `\n\n--- Task Details ---`
     description += `\nStatus: ${task.status}`
     description += `\nPriority: ${task.priority}`

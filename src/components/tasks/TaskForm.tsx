@@ -53,6 +53,7 @@ const taskFormSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100, 'Title too long'),
   description: z.string().optional(),
   dueDate: z.date().optional(),
+  startDate: z.date().optional(),
   status: z.enum(['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED']),
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']),
   progressPercentage: z.number().min(0).max(100),
@@ -61,6 +62,11 @@ const taskFormSchema = z.object({
   teamMemberIds: z.array(z.string()).default([]),
   collaboratorIds: z.array(z.string()).default([]),
   assignedById: z.string().optional(),
+  // New Google Calendar-compatible fields
+  location: z.string().optional(),
+  meetingLink: z.string().url().optional().or(z.literal('')),
+  allDay: z.boolean().default(false),
+  recurrence: z.string().optional(),
 })
 
 type TaskFormData = z.infer<typeof taskFormSchema>
@@ -94,6 +100,12 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
       teamMemberIds: [],
       collaboratorIds: [],
       assignedById: session?.user?.id,
+      // New Google Calendar fields
+      location: '',
+      meetingLink: '',
+      allDay: false,
+      recurrence: '',
+      startDate: undefined,
     },
   })
 
@@ -111,6 +123,7 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
           title: task.title,
           description: task.description || '',
           dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
+          startDate: task.startDate ? new Date(task.startDate) : undefined,
           status: task.status,
           priority: task.priority,
           progressPercentage: task.progressPercentage || 0,
@@ -119,6 +132,11 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
           teamMemberIds: task.teamMembers?.map((tm: any) => tm.userId) || [],
           collaboratorIds: task.collaborators?.map((c: any) => c.userId) || [],
           assignedById: task.assignedById || session?.user?.id,
+          // New Google Calendar fields
+          location: task.location || '',
+          meetingLink: task.meetingLink || '',
+          allDay: task.allDay || false,
+          recurrence: task.recurrence || '',
         })
         
         // Set selected members and collaborators for display
@@ -141,8 +159,14 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
           teamMemberIds: [],
           collaboratorIds: [],
           assignedById: session?.user?.id,
+          // New Google Calendar fields
+          location: '',
+          meetingLink: '',
+          allDay: false,
+          recurrence: '',
+          startDate: undefined,
         })
-        
+
         // Clear selected arrays
         setSelectedTeamMembers([])
         setSelectedCollaborators([])
@@ -311,7 +335,48 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="dueDate">Due Date</Label>
+              <Label htmlFor="startDate">Start Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !form.watch('startDate') && "text-muted-foreground"
+                    )}
+                    type="button"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {form.watch('startDate') ? (
+                      format(form.watch('startDate')!, "PPP")
+                    ) : (
+                      <span>Select start date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={form.watch('startDate')}
+                    onSelect={(date) => form.setValue('startDate', date)}
+                  />
+                </PopoverContent>
+              </Popover>
+              {form.watch('startDate') && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => form.setValue('startDate', undefined)}
+                  className="h-auto p-0 text-xs text-muted-foreground hover:text-destructive"
+                >
+                  Clear date
+                </Button>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="dueDate">End Date</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -378,6 +443,87 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                   className={`h-2 ${getProgressColor(progressPercentage)}`}
                 />
               </div>
+            </div>
+          </div>
+
+          {/* Google Calendar Fields */}
+          <div className="space-y-4 p-4 bg-muted/50 rounded-lg border">
+            <div className="flex items-center gap-2">
+              <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+              <Label className="text-base font-semibold">Calendar Details (Google Sync)</Label>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Location */}
+              <div className="space-y-2">
+                <Label htmlFor="location">Location (Optional)</Label>
+                <Input
+                  id="location"
+                  {...form.register('location')}
+                  placeholder="e.g., Conference Room A, 123 Main St, or Building 5"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Physical location or address (e.g., office, meeting room, venue)
+                </p>
+              </div>
+
+              {/* Meeting Link */}
+              <div className="space-y-2">
+                <Label htmlFor="meetingLink">Meeting Link (Optional)</Label>
+                <Input
+                  id="meetingLink"
+                  {...form.register('meetingLink')}
+                  placeholder="e.g., https://meet.google.com/abc-defg-hij"
+                  type="url"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Virtual meeting link (Google Meet, Zoom, Teams, etc.)
+                </p>
+                {form.formState.errors.meetingLink && (
+                  <p className="text-xs text-red-500">Please enter a valid URL</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Recurrence */}
+              <div className="space-y-2">
+                <Label htmlFor="recurrence">Recurrence (Optional)</Label>
+                <Select
+                  value={form.watch('recurrence') || ''}
+                  onValueChange={(value) => form.setValue('recurrence', value || undefined)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Does not repeat" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Does not repeat</SelectItem>
+                    <SelectItem value="RRULE:FREQ=DAILY">Daily</SelectItem>
+                    <SelectItem value="RRULE:FREQ=WEEKLY">Weekly</SelectItem>
+                    <SelectItem value="RRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR">Weekdays (Mon, Wed, Fri)</SelectItem>
+                    <SelectItem value="RRULE:FREQ=MONTHLY">Monthly</SelectItem>
+                    <SelectItem value="RRULE:FREQ=YEARLY">Annually</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Set if this task repeats regularly
+                </p>
+              </div>
+            </div>
+
+            {/* All Day Toggle */}
+            <div className="flex items-center justify-between p-3 bg-background rounded-md border">
+              <div className="space-y-0.5">
+                <Label htmlFor="allDay">All-day task</Label>
+                <p className="text-xs text-muted-foreground">
+                  Mark this task as an all-day event in calendar
+                </p>
+              </div>
+              <Switch
+                id="allDay"
+                checked={form.watch('allDay')}
+                onCheckedChange={(checked) => form.setValue('allDay', checked)}
+              />
             </div>
           </div>
 

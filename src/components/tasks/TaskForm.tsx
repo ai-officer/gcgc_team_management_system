@@ -490,14 +490,14 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
               <div className="space-y-2">
                 <Label htmlFor="recurrence">Recurrence (Optional)</Label>
                 <Select
-                  value={form.watch('recurrence') || ''}
-                  onValueChange={(value) => form.setValue('recurrence', value || undefined)}
+                  value={form.watch('recurrence') || undefined}
+                  onValueChange={(value) => form.setValue('recurrence', value === 'NONE' ? undefined : value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Does not repeat" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Does not repeat</SelectItem>
+                    <SelectItem value="NONE">Does not repeat</SelectItem>
                     <SelectItem value="RRULE:FREQ=DAILY">Daily</SelectItem>
                     <SelectItem value="RRULE:FREQ=WEEKLY">Weekly</SelectItem>
                     <SelectItem value="RRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR">Weekdays (Mon, Wed, Fri)</SelectItem>

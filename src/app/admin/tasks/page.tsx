@@ -58,9 +58,16 @@ interface Task {
   description?: string
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
   dueDate?: string
+  startDate?: string
   status: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' | 'CANCELLED'
   progressPercentage: number
   taskType: 'INDIVIDUAL' | 'TEAM' | 'COLLABORATION'
+  // Google Calendar fields
+  location?: string
+  meetingLink?: string
+  allDay?: boolean
+  recurrence?: string
+  reminders?: any
   assignee?: {
     id: string
     name: string

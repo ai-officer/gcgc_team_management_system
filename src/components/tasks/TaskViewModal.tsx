@@ -39,6 +39,12 @@ interface Task {
   status: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'
   progressPercentage: number
   taskType: 'INDIVIDUAL' | 'TEAM' | 'COLLABORATION'
+  // Google Calendar fields
+  location?: string
+  meetingLink?: string
+  allDay?: boolean
+  recurrence?: string
+  reminders?: any
   assignee?: {
     id: string
     name: string

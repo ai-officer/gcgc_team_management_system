@@ -312,14 +312,14 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
           </div>
 
           {/* Status and Progress */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+            <div className="space-y-3">
+              <Label htmlFor="status" className="text-sm font-semibold">Status</Label>
               <Select
                 value={form.watch('status')}
                 onValueChange={(value) => form.setValue('status', value as TaskStatus)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-11">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -331,13 +331,13 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="startDate">Start Date</Label>
+            <div className="space-y-3">
+              <Label htmlFor="startDate" className="text-sm font-semibold">Start Date</Label>
               <DatePicker
                 selected={form.watch('startDate')}
                 onChange={(date) => form.setValue('startDate', date || undefined)}
                 placeholderText="Select start date"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 dateFormat="PPP"
                 isClearable
                 showPopperArrow={false}
@@ -345,28 +345,30 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="dueDate">End Date</Label>
-              <DatePicker
-                selected={form.watch('dueDate')}
-                onChange={(date) => form.setValue('dueDate', date || undefined)}
-                placeholderText="Select a due date"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                dateFormat="PPP"
-                isClearable
-                showPopperArrow={false}
-                popperClassName="z-50"
-                minDate={new Date()}
-              />
-              {form.watch('dueDate') && (
-                <div className="text-xs text-muted-foreground">
-                  {form.watch('dueDate')! < new Date() ? (
-                    <span className="text-red-600 font-medium">⚠ Past due date</span>
-                  ) : (
-                    <span className="text-green-600">✓ Valid due date</span>
-                  )}
-                </div>
-              )}
+            <div className="space-y-3">
+              <Label htmlFor="dueDate" className="text-sm font-semibold">End Date</Label>
+              <div className="space-y-2">
+                <DatePicker
+                  selected={form.watch('dueDate')}
+                  onChange={(date) => form.setValue('dueDate', date || undefined)}
+                  placeholderText="Select a due date"
+                  className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  dateFormat="PPP"
+                  isClearable
+                  showPopperArrow={false}
+                  popperClassName="z-50"
+                  minDate={new Date()}
+                />
+                {form.watch('dueDate') && (
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {form.watch('dueDate')! < new Date() ? (
+                      <span className="text-red-600 font-medium">⚠ Past due date</span>
+                    ) : (
+                      <span className="text-green-600">✓ Valid due date</span>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="space-y-2">

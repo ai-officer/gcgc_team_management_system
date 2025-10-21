@@ -96,11 +96,16 @@ export async function POST(req: NextRequest) {
           },
           // Task must have a due date
           { dueDate: { not: null } },
-          // Task hasn't been synced yet or needs updating
+          // Sync ALL tasks (both new and existing):
+          // - Tasks never synced before (googleCalendarEventId is null)
+          // - Tasks synced but updated since last sync
+          // - Tasks synced to wrong calendar (not TMS_CALENDAR)
           {
             OR: [
               { googleCalendarEventId: null },
-              { updatedAt: { gt: syncSettings.lastSyncedAt || new Date(0) } }
+              { updatedAt: { gt: syncSettings.lastSyncedAt || new Date(0) } },
+              { googleCalendarId: { not: calendarId } }, // Re-sync if calendar changed
+              { googleCalendarId: null } // Re-sync if no calendar ID stored
             ]
           }
         ]
@@ -153,6 +158,8 @@ export async function POST(req: NextRequest) {
         team: true,
       }
     })
+
+    console.log(`Found ${tmsEvents.length} events and ${tmsTasks.length} tasks to sync for user ${session.user.id}`)
 
     const results = {
       created: 0,
@@ -220,12 +227,16 @@ export async function POST(req: NextRequest) {
 
     // Sync Tasks (if syncTaskDeadlines is enabled)
     if (syncSettings.syncTaskDeadlines) {
+      console.log(`Syncing ${tmsTasks.length} tasks to TMS_CALENDAR...`)
+
       for (const task of tmsTasks) {
         try {
           const googleEvent = googleCalendarService.convertTMSTaskToGoogle(task)
 
           if (task.googleCalendarEventId) {
             // Update existing Google Calendar event
+            console.log(`Updating task "${task.title}" in TMS_CALENDAR (Event ID: ${task.googleCalendarEventId})`)
+
             await googleCalendarService.updateEvent(
               session.user.id,
               task.googleCalendarEventId,
@@ -235,12 +246,17 @@ export async function POST(req: NextRequest) {
 
             await prisma.task.update({
               where: { id: task.id },
-              data: { syncedAt: new Date() }
+              data: {
+                syncedAt: new Date(),
+                googleCalendarId: calendarId // Ensure calendar ID is updated
+              }
             })
 
             results.updated++
           } else {
             // Create new Google Calendar event
+            console.log(`Creating new event for task "${task.title}" in TMS_CALENDAR`)
+
             const createdEvent = await googleCalendarService.createEvent(
               session.user.id,
               googleEvent,
@@ -256,14 +272,19 @@ export async function POST(req: NextRequest) {
               }
             })
 
+            console.log(`Successfully created event for task "${task.title}" (Event ID: ${createdEvent.id})`)
             results.created++
           }
         } catch (error: any) {
-          console.error(`Error syncing task ${task.id}:`, error)
+          console.error(`Error syncing task ${task.id} ("${task.title}"):`, error)
           results.failed++
           results.errors.push(`[Task] ${task.title}: ${error.message}`)
         }
       }
+
+      console.log(`Task sync complete: ${results.created} created, ${results.updated} updated, ${results.failed} failed`)
+    } else {
+      console.log('Task sync is disabled (syncTaskDeadlines = false)')
     }
 
     // Update last synced timestamp

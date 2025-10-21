@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { google } from 'googleapis'
 import { prisma } from '@/lib/prisma'
+import { googleCalendarService } from '@/lib/google-calendar'
 
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
@@ -34,7 +35,9 @@ export async function GET(req: NextRequest) {
     // Exchange authorization code for tokens
     const { tokens } = await oauth2Client.getToken(code)
 
-    // Store tokens in database
+    console.log('Google OAuth tokens received for user:', userId)
+
+    // Store tokens in database first (so we can use them to create calendar)
     await prisma.calendarSyncSettings.upsert({
       where: { userId },
       update: {
@@ -55,6 +58,28 @@ export async function GET(req: NextRequest) {
         isEnabled: true,
       },
     })
+
+    console.log('Tokens saved, now creating/finding TMS_CALENDAR...')
+
+    // Immediately create or find TMS_CALENDAR
+    let tmsCalendarId: string | null = null
+    try {
+      tmsCalendarId = await googleCalendarService.findOrCreateTMSCalendar(userId)
+      console.log('TMS_CALENDAR found/created:', tmsCalendarId)
+
+      // Update sync settings with TMS_CALENDAR ID
+      await prisma.calendarSyncSettings.update({
+        where: { userId },
+        data: {
+          googleCalendarId: tmsCalendarId,
+        },
+      })
+
+      console.log('Sync settings updated with TMS_CALENDAR ID')
+    } catch (calendarError) {
+      console.error('Failed to create/find TMS_CALENDAR:', calendarError)
+      // Continue anyway, will be created later when sync is triggered
+    }
 
     // Redirect back to calendar with success
     return NextResponse.redirect(

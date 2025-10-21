@@ -340,7 +340,9 @@ export default function CalendarSyncSettingsModal({
                   <div>
                     <span className="text-green-700 font-medium block">Automatic Sync Enabled</span>
                     <span className="text-green-600 text-sm">
-                      Syncing with: <strong>TMS_CALENDAR</strong> (dedicated work calendar)
+                      Syncing with: <strong>
+                        {calendars.find(cal => cal.id === settings.googleCalendarId)?.summary || 'TMS_CALENDAR'}
+                      </strong> (dedicated work calendar)
                     </span>
                   </div>
                 </div>

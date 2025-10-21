@@ -354,7 +354,13 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent
+                  className="w-auto p-0 z-50"
+                  align="start"
+                  side="bottom"
+                  sideOffset={8}
+                  avoidCollisions={true}
+                >
                   <Calendar
                     mode="single"
                     selected={form.watch('startDate')}
@@ -395,7 +401,13 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent
+                  className="w-auto p-0 z-50"
+                  align="start"
+                  side="bottom"
+                  sideOffset={8}
+                  avoidCollisions={true}
+                >
                   <Calendar
                     mode="single"
                     selected={form.watch('dueDate')}

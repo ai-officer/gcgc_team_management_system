@@ -5,8 +5,8 @@
   "private": true,
   "scripts": {
     "dev": "node server.js",
-    "build": "prisma generate && prisma migrate deploy && next build",
-    "start": "NODE_ENV=production node server.js",
+    "build": "prisma generate && next build",
+    "start": "prisma migrate deploy && NODE_ENV=production node server.js",
     "lint": "next lint",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",

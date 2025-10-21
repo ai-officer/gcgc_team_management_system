@@ -7,6 +7,9 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { format } from 'date-fns'
 import { CalendarIcon, Plus, X, Users, User, Handshake } from 'lucide-react'
+import DatePicker from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'
+import '@/styles/react-datepicker-custom.css'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -26,12 +29,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
-import { Calendar } from '@/components/ui/calendar'
 import { cn } from '@/lib/utils'
 
 // Types
@@ -336,105 +333,38 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
 
             <div className="space-y-2">
               <Label htmlFor="startDate">Start Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !form.watch('startDate') && "text-muted-foreground"
-                    )}
-                    type="button"
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {form.watch('startDate') ? (
-                      format(form.watch('startDate')!, "PPP")
-                    ) : (
-                      <span>Select start date</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-auto p-0 z-50"
-                  align="start"
-                  side="bottom"
-                  sideOffset={8}
-                  avoidCollisions={true}
-                >
-                  <Calendar
-                    mode="single"
-                    selected={form.watch('startDate')}
-                    onSelect={(date) => form.setValue('startDate', date)}
-                  />
-                </PopoverContent>
-              </Popover>
-              {form.watch('startDate') && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => form.setValue('startDate', undefined)}
-                  className="h-auto p-0 text-xs text-muted-foreground hover:text-destructive"
-                >
-                  Clear date
-                </Button>
-              )}
+              <DatePicker
+                selected={form.watch('startDate')}
+                onChange={(date) => form.setValue('startDate', date || undefined)}
+                placeholderText="Select start date"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                dateFormat="PPP"
+                isClearable
+                showPopperArrow={false}
+                popperClassName="z-50"
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="dueDate">End Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !form.watch('dueDate') && "text-muted-foreground"
-                    )}
-                    type="button"
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {form.watch('dueDate') ? (
-                      format(form.watch('dueDate')!, "PPP")
-                    ) : (
-                      <span>Select a due date</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-auto p-0 z-50"
-                  align="start"
-                  side="bottom"
-                  sideOffset={8}
-                  avoidCollisions={true}
-                >
-                  <Calendar
-                    mode="single"
-                    selected={form.watch('dueDate')}
-                    onSelect={(date) => form.setValue('dueDate', date)}
-                    initialFocus
-                    disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                  />
-                </PopoverContent>
-              </Popover>
+              <DatePicker
+                selected={form.watch('dueDate')}
+                onChange={(date) => form.setValue('dueDate', date || undefined)}
+                placeholderText="Select a due date"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                dateFormat="PPP"
+                isClearable
+                showPopperArrow={false}
+                popperClassName="z-50"
+                minDate={new Date()}
+              />
               {form.watch('dueDate') && (
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>
-                    {form.watch('dueDate')! < new Date() ? (
-                      <span className="text-red-600 font-medium">⚠ Past due date</span>
-                    ) : (
-                      <span className="text-green-600">✓ Valid due date</span>
-                    )}
-                  </span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => form.setValue('dueDate', undefined)}
-                    className="h-auto p-0 text-xs text-muted-foreground hover:text-destructive"
-                  >
-                    Clear date
-                  </Button>
+                <div className="text-xs text-muted-foreground">
+                  {form.watch('dueDate')! < new Date() ? (
+                    <span className="text-red-600 font-medium">⚠ Past due date</span>
+                  ) : (
+                    <span className="text-green-600">✓ Valid due date</span>
+                  )}
                 </div>
               )}
             </div>

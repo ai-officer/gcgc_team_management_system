@@ -246,50 +246,53 @@ export class GoogleCalendarService {
     const calendar = await this.getCalendarClient(userId)
 
     try {
-      // Check if TMS Calendar already exists
+      // Check if TMS_CALENDAR already exists
       const calendars = await this.getCalendarList(userId)
       const existingTMSCalendar = calendars.find(
-        (cal) => cal.summary === 'TMS Calendar' || cal.summary === 'GCGC Team Management'
+        (cal) => cal.summary === 'TMS_CALENDAR' || cal.summary === 'TMS Calendar' || cal.summary === 'GCGC Team Management'
       )
 
       if (existingTMSCalendar) {
+        console.log('Found existing TMS_CALENDAR:', existingTMSCalendar.id)
         return existingTMSCalendar.id || 'primary'
       }
 
-      // Create new TMS Calendar
+      // Create new TMS_CALENDAR
       const response = await calendar.calendars.insert({
         requestBody: {
-          summary: 'TMS Calendar',
-          description: 'Calendar for GCGC Team Management System - Tasks and Events',
+          summary: 'TMS_CALENDAR',
+          description: 'Dedicated calendar for GCGC Team Management System - ONLY TMS work-related tasks and events. Personal calendar events are NOT synced here.',
           timeZone: 'UTC',
         }
       })
 
+      console.log('Created new TMS_CALENDAR:', response.data.id)
       return response.data.id || 'primary'
     } catch (error) {
-      console.error('Error creating TMS Calendar:', error)
+      console.error('Error creating TMS_CALENDAR:', error)
       throw error
     }
   }
 
   async findOrCreateTMSCalendar(userId: string): Promise<string> {
     try {
-      // First, try to find existing TMS Calendar
+      // First, try to find existing TMS_CALENDAR
       const calendars = await this.getCalendarList(userId)
       const tmsCalendar = calendars.find(
-        (cal) => cal.summary === 'TMS Calendar' || cal.summary === 'GCGC Team Management'
+        (cal) => cal.summary === 'TMS_CALENDAR' || cal.summary === 'TMS Calendar' || cal.summary === 'GCGC Team Management'
       )
 
       if (tmsCalendar) {
+        console.log('Using existing TMS_CALENDAR:', tmsCalendar.id)
         return tmsCalendar.id || 'primary'
       }
 
       // If not found, create it
+      console.log('TMS_CALENDAR not found, creating new one...')
       return await this.createTMSCalendar(userId)
     } catch (error) {
-      console.error('Error finding or creating TMS Calendar:', error)
-      // Fall back to primary calendar if there's an error
-      return 'primary'
+      console.error('Error finding or creating TMS_CALENDAR:', error)
+      throw new Error('Failed to find or create TMS_CALENDAR. Please ensure you have granted calendar permissions.')
     }
   }
 

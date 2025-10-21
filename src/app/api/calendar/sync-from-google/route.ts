@@ -32,7 +32,26 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const calendarId = syncSettings.googleCalendarId || 'primary'
+    // Enforce TMS_CALENDAR usage - find or create if not set
+    let calendarId = syncSettings.googleCalendarId
+    if (!calendarId || calendarId === 'primary') {
+      try {
+        calendarId = await googleCalendarService.findOrCreateTMSCalendar(session.user.id)
+        console.log('Enforcing TMS_CALENDAR for import:', calendarId)
+
+        // Update sync settings with TMS_CALENDAR ID
+        await prisma.calendarSyncSettings.update({
+          where: { userId: session.user.id },
+          data: { googleCalendarId: calendarId }
+        })
+      } catch (error) {
+        console.error('Error enforcing TMS_CALENDAR:', error)
+        return NextResponse.json(
+          { error: 'Failed to find or create TMS_CALENDAR. Please reconnect Google Calendar.' },
+          { status: 500 }
+        )
+      }
+    }
 
     // Fetch ALL Google Calendar events (past, present, and future)
     const oneYearAgo = new Date()

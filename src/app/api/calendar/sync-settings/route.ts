@@ -71,23 +71,25 @@ export async function PUT(req: NextRequest) {
     const body = await req.json()
     const {
       isEnabled,
-      googleCalendarId,
       syncDirection,
       syncTaskDeadlines,
       syncTeamEvents,
       syncPersonalEvents,
-      createTMSCalendar, // New flag to create dedicated TMS Calendar
     } = body
 
-    // If user wants to use TMS Calendar, find or create it
-    let calendarId = googleCalendarId
-    if (isEnabled && (createTMSCalendar || !googleCalendarId)) {
+    // ALWAYS use TMS_CALENDAR - find or create it when enabling sync
+    // This enforces separation between personal and work calendars
+    let calendarId = null
+    if (isEnabled) {
       try {
         calendarId = await googleCalendarService.findOrCreateTMSCalendar(session.user.id)
-        console.log('Using TMS Calendar:', calendarId)
+        console.log('TMS_CALENDAR will be used for sync:', calendarId)
       } catch (error) {
-        console.error('Error finding/creating TMS Calendar, falling back to primary:', error)
-        calendarId = googleCalendarId || 'primary'
+        console.error('Error finding/creating TMS_CALENDAR:', error)
+        return NextResponse.json(
+          { error: 'Failed to find or create TMS_CALENDAR. Please ensure calendar permissions are granted.' },
+          { status: 500 }
+        )
       }
     }
 

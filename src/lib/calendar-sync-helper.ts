@@ -102,7 +102,22 @@ export async function autoSyncTask(taskId: string, userId: string) {
       return
     }
 
-    const calendarId = syncSettings.googleCalendarId || 'primary'
+    // Enforce TMS_CALENDAR usage
+    let calendarId = syncSettings.googleCalendarId
+    if (!calendarId || calendarId === 'primary') {
+      try {
+        calendarId = await googleCalendarService.findOrCreateTMSCalendar(userId)
+        // Update sync settings with TMS_CALENDAR ID
+        await prisma.calendarSyncSettings.update({
+          where: { userId },
+          data: { googleCalendarId: calendarId }
+        })
+      } catch (error) {
+        console.error('Error enforcing TMS_CALENDAR in autoSyncTask:', error)
+        return // Skip sync if TMS_CALENDAR cannot be found/created
+      }
+    }
+
     const googleEvent = googleCalendarService.convertTMSTaskToGoogle(task)
 
     if (task.googleCalendarEventId) {
@@ -148,10 +163,15 @@ export async function deleteSyncedTask(taskId: string, userId: string) {
   try {
     const task = await prisma.task.findUnique({
       where: { id: taskId },
-      select: { googleCalendarEventId: true }
+      select: {
+        googleCalendarEventId: true,
+        googleCalendarId: true,
+        title: true
+      }
     })
 
     if (!task?.googleCalendarEventId) {
+      console.log(`Task ${taskId} has no Google Calendar event to delete`)
       return // No synced event to delete
     }
 
@@ -160,16 +180,31 @@ export async function deleteSyncedTask(taskId: string, userId: string) {
     })
 
     if (!syncSettings?.isEnabled) {
+      console.log(`Sync not enabled for user ${userId}, skipping calendar deletion`)
       return // Sync not enabled
     }
 
-    const calendarId = syncSettings.googleCalendarId || 'primary'
-    
+    // Use the calendar ID stored with the task, or find TMS_CALENDAR
+    let calendarId = task.googleCalendarId || syncSettings.googleCalendarId
+    if (!calendarId || calendarId === 'primary') {
+      try {
+        calendarId = await googleCalendarService.findOrCreateTMSCalendar(userId)
+        console.log(`Found/created TMS_CALENDAR for deletion: ${calendarId}`)
+      } catch (error) {
+        console.error('Error finding TMS_CALENDAR for delete:', error)
+        return // Skip if TMS_CALENDAR cannot be found
+      }
+    }
+
+    console.log(`Deleting task "${task.title}" from Google Calendar (Event ID: ${task.googleCalendarEventId}, Calendar ID: ${calendarId})`)
+
     await googleCalendarService.deleteEvent(
       userId,
       task.googleCalendarEventId,
       calendarId
     )
+
+    console.log(`Successfully deleted task "${task.title}" from Google Calendar`)
   } catch (error) {
     console.error('Error deleting synced task from Google Calendar:', error)
     // Don't throw - we don't want to break task deletion if sync delete fails

@@ -192,12 +192,6 @@ export default function CalendarPage() {
       // Add task deadlines as events
       if (tasksData.tasks) {
         tasksData.tasks.forEach((task: TaskDeadline) => {
-          // Skip tasks that are already synced to Google Calendar
-          // They will appear with [Task] prefix from Google Calendar sync
-          if (task.googleCalendarEventId) {
-            return
-          }
-
           if (task.dueDate && task.status !== 'COMPLETED') {
             const isLeaderTask = session?.user?.role === 'LEADER'
             const isMyTask = task.assignee?.id === session?.user?.id
@@ -235,7 +229,7 @@ export default function CalendarPage() {
 
               calendarEvents.push({
                 id: `task-${task.id}`,
-                title: `📋 ${task.title}`,
+                title: `[Task] ${task.title}`,
                 description: `Due: ${task.team?.name || 'Individual'} task`,
                 start,
                 end,
@@ -641,12 +635,6 @@ export default function CalendarPage() {
                 // Add task deadlines as events
                 if (tasksData.tasks) {
                   tasksData.tasks.forEach((task: TaskDeadline) => {
-                    // Skip tasks that are already synced to Google Calendar
-                    // They will appear with [Task] prefix from Google Calendar sync
-                    if (task.googleCalendarEventId) {
-                      return
-                    }
-
                     if (task.dueDate && task.status !== 'COMPLETED') {
                       const isLeaderTask = session?.user?.role === 'LEADER'
                       const isMyTask = task.assignee?.id === session?.user?.id
@@ -684,7 +672,7 @@ export default function CalendarPage() {
 
                         calendarEvents.push({
                           id: `task-${task.id}`,
-                          title: `📋 ${task.title}`,
+                          title: `[Task] ${task.title}`,
                           description: `Due: ${task.team?.name || 'Individual'} task`,
                           start,
                           end,

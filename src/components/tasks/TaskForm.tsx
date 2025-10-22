@@ -754,7 +754,6 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label className="text-base">Team Members</Label>
-                <div className="space-y-2">
                   <Select 
                     onValueChange={(value) => {
                       const user = users.find(u => u.id === value)
@@ -863,7 +862,6 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label className="text-base">Collaborators</Label>
-                <div className="space-y-2">
                   <Select onValueChange={(value) => {
                     const user = users.find(u => u.id === value)
                     if (user) addCollaborator(user)

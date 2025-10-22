@@ -334,7 +334,7 @@ export class GoogleCalendarService {
 
     // Use startDate if available, otherwise use dueDate as start (single-day event)
     const startTime = startDate || dueDate || new Date()
-    const endTime = dueDate || new Date(startTime.getTime() + 60 * 60 * 1000)
+    let endTime = dueDate || new Date(startTime.getTime() + 60 * 60 * 1000)
 
     const googleEvent: GoogleCalendarEvent = {
       summary: `[Task] ${task.title}`,
@@ -343,6 +343,7 @@ export class GoogleCalendarService {
 
     // Handle all-day events
     if (task.allDay) {
+      // For date ranges, ensure we include the full last day
       // Google Calendar requires end date to be exclusive (day after) for all-day events
       const endDatePlusOne = new Date(endTime)
       endDatePlusOne.setDate(endDatePlusOne.getDate() + 1)
@@ -350,6 +351,14 @@ export class GoogleCalendarService {
       googleEvent.start = { date: startTime.toISOString().split('T')[0] }
       googleEvent.end = { date: endDatePlusOne.toISOString().split('T')[0] }
     } else {
+      // For timed events with date ranges, set end time to end of day on dueDate
+      // This ensures the event spans the full range visually in Google Calendar
+      if (startDate && dueDate) {
+        const endOfDay = new Date(endTime)
+        endOfDay.setHours(23, 59, 59, 999)
+        endTime = endOfDay
+      }
+
       googleEvent.start = { dateTime: startTime.toISOString(), timeZone: 'UTC' }
       googleEvent.end = { dateTime: endTime.toISOString(), timeZone: 'UTC' }
     }

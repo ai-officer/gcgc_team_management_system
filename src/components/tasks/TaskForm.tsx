@@ -281,6 +281,7 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
       case 'INDIVIDUAL': return <User className="h-4 w-4" />
       case 'TEAM': return <Users className="h-4 w-4" />
       case 'COLLABORATION': return <Handshake className="h-4 w-4" />
+      default: return <User className="h-4 w-4" />
     }
   }
 

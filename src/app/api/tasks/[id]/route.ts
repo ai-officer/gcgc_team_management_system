@@ -434,6 +434,15 @@ export async function DELETE(
       }
     })
 
+    // Emit WebSocket event to trigger calendar refresh
+    if (global.io) {
+      global.io.to(`user-${session.user.id}`).emit('task-deleted', {
+        taskId: params.id,
+        timestamp: new Date().toISOString()
+      })
+      console.log(`Emitted task-deleted event for user ${session.user.id}`)
+    }
+
     return NextResponse.json({ message: 'Task deleted successfully' })
   } catch (error) {
     console.error('Task deletion error:', error)

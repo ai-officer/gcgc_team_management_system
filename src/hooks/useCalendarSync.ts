@@ -53,6 +53,19 @@ export function useCalendarSync(onUpdate?: () => void) {
       }
     })
 
+    socketInstance.on('task-deleted', (data) => {
+      console.log('Task deleted, refreshing calendar:', data)
+      setStatus(prev => ({
+        ...prev,
+        lastUpdate: new Date(data.timestamp)
+      }))
+
+      // Trigger callback to refresh calendar
+      if (onUpdate) {
+        onUpdate()
+      }
+    })
+
     socketInstance.on('sync-started', () => {
       setStatus(prev => ({ ...prev, isSyncing: true, error: null }))
     })

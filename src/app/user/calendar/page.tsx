@@ -493,8 +493,8 @@ export default function CalendarPage() {
               editable={true}
               selectable={true}
               selectMirror={true}
-              dayMaxEvents={3}
-              dayMaxEventRows={3}
+              dayMaxEvents={false}
+              dayMaxEventRows={false}
               moreLinkClick="popover"
               weekends={true}
               events={events}
@@ -502,8 +502,10 @@ export default function CalendarPage() {
               select={handleDateSelect}
               aspectRatio={1.2}
               contentHeight="auto"
-              eventDisplay="block"
+              eventDisplay="auto"
               eventTextColor="#fff"
+              displayEventTime={false}
+              displayEventEnd={false}
               eventTimeFormat={{
                 hour: 'numeric',
                 minute: '2-digit',

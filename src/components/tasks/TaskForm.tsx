@@ -366,7 +366,12 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
             </div>
 
             <div className="space-y-3">
-              <Label htmlFor="startDate" className="text-sm font-semibold">Start Date</Label>
+              <Label htmlFor="startDate" className="text-sm font-semibold">
+                Start Date
+                <span className="text-xs text-muted-foreground font-normal ml-2">
+                  (For multi-day tasks)
+                </span>
+              </Label>
               <div className="space-y-2">
                 <DatePicker
                   selected={form.watch('startDate')}
@@ -387,11 +392,21 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                     className="h-11"
                   />
                 )}
+                {form.watch('startDate') && form.watch('dueDate') && (
+                  <div className="text-xs text-green-600 font-medium">
+                    ✓ Task will span {Math.ceil((form.watch('dueDate')!.getTime() - form.watch('startDate')!.getTime()) / (1000 * 60 * 60 * 24))} days
+                  </div>
+                )}
               </div>
             </div>
 
             <div className="space-y-3">
-              <Label htmlFor="dueDate" className="text-sm font-semibold">End Date</Label>
+              <Label htmlFor="dueDate" className="text-sm font-semibold">
+                End Date (Due Date)
+                <span className="text-xs text-orange-600 font-normal ml-2">
+                  *Required
+                </span>
+              </Label>
               <div className="space-y-2">
                 <DatePicker
                   selected={form.watch('dueDate')}
@@ -402,7 +417,7 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                   isClearable
                   showPopperArrow={false}
                   popperClassName="z-50"
-                  minDate={new Date()}
+                  minDate={form.watch('startDate') || new Date()}
                 />
                 {!form.watch('allDay') && (
                   <Input
@@ -412,6 +427,11 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                     placeholder="End time"
                     className="h-11"
                   />
+                )}
+                {form.watch('dueDate') && !form.watch('startDate') && (
+                  <div className="text-xs text-blue-600 font-medium mt-1">
+                    💡 Set a Start Date to create a multi-day task
+                  </div>
                 )}
                 {form.watch('dueDate') && (
                   <div className="text-xs text-muted-foreground mt-1">

@@ -291,6 +291,24 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
     return 'bg-green-500'
   }
 
+  const getPriorityColor = (priority: Priority) => {
+    switch (priority) {
+      case 'URGENT': return 'bg-red-100 text-red-800 border-red-300'
+      case 'HIGH': return 'bg-orange-100 text-orange-800 border-orange-300'
+      case 'MEDIUM': return 'bg-yellow-100 text-yellow-800 border-yellow-300'
+      case 'LOW': return 'bg-green-100 text-green-800 border-green-300'
+    }
+  }
+
+  const getStatusColor = (status: TaskStatus) => {
+    switch (status) {
+      case 'TODO': return 'bg-gray-100 text-gray-800 border-gray-300'
+      case 'IN_PROGRESS': return 'bg-blue-100 text-blue-800 border-blue-300'
+      case 'IN_REVIEW': return 'bg-purple-100 text-purple-800 border-purple-300'
+      case 'COMPLETED': return 'bg-green-100 text-green-800 border-green-300'
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -302,216 +320,332 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
         </DialogHeader>
 
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-          {/* Basic Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Task Title *</Label>
-              <Input
-                id="title"
-                {...form.register('title')}
-                placeholder="Enter task title"
-              />
-              {form.formState.errors.title && (
-                <p className="text-sm text-red-500">{form.formState.errors.title.message}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="priority">Priority</Label>
-              <Select
-                value={form.watch('priority')}
-                onValueChange={(value) => form.setValue('priority', value as Priority)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="LOW">Low</SelectItem>
-                  <SelectItem value="MEDIUM">Medium</SelectItem>
-                  <SelectItem value="HIGH">High</SelectItem>
-                  <SelectItem value="URGENT">Urgent</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              {...form.register('description')}
-              placeholder="Describe the task"
-              rows={3}
-            />
-          </div>
-
-          {/* Status and Progress */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-            <div className="space-y-3">
-              <Label htmlFor="status" className="text-sm font-semibold">Status</Label>
-              <Select
-                value={form.watch('status')}
-                onValueChange={(value) => form.setValue('status', value as TaskStatus)}
-              >
-                <SelectTrigger className="h-11">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="TODO">To Do</SelectItem>
-                  <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                  <SelectItem value="IN_REVIEW">In Review</SelectItem>
-                  <SelectItem value="COMPLETED">Completed</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-3">
-              <Label htmlFor="startDate" className="text-sm font-semibold">
-                Start Date
-                <span className="text-xs text-muted-foreground font-normal ml-2">
-                  (For multi-day tasks)
-                </span>
-              </Label>
+          {/* Basic Information Section */}
+          <Card className="border-2">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Basic Information</CardTitle>
+              <CardDescription>Task title, description, and priority</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="space-y-2">
-                <DatePicker
-                  selected={form.watch('startDate')}
-                  onChange={(date) => form.setValue('startDate', date || undefined)}
-                  placeholderText="Select start date"
-                  className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  dateFormat="PPP"
-                  isClearable
-                  showPopperArrow={false}
-                  popperClassName="z-50"
+                <Label htmlFor="title" className="text-base">Task Title <span className="text-red-500">*</span></Label>
+                <Input
+                  id="title"
+                  {...form.register('title')}
+                  placeholder="Enter a clear, descriptive task title"
+                  className="h-11"
                 />
-                {!form.watch('allDay') && (
+                {form.formState.errors.title && (
+                  <p className="text-sm text-red-500 flex items-center gap-1">
+                    <span>⚠</span> {form.formState.errors.title.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description" className="text-base">Description</Label>
+                <Textarea
+                  id="description"
+                  {...form.register('description')}
+                  placeholder="Provide details about this task..."
+                  rows={3}
+                  className="resize-none"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="priority" className="text-base">Priority Level</Label>
+                <Select
+                  value={form.watch('priority')}
+                  onValueChange={(value) => form.setValue('priority', value as Priority)}
+                >
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="LOW">
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-green-100 text-green-800 border-green-300 hover:bg-green-100">Low</Badge>
+                        <span className="text-xs text-muted-foreground">Can wait</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="MEDIUM">
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-100">Medium</Badge>
+                        <span className="text-xs text-muted-foreground">Normal priority</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="HIGH">
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-orange-100 text-orange-800 border-orange-300 hover:bg-orange-100">High</Badge>
+                        <span className="text-xs text-muted-foreground">Important</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="URGENT">
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-red-100 text-red-800 border-red-300 hover:bg-red-100">Urgent</Badge>
+                        <span className="text-xs text-muted-foreground">Critical!</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <Badge className={cn("w-fit", getPriorityColor(form.watch('priority')))}>
+                  {form.watch('priority')} Priority
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Status and Schedule Section */}
+          <Card className="border-2">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Status & Schedule</CardTitle>
+              <CardDescription>Track progress and set deadlines</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Status and Progress Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <Label htmlFor="status" className="text-base">Task Status</Label>
+                  <Select
+                    value={form.watch('status')}
+                    onValueChange={(value) => form.setValue('status', value as TaskStatus)}
+                  >
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="TODO">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+                          To Do
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="IN_PROGRESS">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-blue-400"></div>
+                          In Progress
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="IN_REVIEW">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-purple-400"></div>
+                          In Review
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="COMPLETED">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-green-400"></div>
+                          Completed
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Badge className={cn("w-fit", getStatusColor(form.watch('status')))}>
+                    {form.watch('status').replace('_', ' ')}
+                  </Badge>
+                </div>
+
+                <div className="space-y-3">
+                  <Label htmlFor="progress" className="text-base">Progress: {progressPercentage}%</Label>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <Input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={progressPercentage}
+                        onChange={(e) => form.setValue('progressPercentage', Number(e.target.value))}
+                        className="w-full"
+                      />
+                      <span className="text-sm font-semibold min-w-[3rem] text-right">{progressPercentage}%</span>
+                    </div>
+                    <Progress 
+                      value={progressPercentage} 
+                      className={`h-3 ${getProgressColor(progressPercentage)}`}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Date Range */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label className="text-base">Date Range</Label>
+                  <Badge variant="outline" className="text-xs">
+                    {form.watch('allDay') ? 'All-day task' : 'Specific times'}
+                  </Badge>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Start Date */}
+                  <div className="space-y-3">
+                    <Label htmlFor="startDate" className="text-sm font-medium flex items-center gap-2">
+                      <CalendarIcon className="h-3.5 w-3.5" />
+                      Start Date
+                      <span className="text-xs text-muted-foreground font-normal">
+                        (Optional)
+                      </span>
+                    </Label>
+                    <div className="space-y-2">
+                      <DatePicker
+                        selected={form.watch('startDate')}
+                        onChange={(date) => form.setValue('startDate', date || undefined)}
+                        placeholderText="Select start date"
+                        className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        dateFormat="PPP"
+                        isClearable
+                        showPopperArrow={false}
+                        popperClassName="z-50"
+                      />
+                      {!form.watch('allDay') && (
+                        <Input
+                          type="time"
+                          value={form.watch('startTime') || ''}
+                          onChange={(e) => form.setValue('startTime', e.target.value)}
+                          placeholder="Start time"
+                          className="h-11"
+                        />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* End Date */}
+                  <div className="space-y-3">
+                    <Label htmlFor="dueDate" className="text-sm font-medium flex items-center gap-2">
+                      <CalendarIcon className="h-3.5 w-3.5 text-orange-600" />
+                      Due Date
+                      <span className="text-xs text-orange-600 font-semibold">
+                        *Required
+                      </span>
+                    </Label>
+                    <div className="space-y-2">
+                      <DatePicker
+                        selected={form.watch('dueDate')}
+                        onChange={(date) => form.setValue('dueDate', date || undefined)}
+                        placeholderText="Select due date"
+                        className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        dateFormat="PPP"
+                        isClearable
+                        showPopperArrow={false}
+                        popperClassName="z-50"
+                        minDate={form.watch('startDate') || new Date()}
+                      />
+                      {!form.watch('allDay') && (
+                        <Input
+                          type="time"
+                          value={form.watch('endTime') || ''}
+                          onChange={(e) => form.setValue('endTime', e.target.value)}
+                          placeholder="End time"
+                          className="h-11"
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Date Helper Messages */}
+                <div className="flex flex-col gap-2">
+                  {form.watch('startDate') && form.watch('dueDate') && (
+                    <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-md">
+                      <div className="text-green-600">✓</div>
+                      <div className="text-sm text-green-700 font-medium">
+                        Task will span {Math.ceil((form.watch('dueDate')!.getTime() - form.watch('startDate')!.getTime()) / (1000 * 60 * 60 * 24)) + 1} days
+                      </div>
+                    </div>
+                  )}
+                  {form.watch('dueDate') && !form.watch('startDate') && (
+                    <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                      <div className="text-blue-600">💡</div>
+                      <div className="text-sm text-blue-700">
+                        Add a start date to create a multi-day task that spans across the calendar
+                      </div>
+                    </div>
+                  )}
+                  {form.watch('dueDate') && form.watch('dueDate')! < new Date() && (
+                    <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-md">
+                      <div className="text-red-600">⚠</div>
+                      <div className="text-sm text-red-700 font-medium">
+                        Due date is in the past
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Calendar Integration Section */}
+          <Card className="border-2">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-2">
+                <CalendarIcon className="h-5 w-5" />
+                <CardTitle className="text-lg">Calendar Integration</CardTitle>
+              </div>
+              <CardDescription>Additional details for Google Calendar sync</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* All Day Toggle - moved to top */}
+              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border-2">
+                <div className="space-y-0.5">
+                  <Label htmlFor="allDay" className="text-base">All-day Task</Label>
+                  <p className="text-xs text-muted-foreground">
+                    {form.watch('allDay')
+                      ? 'Task can be done anytime during the selected day(s)'
+                      : 'Task has specific start and end times'}
+                  </p>
+                </div>
+                <Switch
+                  id="allDay"
+                  checked={form.watch('allDay')}
+                  onCheckedChange={(checked) => form.setValue('allDay', checked)}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Location */}
+                <div className="space-y-2">
+                  <Label htmlFor="location" className="text-sm font-medium">📍 Location</Label>
                   <Input
-                    type="time"
-                    value={form.watch('startTime') || ''}
-                    onChange={(e) => form.setValue('startTime', e.target.value)}
-                    placeholder="Start time"
+                    id="location"
+                    {...form.register('location')}
+                    placeholder="e.g., Conference Room A, Building 5"
                     className="h-11"
                   />
-                )}
-                {form.watch('startDate') && form.watch('dueDate') && (
-                  <div className="text-xs text-green-600 font-medium">
-                    ✓ Task will span {Math.ceil((form.watch('dueDate')!.getTime() - form.watch('startDate')!.getTime()) / (1000 * 60 * 60 * 24))} days
-                  </div>
-                )}
-              </div>
-            </div>
+                  <p className="text-xs text-muted-foreground">
+                    Physical location or address
+                  </p>
+                </div>
 
-            <div className="space-y-3">
-              <Label htmlFor="dueDate" className="text-sm font-semibold">
-                End Date (Due Date)
-                <span className="text-xs text-orange-600 font-normal ml-2">
-                  *Required
-                </span>
-              </Label>
-              <div className="space-y-2">
-                <DatePicker
-                  selected={form.watch('dueDate')}
-                  onChange={(date) => form.setValue('dueDate', date || undefined)}
-                  placeholderText="Select a due date"
-                  className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  dateFormat="PPP"
-                  isClearable
-                  showPopperArrow={false}
-                  popperClassName="z-50"
-                  minDate={form.watch('startDate') || new Date()}
-                />
-                {!form.watch('allDay') && (
+                {/* Meeting Link */}
+                <div className="space-y-2">
+                  <Label htmlFor="meetingLink" className="text-sm font-medium">🔗 Meeting Link</Label>
                   <Input
-                    type="time"
-                    value={form.watch('endTime') || ''}
-                    onChange={(e) => form.setValue('endTime', e.target.value)}
-                    placeholder="End time"
+                    id="meetingLink"
+                    {...form.register('meetingLink')}
+                    placeholder="https://meet.google.com/..."
+                    type="url"
                     className="h-11"
                   />
-                )}
-                {form.watch('dueDate') && !form.watch('startDate') && (
-                  <div className="text-xs text-blue-600 font-medium mt-1">
-                    💡 Set a Start Date to create a multi-day task
-                  </div>
-                )}
-                {form.watch('dueDate') && (
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {form.watch('dueDate')! < new Date() ? (
-                      <span className="text-red-600 font-medium">⚠ Past due date</span>
-                    ) : (
-                      <span className="text-green-600">✓ Valid due date</span>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="progress">Progress: {progressPercentage}%</Label>
-              <div className="space-y-2">
-                <Input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={progressPercentage}
-                  onChange={(e) => form.setValue('progressPercentage', Number(e.target.value))}
-                  className="w-full"
-                />
-                <Progress 
-                  value={progressPercentage} 
-                  className={`h-2 ${getProgressColor(progressPercentage)}`}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Google Calendar Fields */}
-          <div className="space-y-4 p-4 bg-muted/50 rounded-lg border">
-            <div className="flex items-center gap-2">
-              <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-              <Label className="text-base font-semibold">Calendar Details (Google Sync)</Label>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Location */}
-              <div className="space-y-2">
-                <Label htmlFor="location">Location (Optional)</Label>
-                <Input
-                  id="location"
-                  {...form.register('location')}
-                  placeholder="e.g., Conference Room A, 123 Main St, or Building 5"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Physical location or address (e.g., office, meeting room, venue)
-                </p>
+                  <p className="text-xs text-muted-foreground">
+                    Virtual meeting URL (Meet, Zoom, Teams)
+                  </p>
+                  {form.formState.errors.meetingLink && (
+                    <p className="text-xs text-red-500 flex items-center gap-1">
+                      <span>⚠</span> Please enter a valid URL
+                    </p>
+                  )}
+                </div>
               </div>
 
-              {/* Meeting Link */}
-              <div className="space-y-2">
-                <Label htmlFor="meetingLink">Meeting Link (Optional)</Label>
-                <Input
-                  id="meetingLink"
-                  {...form.register('meetingLink')}
-                  placeholder="e.g., https://meet.google.com/abc-defg-hij"
-                  type="url"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Virtual meeting link (Google Meet, Zoom, Teams, etc.)
-                </p>
-                {form.formState.errors.meetingLink && (
-                  <p className="text-xs text-red-500">Please enter a valid URL</p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Recurrence */}
               <div className="space-y-2">
-                <Label htmlFor="recurrence">Recurrence (Optional)</Label>
+                <Label htmlFor="recurrence" className="text-sm font-medium">🔄 Recurrence</Label>
                 <Select
-                  value={form.watch('recurrence') || undefined}
+                  value={form.watch('recurrence') || 'NONE'}
                   onValueChange={(value) => form.setValue('recurrence', value === 'NONE' ? undefined : value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-11">
                     <SelectValue placeholder="Does not repeat" />
                   </SelectTrigger>
                   <SelectContent>
@@ -524,74 +658,99 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Set if this task repeats regularly
+                  Set if this task repeats on a regular schedule
                 </p>
               </div>
-            </div>
-
-            {/* All Day Toggle */}
-            <div className="flex items-center justify-between p-3 bg-background rounded-md border">
-              <div className="space-y-0.5">
-                <Label htmlFor="allDay">Anytime (All-day task)</Label>
-                <p className="text-xs text-muted-foreground">
-                  {form.watch('allDay')
-                    ? 'Task can be done anytime during the day'
-                    : 'Task has specific start and end times'}
-                </p>
-              </div>
-              <Switch
-                id="allDay"
-                checked={form.watch('allDay')}
-                onCheckedChange={(checked) => form.setValue('allDay', checked)}
-              />
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Task Type Selection */}
-          <div className="space-y-4">
-            <Label>Task Type</Label>
-            <div className="grid grid-cols-3 gap-4">
-              {(['INDIVIDUAL', 'TEAM', 'COLLABORATION'] as TaskType[]).map((type) => (
-                <Card
-                  key={type}
-                  className={cn(
-                    "cursor-pointer transition-all hover:shadow-md",
-                    taskType === type ? "ring-2 ring-primary" : ""
-                  )}
-                  onClick={() => form.setValue('taskType', type)}
-                >
-                  <CardContent className="flex flex-col items-center p-4">
-                    {getTaskTypeIcon(type)}
-                    <span className="mt-2 text-sm font-medium capitalize">
-                      {type.toLowerCase()}
-                    </span>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
+          <Card className="border-2">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Task Type</CardTitle>
+              <CardDescription>Choose who will be involved in this task</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {(['INDIVIDUAL', 'TEAM', 'COLLABORATION'] as TaskType[]).map((type) => (
+                  <Card
+                    key={type}
+                    className={cn(
+                      "cursor-pointer transition-all hover:shadow-lg hover:scale-105 border-2",
+                      taskType === type 
+                        ? "ring-2 ring-primary border-primary bg-primary/5" 
+                        : "border-border hover:border-primary/50"
+                    )}
+                    onClick={() => form.setValue('taskType', type)}
+                  >
+                    <CardContent className="flex flex-col items-center justify-center p-6 space-y-3">
+                      <div className={cn(
+                        "p-3 rounded-full transition-colors",
+                        taskType === type 
+                          ? "bg-primary text-primary-foreground" 
+                          : "bg-muted"
+                      )}>
+                        {getTaskTypeIcon(type)}
+                      </div>
+                      <div className="text-center">
+                        <span className="text-sm font-semibold capitalize block">
+                          {type.toLowerCase()}
+                        </span>
+                        <span className="text-xs text-muted-foreground mt-1 block">
+                          {type === 'INDIVIDUAL' && 'Just you'}
+                          {type === 'TEAM' && 'You + team members'}
+                          {type === 'COLLABORATION' && 'You + collaborators'}
+                        </span>
+                      </div>
+                      {taskType === type && (
+                        <Badge className="bg-primary">
+                          Selected
+                        </Badge>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Task Type Specific Fields */}
           {taskType === 'INDIVIDUAL' && (
-            <div className="space-y-2">
-              <div className="p-3 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground">
-                  This task is assigned to you automatically.
-                </p>
+            <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-blue-100 rounded-full">
+                  <User className="h-4 w-4 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-blue-900">
+                    Individual Task
+                  </p>
+                  <p className="text-sm text-blue-700 mt-1">
+                    This task is assigned to you automatically. Perfect for personal work items.
+                  </p>
+                </div>
               </div>
             </div>
           )}
 
           {taskType === 'TEAM' && (
-            <div className="space-y-4">
-              <div className="p-3 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground">
-                  You are the team leader. Select team members from all users.
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Team Members</Label>
+            <Card className="border-2 border-purple-200 bg-purple-50/50">
+              <CardHeader className="pb-3">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-purple-100 rounded-full">
+                    <Users className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base text-purple-900">Team Task</CardTitle>
+                    <CardDescription className="text-purple-700">
+                      You are the team leader. Select members to join this task.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-base">Team Members</Label>
                 <div className="space-y-2">
                   <Select 
                     onValueChange={(value) => {
@@ -642,48 +801,65 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                     </SelectContent>
                   </Select>
                   
-                  {selectedTeamMembers.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {selectedTeamMembers.map((member) => (
-                        <Badge key={member.id} variant="secondary" className="flex items-center gap-1">
-                          <Avatar className="h-4 w-4">
-                            <AvatarImage src={member.image || undefined} />
-                            <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium text-xs">
-                              {member.name
-                                ? member.name.split(' ').map(n => n[0]).join('')
-                                : member.email?.[0]?.toUpperCase()
-                              }
-                            </AvatarFallback>
-                          </Avatar>
-                          {member.name || member.email}
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-4 w-4 p-0"
-                            onClick={() => removeTeamMember(member.id)}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </Badge>
-                      ))}
+                  {selectedTeamMembers.length > 0 ? (
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">
+                        {selectedTeamMembers.length} member{selectedTeamMembers.length > 1 ? 's' : ''} selected
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedTeamMembers.map((member) => (
+                          <Badge key={member.id} variant="secondary" className="flex items-center gap-2 py-1.5 px-3">
+                            <Avatar className="h-5 w-5">
+                              <AvatarImage src={member.image || undefined} />
+                              <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium text-xs">
+                                {member.name
+                                  ? member.name.split(' ').map(n => n[0]).join('')
+                                  : member.email?.[0]?.toUpperCase()
+                                }
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-sm">{member.name || member.email}</span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-4 w-4 p-0 hover:bg-destructive/20"
+                              onClick={() => removeTeamMember(member.id)}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground p-3 bg-muted rounded-md">
+                      No team members selected yet
+                    </p>
                   )}
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           )}
 
           {taskType === 'COLLABORATION' && (
-            <div className="space-y-4">
-              <div className="p-3 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground">
-                  You are the primary assignee. Select collaborators from all users.
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Collaborators</Label>
+            <Card className="border-2 border-green-200 bg-green-50/50">
+              <CardHeader className="pb-3">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-green-100 rounded-full">
+                    <Handshake className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base text-green-900">Collaboration Task</CardTitle>
+                    <CardDescription className="text-green-700">
+                      You are the primary assignee. Add collaborators to work together.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-base">Collaborators</Label>
                 <div className="space-y-2">
                   <Select onValueChange={(value) => {
                     const user = users.find(u => u.id === value)
@@ -732,36 +908,45 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                     </SelectContent>
                   </Select>
                   
-                  {selectedCollaborators.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {selectedCollaborators.map((collaborator) => (
-                        <Badge key={collaborator.id} variant="secondary" className="flex items-center gap-1">
-                          <Avatar className="h-4 w-4">
-                            <AvatarImage src={collaborator.image || undefined} />
-                            <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium text-xs">
-                              {collaborator.name
-                                ? collaborator.name.split(' ').map(n => n[0]).join('')
-                                : collaborator.email?.[0]?.toUpperCase()
-                              }
-                            </AvatarFallback>
-                          </Avatar>
-                          {collaborator.name || collaborator.email}
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-4 w-4 p-0"
-                            onClick={() => removeCollaborator(collaborator.id)}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </Badge>
-                      ))}
+                  {selectedCollaborators.length > 0 ? (
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">
+                        {selectedCollaborators.length} collaborator{selectedCollaborators.length > 1 ? 's' : ''} added
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedCollaborators.map((collaborator) => (
+                          <Badge key={collaborator.id} variant="secondary" className="flex items-center gap-2 py-1.5 px-3">
+                            <Avatar className="h-5 w-5">
+                              <AvatarImage src={collaborator.image || undefined} />
+                              <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium text-xs">
+                                {collaborator.name
+                                  ? collaborator.name.split(' ').map(n => n[0]).join('')
+                                  : collaborator.email?.[0]?.toUpperCase()
+                                }
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-sm">{collaborator.name || collaborator.email}</span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-4 w-4 p-0 hover:bg-destructive/20"
+                              onClick={() => removeCollaborator(collaborator.id)}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground p-3 bg-muted rounded-md">
+                      No collaborators added yet
+                    </p>
                   )}
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           )}
 
           <DialogFooter>

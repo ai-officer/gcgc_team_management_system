@@ -6,7 +6,7 @@ import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
-import { Calendar as CalendarIcon, AlertCircle, Settings, Wifi, WifiOff, RefreshCw } from 'lucide-react'
+import { Calendar as CalendarIcon, AlertCircle, Settings, Wifi, WifiOff, RefreshCw, Trash2 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -72,6 +72,8 @@ export default function CalendarPage() {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false)
   const [isSyncSettingsOpen, setIsSyncSettingsOpen] = useState(false)
+  const [isCleaningUp, setIsCleaningUp] = useState(false)
+  const [cleanupMessage, setCleanupMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
   // Real-time calendar sync with WebSocket
   const fetchCalendarData = useCallback(async () => {
@@ -250,6 +252,42 @@ export default function CalendarPage() {
     console.log('Date selected:', selectInfo)
   }
 
+  const handleCleanupDuplicates = async () => {
+    try {
+      setIsCleaningUp(true)
+      setCleanupMessage(null)
+
+      const response = await fetch('/api/calendar/cleanup-duplicates', {
+        method: 'POST'
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to cleanup duplicates')
+      }
+
+      setCleanupMessage({
+        type: 'success',
+        text: `Successfully cleaned up ${data.stats.deleted} orphaned event(s)`
+      })
+
+      // Refresh calendar after cleanup
+      await fetchCalendarData()
+
+      // Clear message after 5 seconds
+      setTimeout(() => setCleanupMessage(null), 5000)
+    } catch (err) {
+      console.error('Cleanup error:', err)
+      setCleanupMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Failed to cleanup duplicates'
+      })
+    } finally {
+      setIsCleaningUp(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -308,15 +346,26 @@ export default function CalendarPage() {
         </div>
         <div className="flex gap-2">
           {isConnected && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={triggerManualSync}
-              disabled={status.isSyncing}
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${status.isSyncing ? 'animate-spin' : ''}`} />
-              Sync Now
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={triggerManualSync}
+                disabled={status.isSyncing}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${status.isSyncing ? 'animate-spin' : ''}`} />
+                Sync Now
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCleanupDuplicates}
+                disabled={isCleaningUp}
+              >
+                <Trash2 className={`h-4 w-4 mr-2 ${isCleaningUp ? 'animate-pulse' : ''}`} />
+                {isCleaningUp ? 'Cleaning...' : 'Clean Up Duplicates'}
+              </Button>
+            </>
           )}
           <Button
             variant="outline"
@@ -327,6 +376,26 @@ export default function CalendarPage() {
           </Button>
         </div>
       </div>
+
+      {/* Cleanup Message */}
+      {cleanupMessage && (
+        <div className={`p-4 rounded-lg border ${
+          cleanupMessage.type === 'success'
+            ? 'bg-green-50 border-green-200 text-green-800'
+            : 'bg-red-50 border-red-200 text-red-800'
+        }`}>
+          <div className="flex items-center gap-2">
+            {cleanupMessage.type === 'success' ? (
+              <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            ) : (
+              <AlertCircle className="h-5 w-5" />
+            )}
+            <p className="font-medium">{cleanupMessage.text}</p>
+          </div>
+        </div>
+      )}
 
       {/* Legend */}
       <Card>

@@ -332,8 +332,8 @@ export class GoogleCalendarService {
     const dueDate = task.dueDate ? new Date(task.dueDate) : null
     const startDate = task.startDate ? new Date(task.startDate) : null
 
-    // Use startDate if available, otherwise use dueDate - 1 hour as start
-    const startTime = startDate || (dueDate ? new Date(dueDate.getTime() - 60 * 60 * 1000) : new Date())
+    // Use startDate if available, otherwise use dueDate as start (single-day event)
+    const startTime = startDate || dueDate || new Date()
     const endTime = dueDate || new Date(startTime.getTime() + 60 * 60 * 1000)
 
     const googleEvent: GoogleCalendarEvent = {

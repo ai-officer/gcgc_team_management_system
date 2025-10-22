@@ -51,6 +51,7 @@ interface TaskDeadline {
   id: string
   title: string
   dueDate: string
+  startDate?: string
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
   status: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' | 'CANCELLED'
   assignee?: {
@@ -201,12 +202,17 @@ export default function CalendarPage() {
                 LOW: '#16a34a'
               }
 
+              // Use startDate if available, otherwise use dueDate
+              // This makes tasks span across multiple days if they have a date range
+              const eventStart = task.startDate || task.dueDate
+              const eventEnd = task.dueDate
+
               calendarEvents.push({
                 id: `task-${task.id}`,
                 title: `📋 ${task.title}`,
                 description: `Due: ${task.team?.name || 'Individual'} task`,
-                start: task.dueDate,
-                end: task.dueDate,
+                start: eventStart,
+                end: eventEnd,
                 allDay: true,
                 color: priorityColors[task.priority],
                 type: 'DEADLINE',
@@ -621,12 +627,17 @@ export default function CalendarPage() {
                           LOW: '#16a34a'
                         }
 
+                        // Use startDate if available, otherwise use dueDate
+                        // This makes tasks span across multiple days if they have a date range
+                        const eventStart = task.startDate || task.dueDate
+                        const eventEnd = task.dueDate
+
                         calendarEvents.push({
                           id: `task-${task.id}`,
                           title: `📋 ${task.title}`,
                           description: `Due: ${task.team?.name || 'Individual'} task`,
-                          start: task.dueDate,
-                          end: task.dueDate,
+                          start: eventStart,
+                          end: eventEnd,
                           allDay: true,
                           color: priorityColors[task.priority],
                           type: 'DEADLINE',

@@ -222,9 +222,17 @@ export default function CalendarPage() {
                 endDatePlusOne.setDate(endDatePlusOne.getDate() + 1)
                 end = endDatePlusOne.toISOString().split('T')[0]
               } else {
-                // For timed events, use full ISO string (with time)
+                // For timed events with date ranges, adjust end time to span full days visually
                 start = new Date(eventStart).toISOString()
-                end = new Date(eventEnd).toISOString()
+                
+                // If there's a date range, extend to end of last day for visual continuity
+                if (task.startDate && task.dueDate) {
+                  const endOfDay = new Date(eventEnd)
+                  endOfDay.setHours(23, 59, 59, 999)
+                  end = endOfDay.toISOString()
+                } else {
+                  end = new Date(eventEnd).toISOString()
+                }
               }
 
               calendarEvents.push({
@@ -667,9 +675,17 @@ export default function CalendarPage() {
                           endDatePlusOne.setDate(endDatePlusOne.getDate() + 1)
                           end = endDatePlusOne.toISOString().split('T')[0]
                         } else {
-                          // For timed events, use full ISO string (with time)
+                          // For timed events with date ranges, adjust end time to span full days visually
                           start = new Date(eventStart).toISOString()
-                          end = new Date(eventEnd).toISOString()
+                          
+                          // If there's a date range, extend to end of last day for visual continuity
+                          if (task.startDate && task.dueDate) {
+                            const endOfDay = new Date(eventEnd)
+                            endOfDay.setHours(23, 59, 59, 999)
+                            end = endOfDay.toISOString()
+                          } else {
+                            end = new Date(eventEnd).toISOString()
+                          }
                         }
 
                         calendarEvents.push({

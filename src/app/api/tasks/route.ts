@@ -395,6 +395,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Auto-set startDate if not provided but dueDate is (for calendar display)
+    const finalDueDate = dueDate ? new Date(dueDate) : null
+    const finalStartDate = startDate 
+      ? new Date(startDate) 
+      : (finalDueDate ? new Date(finalDueDate) : null) // Auto-set to dueDate if not provided
+
     // Create task with transaction for related data
     const task = await prisma.$transaction(async (tx) => {
       // Create the task
@@ -406,8 +412,8 @@ export async function POST(req: NextRequest) {
           status: status || 'TODO',
           progressPercentage: progressPercentage || 0,
           taskType,
-          dueDate: dueDate ? new Date(dueDate) : null,
-          startDate: startDate ? new Date(startDate) : null,
+          dueDate: finalDueDate,
+          startDate: finalStartDate,
           assigneeId: assigneeId || session.user.id, // Default to current user
           creatorId: session.user.id,
           teamId: null, // No longer using teams

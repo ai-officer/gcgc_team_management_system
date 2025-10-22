@@ -224,13 +224,19 @@ export async function PATCH(
       }
     }
 
+    // Auto-set startDate if not provided but dueDate is (for calendar display)
+    const finalDueDate = updateData.dueDate ? new Date(updateData.dueDate) : undefined
+    const finalStartDate = updateData.startDate 
+      ? new Date(updateData.startDate)
+      : (finalDueDate ? new Date(finalDueDate) : (updateData.dueDate !== undefined ? existingTask.startDate : undefined))
+
     // Update task with transaction for related data
     const updatedTask = await prisma.$transaction(async (tx) => {
       // Prepare update data
       const taskUpdateData: any = {
         ...updateData,
-        dueDate: updateData.dueDate ? new Date(updateData.dueDate) : undefined,
-        startDate: updateData.startDate ? new Date(updateData.startDate) : undefined,
+        dueDate: finalDueDate,
+        startDate: finalStartDate,
       }
 
       // Remove arrays from task update data

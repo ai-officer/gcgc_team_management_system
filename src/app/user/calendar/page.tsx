@@ -207,12 +207,17 @@ export default function CalendarPage() {
               const eventStart = task.startDate || task.dueDate
               const eventEnd = task.dueDate
 
+              // FullCalendar requires end date to be exclusive (day after) for all-day events
+              // So for Oct 1-23, we set end to Oct 24 to make it span correctly
+              const endDatePlusOne = new Date(eventEnd)
+              endDatePlusOne.setDate(endDatePlusOne.getDate() + 1)
+
               calendarEvents.push({
                 id: `task-${task.id}`,
                 title: `📋 ${task.title}`,
                 description: `Due: ${task.team?.name || 'Individual'} task`,
                 start: eventStart,
-                end: eventEnd,
+                end: endDatePlusOne.toISOString().split('T')[0],
                 allDay: true,
                 color: priorityColors[task.priority],
                 type: 'DEADLINE',
@@ -632,12 +637,17 @@ export default function CalendarPage() {
                         const eventStart = task.startDate || task.dueDate
                         const eventEnd = task.dueDate
 
+                        // FullCalendar requires end date to be exclusive (day after) for all-day events
+                        // So for Oct 1-23, we set end to Oct 24 to make it span correctly
+                        const endDatePlusOne = new Date(eventEnd)
+                        endDatePlusOne.setDate(endDatePlusOne.getDate() + 1)
+
                         calendarEvents.push({
                           id: `task-${task.id}`,
                           title: `📋 ${task.title}`,
                           description: `Due: ${task.team?.name || 'Individual'} task`,
                           start: eventStart,
-                          end: eventEnd,
+                          end: endDatePlusOne.toISOString().split('T')[0],
                           allDay: true,
                           color: priorityColors[task.priority],
                           type: 'DEADLINE',

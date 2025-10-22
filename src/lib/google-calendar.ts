@@ -343,8 +343,12 @@ export class GoogleCalendarService {
 
     // Handle all-day events
     if (task.allDay) {
+      // Google Calendar requires end date to be exclusive (day after) for all-day events
+      const endDatePlusOne = new Date(endTime)
+      endDatePlusOne.setDate(endDatePlusOne.getDate() + 1)
+
       googleEvent.start = { date: startTime.toISOString().split('T')[0] }
-      googleEvent.end = { date: endTime.toISOString().split('T')[0] }
+      googleEvent.end = { date: endDatePlusOne.toISOString().split('T')[0] }
     } else {
       googleEvent.start = { dateTime: startTime.toISOString(), timeZone: 'UTC' }
       googleEvent.end = { dateTime: endTime.toISOString(), timeZone: 'UTC' }

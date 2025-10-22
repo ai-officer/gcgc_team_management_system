@@ -62,8 +62,11 @@ const taskFormSchema = z.object({
   // New Google Calendar-compatible fields
   location: z.string().optional(),
   meetingLink: z.string().url().optional().or(z.literal('')),
-  allDay: z.boolean().default(false),
+  allDay: z.boolean().default(true),
   recurrence: z.string().optional(),
+  // Time fields for non-all-day events
+  startTime: z.string().optional(),
+  endTime: z.string().optional(),
 })
 
 type TaskFormData = z.infer<typeof taskFormSchema>
@@ -100,9 +103,11 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
       // New Google Calendar fields
       location: '',
       meetingLink: '',
-      allDay: false,
+      allDay: true,
       recurrence: '',
       startDate: undefined,
+      startTime: '',
+      endTime: '',
     },
   })
 
@@ -116,11 +121,14 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
       
       if (task) {
         // Populate form with existing task data
+        const startDateTime = task.startDate ? new Date(task.startDate) : undefined
+        const dueDateTime = task.dueDate ? new Date(task.dueDate) : undefined
+
         form.reset({
           title: task.title,
           description: task.description || '',
-          dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
-          startDate: task.startDate ? new Date(task.startDate) : undefined,
+          dueDate: dueDateTime,
+          startDate: startDateTime,
           status: task.status,
           priority: task.priority,
           progressPercentage: task.progressPercentage || 0,
@@ -132,8 +140,11 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
           // New Google Calendar fields
           location: task.location || '',
           meetingLink: task.meetingLink || '',
-          allDay: task.allDay || false,
+          allDay: task.allDay !== undefined ? task.allDay : true,
           recurrence: task.recurrence || '',
+          // Extract time from DateTime if not all-day
+          startTime: startDateTime && !task.allDay ? startDateTime.toTimeString().slice(0, 5) : '',
+          endTime: dueDateTime && !task.allDay ? dueDateTime.toTimeString().slice(0, 5) : '',
         })
         
         // Set selected members and collaborators for display
@@ -159,9 +170,11 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
           // New Google Calendar fields
           location: '',
           meetingLink: '',
-          allDay: false,
+          allDay: true,
           recurrence: '',
           startDate: undefined,
+          startTime: '',
+          endTime: '',
         })
 
         // Clear selected arrays
@@ -208,7 +221,28 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
   const handleSubmit = async (data: TaskFormData) => {
     setLoading(true)
     try {
-      await onSubmit(data)
+      // Combine date and time if not all-day
+      const submissionData = { ...data }
+
+      if (!data.allDay) {
+        // If we have a start date and time, combine them
+        if (data.startDate && data.startTime) {
+          const [hours, minutes] = data.startTime.split(':')
+          const startDateTime = new Date(data.startDate)
+          startDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0)
+          submissionData.startDate = startDateTime
+        }
+
+        // If we have an end date and time, combine them
+        if (data.dueDate && data.endTime) {
+          const [hours, minutes] = data.endTime.split(':')
+          const dueDateTime = new Date(data.dueDate)
+          dueDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0)
+          submissionData.dueDate = dueDateTime
+        }
+      }
+
+      await onSubmit(submissionData)
       onOpenChange(false)
       form.reset()
     } catch (error) {
@@ -333,16 +367,27 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
 
             <div className="space-y-3">
               <Label htmlFor="startDate" className="text-sm font-semibold">Start Date</Label>
-              <DatePicker
-                selected={form.watch('startDate')}
-                onChange={(date) => form.setValue('startDate', date || undefined)}
-                placeholderText="Select start date"
-                className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                dateFormat="PPP"
-                isClearable
-                showPopperArrow={false}
-                popperClassName="z-50"
-              />
+              <div className="space-y-2">
+                <DatePicker
+                  selected={form.watch('startDate')}
+                  onChange={(date) => form.setValue('startDate', date || undefined)}
+                  placeholderText="Select start date"
+                  className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  dateFormat="PPP"
+                  isClearable
+                  showPopperArrow={false}
+                  popperClassName="z-50"
+                />
+                {!form.watch('allDay') && (
+                  <Input
+                    type="time"
+                    value={form.watch('startTime') || ''}
+                    onChange={(e) => form.setValue('startTime', e.target.value)}
+                    placeholder="Start time"
+                    className="h-11"
+                  />
+                )}
+              </div>
             </div>
 
             <div className="space-y-3">
@@ -359,6 +404,15 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                   popperClassName="z-50"
                   minDate={new Date()}
                 />
+                {!form.watch('allDay') && (
+                  <Input
+                    type="time"
+                    value={form.watch('endTime') || ''}
+                    onChange={(e) => form.setValue('endTime', e.target.value)}
+                    placeholder="End time"
+                    className="h-11"
+                  />
+                )}
                 {form.watch('dueDate') && (
                   <div className="text-xs text-muted-foreground mt-1">
                     {form.watch('dueDate')! < new Date() ? (
@@ -458,9 +512,11 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
             {/* All Day Toggle */}
             <div className="flex items-center justify-between p-3 bg-background rounded-md border">
               <div className="space-y-0.5">
-                <Label htmlFor="allDay">All-day task</Label>
+                <Label htmlFor="allDay">Anytime (All-day task)</Label>
                 <p className="text-xs text-muted-foreground">
-                  Mark this task as an all-day event in calendar
+                  {form.watch('allDay')
+                    ? 'Task can be done anytime during the day'
+                    : 'Task has specific start and end times'}
                 </p>
               </div>
               <Switch

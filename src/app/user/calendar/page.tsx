@@ -52,6 +52,7 @@ interface TaskDeadline {
   title: string
   dueDate: string
   startDate?: string
+  allDay?: boolean
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
   status: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' | 'CANCELLED'
   googleCalendarEventId?: string | null
@@ -213,23 +214,32 @@ export default function CalendarPage() {
               // This makes tasks span across multiple days if they have a date range
               const eventStart = task.startDate || task.dueDate
               const eventEnd = task.dueDate
+              const isAllDay = task.allDay !== undefined ? task.allDay : true
 
-              // Convert to date-only format (YYYY-MM-DD) for all-day events
-              const startDateOnly = new Date(eventStart).toISOString().split('T')[0]
+              let start: string
+              let end: string
 
-              // FullCalendar requires end date to be exclusive (day after) for all-day events
-              // So for Oct 1-23, we set end to Oct 24 to make it span correctly
-              const endDatePlusOne = new Date(eventEnd)
-              endDatePlusOne.setDate(endDatePlusOne.getDate() + 1)
-              const endDateOnly = endDatePlusOne.toISOString().split('T')[0]
+              if (isAllDay) {
+                // Convert to date-only format (YYYY-MM-DD) for all-day events
+                start = new Date(eventStart).toISOString().split('T')[0]
+
+                // FullCalendar requires end date to be exclusive (day after) for all-day events
+                const endDatePlusOne = new Date(eventEnd)
+                endDatePlusOne.setDate(endDatePlusOne.getDate() + 1)
+                end = endDatePlusOne.toISOString().split('T')[0]
+              } else {
+                // For timed events, use full ISO string (with time)
+                start = new Date(eventStart).toISOString()
+                end = new Date(eventEnd).toISOString()
+              }
 
               calendarEvents.push({
                 id: `task-${task.id}`,
                 title: `📋 ${task.title}`,
                 description: `Due: ${task.team?.name || 'Individual'} task`,
-                start: startDateOnly,
-                end: endDateOnly,
-                allDay: true,
+                start,
+                end,
+                allDay: isAllDay,
                 color: priorityColors[task.priority],
                 type: 'DEADLINE',
                 team: task.team || undefined,
@@ -653,23 +663,32 @@ export default function CalendarPage() {
                         // This makes tasks span across multiple days if they have a date range
                         const eventStart = task.startDate || task.dueDate
                         const eventEnd = task.dueDate
+                        const isAllDay = task.allDay !== undefined ? task.allDay : true
 
-                        // Convert to date-only format (YYYY-MM-DD) for all-day events
-                        const startDateOnly = new Date(eventStart).toISOString().split('T')[0]
+                        let start: string
+                        let end: string
 
-                        // FullCalendar requires end date to be exclusive (day after) for all-day events
-                        // So for Oct 1-23, we set end to Oct 24 to make it span correctly
-                        const endDatePlusOne = new Date(eventEnd)
-                        endDatePlusOne.setDate(endDatePlusOne.getDate() + 1)
-                        const endDateOnly = endDatePlusOne.toISOString().split('T')[0]
+                        if (isAllDay) {
+                          // Convert to date-only format (YYYY-MM-DD) for all-day events
+                          start = new Date(eventStart).toISOString().split('T')[0]
+
+                          // FullCalendar requires end date to be exclusive (day after) for all-day events
+                          const endDatePlusOne = new Date(eventEnd)
+                          endDatePlusOne.setDate(endDatePlusOne.getDate() + 1)
+                          end = endDatePlusOne.toISOString().split('T')[0]
+                        } else {
+                          // For timed events, use full ISO string (with time)
+                          start = new Date(eventStart).toISOString()
+                          end = new Date(eventEnd).toISOString()
+                        }
 
                         calendarEvents.push({
                           id: `task-${task.id}`,
                           title: `📋 ${task.title}`,
                           description: `Due: ${task.team?.name || 'Individual'} task`,
-                          start: startDateOnly,
-                          end: endDateOnly,
-                          allDay: true,
+                          start,
+                          end,
+                          allDay: isAllDay,
                           color: priorityColors[task.priority],
                           type: 'DEADLINE',
                           team: task.team || undefined,

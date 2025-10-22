@@ -82,6 +82,12 @@ export async function POST(req: NextRequest) {
           continue
         }
 
+        // Skip task events - they are managed through the Task system, not Event system
+        if (googleEvent.summary?.startsWith('[Task]')) {
+          results.skipped++
+          continue
+        }
+
         // Check if event already exists in TMS
         const existingEvent = await prisma.event.findFirst({
           where: {
@@ -128,6 +134,21 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Clean up any existing [Task] events that were imported before this fix
+    // These should be managed through the Task system, not Event system
+    const deletedTaskEvents = await prisma.event.deleteMany({
+      where: {
+        creatorId: session.user.id,
+        title: {
+          startsWith: '[Task]'
+        }
+      }
+    })
+
+    if (deletedTaskEvents.count > 0) {
+      console.log(`Cleaned up ${deletedTaskEvents.count} orphaned [Task] events for user ${session.user.id}`)
+    }
+
     // Update last synced timestamp
     await prisma.calendarSyncSettings.update({
       where: { userId: session.user.id },
@@ -136,7 +157,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      results
+      results: {
+        ...results,
+        cleanedUp: deletedTaskEvents.count
+      }
     })
   } catch (error) {
     console.error('Error importing from Google Calendar:', error)

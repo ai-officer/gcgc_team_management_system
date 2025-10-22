@@ -415,10 +415,33 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
+    // Get task details before deletion to find associated Event records
+    const taskToDelete = await prisma.task.findUnique({
+      where: { id: params.id },
+      select: {
+        googleCalendarEventId: true,
+        title: true
+      }
+    })
+
     // Delete from Google Calendar if synced
     await deleteSyncedTask(params.id, session.user.id)
 
-    // Delete task (cascade will handle comments and events)
+    // Delete any Event records that were created from this task's Google Calendar event
+    if (taskToDelete?.googleCalendarEventId) {
+      await prisma.event.deleteMany({
+        where: {
+          OR: [
+            { googleCalendarEventId: taskToDelete.googleCalendarEventId },
+            { title: `[Task] ${taskToDelete.title}` }
+          ],
+          creatorId: session.user.id
+        }
+      })
+      console.log(`Deleted Event records for task ${params.id}`)
+    }
+
+    // Delete task (cascade will handle comments and task-specific relations)
     await prisma.task.delete({
       where: { id: params.id }
     })

@@ -87,6 +87,8 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
   const [selectedCollaborators, setSelectedCollaborators] = useState<User[]>([])
   const [teamMemberSearch, setTeamMemberSearch] = useState('')
   const [collaboratorSearch, setCollaboratorSearch] = useState('')
+  const [startDateOpen, setStartDateOpen] = useState(false)
+  const [dueDateOpen, setDueDateOpen] = useState(false)
 
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskFormSchema),
@@ -492,7 +494,7 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                       </span>
                     </Label>
                     <div className="space-y-2">
-                      <Popover modal>
+                      <Popover open={startDateOpen} onOpenChange={setStartDateOpen} modal>
                         <PopoverTrigger asChild>
                           <Button
                             type="button"
@@ -514,7 +516,10 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                           <DayPicker
                             mode="single"
                             selected={form.watch('startDate')}
-                            onSelect={(date) => form.setValue('startDate', date)}
+                            onSelect={(date) => {
+                              form.setValue('startDate', date)
+                              setStartDateOpen(false)
+                            }}
                             disabled={(date) =>
                               date < new Date(new Date().setHours(0, 0, 0, 0))
                             }
@@ -526,7 +531,10 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => form.setValue('startDate', undefined)}
+                                onClick={() => {
+                                  form.setValue('startDate', undefined)
+                                  setStartDateOpen(false)
+                                }}
                                 className="w-full"
                               >
                                 Clear date
@@ -557,7 +565,7 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                       </span>
                     </Label>
                     <div className="space-y-2">
-                      <Popover modal>
+                      <Popover open={dueDateOpen} onOpenChange={setDueDateOpen} modal>
                         <PopoverTrigger asChild>
                           <Button
                             type="button"
@@ -579,7 +587,10 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                           <DayPicker
                             mode="single"
                             selected={form.watch('dueDate')}
-                            onSelect={(date) => form.setValue('dueDate', date)}
+                            onSelect={(date) => {
+                              form.setValue('dueDate', date)
+                              setDueDateOpen(false)
+                            }}
                             disabled={(date) => {
                               const today = new Date(new Date().setHours(0, 0, 0, 0))
                               const startDate = form.watch('startDate')
@@ -594,7 +605,10 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => form.setValue('dueDate', undefined)}
+                                onClick={() => {
+                                  form.setValue('dueDate', undefined)
+                                  setDueDateOpen(false)
+                                }}
                                 className="w-full"
                               >
                                 Clear date

@@ -7,9 +7,6 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { format } from 'date-fns'
 import { CalendarIcon, Plus, X, Users, User, Handshake } from 'lucide-react'
-import DatePicker from 'react-datepicker'
-import 'react-datepicker/dist/react-datepicker.css'
-import '@/styles/react-datepicker-custom.css'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -21,6 +18,8 @@ import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Progress } from '@/components/ui/progress'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Calendar } from '@/components/ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   Dialog,
   DialogContent,
@@ -491,16 +490,47 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                       </span>
                     </Label>
                     <div className="space-y-2">
-                      <DatePicker
-                        selected={form.watch('startDate')}
-                        onChange={(date) => form.setValue('startDate', date || undefined)}
-                        placeholderText="Select start date"
-                        className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        dateFormat="PPP"
-                        isClearable
-                        showPopperArrow={false}
-                        popperClassName="z-50"
-                      />
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full h-11 justify-start text-left font-normal",
+                              !form.watch('startDate') && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {form.watch('startDate') ? (
+                              format(form.watch('startDate')!, "PPP")
+                            ) : (
+                              <span>Select start date</span>
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={form.watch('startDate')}
+                            onSelect={(date) => form.setValue('startDate', date)}
+                            disabled={(date) =>
+                              date < new Date(new Date().setHours(0, 0, 0, 0))
+                            }
+                            initialFocus
+                          />
+                          {form.watch('startDate') && (
+                            <div className="p-3 border-t">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => form.setValue('startDate', undefined)}
+                                className="w-full"
+                              >
+                                Clear date
+                              </Button>
+                            </div>
+                          )}
+                        </PopoverContent>
+                      </Popover>
                       {!form.watch('allDay') && (
                         <Input
                           type="time"
@@ -523,17 +553,50 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                       </span>
                     </Label>
                     <div className="space-y-2">
-                      <DatePicker
-                        selected={form.watch('dueDate')}
-                        onChange={(date) => form.setValue('dueDate', date || undefined)}
-                        placeholderText="Select due date"
-                        className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        dateFormat="PPP"
-                        isClearable
-                        showPopperArrow={false}
-                        popperClassName="z-50"
-                        minDate={form.watch('startDate') || new Date()}
-                      />
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full h-11 justify-start text-left font-normal",
+                              !form.watch('dueDate') && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4 text-orange-600" />
+                            {form.watch('dueDate') ? (
+                              format(form.watch('dueDate')!, "PPP")
+                            ) : (
+                              <span>Select due date</span>
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={form.watch('dueDate')}
+                            onSelect={(date) => form.setValue('dueDate', date)}
+                            disabled={(date) => {
+                              const today = new Date(new Date().setHours(0, 0, 0, 0))
+                              const startDate = form.watch('startDate')
+                              const minDate = startDate && startDate > today ? startDate : today
+                              return date < minDate
+                            }}
+                            initialFocus
+                          />
+                          {form.watch('dueDate') && (
+                            <div className="p-3 border-t">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => form.setValue('dueDate', undefined)}
+                                className="w-full"
+                              >
+                                Clear date
+                              </Button>
+                            </div>
+                          )}
+                        </PopoverContent>
+                      </Popover>
                       {!form.watch('allDay') && (
                         <Input
                           type="time"
@@ -548,26 +611,32 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                 </div>
 
                 {/* Date Helper Messages */}
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-3">
                   {form.watch('startDate') && form.watch('dueDate') && (
-                    <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-md">
-                      <div className="text-green-600">✓</div>
+                    <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex-shrink-0 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                        <span className="text-green-600 text-sm">✓</span>
+                      </div>
                       <div className="text-sm text-green-700 font-medium">
                         Task will span {Math.ceil((form.watch('dueDate')!.getTime() - form.watch('startDate')!.getTime()) / (1000 * 60 * 60 * 24)) + 1} days
                       </div>
                     </div>
                   )}
                   {form.watch('dueDate') && !form.watch('startDate') && (
-                    <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                      <div className="text-blue-600">💡</div>
+                    <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span className="text-blue-600 text-sm">💡</span>
+                      </div>
                       <div className="text-sm text-blue-700">
                         Add a start date to create a multi-day task that spans across the calendar
                       </div>
                     </div>
                   )}
-                  {form.watch('dueDate') && form.watch('dueDate')! < new Date() && (
-                    <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-md">
-                      <div className="text-red-600">⚠</div>
+                  {form.watch('dueDate') && form.watch('dueDate')! < new Date(new Date().setHours(0, 0, 0, 0)) && (
+                    <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+                      <div className="flex-shrink-0 w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                        <span className="text-red-600 text-sm">⚠</span>
+                      </div>
                       <div className="text-sm text-red-700 font-medium">
                         Due date is in the past
                       </div>
@@ -579,20 +648,24 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
           </Card>
 
           {/* Calendar Integration Section */}
-          <Card className="border-2">
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-2">
-                <CalendarIcon className="h-5 w-5" />
-                <CardTitle className="text-lg">Calendar Integration</CardTitle>
+          <Card className="border-2 bg-gradient-to-br from-blue-50/50 to-indigo-50/50">
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <CalendarIcon className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg text-blue-900">Calendar Integration</CardTitle>
+                  <CardDescription className="text-blue-700">Additional details for Google Calendar sync</CardDescription>
+                </div>
               </div>
-              <CardDescription>Additional details for Google Calendar sync</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               {/* All Day Toggle - moved to top */}
-              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border-2">
-                <div className="space-y-0.5">
-                  <Label htmlFor="allDay" className="text-base">All-day Task</Label>
-                  <p className="text-xs text-muted-foreground">
+              <div className="flex items-center justify-between p-4 bg-white/80 rounded-lg border-2 border-blue-200/50 shadow-sm">
+                <div className="space-y-1">
+                  <Label htmlFor="allDay" className="text-base font-semibold text-blue-900">All-day Task</Label>
+                  <p className="text-sm text-blue-700">
                     {form.watch('allDay')
                       ? 'Task can be done anytime during the selected day(s)'
                       : 'Task has specific start and end times'}
@@ -605,32 +678,38 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Location */}
-                <div className="space-y-2">
-                  <Label htmlFor="location" className="text-sm font-medium">📍 Location</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="location" className="text-sm font-medium flex items-center gap-2">
+                    <span className="text-base">📍</span>
+                    Location
+                  </Label>
                   <Input
                     id="location"
                     {...form.register('location')}
                     placeholder="e.g., Conference Room A, Building 5"
-                    className="h-11"
+                    className="h-11 bg-white/80 border-blue-200/50"
                   />
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-blue-600">
                     Physical location or address
                   </p>
                 </div>
 
                 {/* Meeting Link */}
-                <div className="space-y-2">
-                  <Label htmlFor="meetingLink" className="text-sm font-medium">🔗 Meeting Link</Label>
+                <div className="space-y-3">
+                  <Label htmlFor="meetingLink" className="text-sm font-medium flex items-center gap-2">
+                    <span className="text-base">🔗</span>
+                    Meeting Link
+                  </Label>
                   <Input
                     id="meetingLink"
                     {...form.register('meetingLink')}
                     placeholder="https://meet.google.com/..."
                     type="url"
-                    className="h-11"
+                    className="h-11 bg-white/80 border-blue-200/50"
                   />
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-blue-600">
                     Virtual meeting URL (Meet, Zoom, Teams)
                   </p>
                   {form.formState.errors.meetingLink && (
@@ -642,25 +721,58 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
               </div>
 
               {/* Recurrence */}
-              <div className="space-y-2">
-                <Label htmlFor="recurrence" className="text-sm font-medium">🔄 Recurrence</Label>
+              <div className="space-y-3">
+                <Label htmlFor="recurrence" className="text-sm font-medium flex items-center gap-2">
+                  <span className="text-base">🔄</span>
+                  Recurrence
+                </Label>
                 <Select
                   value={form.watch('recurrence') || 'NONE'}
                   onValueChange={(value) => form.setValue('recurrence', value === 'NONE' ? undefined : value)}
                 >
-                  <SelectTrigger className="h-11">
+                  <SelectTrigger className="h-11 bg-white/80 border-blue-200/50">
                     <SelectValue placeholder="Does not repeat" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="NONE">Does not repeat</SelectItem>
-                    <SelectItem value="RRULE:FREQ=DAILY">Daily</SelectItem>
-                    <SelectItem value="RRULE:FREQ=WEEKLY">Weekly</SelectItem>
-                    <SelectItem value="RRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR">Weekdays (Mon, Wed, Fri)</SelectItem>
-                    <SelectItem value="RRULE:FREQ=MONTHLY">Monthly</SelectItem>
-                    <SelectItem value="RRULE:FREQ=YEARLY">Annually</SelectItem>
+                    <SelectItem value="NONE">
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-400">○</span>
+                        Does not repeat
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="RRULE:FREQ=DAILY">
+                      <div className="flex items-center gap-2">
+                        <span className="text-blue-500">●</span>
+                        Daily
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="RRULE:FREQ=WEEKLY">
+                      <div className="flex items-center gap-2">
+                        <span className="text-green-500">●</span>
+                        Weekly
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="RRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR">
+                      <div className="flex items-center gap-2">
+                        <span className="text-orange-500">●</span>
+                        Weekdays (Mon, Wed, Fri)
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="RRULE:FREQ=MONTHLY">
+                      <div className="flex items-center gap-2">
+                        <span className="text-purple-500">●</span>
+                        Monthly
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="RRULE:FREQ=YEARLY">
+                      <div className="flex items-center gap-2">
+                        <span className="text-red-500">●</span>
+                        Annually
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-blue-600">
                   Set if this task repeats on a regular schedule
                 </p>
               </div>

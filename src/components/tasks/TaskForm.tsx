@@ -490,9 +490,10 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                       </span>
                     </Label>
                     <div className="space-y-2">
-                      <Popover>
+                      <Popover modal={true}>
                         <PopoverTrigger asChild>
                           <Button
+                            type="button"
                             variant="outline"
                             className={cn(
                               "w-full h-11 justify-start text-left font-normal",
@@ -507,7 +508,7 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                             )}
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
+                        <PopoverContent className="w-auto p-0 z-[9999]" align="start" sideOffset={4}>
                           <Calendar
                             mode="single"
                             selected={form.watch('startDate')}
@@ -520,6 +521,7 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                           {form.watch('startDate') && (
                             <div className="p-3 border-t">
                               <Button
+                                type="button"
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => form.setValue('startDate', undefined)}
@@ -553,9 +555,10 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                       </span>
                     </Label>
                     <div className="space-y-2">
-                      <Popover>
+                      <Popover modal={true}>
                         <PopoverTrigger asChild>
                           <Button
+                            type="button"
                             variant="outline"
                             className={cn(
                               "w-full h-11 justify-start text-left font-normal",
@@ -570,7 +573,7 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                             )}
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
+                        <PopoverContent className="w-auto p-0 z-[9999]" align="start" sideOffset={4}>
                           <Calendar
                             mode="single"
                             selected={form.watch('dueDate')}
@@ -586,6 +589,7 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                           {form.watch('dueDate') && (
                             <div className="p-3 border-t">
                               <Button
+                                type="button"
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => form.setValue('dueDate', undefined)}

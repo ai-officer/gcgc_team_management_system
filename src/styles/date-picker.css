@@ -1,0 +1,161 @@
+/* Custom styling for react-day-picker */
+.rdp {
+  --rdp-cell-size: 40px;
+  --rdp-accent-color: hsl(var(--primary));
+  --rdp-background-color: hsl(var(--primary) / 0.1);
+  --rdp-accent-color-dark: hsl(var(--primary));
+  --rdp-background-color-dark: hsl(var(--primary) / 0.2);
+  --rdp-outline: 2px solid hsl(var(--primary));
+  --rdp-outline-selected: 2px solid hsl(var(--primary));
+  margin: 0;
+}
+
+.rdp-months {
+  justify-content: center;
+}
+
+.rdp-month {
+  width: 100%;
+}
+
+.rdp-caption {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.5rem;
+  position: relative;
+}
+
+.rdp-caption_label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.rdp-nav {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  justify-content: space-between;
+  padding: 0 0.5rem;
+}
+
+.rdp-nav_button {
+  width: 32px;
+  height: 32px;
+  border-radius: 0.375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--background));
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.rdp-nav_button:hover:not(:disabled) {
+  background: hsl(var(--accent));
+  border-color: hsl(var(--primary));
+}
+
+.rdp-nav_button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.rdp-nav_button_previous {
+  order: -1;
+}
+
+.rdp-nav_button_next {
+  order: 1;
+}
+
+.rdp-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+}
+
+.rdp-head_cell {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: hsl(var(--muted-foreground));
+  width: var(--rdp-cell-size);
+  height: var(--rdp-cell-size);
+  text-align: center;
+}
+
+.rdp-cell {
+  width: var(--rdp-cell-size);
+  height: var(--rdp-cell-size);
+  text-align: center;
+  padding: 0;
+}
+
+.rdp-button {
+  width: var(--rdp-cell-size);
+  height: var(--rdp-cell-size);
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: none;
+  background: transparent;
+  color: hsl(var(--foreground));
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.rdp-button:hover:not(:disabled):not(.rdp-day_selected) {
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+
+.rdp-day_today:not(.rdp-day_selected) {
+  font-weight: 700;
+  background: hsl(var(--accent));
+  border: 2px solid hsl(var(--primary) / 0.3);
+}
+
+.rdp-day_selected {
+  background: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+  font-weight: 600;
+}
+
+.rdp-day_selected:hover {
+  background: hsl(var(--primary)) !important;
+  opacity: 0.9;
+}
+
+.rdp-day_outside {
+  opacity: 0.3;
+  color: hsl(var(--muted-foreground));
+}
+
+.rdp-day_disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+.rdp-day_disabled:hover {
+  background: transparent !important;
+}
+
+.rdp-day_range_middle {
+  background: hsl(var(--accent));
+  border-radius: 0;
+}
+
+.rdp-day_range_start {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.rdp-day_range_end {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+

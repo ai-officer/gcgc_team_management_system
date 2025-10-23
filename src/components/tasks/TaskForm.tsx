@@ -7,6 +7,9 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { format } from 'date-fns'
 import { CalendarIcon, Plus, X, Users, User, Handshake } from 'lucide-react'
+import { DayPicker } from 'react-day-picker'
+import 'react-day-picker/dist/style.css'
+import '@/styles/date-picker.css'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,7 +21,6 @@ import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Progress } from '@/components/ui/progress'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   Dialog,
@@ -490,7 +492,7 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                       </span>
                     </Label>
                     <div className="space-y-2">
-                      <Popover modal={true}>
+                      <Popover modal>
                         <PopoverTrigger asChild>
                           <Button
                             type="button"
@@ -508,15 +510,15 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                             )}
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0 z-[9999]" align="start" sideOffset={4}>
-                          <Calendar
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <DayPicker
                             mode="single"
                             selected={form.watch('startDate')}
                             onSelect={(date) => form.setValue('startDate', date)}
                             disabled={(date) =>
                               date < new Date(new Date().setHours(0, 0, 0, 0))
                             }
-                            initialFocus
+                            className="p-3"
                           />
                           {form.watch('startDate') && (
                             <div className="p-3 border-t">
@@ -555,7 +557,7 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                       </span>
                     </Label>
                     <div className="space-y-2">
-                      <Popover modal={true}>
+                      <Popover modal>
                         <PopoverTrigger asChild>
                           <Button
                             type="button"
@@ -573,8 +575,8 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                             )}
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0 z-[9999]" align="start" sideOffset={4}>
-                          <Calendar
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <DayPicker
                             mode="single"
                             selected={form.watch('dueDate')}
                             onSelect={(date) => form.setValue('dueDate', date)}
@@ -584,7 +586,7 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                               const minDate = startDate && startDate > today ? startDate : today
                               return date < minDate
                             }}
-                            initialFocus
+                            className="p-3"
                           />
                           {form.watch('dueDate') && (
                             <div className="p-3 border-t">

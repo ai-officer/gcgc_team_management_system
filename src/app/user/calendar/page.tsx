@@ -78,6 +78,27 @@ export default function CalendarPage() {
   const [isCleaningUp, setIsCleaningUp] = useState(false)
   const [cleanupMessage, setCleanupMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
+  // Helper function to format dates for FullCalendar
+  const formatEventDates = (startTime: string, endTime: string, allDay: boolean) => {
+    if (allDay) {
+      // Convert to date-only format (YYYY-MM-DD) for all-day events
+      const start = new Date(startTime).toISOString().split('T')[0]
+
+      // FullCalendar requires end date to be exclusive (day after) for all-day events
+      const endDate = new Date(endTime)
+      endDate.setDate(endDate.getDate() + 1)
+      const end = endDate.toISOString().split('T')[0]
+
+      return { start, end }
+    } else {
+      // For timed events, use ISO format
+      return {
+        start: new Date(startTime).toISOString(),
+        end: new Date(endTime).toISOString()
+      }
+    }
+  }
+
   // Real-time calendar sync with WebSocket
   const fetchCalendarData = useCallback(async () => {
     if (!session?.user) return
@@ -109,12 +130,14 @@ export default function CalendarPage() {
       // Add regular TMS events
       if (eventsData.events) {
         eventsData.events.forEach((event: any) => {
+          const { start, end } = formatEventDates(event.startTime, event.endTime, event.allDay)
+
           calendarEvents.push({
             id: `event-${event.id}`,
             title: event.title,
             description: event.description,
-            start: event.startTime,
-            end: event.endTime,
+            start,
+            end,
             allDay: event.allDay,
             color: EVENT_TYPE_COLORS[event.type as keyof typeof EVENT_TYPE_COLORS] || '#3b82f6',
             type: event.type,
@@ -127,12 +150,14 @@ export default function CalendarPage() {
       // Add holidays as events
       if (holidaysData.holidays) {
         holidaysData.holidays.forEach((holiday: any) => {
+          const { start, end } = formatEventDates(holiday.date, holiday.date, true)
+
           calendarEvents.push({
             id: `holiday-${holiday.id}`,
             title: `🎉 ${holiday.title}`,
             description: holiday.description || 'Holiday',
-            start: holiday.date,
-            end: holiday.date,
+            start,
+            end,
             allDay: true,
             color: '#dc2626', // Red color for holidays
             type: 'PERSONAL',
@@ -161,14 +186,16 @@ export default function CalendarPage() {
               
               if (updatedEventsData.events) {
                 updatedEventsData.events.forEach((event: any) => {
+                  const { start, end } = formatEventDates(event.startTime, event.endTime, event.allDay)
+
                   tmsEvents.push({
                     id: `event-${event.id}`,
                     title: event.title,
                     description: event.description,
-                    start: event.startTime,
-                    end: event.endTime,
+                    start,
+                    end,
                     allDay: event.allDay,
-                    color: event.googleCalendarEventId 
+                    color: event.googleCalendarEventId
                       ? '#10b981' // Green for Gmail events
                       : EVENT_TYPE_COLORS[event.type as keyof typeof EVENT_TYPE_COLORS] || '#3b82f6',
                     type: event.type,
@@ -627,12 +654,14 @@ export default function CalendarPage() {
                 // Add regular events
                 if (eventsData.events) {
                   eventsData.events.forEach((event: any) => {
+                    const { start, end } = formatEventDates(event.startTime, event.endTime, event.allDay)
+
                     calendarEvents.push({
                       id: `event-${event.id}`,
                       title: event.title,
                       description: event.description,
-                      start: event.startTime,
-                      end: event.endTime,
+                      start,
+                      end,
                       allDay: event.allDay,
                       color: EVENT_TYPE_COLORS[event.type as keyof typeof EVENT_TYPE_COLORS] || '#3b82f6',
                       type: event.type,

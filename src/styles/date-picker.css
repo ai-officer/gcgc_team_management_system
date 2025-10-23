@@ -20,9 +20,9 @@
 
 .rdp-caption {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
-  padding: 0.5rem;
+  padding: 0.75rem 0.5rem;
   position: relative;
 }
 
@@ -30,15 +30,14 @@
   font-size: 0.95rem;
   font-weight: 600;
   color: hsl(var(--foreground));
+  flex: 1;
+  text-align: center;
 }
 
 .rdp-nav {
-  position: absolute;
   display: flex;
   align-items: center;
-  width: 100%;
-  justify-content: space-between;
-  padding: 0 0.5rem;
+  gap: 0.25rem;
 }
 
 .rdp-nav_button {
@@ -65,11 +64,11 @@
 }
 
 .rdp-nav_button_previous {
-  order: -1;
+  margin-right: auto;
 }
 
 .rdp-nav_button_next {
-  order: 1;
+  margin-left: auto;
 }
 
 .rdp-table {

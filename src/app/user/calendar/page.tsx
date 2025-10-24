@@ -139,7 +139,7 @@ export default function CalendarPage() {
             allDay: true,
             resource: {
               description: holiday.description || 'Holiday',
-              color: '#dc2626',
+              color: '#9333ea',
               type: 'PERSONAL'
             }
           })
@@ -407,8 +407,8 @@ export default function CalendarPage() {
               <span className="text-sm">Low Priority</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-              <span className="text-sm">Personal</span>
+              <div className="w-3 h-3 rounded-full bg-purple-600"></div>
+              <span className="text-sm">Holidays</span>
             </div>
           </div>
         </CardContent>

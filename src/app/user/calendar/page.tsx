@@ -415,25 +415,23 @@ export default function CalendarPage() {
       </Card>
 
       {/* Calendar */}
-      <Card>
-        <CardContent className="p-6">
-          <Calendar
-            localizer={localizer}
-            events={events}
-            startAccessor="start"
-            endAccessor="end"
-            style={{ height: 700 }}
-            onSelectEvent={handleSelectEvent}
-            eventPropGetter={eventStyleGetter}
-            views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
-            defaultView={Views.MONTH}
-            popup
-            showMultiDayTimes
-            step={30}
-            timeslots={2}
-          />
-        </CardContent>
-      </Card>
+      <div className="w-full">
+        <Calendar
+          localizer={localizer}
+          events={events}
+          startAccessor="start"
+          endAccessor="end"
+          style={{ height: 700 }}
+          onSelectEvent={handleSelectEvent}
+          eventPropGetter={eventStyleGetter}
+          views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
+          defaultView={Views.MONTH}
+          popup
+          showMultiDayTimes
+          step={30}
+          timeslots={2}
+        />
+      </div>
 
       {/* Event Details Dialog */}
       <Dialog open={isEventDialogOpen} onOpenChange={setIsEventDialogOpen}>

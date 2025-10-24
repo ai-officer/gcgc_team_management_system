@@ -8,7 +8,9 @@ import { useForm } from 'react-hook-form'
 import { format } from 'date-fns'
 import { CalendarIcon, Plus, X, Users, User, Handshake } from 'lucide-react'
 import { DatePicker } from '@/components/ui/date-picker'
+import { TimePicker } from '@/components/ui/time-picker'
 import '@/styles/calendar.css'
+import '@/styles/popover-fix.css'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -498,12 +500,10 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                         disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                       />
                       {!form.watch('allDay') && (
-                        <Input
-                          type="time"
-                          value={form.watch('startTime') || ''}
-                          onChange={(e) => form.setValue('startTime', e.target.value)}
-                          placeholder="Start time"
-                          className="h-11"
+                        <TimePicker
+                          value={form.watch('startTime') || undefined}
+                          onChange={(time) => form.setValue('startTime', time || '')}
+                          placeholder="Select start time"
                         />
                       )}
                     </div>
@@ -531,12 +531,10 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                         }}
                       />
                       {!form.watch('allDay') && (
-                        <Input
-                          type="time"
-                          value={form.watch('endTime') || ''}
-                          onChange={(e) => form.setValue('endTime', e.target.value)}
-                          placeholder="End time"
-                          className="h-11"
+                        <TimePicker
+                          value={form.watch('endTime') || undefined}
+                          onChange={(time) => form.setValue('endTime', time || '')}
+                          placeholder="Select end time"
                         />
                       )}
                     </div>

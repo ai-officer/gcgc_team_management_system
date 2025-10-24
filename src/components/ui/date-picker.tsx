@@ -166,7 +166,7 @@ export function DatePicker({
   }
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
+    <Popover open={isOpen} onOpenChange={setIsOpen} modal={true}>
       <PopoverTrigger asChild>
         <Button
           type="button"
@@ -176,12 +176,17 @@ export function DatePicker({
             !date && "text-muted-foreground",
             className
           )}
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            setIsOpen(!isOpen)
+          }}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
           {date ? formatDate(date) : placeholder}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
+      <PopoverContent className="w-auto p-0 z-[300]" align="start" sideOffset={4}>
         <div className="calendar-container">
           {/* Header */}
           <div className="calendar-header">

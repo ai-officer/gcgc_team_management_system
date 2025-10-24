@@ -1,19 +1,22 @@
-/* Professional Date Picker Styling - Senior Frontend Developer */
+/* ========================================
+   PROFESSIONAL DATE PICKER STYLING
+   Senior Frontend Developer Edition
+   ======================================== */
+
+/* Root Calendar Container */
 .rdp {
   --rdp-cell-size: 44px;
   --rdp-accent-color: hsl(var(--primary));
   --rdp-background-color: hsl(var(--primary) / 0.08);
-  --rdp-accent-color-dark: hsl(var(--primary));
-  --rdp-background-color-dark: hsl(var(--primary) / 0.15);
-  --rdp-outline: 2px solid hsl(var(--primary));
-  --rdp-outline-selected: 3px solid hsl(var(--primary));
   margin: 0;
+  padding: 1rem;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
+/* Calendar Container */
 .rdp-months {
+  display: flex;
   justify-content: center;
-  position: relative;
 }
 
 .rdp-month {
@@ -21,198 +24,215 @@
   min-width: 320px;
 }
 
-/* Enhanced Caption (Header) with Better Typography */
+/* ========================================
+   HEADER & NAVIGATION
+   ======================================== */
+
+/* Header Container - Critical Layout Fix */
 .rdp-caption {
-  display: grid;
-  grid-template-columns: 48px 1fr 48px;
-  align-items: center;
-  padding: 1rem 1rem 1.25rem;
-  gap: 1rem;
-  position: relative;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 0.5rem 0.25rem 1rem !important;
+  position: relative !important;
 }
 
+/* Month/Year Label */
 .rdp-caption_label {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: hsl(var(--foreground));
-  text-align: center;
-  grid-column: 2;
-  letter-spacing: -0.025em;
-  line-height: 1.2;
+  font-size: 1.125rem !important;
+  font-weight: 700 !important;
+  color: hsl(var(--foreground)) !important;
+  text-align: center !important;
+  letter-spacing: -0.025em !important;
+  flex: 1 !important;
+  order: 2 !important;
 }
 
+/* Navigation Container */
 .rdp-nav {
-  display: contents;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  position: absolute !important;
+  top: 0.5rem !important;
+  left: 0 !important;
+  right: 0 !important;
+  justify-content: space-between !important;
+  pointer-events: none !important;
 }
 
-/* Professional Navigation Buttons */
-.rdp-nav_button {
-  width: 40px;
-  height: 40px;
-  border-radius: 0.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1.5px solid hsl(var(--border));
-  background: hsl(var(--background));
-  cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+/* Navigation Buttons - CRITICAL STYLING */
+.rdp-nav button,
+.rdp-button_reset,
+button[name="previous-month"],
+button[name="next-month"] {
+  all: unset !important;
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
+  border-radius: 0.5rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 1.5px solid hsl(var(--border)) !important;
+  background: hsl(var(--background)) !important;
+  cursor: pointer !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06) !important;
+  pointer-events: auto !important;
+  flex-shrink: 0 !important;
 }
 
-.rdp-nav_button svg {
-  width: 20px;
-  height: 20px;
-  color: hsl(var(--foreground) / 0.7);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+/* Icon inside navigation buttons */
+.rdp-nav button svg,
+button[name="previous-month"] svg,
+button[name="next-month"] svg {
+  width: 20px !important;
+  height: 20px !important;
+  color: hsl(var(--foreground) / 0.7) !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  flex-shrink: 0 !important;
 }
 
-.rdp-nav_button:hover:not(:disabled) {
-  background: hsl(var(--primary));
-  border-color: hsl(var(--primary));
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  transform: translateY(-1px);
+/* Hover State */
+.rdp-nav button:hover:not(:disabled),
+button[name="previous-month"]:hover:not(:disabled),
+button[name="next-month"]:hover:not(:disabled) {
+  background: hsl(var(--primary)) !important;
+  border-color: hsl(var(--primary)) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  transform: translateY(-1px) !important;
 }
 
-.rdp-nav_button:hover:not(:disabled) svg {
-  color: hsl(var(--primary-foreground));
-  transform: scale(1.1);
+.rdp-nav button:hover:not(:disabled) svg,
+button[name="previous-month"]:hover:not(:disabled) svg,
+button[name="next-month"]:hover:not(:disabled) svg {
+  color: hsl(var(--primary-foreground)) !important;
+  transform: scale(1.15) !important;
 }
 
-.rdp-nav_button:active:not(:disabled) {
-  transform: translateY(0);
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+/* Active State */
+.rdp-nav button:active:not(:disabled),
+button[name="previous-month"]:active:not(:disabled),
+button[name="next-month"]:active:not(:disabled) {
+  transform: translateY(0) !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
 }
 
-.rdp-nav_button:disabled {
-  opacity: 0.25;
-  cursor: not-allowed;
-  border-color: hsl(var(--border) / 0.5);
+/* Disabled State */
+.rdp-nav button:disabled,
+button[name="previous-month"]:disabled,
+button[name="next-month"]:disabled {
+  opacity: 0.3 !important;
+  cursor: not-allowed !important;
+  border-color: hsl(var(--border) / 0.5) !important;
+  background: hsl(var(--muted)) !important;
 }
 
-.rdp-nav_button_previous {
-  grid-column: 1;
-}
+/* ========================================
+   CALENDAR GRID
+   ======================================== */
 
-.rdp-nav_button_next {
-  grid-column: 3;
-}
-
-/* Calendar Table with Better Spacing */
+/* Calendar Table */
 .rdp-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 2px;
-  margin-top: 0.5rem;
-  padding: 0 0.5rem 0.5rem;
+  width: 100% !important;
+  border-collapse: separate !important;
+  border-spacing: 3px !important;
+  margin-top: 0.75rem !important;
 }
 
 /* Weekday Headers */
 .rdp-head_cell {
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: hsl(var(--muted-foreground));
-  width: var(--rdp-cell-size);
-  height: 36px;
-  text-align: center;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding-bottom: 0.5rem;
+  font-size: 0.8125rem !important;
+  font-weight: 700 !important;
+  color: hsl(var(--muted-foreground)) !important;
+  text-align: center !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  padding: 0.5rem 0 0.75rem !important;
+  width: var(--rdp-cell-size) !important;
 }
 
 /* Day Cells */
 .rdp-cell {
-  width: var(--rdp-cell-size);
-  height: var(--rdp-cell-size);
-  text-align: center;
-  padding: 2px;
-  position: relative;
+  padding: 2px !important;
+  text-align: center !important;
 }
 
-/* Day Buttons with Professional Styling */
-.rdp-button {
-  width: 100%;
-  height: 100%;
-  min-width: var(--rdp-cell-size);
-  min-height: var(--rdp-cell-size);
-  border-radius: 0.5rem;
-  font-size: 0.9375rem;
-  font-weight: 500;
-  border: none;
-  background: transparent;
-  color: hsl(var(--foreground));
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
+/* Day Buttons */
+.rdp-day {
+  width: var(--rdp-cell-size) !important;
+  height: var(--rdp-cell-size) !important;
+  border-radius: 0.5rem !important;
+  font-size: 0.9375rem !important;
+  font-weight: 500 !important;
+  border: 2px solid transparent !important;
+  background: transparent !important;
+  color: hsl(var(--foreground)) !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
-/* Hover Effect */
-.rdp-button:hover:not(:disabled):not(.rdp-day_selected) {
-  background: hsl(var(--accent));
-  color: hsl(var(--foreground));
-  transform: scale(1.05);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+/* Hover State */
+.rdp-day:hover:not(.rdp-day_disabled):not(.rdp-day_selected) {
+  background: hsl(var(--accent)) !important;
+  transform: scale(1.08) !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  border-color: hsl(var(--border)) !important;
 }
 
-/* Today's Date Styling */
+/* Today's Date */
 .rdp-day_today:not(.rdp-day_selected) {
-  font-weight: 700;
-  background: hsl(var(--primary) / 0.1);
-  color: hsl(var(--primary));
-  border: 2px solid hsl(var(--primary) / 0.4);
-  box-shadow: 0 0 0 1px hsl(var(--primary) / 0.1);
+  font-weight: 700 !important;
+  background: hsl(var(--primary) / 0.1) !important;
+  color: hsl(var(--primary)) !important;
+  border-color: hsl(var(--primary) / 0.5) !important;
+  box-shadow: 0 0 0 1px hsl(var(--primary) / 0.15) !important;
 }
 
 .rdp-day_today:not(.rdp-day_selected):hover {
-  background: hsl(var(--primary) / 0.15);
-  border-color: hsl(var(--primary) / 0.6);
-  transform: scale(1.05);
+  background: hsl(var(--primary) / 0.2) !important;
+  border-color: hsl(var(--primary) / 0.7) !important;
+  transform: scale(1.08) !important;
 }
 
-/* Selected Day - Premium Styling */
-.rdp-day_selected {
+/* Selected Day */
+.rdp-day_selected,
+.rdp-day_selected:hover {
   background: hsl(var(--primary)) !important;
   color: hsl(var(--primary-foreground)) !important;
-  font-weight: 700;
-  box-shadow: 0 4px 12px hsl(var(--primary) / 0.4),
-              0 2px 4px hsl(var(--primary) / 0.3),
-              inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  border: 2px solid hsl(var(--primary));
-  position: relative;
-  z-index: 10;
+  font-weight: 700 !important;
+  border-color: hsl(var(--primary)) !important;
+  box-shadow:
+    0 4px 12px hsl(var(--primary) / 0.4),
+    0 2px 4px hsl(var(--primary) / 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
 }
 
 .rdp-day_selected:hover {
-  background: hsl(var(--primary) / 0.9) !important;
-  transform: scale(1.08);
-  box-shadow: 0 6px 16px hsl(var(--primary) / 0.5),
-              0 3px 6px hsl(var(--primary) / 0.4),
-              inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  transform: scale(1.1) !important;
+  box-shadow:
+    0 6px 16px hsl(var(--primary) / 0.5),
+    0 3px 6px hsl(var(--primary) / 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
 }
 
-.rdp-day_selected:active {
-  transform: scale(1.02);
-}
-
-/* Outside Month Days */
+/* Outside Days */
 .rdp-day_outside {
-  opacity: 0.25;
-  color: hsl(var(--muted-foreground));
-}
-
-.rdp-day_outside:hover:not(:disabled) {
-  opacity: 0.4;
+  opacity: 0.25 !important;
+  color: hsl(var(--muted-foreground)) !important;
 }
 
 /* Disabled Days */
 .rdp-day_disabled {
-  opacity: 0.2;
-  cursor: not-allowed;
-  text-decoration: line-through;
-  color: hsl(var(--muted-foreground));
+  opacity: 0.2 !important;
+  cursor: not-allowed !important;
+  text-decoration: line-through !important;
+  color: hsl(var(--muted-foreground)) !important;
 }
 
 .rdp-day_disabled:hover {
@@ -221,35 +241,21 @@
   box-shadow: none !important;
 }
 
-/* Range Selection Styling */
-.rdp-day_range_middle {
-  background: hsl(var(--primary) / 0.12);
-  border-radius: 0;
-  color: hsl(var(--foreground));
+/* Focus Visible */
+.rdp-day:focus-visible {
+  outline: 3px solid hsl(var(--primary) / 0.5) !important;
+  outline-offset: 2px !important;
+  z-index: 10 !important;
 }
 
-.rdp-day_range_start {
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-}
+/* ========================================
+   ANIMATIONS
+   ======================================== */
 
-.rdp-day_range_end {
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
-}
-
-/* Focus Visible for Accessibility */
-.rdp-button:focus-visible {
-  outline: 3px solid hsl(var(--primary) / 0.5);
-  outline-offset: 2px;
-  z-index: 20;
-}
-
-/* Smooth Animations */
-@keyframes fadeIn {
+@keyframes slideIn {
   from {
     opacity: 0;
-    transform: translateY(-4px);
+    transform: translateY(-8px);
   }
   to {
     opacity: 1;
@@ -258,6 +264,5 @@
 }
 
 .rdp {
-  animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
-

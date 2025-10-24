@@ -79,16 +79,25 @@ export default function CalendarPage() {
   const [isCleaningUp, setIsCleaningUp] = useState(false)
   const [cleanupMessage, setCleanupMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
-  // Helper function to format dates for FullCalendar
+  // Helper function to format dates for FullCalendar (TIMEZONE-SAFE)
+  const formatDateToLocal = (date: Date): string => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
   const formatEventDates = (startTime: string, endTime: string, allDay: boolean) => {
     if (allDay) {
-      // Convert to date-only format (YYYY-MM-DD) for all-day events
-      const start = new Date(startTime).toISOString().split('T')[0]
+      // Convert to LOCAL date-only format (YYYY-MM-DD) for all-day events
+      // CRITICAL: Use local date, not UTC, to avoid timezone shift
+      const startDate = new Date(startTime)
+      const start = formatDateToLocal(startDate)
 
       // FullCalendar requires end date to be exclusive (day after) for all-day events
       const endDate = new Date(endTime)
       endDate.setDate(endDate.getDate() + 1)
-      const end = endDate.toISOString().split('T')[0]
+      const end = formatDateToLocal(endDate)
 
       return { start, end }
     } else {
@@ -241,13 +250,14 @@ export default function CalendarPage() {
               if (task.startDate && task.dueDate) {
                 // Multi-day task with date range
                 if (isAllDay) {
-                  // Convert to date-only format (YYYY-MM-DD) for all-day events
-                  start = new Date(task.startDate).toISOString().split('T')[0]
+                  // Convert to LOCAL date-only format (YYYY-MM-DD) - TIMEZONE SAFE
+                  const startDate = new Date(task.startDate)
+                  start = formatDateToLocal(startDate)
 
                   // FullCalendar requires end date to be exclusive (day after) for all-day events
-                  const endDatePlusOne = new Date(task.dueDate)
-                  endDatePlusOne.setDate(endDatePlusOne.getDate() + 1)
-                  end = endDatePlusOne.toISOString().split('T')[0]
+                  const endDate = new Date(task.dueDate)
+                  endDate.setDate(endDate.getDate() + 1)
+                  end = formatDateToLocal(endDate)
                 } else {
                   // Timed events - use full datetime
                   start = new Date(task.startDate).toISOString()
@@ -258,17 +268,18 @@ export default function CalendarPage() {
               } else {
                 // Single-day task (only dueDate exists)
                 if (isAllDay) {
-                  start = new Date(task.dueDate).toISOString().split('T')[0]
+                  const dueDate = new Date(task.dueDate)
+                  start = formatDateToLocal(dueDate)
                   const endDatePlusOne = new Date(task.dueDate)
                   endDatePlusOne.setDate(endDatePlusOne.getDate() + 1)
-                  end = endDatePlusOne.toISOString().split('T')[0]
+                  end = formatDateToLocal(endDatePlusOne)
                 } else {
                   start = new Date(task.dueDate).toISOString()
                   end = new Date(task.dueDate).toISOString()
                 }
               }
 
-              const taskEvent = {
+              const taskEvent: CalendarEvent = {
                 id: `task-${task.id}`,
                 title: `[Task] ${task.title}`,
                 description: `Due: ${task.team?.name || 'Individual'} task`,
@@ -276,7 +287,7 @@ export default function CalendarPage() {
                 end,
                 allDay: isAllDay,
                 color: priorityColors[task.priority],
-                type: 'DEADLINE',
+                type: 'DEADLINE' as const,
                 team: task.team || undefined,
                 task: {
                   id: task.id,

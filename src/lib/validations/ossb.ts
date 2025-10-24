@@ -35,7 +35,6 @@ export const ossbProjectInfoSchema = z.object({
 export const ossbSuccessMeasuresSchema = z.object({
   successMeasures: z.array(z.string().min(1, 'Success measure cannot be empty'))
     .min(1, 'At least one success measure is required')
-    .max(4, 'Maximum 4 success measures allowed')
 })
 
 // Section 4: Program Steps Schema

@@ -2,7 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
-import { User, Mail, Phone, Building2, Briefcase, Calendar, Shield, Edit2, Save, X, CheckCircle, AlertCircle, Camera } from 'lucide-react'
+import {
+  User, Mail, Phone, Building2, Briefcase, Calendar, Shield,
+  Edit2, Save, X, CheckCircle, AlertCircle, Camera, MapPin,
+  Clock, Award, TrendingUp, Activity, Settings, Eye, EyeOff
+} from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -10,6 +14,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Progress } from '@/components/ui/progress'
 import { useToast } from '@/hooks/use-toast'
 import { format } from 'date-fns'
 
@@ -43,11 +49,11 @@ export default function UserProfilePage() {
   const { toast } = useToast()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [editing, setEditing] = useState(false)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [editedProfile, setEditedProfile] = useState<Partial<UserProfile>>({})
   const [error, setError] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [editingField, setEditingField] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -74,14 +80,11 @@ export default function UserProfilePage() {
     fetchProfile()
   }, [session])
 
-  const handleEditToggle = () => {
-    if (editing) {
-      setEditedProfile(profile || {})
-    }
-    setEditing(!editing)
+  const handleFieldEdit = (field: string) => {
+    setEditingField(field)
   }
 
-  const handleSave = async () => {
+  const handleFieldSave = async (field: string) => {
     if (!profile) return
 
     try {
@@ -92,11 +95,7 @@ export default function UserProfilePage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          firstName: editedProfile.firstName,
-          lastName: editedProfile.lastName,
-          middleName: editedProfile.middleName,
-          contactNumber: editedProfile.contactNumber,
-          positionTitle: editedProfile.positionTitle,
+          [field]: editedProfile[field as keyof UserProfile],
         }),
       })
 
@@ -104,443 +103,495 @@ export default function UserProfilePage() {
         throw new Error('Failed to update profile')
       }
 
-      const updatedProfile = await response.json()
-      setProfile(updatedProfile)
-      setEditedProfile(updatedProfile)
-      setEditing(false)
-      
+      const updatedData = await response.json()
+      setProfile(updatedData.user)
+      setEditedProfile(updatedData.user)
+      setEditingField(null)
+
+      // Update session if name changed
+      if (field === 'firstName' || field === 'lastName') {
+        await updateSession({
+          ...session,
+          user: {
+            ...session?.user,
+            name: `${updatedData.user.firstName || ''} ${updatedData.user.lastName || ''}`.trim()
+          }
+        })
+      }
+
       toast({
-        title: "Profile Updated",
-        description: "Your profile has been successfully updated.",
+        title: 'Success',
+        description: 'Profile updated successfully',
       })
     } catch (err) {
       console.error('Error updating profile:', err)
       toast({
-        title: "Update Failed",
-        description: "Failed to update profile. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to update profile',
+        variant: 'destructive',
       })
     } finally {
       setSaving(false)
     }
   }
 
-  const handleImageUpload = async (file: File) => {
-    if (!file) return
+  const handleFieldCancel = (field: string) => {
+    setEditedProfile(prev => ({
+      ...prev,
+      [field]: profile?.[field as keyof UserProfile]
+    }))
+    setEditingField(null)
+  }
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !profile) return
 
     try {
       setUploadingImage(true)
       const formData = new FormData()
       formData.append('file', file)
+      formData.append('userId', profile.id)
 
       const response = await fetch('/api/upload/profile-image', {
         method: 'POST',
-        body: formData
+        body: formData,
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to upload image')
+        throw new Error('Failed to upload image')
       }
 
       const data = await response.json()
-      
-      // Update profile state with new image URL
+
       setProfile(prev => prev ? { ...prev, image: data.imageUrl } : null)
-      
-      // Update session to reflect new profile picture
-      await updateSession({ 
-        trigger: 'update',
-        user: { ...session?.user, image: data.imageUrl }
+
+      await updateSession({
+        ...session,
+        user: {
+          ...session?.user,
+          image: data.imageUrl
+        }
       })
-      
+
       toast({
-        title: "Profile Picture Updated",
-        description: "Your profile picture has been successfully updated.",
+        title: 'Success',
+        description: 'Profile picture updated successfully',
       })
-    } catch (error) {
-      console.error('Error uploading image:', error)
+    } catch (err) {
+      console.error('Error uploading image:', err)
       toast({
-        title: "Upload Failed",
-        description: error instanceof Error ? error.message : "Failed to upload image. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to upload profile picture',
+        variant: 'destructive',
       })
     } finally {
       setUploadingImage(false)
     }
   }
 
-  const triggerImageUpload = () => {
-    fileInputRef.current?.click()
-  }
-
-  const getInitials = (name?: string, email?: string) => {
-    if (name) {
-      return name.split(' ').map(n => n[0]).join('').toUpperCase()
-    }
-    return email ? email[0].toUpperCase() : 'U'
-  }
-
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
-      case 'ADMIN': return 'bg-red-100 text-red-700 border-red-200'
-      case 'LEADER': return 'bg-blue-100 text-blue-700 border-blue-200'
-      case 'MEMBER': return 'bg-green-100 text-green-700 border-green-200'
-      default: return 'bg-gray-100 text-gray-700 border-gray-200'
+      case 'ADMIN': return 'bg-purple-100 text-purple-800 border-purple-200'
+      case 'LEADER': return 'bg-blue-100 text-blue-800 border-blue-200'
+      case 'MEMBER': return 'bg-green-100 text-green-800 border-green-200'
+      default: return 'bg-gray-100 text-gray-800 border-gray-200'
     }
+  }
+
+  const getInitials = (name?: string) => {
+    if (!name) return 'U'
+    const parts = name.split(' ')
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
+    }
+    return name[0].toUpperCase()
   }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="space-y-6">
+        {/* Skeleton Loader */}
+        <div className="h-48 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl animate-pulse" />
+        <div className="grid gap-6 md:grid-cols-3">
+          {[1, 2, 3].map(i => (
+            <Card key={i} className="animate-pulse">
+              <CardContent className="p-6">
+                <div className="h-4 bg-gray-200 rounded w-3/4 mb-4" />
+                <div className="h-8 bg-gray-200 rounded w-1/2" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     )
   }
 
   if (error || !profile) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <p className="text-red-600">{error || 'Profile not found'}</p>
+      <div className="flex items-center justify-center h-96">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-6 text-center">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Error Loading Profile</h3>
+            <p className="text-muted-foreground">{error || 'Failed to load profile data'}</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  const InlineEditField = ({
+    field,
+    label,
+    icon: Icon,
+    type = 'text',
+    editable = true
+  }: {
+    field: keyof UserProfile
+    label: string
+    icon: any
+    type?: string
+    editable?: boolean
+  }) => {
+    const isEditing = editingField === field
+    const value = editedProfile[field] as string || ''
+
+    return (
+      <div className="flex items-center justify-between p-4 rounded-lg hover:bg-muted/50 transition-colors group">
+        <div className="flex items-center gap-3 flex-1">
+          <div className="p-2 rounded-lg bg-primary/10">
+            <Icon className="h-4 w-4 text-primary" />
+          </div>
+          <div className="flex-1">
+            <Label className="text-xs text-muted-foreground">{label}</Label>
+            {isEditing ? (
+              <Input
+                type={type}
+                value={value}
+                onChange={(e) => setEditedProfile(prev => ({ ...prev, [field]: e.target.value }))}
+                className="mt-1 h-8"
+                autoFocus
+              />
+            ) : (
+              <p className="font-medium">{value || 'Not set'}</p>
+            )}
+          </div>
         </div>
+        {editable && (
+          <div className="flex gap-1">
+            {isEditing ? (
+              <>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => handleFieldSave(field)}
+                  disabled={saving}
+                  className="h-8 w-8 p-0"
+                >
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => handleFieldCancel(field)}
+                  className="h-8 w-8 p-0"
+                >
+                  <X className="h-4 w-4 text-red-600" />
+                </Button>
+              </>
+            ) : (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => handleFieldEdit(field)}
+                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <Edit2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     )
   }
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Profile</h1>
-          <p className="text-muted-foreground">
-            Manage your personal information and account settings
-          </p>
+    <div className="space-y-6 pb-8">
+      {/* Hero Header with Cover */}
+      <Card className="overflow-hidden border-none shadow-lg">
+        <div className="h-32 sm:h-48 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 relative">
+          <div className="absolute inset-0 bg-grid-white/10" />
         </div>
-        <div className="flex gap-2">
-          {editing ? (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleEditToggle}
-                disabled={saving}
+        <CardContent className="relative pb-6">
+          <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4 -mt-16 sm:-mt-20">
+            <div className="relative group">
+              <Avatar className="h-32 w-32 border-4 border-background shadow-xl">
+                <AvatarImage src={profile.image} alt={profile.name} />
+                <AvatarFallback className="text-2xl bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+                  {getInitials(profile.name)}
+                </AvatarFallback>
+              </Avatar>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingImage}
+                className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
               >
-                <X className="h-4 w-4 mr-2" />
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleSave}
-                disabled={saving}
-              >
-                {saving ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                {uploadingImage ? (
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
                 ) : (
-                  <Save className="h-4 w-4 mr-2" />
+                  <Camera className="h-8 w-8 text-white" />
                 )}
-                Save Changes
-              </Button>
-            </>
-          ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleEditToggle}
-            >
-              <Edit2 className="h-4 w-4 mr-2" />
-              Edit Profile
-            </Button>
-          )}
-        </div>
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+            </div>
+
+            <div className="flex-1 text-center sm:text-left">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
+                <h1 className="text-2xl sm:text-3xl font-bold">{profile.name}</h1>
+                <Badge variant="outline" className={getRoleBadgeColor(profile.role)}>
+                  <Shield className="h-3 w-3 mr-1" />
+                  {profile.role}
+                </Badge>
+                {profile.isLeader && (
+                  <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200">
+                    <Award className="h-3 w-3 mr-1" />
+                    Team Leader
+                  </Badge>
+                )}
+              </div>
+              <p className="text-muted-foreground flex items-center justify-center sm:justify-start gap-2">
+                <Briefcase className="h-4 w-4" />
+                {profile.positionTitle || 'No position title'}
+              </p>
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 mt-3 text-sm text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <Mail className="h-4 w-4" />
+                  {profile.email}
+                </div>
+                {profile.contactNumber && (
+                  <div className="flex items-center gap-1">
+                    <Phone className="h-4 w-4" />
+                    {profile.contactNumber}
+                  </div>
+                )}
+                <div className="flex items-center gap-1">
+                  <Calendar className="h-4 w-4" />
+                  Joined {format(new Date(profile.createdAt), 'MMM yyyy')}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <Badge
+                variant={profile.isActive ? 'default' : 'secondary'}
+                className={profile.isActive ? 'bg-green-100 text-green-800 border-green-200' : ''}
+              >
+                <div className={`h-2 w-2 rounded-full mr-1 ${profile.isActive ? 'bg-green-600' : 'bg-gray-400'}`} />
+                {profile.isActive ? 'Active' : 'Inactive'}
+              </Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Quick Stats */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Department</p>
+                <p className="text-2xl font-bold">{profile.department || 'N/A'}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-blue-100">
+                <Building2 className="h-6 w-6 text-blue-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Team</p>
+                <p className="text-2xl font-bold">{profile.team || 'N/A'}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-purple-100">
+                <User className="h-6 w-6 text-purple-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Hierarchy Level</p>
+                <p className="text-2xl font-bold">{profile.hierarchyLevel || 'N/A'}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-green-100">
+                <TrendingUp className="h-6 w-6 text-green-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Job Level</p>
+                <p className="text-2xl font-bold">{profile.jobLevel || 'N/A'}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-orange-100">
+                <Award className="h-6 w-6 text-orange-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Profile Overview */}
-        <div className="lg:col-span-1">
-          <Card className="card-modern">
-            <CardHeader className="text-center">
-              <div className="flex justify-center mb-4 relative">
-                <Avatar className="h-24 w-24">
-                  <AvatarImage src={profile.image} />
-                  <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium text-lg">
-                    {getInitials(profile.name, profile.email)}
-                  </AvatarFallback>
-                </Avatar>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full p-0"
-                  onClick={triggerImageUpload}
-                  disabled={uploadingImage}
-                  title="Change profile picture"
-                >
-                  {uploadingImage ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
-                  ) : (
-                    <Camera className="h-4 w-4" />
-                  )}
-                </Button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0]
-                    if (file) {
-                      handleImageUpload(file)
-                    }
-                  }}
-                />
-              </div>
-              <CardTitle className="text-xl">
-                {profile.name || `${profile.firstName || ''} ${profile.lastName || ''}`.trim() || 'Unnamed User'}
-              </CardTitle>
-              <CardDescription>
-                {profile.positionTitle || 'Team Member'}
-              </CardDescription>
-              <div className="flex justify-center mt-3">
-                <Badge className={getRoleBadgeColor(profile.role)}>
-                  {profile.role}
-                  {profile.isLeader && profile.role !== 'ADMIN' && ' • Leader'}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center gap-2 text-sm">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground truncate">{profile.email}</span>
-              </div>
-              {profile.contactNumber && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">{profile.contactNumber}</span>
-                </div>
-              )}
-              <div className="flex items-center gap-2 text-sm">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">
-                  Joined {format(new Date(profile.createdAt), 'MMM yyyy')}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                <span className="text-muted-foreground">
-                  {profile.isActive ? 'Active' : 'Inactive'}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+      {/* Tabbed Content */}
+      <Tabs defaultValue="personal" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="personal" className="flex items-center gap-2">
+            <User className="h-4 w-4" />
+            Personal Info
+          </TabsTrigger>
+          <TabsTrigger value="organization" className="flex items-center gap-2">
+            <Building2 className="h-4 w-4" />
+            Organization
+          </TabsTrigger>
+          <TabsTrigger value="account" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Account
+          </TabsTrigger>
+        </TabsList>
 
-        {/* Profile Details */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Personal Information */}
-          <Card className="card-modern">
+        {/* Personal Information Tab */}
+        <TabsContent value="personal" className="space-y-4">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <User className="h-5 w-5" />
                 Personal Information
               </CardTitle>
               <CardDescription>
-                Your personal details and contact information
+                Click on any field to edit. Changes are saved immediately.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
-                  {editing ? (
-                    <Input
-                      id="firstName"
-                      value={editedProfile.firstName || ''}
-                      onChange={(e) => setEditedProfile({ ...editedProfile, firstName: e.target.value })}
-                      placeholder="Enter first name"
-                    />
-                  ) : (
-                    <div className="p-2 bg-muted/50 rounded-md text-sm">
-                      {profile.firstName || 'Not provided'}
-                    </div>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  {editing ? (
-                    <Input
-                      id="lastName"
-                      value={editedProfile.lastName || ''}
-                      onChange={(e) => setEditedProfile({ ...editedProfile, lastName: e.target.value })}
-                      placeholder="Enter last name"
-                    />
-                  ) : (
-                    <div className="p-2 bg-muted/50 rounded-md text-sm">
-                      {profile.lastName || 'Not provided'}
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="middleName">Middle Name</Label>
-                  {editing ? (
-                    <Input
-                      id="middleName"
-                      value={editedProfile.middleName || ''}
-                      onChange={(e) => setEditedProfile({ ...editedProfile, middleName: e.target.value })}
-                      placeholder="Enter middle name"
-                    />
-                  ) : (
-                    <div className="p-2 bg-muted/50 rounded-md text-sm">
-                      {profile.middleName || 'Not provided'}
-                    </div>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="contactNumber">Contact Number</Label>
-                  {editing ? (
-                    <Input
-                      id="contactNumber"
-                      value={editedProfile.contactNumber || ''}
-                      onChange={(e) => setEditedProfile({ ...editedProfile, contactNumber: e.target.value })}
-                      placeholder="Enter contact number"
-                    />
-                  ) : (
-                    <div className="p-2 bg-muted/50 rounded-md text-sm">
-                      {profile.contactNumber || 'Not provided'}
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="positionTitle">Position Title</Label>
-                {editing ? (
-                  <Input
-                    id="positionTitle"
-                    value={editedProfile.positionTitle || ''}
-                    onChange={(e) => setEditedProfile({ ...editedProfile, positionTitle: e.target.value })}
-                    placeholder="Enter position title"
-                  />
-                ) : (
-                  <div className="p-2 bg-muted/50 rounded-md text-sm">
-                    {profile.positionTitle || 'Not provided'}
-                  </div>
-                )}
-              </div>
+            <CardContent className="space-y-1">
+              <InlineEditField field="firstName" label="First Name" icon={User} />
+              <InlineEditField field="lastName" label="Last Name" icon={User} />
+              <InlineEditField field="middleName" label="Middle Name" icon={User} />
+              <InlineEditField field="contactNumber" label="Contact Number" icon={Phone} type="tel" />
+              <InlineEditField field="positionTitle" label="Position Title" icon={Briefcase} />
             </CardContent>
           </Card>
+        </TabsContent>
 
-          {/* Organizational Information */}
-          <Card className="card-modern">
+        {/* Organization Tab */}
+        <TabsContent value="organization" className="space-y-4">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Building2 className="h-5 w-5" />
-                Organizational Information
+                Organizational Structure
               </CardTitle>
               <CardDescription>
-                Your position within the organization structure
+                Your position within the organizational hierarchy
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Division</Label>
-                  <div className="p-2 bg-muted/50 rounded-md text-sm">
-                    {profile.division || 'Not assigned'}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Department</Label>
-                  <div className="p-2 bg-muted/50 rounded-md text-sm">
-                    {profile.department || 'Not assigned'}
-                  </div>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Section</Label>
-                  <div className="p-2 bg-muted/50 rounded-md text-sm">
-                    {profile.section || 'Not assigned'}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Team</Label>
-                  <div className="p-2 bg-muted/50 rounded-md text-sm">
-                    {profile.team || 'Not assigned'}
-                  </div>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Job Level</Label>
-                  <div className="p-2 bg-muted/50 rounded-md text-sm">
-                    {profile.jobLevel || 'Not assigned'}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Hierarchy Level</Label>
-                  <div className="p-2 bg-muted/50 rounded-md text-sm">
-                    {profile.hierarchyLevel || 'Not assigned'}
-                  </div>
-                </div>
-              </div>
+            <CardContent className="space-y-1">
+              <InlineEditField field="division" label="Division" icon={Building2} editable={false} />
+              <InlineEditField field="department" label="Department" icon={Building2} editable={false} />
+              <InlineEditField field="section" label="Section" icon={Building2} editable={false} />
+              <InlineEditField field="team" label="Team" icon={User} editable={false} />
+              <Separator className="my-4" />
+              <InlineEditField field="jobLevel" label="Job Level" icon={Award} editable={false} />
+              <InlineEditField field="hierarchyLevel" label="Hierarchy Level" icon={TrendingUp} editable={false} />
+
               {profile.organizationalPath && (
-                <div className="space-y-2">
-                  <Label>Organizational Path</Label>
-                  <div className="p-2 bg-muted/50 rounded-md text-sm">
-                    {profile.organizationalPath}
-                  </div>
+                <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+                  <Label className="text-xs text-muted-foreground mb-2 block">Full Organizational Path</Label>
+                  <p className="text-sm font-mono">{profile.organizationalPath}</p>
                 </div>
               )}
             </CardContent>
           </Card>
+        </TabsContent>
 
-          {/* Account Information */}
-          <Card className="card-modern">
+        {/* Account Tab */}
+        <TabsContent value="account" className="space-y-4">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                Account Information
+                <Settings className="h-5 w-5" />
+                Account Settings
               </CardTitle>
               <CardDescription>
-                Account details and security information
+                Account credentials and security information
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Email</Label>
-                  <div className="p-2 bg-muted/50 rounded-md text-sm">
-                    {profile.email}
+            <CardContent className="space-y-1">
+              <InlineEditField field="email" label="Email Address" icon={Mail} type="email" editable={false} />
+              <InlineEditField field="username" label="Username" icon={User} editable={false} />
+
+              <Separator className="my-4" />
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <Calendar className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Account Created</Label>
+                      <p className="font-medium">{format(new Date(profile.createdAt), 'PPP')}</p>
+                    </div>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Username</Label>
-                  <div className="p-2 bg-muted/50 rounded-md text-sm">
-                    {profile.username || 'Not set'}
+
+                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <Clock className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Last Updated</Label>
+                      <p className="font-medium">{format(new Date(profile.updatedAt), 'PPP')}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Account Created</Label>
-                  <div className="p-2 bg-muted/50 rounded-md text-sm">
-                    {format(new Date(profile.createdAt), 'MMM dd, yyyy')}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Last Updated</Label>
-                  <div className="p-2 bg-muted/50 rounded-md text-sm">
-                    {format(new Date(profile.updatedAt), 'MMM dd, yyyy')}
+
+                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <Activity className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Account Status</Label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className={`h-2 w-2 rounded-full ${profile.isActive ? 'bg-green-600' : 'bg-gray-400'}`} />
+                        <p className="font-medium">{profile.isActive ? 'Active' : 'Inactive'}</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </CardContent>
           </Card>
-        </div>
-      </div>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

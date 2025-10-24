@@ -516,7 +516,7 @@ function Section3SuccessMeasures({ fields, register, errors, watch, setValue, ap
     <div className="space-y-6 px-1">
       <div>
         <h3 className="text-lg font-semibold mb-1">Section 3: Specific Standards / Success Measures</h3>
-        <p className="text-sm text-muted-foreground">Define success criteria (up to 4 measures)</p>
+        <p className="text-sm text-muted-foreground">Define success criteria (add as many as needed)</p>
       </div>
 
       <div className="space-y-4">
@@ -568,17 +568,15 @@ function Section3SuccessMeasures({ fields, register, errors, watch, setValue, ap
           </div>
         ))}
 
-        {fields.length < 4 && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => append('')}
-            className="w-full"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Success Measure ({fields.length}/4)
-          </Button>
-        )}
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => append('')}
+          className="w-full"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Add Success Measure ({fields.length})
+        </Button>
       </div>
     </div>
   )

@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import { Calendar, CheckSquare, Clock, Users, TrendingUp, AlertCircle, Plus, ArrowRight, Star, Zap, Target, Activity, Award, BarChart3, Calendar as CalendarIcon, Filter, RefreshCw } from 'lucide-react'
+import { Calendar, CheckSquare, Clock, Users, TrendingUp, AlertCircle, ArrowRight, Star, Zap, Target, Activity, Award, BarChart3, Calendar as CalendarIcon, Filter, RefreshCw } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import CreateTaskButton from '@/components/tasks/CreateTaskButton'
 import { format, formatDistanceToNow } from 'date-fns'
 import { TASK_PRIORITY_COLORS, TASK_STATUS_COLORS } from '@/constants'
 
@@ -201,10 +202,7 @@ export default function UserDashboard() {
               <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
-            <Button size="sm" onClick={() => window.location.href = '/user/tasks'}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Task
-            </Button>
+            <CreateTaskButton size="sm" onTaskCreated={refreshDashboard} />
           </div>
         </div>
       </div>

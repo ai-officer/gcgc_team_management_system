@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react'
 import { Calendar, momentLocalizer, Views } from 'react-big-calendar'
 import moment from 'moment'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
-import { Calendar as CalendarIcon, AlertCircle, Settings, Wifi, WifiOff, RefreshCw, FileText, Plus } from 'lucide-react'
+import { Calendar as CalendarIcon, AlertCircle, Settings, Wifi, WifiOff, RefreshCw, FileText } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -19,6 +19,7 @@ import {
 import { EVENT_TYPE_COLORS } from '@/constants'
 import CalendarSyncSettingsModal from '@/components/calendar/CalendarSyncSettingsModal'
 import OSSBWizardForm from '@/components/ossb/OSSBWizardForm'
+import CreateTaskButton from '@/components/tasks/CreateTaskButton'
 import { useCalendarSync } from '@/hooks/useCalendarSync'
 import '@/styles/react-big-calendar.css'
 
@@ -294,11 +295,12 @@ export default function CalendarPage() {
           </div>
         </div>
         <div className="flex gap-2">
+          <CreateTaskButton onTaskCreated={fetchCalendarData} />
           <Button
             onClick={() => setIsOSSBWizardOpen(true)}
-            className="bg-primary hover:bg-primary/90"
+            variant="outline"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <FileText className="h-4 w-4 mr-2" />
             Create OSSB Request
           </Button>
           <Button

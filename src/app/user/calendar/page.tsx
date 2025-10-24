@@ -232,34 +232,39 @@ export default function CalendarPage() {
                 LOW: '#16a34a'
               }
 
-              // Use startDate if available, otherwise use dueDate
-              // This makes tasks span across multiple days if they have a date range
-              const eventStart = task.startDate || task.dueDate
-              const eventEnd = task.dueDate
               const isAllDay = task.allDay !== undefined ? task.allDay : true
-
               let start: string
               let end: string
 
-              if (isAllDay) {
-                // Convert to date-only format (YYYY-MM-DD) for all-day events
-                start = new Date(eventStart).toISOString().split('T')[0]
+              // CRITICAL: Only create multi-day events if BOTH dates exist
+              // Otherwise, create single-day event on dueDate only
+              if (task.startDate && task.dueDate) {
+                // Multi-day task with date range
+                if (isAllDay) {
+                  // Convert to date-only format (YYYY-MM-DD) for all-day events
+                  start = new Date(task.startDate).toISOString().split('T')[0]
 
-                // FullCalendar requires end date to be exclusive (day after) for all-day events
-                const endDatePlusOne = new Date(eventEnd)
-                endDatePlusOne.setDate(endDatePlusOne.getDate() + 1)
-                end = endDatePlusOne.toISOString().split('T')[0]
-              } else {
-                // For timed events with date ranges, adjust end time to span full days visually
-                start = new Date(eventStart).toISOString()
-                
-                // If there's a date range, extend to end of last day for visual continuity
-                if (task.startDate && task.dueDate) {
-                  const endOfDay = new Date(eventEnd)
+                  // FullCalendar requires end date to be exclusive (day after) for all-day events
+                  const endDatePlusOne = new Date(task.dueDate)
+                  endDatePlusOne.setDate(endDatePlusOne.getDate() + 1)
+                  end = endDatePlusOne.toISOString().split('T')[0]
+                } else {
+                  // Timed events - use full datetime
+                  start = new Date(task.startDate).toISOString()
+                  const endOfDay = new Date(task.dueDate)
                   endOfDay.setHours(23, 59, 59, 999)
                   end = endOfDay.toISOString()
+                }
+              } else {
+                // Single-day task (only dueDate exists)
+                if (isAllDay) {
+                  start = new Date(task.dueDate).toISOString().split('T')[0]
+                  const endDatePlusOne = new Date(task.dueDate)
+                  endDatePlusOne.setDate(endDatePlusOne.getDate() + 1)
+                  end = endDatePlusOne.toISOString().split('T')[0]
                 } else {
-                  end = new Date(eventEnd).toISOString()
+                  start = new Date(task.dueDate).toISOString()
+                  end = new Date(task.dueDate).toISOString()
                 }
               }
 

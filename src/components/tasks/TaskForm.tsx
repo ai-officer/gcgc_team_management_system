@@ -232,6 +232,11 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
           const startDateTime = new Date(data.startDate)
           startDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0)
           submissionData.startDate = startDateTime
+        } else if (data.startDate) {
+          // No time specified, normalize to midnight local time
+          const startDateTime = new Date(data.startDate)
+          startDateTime.setHours(0, 0, 0, 0)
+          submissionData.startDate = startDateTime
         }
 
         // If we have an end date and time, combine them
@@ -239,6 +244,23 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
           const [hours, minutes] = data.endTime.split(':')
           const dueDateTime = new Date(data.dueDate)
           dueDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0)
+          submissionData.dueDate = dueDateTime
+        } else if (data.dueDate) {
+          // No time specified, normalize to midnight local time
+          const dueDateTime = new Date(data.dueDate)
+          dueDateTime.setHours(23, 59, 59, 999)
+          submissionData.dueDate = dueDateTime
+        }
+      } else {
+        // For all-day events, normalize to midnight local time to avoid timezone issues
+        if (data.startDate) {
+          const startDateTime = new Date(data.startDate)
+          startDateTime.setHours(0, 0, 0, 0)
+          submissionData.startDate = startDateTime
+        }
+        if (data.dueDate) {
+          const dueDateTime = new Date(data.dueDate)
+          dueDateTime.setHours(23, 59, 59, 999)
           submissionData.dueDate = dueDateTime
         }
       }

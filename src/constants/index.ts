@@ -49,7 +49,7 @@ export const EVENT_TYPE_COLORS = {
   DEADLINE: '#ef4444',
   REMINDER: '#f59e0b',
   MILESTONE: '#10b981',
-  PERSONAL: '#8b5cf6',
+  PERSONAL: '#06b6d4',
 } as const
 
 // User roles

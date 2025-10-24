@@ -9,6 +9,7 @@ import { format } from 'date-fns'
 import { CalendarIcon, Plus, X, Users, User, Handshake } from 'lucide-react'
 import { DatePicker } from '@/components/ui/date-picker'
 import { TimePicker } from '@/components/ui/time-picker'
+import { SearchableMultiSelect, SelectOption } from '@/components/ui/searchable-multi-select'
 import '@/styles/calendar.css'
 import '@/styles/popover-fix.css'
 
@@ -85,8 +86,6 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
   const [users, setUsers] = useState<User[]>([])
   const [selectedTeamMembers, setSelectedTeamMembers] = useState<User[]>([])
   const [selectedCollaborators, setSelectedCollaborators] = useState<User[]>([])
-  const [teamMemberSearch, setTeamMemberSearch] = useState('')
-  const [collaboratorSearch, setCollaboratorSearch] = useState('')
 
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskFormSchema),
@@ -797,91 +796,18 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label className="text-base">Team Members</Label>
-                  <Select 
-                    onValueChange={(value) => {
-                      const user = users.find(u => u.id === value)
-                      if (user) addTeamMember(user)
+                  <SearchableMultiSelect
+                    options={users.filter(u => u.id !== session?.user?.id) as SelectOption[]}
+                    selected={selectedTeamMembers as SelectOption[]}
+                    onSelect={(user) => addTeamMember(user as User)}
+                    onRemove={removeTeamMember}
+                    onClear={() => {
+                      setSelectedTeamMembers([])
+                      form.setValue('teamMemberIds', [])
                     }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Search and add team members..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <div className="p-2">
-                        <Input
-                          placeholder="Search users..."
-                          value={teamMemberSearch}
-                          onChange={(e) => setTeamMemberSearch(e.target.value)}
-                          className="mb-2"
-                        />
-                      </div>
-                      {users
-                        .filter(user => {
-                          const searchMatch = !teamMemberSearch || 
-                            user.name?.toLowerCase().includes(teamMemberSearch.toLowerCase()) ||
-                            user.email.toLowerCase().includes(teamMemberSearch.toLowerCase())
-                          return user.id !== session?.user?.id && // Don't include yourself
-                                 !selectedTeamMembers.find(sm => sm.id === user.id) &&
-                                 searchMatch
-                        })
-                        .map((user) => (
-                          <SelectItem key={user.id} value={user.id}>
-                            <div className="flex items-center gap-2">
-                              <Avatar className="h-6 w-6">
-                                <AvatarImage src={user.image || undefined} />
-                                <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium text-xs">
-                                  {user.name
-                                    ? user.name.split(' ').map(n => n[0]).join('')
-                                    : user.email?.[0]?.toUpperCase()
-                                  }
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <div className="font-medium">{user.name || 'No name'}</div>
-                                <div className="text-xs text-muted-foreground">{user.email}</div>
-                              </div>
-                            </div>
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                  
-                  {selectedTeamMembers.length > 0 ? (
-                    <div className="space-y-2">
-                      <p className="text-sm text-muted-foreground">
-                        {selectedTeamMembers.length} member{selectedTeamMembers.length > 1 ? 's' : ''} selected
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedTeamMembers.map((member) => (
-                          <Badge key={member.id} variant="secondary" className="flex items-center gap-2 py-1.5 px-3">
-                            <Avatar className="h-5 w-5">
-                              <AvatarImage src={member.image || undefined} />
-                              <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium text-xs">
-                                {member.name
-                                  ? member.name.split(' ').map(n => n[0]).join('')
-                                  : member.email?.[0]?.toUpperCase()
-                                }
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="text-sm">{member.name || member.email}</span>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-4 w-4 p-0 hover:bg-destructive/20"
-                              onClick={() => removeTeamMember(member.id)}
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground p-3 bg-muted rounded-md">
-                      No team members selected yet
-                    </p>
-                  )}
+                    placeholder="Search and add team members..."
+                    emptyText="No team members available"
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -905,89 +831,18 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label className="text-base">Collaborators</Label>
-                  <Select onValueChange={(value) => {
-                    const user = users.find(u => u.id === value)
-                    if (user) addCollaborator(user)
-                  }}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Search and add collaborators..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <div className="p-2">
-                        <Input
-                          placeholder="Search users..."
-                          value={collaboratorSearch}
-                          onChange={(e) => setCollaboratorSearch(e.target.value)}
-                          className="mb-2"
-                        />
-                      </div>
-                      {users
-                        .filter(user => {
-                          const searchMatch = !collaboratorSearch || 
-                            user.name?.toLowerCase().includes(collaboratorSearch.toLowerCase()) ||
-                            user.email.toLowerCase().includes(collaboratorSearch.toLowerCase())
-                          return user.id !== session?.user?.id && // Don't include yourself
-                                 !selectedCollaborators.find(sc => sc.id === user.id) &&
-                                 searchMatch
-                        })
-                        .map((user) => (
-                          <SelectItem key={user.id} value={user.id}>
-                            <div className="flex items-center gap-2">
-                              <Avatar className="h-6 w-6">
-                                <AvatarImage src={user.image || undefined} />
-                                <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium text-xs">
-                                  {user.name
-                                    ? user.name.split(' ').map(n => n[0]).join('')
-                                    : user.email?.[0]?.toUpperCase()
-                                  }
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <div className="font-medium">{user.name || 'No name'}</div>
-                                <div className="text-xs text-muted-foreground">{user.email}</div>
-                              </div>
-                            </div>
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                  
-                  {selectedCollaborators.length > 0 ? (
-                    <div className="space-y-2">
-                      <p className="text-sm text-muted-foreground">
-                        {selectedCollaborators.length} collaborator{selectedCollaborators.length > 1 ? 's' : ''} added
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedCollaborators.map((collaborator) => (
-                          <Badge key={collaborator.id} variant="secondary" className="flex items-center gap-2 py-1.5 px-3">
-                            <Avatar className="h-5 w-5">
-                              <AvatarImage src={collaborator.image || undefined} />
-                              <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium text-xs">
-                                {collaborator.name
-                                  ? collaborator.name.split(' ').map(n => n[0]).join('')
-                                  : collaborator.email?.[0]?.toUpperCase()
-                                }
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="text-sm">{collaborator.name || collaborator.email}</span>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-4 w-4 p-0 hover:bg-destructive/20"
-                              onClick={() => removeCollaborator(collaborator.id)}
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground p-3 bg-muted rounded-md">
-                      No collaborators added yet
-                    </p>
-                  )}
+                  <SearchableMultiSelect
+                    options={users.filter(u => u.id !== session?.user?.id) as SelectOption[]}
+                    selected={selectedCollaborators as SelectOption[]}
+                    onSelect={(user) => addCollaborator(user as User)}
+                    onRemove={removeCollaborator}
+                    onClear={() => {
+                      setSelectedCollaborators([])
+                      form.setValue('collaboratorIds', [])
+                    }}
+                    placeholder="Search and add collaborators..."
+                    emptyText="No collaborators available"
+                  />
                 </div>
               </CardContent>
             </Card>

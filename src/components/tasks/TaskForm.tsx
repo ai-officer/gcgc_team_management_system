@@ -7,10 +7,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { format } from 'date-fns'
 import { CalendarIcon, Plus, X, Users, User, Handshake } from 'lucide-react'
-import { DayPicker } from 'react-day-picker'
-import 'react-day-picker/dist/style.css'
-import '@/styles/date-picker.css'
-import '@/styles/popover-fix.css'
+import { DatePicker } from '@/components/ui/date-picker'
+import '@/styles/calendar.css'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -22,7 +20,6 @@ import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Progress } from '@/components/ui/progress'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   Dialog,
   DialogContent,
@@ -88,8 +85,6 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
   const [selectedCollaborators, setSelectedCollaborators] = useState<User[]>([])
   const [teamMemberSearch, setTeamMemberSearch] = useState('')
   const [collaboratorSearch, setCollaboratorSearch] = useState('')
-  const [startDateOpen, setStartDateOpen] = useState(false)
-  const [dueDateOpen, setDueDateOpen] = useState(false)
 
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskFormSchema),
@@ -118,13 +113,6 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
   const taskType = form.watch('taskType')
   const progressPercentage = form.watch('progressPercentage')
 
-  // Close popovers when dialog closes
-  useEffect(() => {
-    if (!open) {
-      setStartDateOpen(false)
-      setDueDateOpen(false)
-    }
-  }, [open])
 
   // Load initial data
   useEffect(() => {
@@ -503,55 +491,12 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                       </span>
                     </Label>
                     <div className="space-y-2">
-                      <Popover open={startDateOpen} onOpenChange={setStartDateOpen} modal>
-                        <PopoverTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className={cn(
-                              "w-full h-11 justify-start text-left font-normal",
-                              !form.watch('startDate') && "text-muted-foreground"
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {form.watch('startDate') ? (
-                              format(form.watch('startDate')!, "PPP")
-                            ) : (
-                              <span>Select start date</span>
-                            )}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0 z-[200]" align="start">
-                          <DayPicker
-                            mode="single"
-                            selected={form.watch('startDate')}
-                            onSelect={(date) => {
-                              form.setValue('startDate', date)
-                              setStartDateOpen(false)
-                            }}
-                            disabled={(date) =>
-                              date < new Date(new Date().setHours(0, 0, 0, 0))
-                            }
-                            className="p-3"
-                          />
-                          {form.watch('startDate') && (
-                            <div className="p-3 border-t">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  form.setValue('startDate', undefined)
-                                  setStartDateOpen(false)
-                                }}
-                                className="w-full"
-                              >
-                                Clear date
-                              </Button>
-                            </div>
-                          )}
-                        </PopoverContent>
-                      </Popover>
+                      <DatePicker
+                        date={form.watch('startDate')}
+                        onSelect={(date) => form.setValue('startDate', date)}
+                        placeholder="Select start date"
+                        disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                      />
                       {!form.watch('allDay') && (
                         <Input
                           type="time"
@@ -564,7 +509,7 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                     </div>
                   </div>
 
-                  {/* End Date */}
+                  {/* Due Date */}
                   <div className="space-y-3">
                     <Label htmlFor="dueDate" className="text-sm font-medium flex items-center gap-2">
                       <CalendarIcon className="h-3.5 w-3.5 text-orange-600" />
@@ -574,58 +519,17 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
                       </span>
                     </Label>
                     <div className="space-y-2">
-                      <Popover open={dueDateOpen} onOpenChange={setDueDateOpen} modal>
-                        <PopoverTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className={cn(
-                              "w-full h-11 justify-start text-left font-normal",
-                              !form.watch('dueDate') && "text-muted-foreground"
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4 text-orange-600" />
-                            {form.watch('dueDate') ? (
-                              format(form.watch('dueDate')!, "PPP")
-                            ) : (
-                              <span>Select due date</span>
-                            )}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0 z-[200]" align="start">
-                          <DayPicker
-                            mode="single"
-                            selected={form.watch('dueDate')}
-                            onSelect={(date) => {
-                              form.setValue('dueDate', date)
-                              setDueDateOpen(false)
-                            }}
-                            disabled={(date) => {
-                              const today = new Date(new Date().setHours(0, 0, 0, 0))
-                              const startDate = form.watch('startDate')
-                              const minDate = startDate && startDate > today ? startDate : today
-                              return date < minDate
-                            }}
-                            className="p-3"
-                          />
-                          {form.watch('dueDate') && (
-                            <div className="p-3 border-t">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  form.setValue('dueDate', undefined)
-                                  setDueDateOpen(false)
-                                }}
-                                className="w-full"
-                              >
-                                Clear date
-                              </Button>
-                            </div>
-                          )}
-                        </PopoverContent>
-                      </Popover>
+                      <DatePicker
+                        date={form.watch('dueDate')}
+                        onSelect={(date) => form.setValue('dueDate', date)}
+                        placeholder="Select due date"
+                        disabled={(date) => {
+                          const today = new Date(new Date().setHours(0, 0, 0, 0))
+                          const startDate = form.watch('startDate')
+                          const minDate = startDate && startDate > today ? startDate : today
+                          return date < minDate
+                        }}
+                      />
                       {!form.watch('allDay') && (
                         <Input
                           type="time"

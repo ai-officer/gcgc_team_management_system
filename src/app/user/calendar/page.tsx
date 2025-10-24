@@ -1,11 +1,10 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useSession } from 'next-auth/react'
-import FullCalendar from '@fullcalendar/react'
-import dayGridPlugin from '@fullcalendar/daygrid'
-import timeGridPlugin from '@fullcalendar/timegrid'
-import interactionPlugin from '@fullcalendar/interaction'
+import { Calendar, momentLocalizer, Views } from 'react-big-calendar'
+import moment from 'moment'
+import 'react-big-calendar/lib/css/react-big-calendar.css'
 import { Calendar as CalendarIcon, AlertCircle, Settings, Wifi, WifiOff, RefreshCw, Trash2 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -20,31 +19,35 @@ import {
 import { EVENT_TYPE_COLORS } from '@/constants'
 import CalendarSyncSettingsModal from '@/components/calendar/CalendarSyncSettingsModal'
 import { useCalendarSync } from '@/hooks/useCalendarSync'
-import '@/styles/calendar.css'
+import '@/styles/react-big-calendar.css'
+
+const localizer = momentLocalizer(moment)
 
 interface CalendarEvent {
   id: string
   title: string
-  description?: string
-  start: string
-  end: string
+  start: Date
+  end: Date
   allDay?: boolean
-  color?: string
-  type: 'MEETING' | 'DEADLINE' | 'REMINDER' | 'MILESTONE' | 'PERSONAL'
-  creator?: {
-    id: string
-    name: string
-    email: string
-  }
-  team?: {
-    id: string
-    name: string
-  }
-  task?: {
-    id: string
-    title: string
-    priority: string
-    status: string
+  resource?: {
+    description?: string
+    color?: string
+    type: 'MEETING' | 'DEADLINE' | 'REMINDER' | 'MILESTONE' | 'PERSONAL'
+    creator?: {
+      id: string
+      name: string
+      email: string
+    }
+    team?: {
+      id: string
+      name: string
+    }
+    task?: {
+      id: string
+      title: string
+      priority: string
+      status: string
+    }
   }
 }
 
@@ -79,44 +82,12 @@ export default function CalendarPage() {
   const [isCleaningUp, setIsCleaningUp] = useState(false)
   const [cleanupMessage, setCleanupMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
-  // Helper function to format dates for FullCalendar (TIMEZONE-SAFE)
-  const formatDateToLocal = (date: Date): string => {
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
-  }
-
-  const formatEventDates = (startTime: string, endTime: string, allDay: boolean) => {
-    if (allDay) {
-      // Convert to LOCAL date-only format (YYYY-MM-DD) for all-day events
-      // CRITICAL: Use local date, not UTC, to avoid timezone shift
-      const startDate = new Date(startTime)
-      const start = formatDateToLocal(startDate)
-
-      // FullCalendar requires end date to be exclusive (day after) for all-day events
-      const endDate = new Date(endTime)
-      endDate.setDate(endDate.getDate() + 1)
-      const end = formatDateToLocal(endDate)
-
-      return { start, end }
-    } else {
-      // For timed events, use ISO format
-      return {
-        start: new Date(startTime).toISOString(),
-        end: new Date(endTime).toISOString()
-      }
-    }
-  }
-
-  // Real-time calendar sync with WebSocket
   const fetchCalendarData = useCallback(async () => {
     if (!session?.user) return
 
     try {
       setLoading(true)
 
-      // Fetch all data in parallel including Gmail calendar data
       const [eventsResponse, tasksResponse, syncSettingsResponse, holidaysResponse] = await Promise.all([
         fetch('/api/events'),
         fetch('/api/tasks?status=TODO,IN_PROGRESS,IN_REVIEW'),
@@ -140,93 +111,42 @@ export default function CalendarPage() {
       // Add regular TMS events
       if (eventsData.events) {
         eventsData.events.forEach((event: any) => {
-          const { start, end } = formatEventDates(event.startTime, event.endTime, event.allDay)
-
           calendarEvents.push({
             id: `event-${event.id}`,
             title: event.title,
-            description: event.description,
-            start,
-            end,
+            start: new Date(event.startTime),
+            end: new Date(event.endTime),
             allDay: event.allDay,
-            color: EVENT_TYPE_COLORS[event.type as keyof typeof EVENT_TYPE_COLORS] || '#3b82f6',
-            type: event.type,
-            creator: event.creator,
-            team: event.team
+            resource: {
+              description: event.description,
+              color: EVENT_TYPE_COLORS[event.type as keyof typeof EVENT_TYPE_COLORS] || '#3b82f6',
+              type: event.type,
+              creator: event.creator,
+              team: event.team
+            }
           })
         })
       }
 
-      // Add holidays as events
+      // Add holidays
       if (holidaysData.holidays) {
         holidaysData.holidays.forEach((holiday: any) => {
-          const { start, end } = formatEventDates(holiday.date, holiday.date, true)
-
           calendarEvents.push({
             id: `holiday-${holiday.id}`,
             title: `🎉 ${holiday.title}`,
-            description: holiday.description || 'Holiday',
-            start,
-            end,
+            start: new Date(holiday.date),
+            end: new Date(holiday.date),
             allDay: true,
-            color: '#dc2626', // Red color for holidays
-            type: 'PERSONAL',
-            creator: undefined,
-            team: undefined
+            resource: {
+              description: holiday.description || 'Holiday',
+              color: '#dc2626',
+              type: 'PERSONAL'
+            }
           })
         })
       }
 
-      // If sync is enabled, automatically fetch Gmail calendar events
-      if (syncData.syncSettings?.isEnabled) {
-        try {
-          // Automatically trigger sync from Google to get latest events
-          const syncResponse = await fetch('/api/calendar/sync-from-google', {
-            method: 'POST'
-          })
-          
-          if (syncResponse.ok) {
-            // Refetch events after sync to include Gmail events
-            const updatedEventsResponse = await fetch('/api/events')
-            if (updatedEventsResponse.ok) {
-              const updatedEventsData = await updatedEventsResponse.json()
-              
-              // Clear existing TMS events and re-add with Gmail events
-              const tmsEvents = calendarEvents.filter(e => !e.id.startsWith('event-'))
-              
-              if (updatedEventsData.events) {
-                updatedEventsData.events.forEach((event: any) => {
-                  const { start, end } = formatEventDates(event.startTime, event.endTime, event.allDay)
-
-                  tmsEvents.push({
-                    id: `event-${event.id}`,
-                    title: event.title,
-                    description: event.description,
-                    start,
-                    end,
-                    allDay: event.allDay,
-                    color: event.googleCalendarEventId
-                      ? '#10b981' // Green for Gmail events
-                      : EVENT_TYPE_COLORS[event.type as keyof typeof EVENT_TYPE_COLORS] || '#3b82f6',
-                    type: event.type,
-                    creator: event.creator,
-                    team: event.team
-                  })
-                })
-              }
-              
-              // Replace calendar events with updated list
-              calendarEvents.length = 0
-              calendarEvents.push(...tmsEvents)
-            }
-          }
-        } catch (syncError) {
-          console.error('Auto-sync failed:', syncError)
-          // Continue with existing events if sync fails
-        }
-      }
-
-      // Add task deadlines as events
+      // Add task deadlines
       if (tasksData.tasks) {
         tasksData.tasks.forEach((task: TaskDeadline) => {
           if (task.dueDate && task.status !== 'COMPLETED') {
@@ -241,74 +161,39 @@ export default function CalendarPage() {
                 LOW: '#16a34a'
               }
 
-              const isAllDay = task.allDay !== undefined ? task.allDay : true
-              let start: string
-              let end: string
+              // CRITICAL: Multi-day event handling
+              let startDate: Date
+              let endDate: Date
 
-              // CRITICAL: Only create multi-day events if BOTH dates exist
-              // Otherwise, create single-day event on dueDate only
               if (task.startDate && task.dueDate) {
-                // Multi-day task with date range
-                if (isAllDay) {
-                  // Convert to LOCAL date-only format (YYYY-MM-DD) - TIMEZONE SAFE
-                  const startDate = new Date(task.startDate)
-                  start = formatDateToLocal(startDate)
-
-                  // FullCalendar requires end date to be exclusive (day after) for all-day events
-                  const endDate = new Date(task.dueDate)
-                  endDate.setDate(endDate.getDate() + 1)
-                  end = formatDateToLocal(endDate)
-                } else {
-                  // Timed events - use full datetime
-                  start = new Date(task.startDate).toISOString()
-                  const endOfDay = new Date(task.dueDate)
-                  endOfDay.setHours(23, 59, 59, 999)
-                  end = endOfDay.toISOString()
-                }
+                // Multi-day task
+                startDate = new Date(task.startDate)
+                endDate = new Date(task.dueDate)
               } else {
-                // Single-day task (only dueDate exists)
-                if (isAllDay) {
-                  const dueDate = new Date(task.dueDate)
-                  start = formatDateToLocal(dueDate)
-                  const endDatePlusOne = new Date(task.dueDate)
-                  endDatePlusOne.setDate(endDatePlusOne.getDate() + 1)
-                  end = formatDateToLocal(endDatePlusOne)
-                } else {
-                  start = new Date(task.dueDate).toISOString()
-                  end = new Date(task.dueDate).toISOString()
-                }
+                // Single-day task
+                startDate = new Date(task.dueDate)
+                endDate = new Date(task.dueDate)
               }
 
-              const taskEvent: CalendarEvent = {
+              calendarEvents.push({
                 id: `task-${task.id}`,
                 title: `[Task] ${task.title}`,
-                description: `Due: ${task.team?.name || 'Individual'} task`,
-                start,
-                end,
-                allDay: isAllDay,
-                color: priorityColors[task.priority],
-                type: 'DEADLINE' as const,
-                team: task.team || undefined,
-                task: {
-                  id: task.id,
-                  title: task.title,
-                  priority: task.priority,
-                  status: task.status
+                start: startDate,
+                end: endDate,
+                allDay: task.allDay !== undefined ? task.allDay : true,
+                resource: {
+                  description: `Due: ${task.team?.name || 'Individual'} task`,
+                  color: priorityColors[task.priority],
+                  type: 'DEADLINE',
+                  team: task.team || undefined,
+                  task: {
+                    id: task.id,
+                    title: task.title,
+                    priority: task.priority,
+                    status: task.status
+                  }
                 }
-              }
-
-              // Debug logging for multi-day events
-              if (task.startDate && task.dueDate) {
-                console.log(`Multi-day task: ${task.title}`, {
-                  startDate: task.startDate,
-                  dueDate: task.dueDate,
-                  eventStart: start,
-                  eventEnd: end,
-                  allDay: isAllDay
-                })
-              }
-
-              calendarEvents.push(taskEvent)
+              })
             }
           }
         })
@@ -329,18 +214,9 @@ export default function CalendarPage() {
     fetchCalendarData()
   }, [fetchCalendarData])
 
-  const handleEventClick = (clickInfo: any) => {
-    const eventId = clickInfo.event.id
-    const event = events.find(e => e.id === eventId)
-    if (event) {
-      setSelectedEvent(event)
-      setIsEventDialogOpen(true)
-    }
-  }
-
-  const handleDateSelect = (selectInfo: any) => {
-    // TODO: Implement create new event functionality
-    console.log('Date selected:', selectInfo)
+  const handleSelectEvent = (event: CalendarEvent) => {
+    setSelectedEvent(event)
+    setIsEventDialogOpen(true)
   }
 
   const handleCleanupDuplicates = async () => {
@@ -363,10 +239,7 @@ export default function CalendarPage() {
         text: `Successfully cleaned up ${data.stats.deleted} orphaned event(s)`
       })
 
-      // Refresh calendar after cleanup
       await fetchCalendarData()
-
-      // Clear message after 5 seconds
       setTimeout(() => setCleanupMessage(null), 5000)
     } catch (err) {
       console.error('Cleanup error:', err)
@@ -376,6 +249,25 @@ export default function CalendarPage() {
       })
     } finally {
       setIsCleaningUp(false)
+    }
+  }
+
+  // Event style getter - CRITICAL for multi-day events
+  const eventStyleGetter = (event: CalendarEvent) => {
+    const backgroundColor = event.resource?.color || '#3b82f6'
+
+    return {
+      style: {
+        backgroundColor,
+        borderRadius: '6px',
+        opacity: 0.9,
+        color: 'white',
+        border: '0px',
+        display: 'block',
+        fontWeight: 600,
+        fontSize: '0.875rem',
+        padding: '2px 6px'
+      }
     }
   }
 
@@ -413,7 +305,6 @@ export default function CalendarPage() {
                 : "View your schedule and task deadlines"
               }
             </p>
-            {/* Real-time sync status */}
             <div className="flex items-center gap-2">
               {isConnected ? (
                 <Badge variant="outline" className="flex items-center gap-1 bg-green-50 text-green-700 border-green-200">
@@ -526,93 +417,21 @@ export default function CalendarPage() {
       {/* Calendar */}
       <Card>
         <CardContent className="p-6">
-          {/* Event Legend */}
-          <div className="mb-4 flex flex-wrap gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded bg-blue-500"></div>
-              <span>TMS Events</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded bg-green-500"></div>
-              <span>Gmail Events</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded bg-red-500"></div>
-              <span>Holidays</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded bg-orange-500"></div>
-              <span>Task Deadlines</span>
-            </div>
-          </div>
-          
-          <div className="calendar-square-grid">
-            <FullCalendar
-              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-              headerToolbar={{
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay'
-              }}
-              initialView="dayGridMonth"
-              editable={true}
-              selectable={true}
-              selectMirror={true}
-              dayMaxEvents={3}
-              dayMaxEventRows={3}
-              moreLinkClick="popover"
-              weekends={true}
-              events={events}
-              eventClick={handleEventClick}
-              select={handleDateSelect}
-              aspectRatio={1.2}
-              contentHeight="auto"
-              eventDisplay="block"
-              eventTextColor="#fff"
-              displayEventTime={false}
-              displayEventEnd={false}
-              eventMinHeight={28}
-              eventOrder="start,-duration,allDay,title"
-              nextDayThreshold="00:00:00"
-              progressiveEventRendering={true}
-              eventTimeFormat={{
-                hour: 'numeric',
-                minute: '2-digit',
-                omitZeroMinute: false,
-                meridiem: 'short'
-              }}
-              dayCellClassNames={(arg) => {
-                const classes = []
-                if (arg.isToday) classes.push('today-cell')
-                if (arg.date.getDay() === 0 || arg.date.getDay() === 6) {
-                  classes.push('weekend-cell')
-                }
-                return classes
-              }}
-              eventClassNames={(arg) => {
-                const classes = ['calendar-event']
-                if (arg.event.id.startsWith('task-')) {
-                  classes.push('task-event')
-                } else if (arg.event.id.startsWith('holiday-')) {
-                  classes.push('holiday-event')
-                } else if (arg.event.backgroundColor === '#10b981') {
-                  classes.push('gmail-event')
-                } else {
-                  classes.push('regular-event')
-                }
-                // Add class for multi-day events
-                if (arg.event.start && arg.event.end) {
-                  const start = new Date(arg.event.start)
-                  const end = new Date(arg.event.end)
-                  const daysDiff = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
-                  if (daysDiff > 1) {
-                    classes.push('multi-day-event')
-                  }
-                }
-                return classes
-              }}
-            />
-          </div>
+          <Calendar
+            localizer={localizer}
+            events={events}
+            startAccessor="start"
+            endAccessor="end"
+            style={{ height: 700 }}
+            onSelectEvent={handleSelectEvent}
+            eventPropGetter={eventStyleGetter}
+            views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
+            defaultView={Views.MONTH}
+            popup
+            showMultiDayTimes
+            step={30}
+            timeslots={2}
+          />
         </CardContent>
       </Card>
 
@@ -622,7 +441,7 @@ export default function CalendarPage() {
           <DialogHeader>
             <DialogTitle>{selectedEvent?.title}</DialogTitle>
             <DialogDescription>
-              {selectedEvent?.description}
+              {selectedEvent?.resource?.description}
             </DialogDescription>
           </DialogHeader>
           {selectedEvent && (
@@ -630,38 +449,41 @@ export default function CalendarPage() {
               <div className="flex items-center gap-2">
                 <CalendarIcon className="h-4 w-4" />
                 <span className="text-sm">
-                  {new Date(selectedEvent.start).toLocaleDateString()} 
+                  {selectedEvent.start.toLocaleDateString()}
                   {!selectedEvent.allDay && (
-                    <> at {new Date(selectedEvent.start).toLocaleTimeString()}</>
+                    <> at {selectedEvent.start.toLocaleTimeString()}</>
+                  )}
+                  {selectedEvent.start.getTime() !== selectedEvent.end.getTime() && (
+                    <> - {selectedEvent.end.toLocaleDateString()}</>
                   )}
                 </span>
               </div>
-              
-              {selectedEvent.team && (
+
+              {selectedEvent.resource?.team && (
                 <div className="flex items-center gap-2">
                   <Badge variant="outline">
-                    {selectedEvent.team.name}
+                    {selectedEvent.resource.team.name}
                   </Badge>
                 </div>
               )}
 
-              {selectedEvent.task && (
+              {selectedEvent.resource?.task && (
                 <div className="space-y-2">
                   <h4 className="font-medium">Task Details</h4>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline">
-                      {selectedEvent.task.priority} Priority
+                      {selectedEvent.resource.task.priority} Priority
                     </Badge>
                     <Badge variant="secondary">
-                      {selectedEvent.task.status.replace('_', ' ')}
+                      {selectedEvent.resource.task.status.replace('_', ' ')}
                     </Badge>
                   </div>
                 </div>
               )}
 
-              {selectedEvent.creator && (
+              {selectedEvent.resource?.creator && (
                 <div className="text-sm text-muted-foreground">
-                  Created by {selectedEvent.creator.name}
+                  Created by {selectedEvent.resource.creator.name}
                 </div>
               )}
             </div>
@@ -673,123 +495,7 @@ export default function CalendarPage() {
       <CalendarSyncSettingsModal
         isOpen={isSyncSettingsOpen}
         onClose={() => setIsSyncSettingsOpen(false)}
-        onSyncComplete={() => {
-          // Refresh calendar events after sync
-          if (session?.user) {
-            const fetchCalendarData = async () => {
-              try {
-                const [eventsResponse, tasksResponse] = await Promise.all([
-                  fetch('/api/events'),
-                  fetch('/api/tasks?status=TODO,IN_PROGRESS,IN_REVIEW')
-                ])
-
-                if (!eventsResponse.ok || !tasksResponse.ok) {
-                  throw new Error('Failed to fetch calendar data')
-                }
-
-                const [eventsData, tasksData] = await Promise.all([
-                  eventsResponse.json(),
-                  tasksResponse.json()
-                ])
-
-                const calendarEvents: CalendarEvent[] = []
-
-                // Add regular events
-                if (eventsData.events) {
-                  eventsData.events.forEach((event: any) => {
-                    const { start, end } = formatEventDates(event.startTime, event.endTime, event.allDay)
-
-                    calendarEvents.push({
-                      id: `event-${event.id}`,
-                      title: event.title,
-                      description: event.description,
-                      start,
-                      end,
-                      allDay: event.allDay,
-                      color: EVENT_TYPE_COLORS[event.type as keyof typeof EVENT_TYPE_COLORS] || '#3b82f6',
-                      type: event.type,
-                      creator: event.creator,
-                      team: event.team
-                    })
-                  })
-                }
-
-                // Add task deadlines as events
-                if (tasksData.tasks) {
-                  tasksData.tasks.forEach((task: TaskDeadline) => {
-                    if (task.dueDate && task.status !== 'COMPLETED') {
-                      const isLeaderTask = session?.user?.role === 'LEADER'
-                      const isMyTask = task.assignee?.id === session?.user?.id
-
-                      if (isMyTask || isLeaderTask) {
-                        const priorityColors = {
-                          URGENT: '#dc2626',
-                          HIGH: '#ea580c',
-                          MEDIUM: '#d97706',
-                          LOW: '#16a34a'
-                        }
-
-                        // Use startDate if available, otherwise use dueDate
-                        // This makes tasks span across multiple days if they have a date range
-                        const eventStart = task.startDate || task.dueDate
-                        const eventEnd = task.dueDate
-                        const isAllDay = task.allDay !== undefined ? task.allDay : true
-
-                        let start: string
-                        let end: string
-
-                        if (isAllDay) {
-                          // Convert to date-only format (YYYY-MM-DD) for all-day events
-                          start = new Date(eventStart).toISOString().split('T')[0]
-
-                          // FullCalendar requires end date to be exclusive (day after) for all-day events
-                          const endDatePlusOne = new Date(eventEnd)
-                          endDatePlusOne.setDate(endDatePlusOne.getDate() + 1)
-                          end = endDatePlusOne.toISOString().split('T')[0]
-                        } else {
-                          // For timed events with date ranges, adjust end time to span full days visually
-                          start = new Date(eventStart).toISOString()
-                          
-                          // If there's a date range, extend to end of last day for visual continuity
-                          if (task.startDate && task.dueDate) {
-                            const endOfDay = new Date(eventEnd)
-                            endOfDay.setHours(23, 59, 59, 999)
-                            end = endOfDay.toISOString()
-                          } else {
-                            end = new Date(eventEnd).toISOString()
-                          }
-                        }
-
-                        calendarEvents.push({
-                          id: `task-${task.id}`,
-                          title: `[Task] ${task.title}`,
-                          description: `Due: ${task.team?.name || 'Individual'} task`,
-                          start,
-                          end,
-                          allDay: isAllDay,
-                          color: priorityColors[task.priority],
-                          type: 'DEADLINE',
-                          team: task.team || undefined,
-                          task: {
-                            id: task.id,
-                            title: task.title,
-                            priority: task.priority,
-                            status: task.status
-                          }
-                        })
-                      }
-                    }
-                  })
-                }
-
-                setEvents(calendarEvents)
-              } catch (err) {
-                console.error('Error refreshing calendar data:', err)
-              }
-            }
-            fetchCalendarData()
-          }
-        }}
+        onSyncComplete={fetchCalendarData}
       />
     </div>
   )

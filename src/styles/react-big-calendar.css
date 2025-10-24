@@ -1,0 +1,295 @@
+/* ========================================
+   REACT BIG CALENDAR - PROFESSIONAL STYLING
+   Senior Frontend Developer - Production Ready
+   ======================================== */
+
+/* Calendar Container */
+.rbc-calendar {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid hsl(var(--border));
+}
+
+/* Toolbar */
+.rbc-toolbar {
+  padding: 1rem;
+  background: hsl(var(--muted) / 0.3);
+  border-bottom: 1px solid hsl(var(--border));
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.rbc-toolbar button {
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+.rbc-toolbar button:hover {
+  background: hsl(var(--accent));
+  border-color: hsl(var(--primary));
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.rbc-toolbar button.rbc-active {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border-color: hsl(var(--primary));
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.rbc-toolbar .rbc-toolbar-label {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: hsl(var(--foreground));
+  letter-spacing: -0.025em;
+}
+
+/* Month View */
+.rbc-month-view {
+  border: none;
+  background: hsl(var(--background));
+}
+
+.rbc-header {
+  padding: 0.75rem 0.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  color: hsl(var(--muted-foreground));
+  background: hsl(var(--muted) / 0.3);
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.rbc-header + .rbc-header {
+  border-left: 1px solid hsl(var(--border));
+}
+
+/* Day Cells */
+.rbc-day-bg {
+  background: hsl(var(--background));
+  border-color: hsl(var(--border));
+}
+
+.rbc-day-bg + .rbc-day-bg {
+  border-left: 1px solid hsl(var(--border));
+}
+
+.rbc-off-range-bg {
+  background: hsl(var(--muted) / 0.2);
+}
+
+.rbc-today {
+  background: hsl(var(--primary) / 0.05);
+}
+
+.rbc-date-cell {
+  padding: 0.5rem;
+  text-align: right;
+}
+
+.rbc-now .rbc-button-link {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+/* Events - CRITICAL FOR MULTI-DAY */
+.rbc-event {
+  border-radius: 6px !important;
+  border: none !important;
+  padding: 2px 8px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  cursor: pointer !important;
+  margin: 1px 0 !important;
+}
+
+.rbc-event:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15) !important;
+  z-index: 10 !important;
+}
+
+.rbc-event-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.rbc-event-content {
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Multi-day Events - Continuous Bars */
+.rbc-event-continues-prior {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+}
+
+.rbc-event-continues-after {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+.rbc-event-continues-day-before {
+  border-left: none !important;
+  padding-left: 4px !important;
+}
+
+.rbc-event-continues-day-after {
+  border-right: none !important;
+  padding-right: 4px !important;
+}
+
+/* Selected Event */
+.rbc-selected {
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.3) !important;
+}
+
+/* Show More Link */
+.rbc-show-more {
+  background: hsl(var(--accent));
+  color: hsl(var(--primary));
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s;
+  margin: 2px;
+  text-align: center;
+}
+
+.rbc-show-more:hover {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+/* Popup Overlay */
+.rbc-overlay {
+  border-radius: 0.75rem;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--background));
+  padding: 0.75rem;
+}
+
+.rbc-overlay-header {
+  background: hsl(var(--muted));
+  padding: 0.75rem;
+  margin: -0.75rem -0.75rem 0.75rem;
+  font-weight: 700;
+  border-bottom: 1px solid hsl(var(--border));
+  border-radius: 0.75rem 0.75rem 0 0;
+}
+
+/* Week View */
+.rbc-time-view {
+  border: none;
+}
+
+.rbc-time-header {
+  background: hsl(var(--muted) / 0.3);
+}
+
+.rbc-time-content {
+  border-top: 1px solid hsl(var(--border));
+}
+
+.rbc-time-slot {
+  border-top: 1px solid hsl(var(--border) / 0.5);
+}
+
+.rbc-current-time-indicator {
+  background-color: hsl(var(--primary));
+  height: 2px;
+}
+
+/* Agenda View */
+.rbc-agenda-view {
+  background: hsl(var(--background));
+}
+
+.rbc-agenda-view table {
+  border: none;
+}
+
+.rbc-agenda-date-cell,
+.rbc-agenda-time-cell {
+  padding: 0.75rem;
+  white-space: nowrap;
+}
+
+.rbc-agenda-event-cell {
+  padding: 0.75rem;
+}
+
+.rbc-agenda-table tbody > tr > td + td {
+  border-left: 1px solid hsl(var(--border));
+}
+
+.rbc-agenda-table tbody > tr + tr {
+  border-top: 1px solid hsl(var(--border));
+}
+
+/* Scrollbars */
+.rbc-time-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.rbc-time-content::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+}
+
+.rbc-time-content::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.3);
+  border-radius: 4px;
+}
+
+.rbc-time-content::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.5);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .rbc-toolbar {
+    flex-direction: column;
+  }
+
+  .rbc-toolbar-label {
+    order: -1;
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* Animation */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rbc-calendar {
+  animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}

@@ -20,6 +20,7 @@ import {
 import { EVENT_TYPE_COLORS } from '@/constants'
 import CalendarSyncSettingsModal from '@/components/calendar/CalendarSyncSettingsModal'
 import { useCalendarSync } from '@/hooks/useCalendarSync'
+import '@/styles/calendar.css'
 
 interface CalendarEvent {
   id: string
@@ -262,7 +263,7 @@ export default function CalendarPage() {
                 }
               }
 
-              calendarEvents.push({
+              const taskEvent = {
                 id: `task-${task.id}`,
                 title: `[Task] ${task.title}`,
                 description: `Due: ${task.team?.name || 'Individual'} task`,
@@ -278,7 +279,20 @@ export default function CalendarPage() {
                   priority: task.priority,
                   status: task.status
                 }
-              })
+              }
+
+              // Debug logging for multi-day events
+              if (task.startDate && task.dueDate) {
+                console.log(`Multi-day task: ${task.title}`, {
+                  startDate: task.startDate,
+                  dueDate: task.dueDate,
+                  eventStart: start,
+                  eventEnd: end,
+                  allDay: isAllDay
+                })
+              }
+
+              calendarEvents.push(taskEvent)
             }
           }
         })

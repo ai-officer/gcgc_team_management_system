@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react'
 import { Calendar, momentLocalizer, Views } from 'react-big-calendar'
 import moment from 'moment'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
-import { Calendar as CalendarIcon, AlertCircle, Settings, Wifi, WifiOff, RefreshCw, Trash2 } from 'lucide-react'
+import { Calendar as CalendarIcon, AlertCircle, Settings, Wifi, WifiOff, RefreshCw, Trash2, FileText, Plus } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dialog'
 import { EVENT_TYPE_COLORS } from '@/constants'
 import CalendarSyncSettingsModal from '@/components/calendar/CalendarSyncSettingsModal'
+import OSSBWizardForm from '@/components/ossb/OSSBWizardForm'
 import { useCalendarSync } from '@/hooks/useCalendarSync'
 import '@/styles/react-big-calendar.css'
 
@@ -79,6 +80,7 @@ export default function CalendarPage() {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false)
   const [isSyncSettingsOpen, setIsSyncSettingsOpen] = useState(false)
+  const [isOSSBWizardOpen, setIsOSSBWizardOpen] = useState(false)
   const [isCleaningUp, setIsCleaningUp] = useState(false)
   const [cleanupMessage, setCleanupMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
@@ -327,6 +329,13 @@ export default function CalendarPage() {
           </div>
         </div>
         <div className="flex gap-2">
+          <Button
+            onClick={() => setIsOSSBWizardOpen(true)}
+            className="bg-primary hover:bg-primary/90"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Create OSSB Request
+          </Button>
           {isConnected && (
             <>
               <Button
@@ -498,6 +507,13 @@ export default function CalendarPage() {
         isOpen={isSyncSettingsOpen}
         onClose={() => setIsSyncSettingsOpen(false)}
         onSyncComplete={fetchCalendarData}
+      />
+
+      {/* OSSB Wizard Form Modal */}
+      <OSSBWizardForm
+        isOpen={isOSSBWizardOpen}
+        onClose={() => setIsOSSBWizardOpen(false)}
+        onSuccess={fetchCalendarData}
       />
     </div>
   )

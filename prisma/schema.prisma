@@ -51,6 +51,7 @@ model User {
   assignedTasks      Task[]             @relation("TaskAssignee")
   createdTasks       Task[]             @relation("TaskCreator")
   teamMembers        TeamMember[]
+  ossbRequests       OSSBRequest[]
   reportsTo          User?              @relation("UserReportsTo", fields: [reportsToId], references: [id])
   subordinates       User[]             @relation("UserReportsTo")
 
@@ -502,4 +503,110 @@ enum CalendarSyncDirection {
   TMS_TO_GOOGLE
   GOOGLE_TO_TMS
   BOTH
+}
+
+model OSSBRequest {
+  id                    String              @id @default(cuid())
+  referenceNo           String              @unique @default(cuid())
+
+  // Section 1: Header Information
+  branchOrDepartment    String
+  objectiveTitle        String
+  versionNo             String?
+  partOfAnnualPlan      Boolean             @default(false)
+
+  // Section 2: Project Information
+  mipClassification     MIPClassification
+  kraOrCpaNumber        Int?
+  projectNumber         Int?
+  kraOrCpaName          String?
+  titleObjective        String
+  startDate             DateTime
+  endDate               DateTime
+
+  // Section 3: Specific Standards / Success Measures (up to 4)
+  successMeasures       Json                // Array of success measure strings
+
+  // Section 4: Program Steps (dynamic/repeatable)
+  programSteps          OSSBProgramStep[]
+  totalBudget           Float               @default(0)
+
+  // Section 5: Signatories
+  preparedBy            String?
+  preparedByPosition    String?
+  datePrepared          DateTime?
+  endorsedBy            String?
+  endorsedByPosition    String?
+  dateEndorsed          DateTime?
+  recommendedBy         String?
+  recommendedByPosition String?
+  dateRecommended       DateTime?
+  approvedBy            String?
+  approvedByPosition    String?
+  dateApproved          DateTime?
+
+  // Section 6: Attachments / Supporting Documents
+  hasGuidelines         Boolean             @default(false)
+  hasComputationValue   Boolean             @default(false)
+  otherAttachments      String?
+  attachments           OSSBAttachment[]
+
+  // Section 7: CC / Remarks
+  ccRecipients          String?
+  remarks               String?
+
+  // Meta fields
+  status                OSSBStatus          @default(DRAFT)
+  creatorId             String
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  submittedAt           DateTime?
+
+  creator               User                @relation(fields: [creatorId], references: [id])
+
+  @@map("ossb_requests")
+}
+
+model OSSBProgramStep {
+  id                    String              @id @default(cuid())
+  ossbRequestId         String
+  stepNumber            Int
+  description           String
+  responsiblePerson     String
+  deadline              DateTime
+  budget                Float               @default(0)
+  createdAt             DateTime            @default(now())
+
+  ossbRequest           OSSBRequest         @relation(fields: [ossbRequestId], references: [id], onDelete: Cascade)
+
+  @@map("ossb_program_steps")
+}
+
+model OSSBAttachment {
+  id                    String              @id @default(cuid())
+  ossbRequestId         String
+  fileName              String
+  fileUrl               String
+  fileSize              Int
+  fileType              String
+  uploadedAt            DateTime            @default(now())
+
+  ossbRequest           OSSBRequest         @relation(fields: [ossbRequestId], references: [id], onDelete: Cascade)
+
+  @@map("ossb_attachments")
+}
+
+enum MIPClassification {
+  MAINTENANCE
+  IMPROVEMENT
+  PROJECT
+}
+
+enum OSSBStatus {
+  DRAFT
+  SUBMITTED
+  ENDORSED
+  RECOMMENDED
+  APPROVED
+  REJECTED
 }

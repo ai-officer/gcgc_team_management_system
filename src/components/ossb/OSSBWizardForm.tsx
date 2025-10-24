@@ -15,10 +15,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Progress } from '@/components/ui/progress'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { DatePicker } from '@/components/ui/date-picker'
 import { Separator } from '@/components/ui/separator'
@@ -31,7 +29,7 @@ import {
   Upload,
   Trash2,
   Plus,
-  AlertCircle
+  CalendarIcon
 } from 'lucide-react'
 import { ossbRequestSchema, type OSSBRequestInput } from '@/lib/validations/ossb'
 import { useToast } from '@/hooks/use-toast'
@@ -208,7 +206,7 @@ export default function OSSBWizardForm({ isOpen, onClose, onSuccess }: OSSBWizar
       case 2:
         return <Section2ProjectInfo register={register} errors={errors} watch={watch} setValue={setValue} />
       case 3:
-        return <Section3SuccessMeasures fields={successMeasureFields} register={register} errors={errors} append={appendSuccessMeasure} remove={removeSuccessMeasure} />
+        return <Section3SuccessMeasures fields={successMeasureFields} register={register} errors={errors} watch={watch} setValue={setValue} append={appendSuccessMeasure} remove={removeSuccessMeasure} />
       case 4:
         return <Section4ProgramSteps fields={programStepFields} register={register} errors={errors} watch={watch} setValue={setValue} append={appendProgramStep} remove={removeProgramStep} />
       case 5:
@@ -329,221 +327,259 @@ export default function OSSBWizardForm({ isOpen, onClose, onSuccess }: OSSBWizar
 // Section Components
 function Section1HeaderInfo({ register, errors, watch, setValue }: any) {
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Section 1: Header Information</CardTitle>
-          <CardDescription>Basic information about your OSSB request</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="branchOrDepartment">Branch or Department *</Label>
-            <Input
-              id="branchOrDepartment"
-              {...register('branchOrDepartment')}
-              placeholder="Enter branch or department name"
-            />
-            {errors.branchOrDepartment && (
-              <p className="text-sm text-red-500 mt-1">{errors.branchOrDepartment.message}</p>
-            )}
-          </div>
+    <div className="space-y-6 px-1">
+      <div>
+        <h3 className="text-lg font-semibold mb-1">Section 1: Header Information</h3>
+        <p className="text-sm text-muted-foreground">Basic information about your OSSB request</p>
+      </div>
 
-          <div>
-            <Label htmlFor="objectiveTitle">Objective / Specific Steps Budget Title *</Label>
-            <Input
-              id="objectiveTitle"
-              {...register('objectiveTitle')}
-              placeholder="Enter budget title"
-            />
-            {errors.objectiveTitle && (
-              <p className="text-sm text-red-500 mt-1">{errors.objectiveTitle.message}</p>
-            )}
-          </div>
+      <div className="space-y-4">
+        <div>
+          <Label htmlFor="branchOrDepartment">Branch or Department *</Label>
+          <Input
+            id="branchOrDepartment"
+            {...register('branchOrDepartment')}
+            placeholder="Enter branch or department name"
+            className="mt-1.5"
+          />
+          {errors.branchOrDepartment && (
+            <p className="text-sm text-red-500 mt-1">{errors.branchOrDepartment.message}</p>
+          )}
+        </div>
 
-          <div>
-            <Label htmlFor="versionNo">Version No.</Label>
-            <Input
-              id="versionNo"
-              {...register('versionNo')}
-              placeholder="e.g., ver211001"
-            />
-            {errors.versionNo && (
-              <p className="text-sm text-red-500 mt-1">{errors.versionNo.message}</p>
-            )}
-          </div>
+        <div>
+          <Label htmlFor="objectiveTitle">Objective / Specific Steps Budget Title *</Label>
+          <Input
+            id="objectiveTitle"
+            {...register('objectiveTitle')}
+            placeholder="Enter budget title"
+            className="mt-1.5"
+          />
+          {errors.objectiveTitle && (
+            <p className="text-sm text-red-500 mt-1">{errors.objectiveTitle.message}</p>
+          )}
+        </div>
 
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="partOfAnnualPlan"
-              checked={watch('partOfAnnualPlan')}
-              onCheckedChange={(checked) => setValue('partOfAnnualPlan', checked)}
-            />
-            <Label htmlFor="partOfAnnualPlan" className="cursor-pointer">
-              Part of Annual Plan
-            </Label>
-          </div>
-        </CardContent>
-      </Card>
+        <div>
+          <Label htmlFor="versionNo">Version No.</Label>
+          <Input
+            id="versionNo"
+            {...register('versionNo')}
+            placeholder="e.g., ver211001"
+            className="mt-1.5"
+          />
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="partOfAnnualPlan"
+            checked={watch('partOfAnnualPlan')}
+            onCheckedChange={(checked) => setValue('partOfAnnualPlan', checked)}
+          />
+          <Label htmlFor="partOfAnnualPlan" className="cursor-pointer">
+            Part of Annual Plan
+          </Label>
+        </div>
+      </div>
     </div>
   )
 }
 
 function Section2ProjectInfo({ register, errors, watch, setValue }: any) {
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Section 2: Project Information</CardTitle>
-          <CardDescription>Detailed project classification and timeline</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="mipClassification">M/I/P Classification *</Label>
-            <select
-              id="mipClassification"
-              {...register('mipClassification')}
-              className="w-full px-3 py-2 border rounded-md"
-            >
-              <option value="">Select classification</option>
-              <option value="MAINTENANCE">Maintenance</option>
-              <option value="IMPROVEMENT">Improvement</option>
-              <option value="PROJECT">Project</option>
-            </select>
-            {errors.mipClassification && (
-              <p className="text-sm text-red-500 mt-1">{errors.mipClassification.message}</p>
-            )}
-          </div>
+    <div className="space-y-6 px-1">
+      <div>
+        <h3 className="text-lg font-semibold mb-1">Section 2: Project Information</h3>
+        <p className="text-sm text-muted-foreground">Detailed project classification and timeline</p>
+      </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="kraOrCpaNumber">KRA/CPA #</Label>
-              <Input
-                id="kraOrCpaNumber"
-                type="number"
-                {...register('kraOrCpaNumber', { valueAsNumber: true })}
-                placeholder="Enter number"
-              />
-            </div>
-            <div>
-              <Label htmlFor="projectNumber">Project #</Label>
-              <Input
-                id="projectNumber"
-                type="number"
-                {...register('projectNumber', { valueAsNumber: true })}
-                placeholder="Enter number"
-              />
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="kraOrCpaName">KRA/CPA Name</Label>
-            <Input
-              id="kraOrCpaName"
-              {...register('kraOrCpaName')}
-              placeholder="e.g., Marketing"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="titleObjective">Title / Objective Statement *</Label>
-            <Textarea
-              id="titleObjective"
-              {...register('titleObjective')}
-              placeholder="What is this that you want to improve?"
-              rows={3}
-            />
-            {errors.titleObjective && (
-              <p className="text-sm text-red-500 mt-1">{errors.titleObjective.message}</p>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Start Date *</Label>
-              <DatePicker
-                value={watch('startDate')}
-                onChange={(date) => setValue('startDate', date)}
-              />
-              {errors.startDate && (
-                <p className="text-sm text-red-500 mt-1">{errors.startDate.message}</p>
-              )}
-            </div>
-            <div>
-              <Label>End Date *</Label>
-              <DatePicker
-                value={watch('endDate')}
-                onChange={(date) => setValue('endDate', date)}
-              />
-              {errors.endDate && (
-                <p className="text-sm text-red-500 mt-1">{errors.endDate.message}</p>
-              )}
-            </div>
-          </div>
-
-          {watch('startDate') && watch('endDate') && (
-            <div className="bg-muted p-3 rounded-md">
-              <p className="text-sm font-medium">
-                Number of Days: {Math.ceil((new Date(watch('endDate')).getTime() - new Date(watch('startDate')).getTime()) / (1000 * 60 * 60 * 24))}
-              </p>
-            </div>
+      <div className="space-y-4">
+        <div>
+          <Label htmlFor="mipClassification">M/I/P Classification *</Label>
+          <select
+            id="mipClassification"
+            {...register('mipClassification')}
+            className="w-full px-3 py-2 border rounded-md mt-1.5"
+          >
+            <option value="">Select classification</option>
+            <option value="MAINTENANCE">Maintenance</option>
+            <option value="IMPROVEMENT">Improvement</option>
+            <option value="PROJECT">Project</option>
+          </select>
+          {errors.mipClassification && (
+            <p className="text-sm text-red-500 mt-1">{errors.mipClassification.message}</p>
           )}
-        </CardContent>
-      </Card>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="kraOrCpaNumber">KRA/CPA #</Label>
+            <Input
+              id="kraOrCpaNumber"
+              type="number"
+              {...register('kraOrCpaNumber', { valueAsNumber: true })}
+              placeholder="Enter number"
+              className="mt-1.5"
+            />
+          </div>
+          <div>
+            <Label htmlFor="projectNumber">Project #</Label>
+            <Input
+              id="projectNumber"
+              type="number"
+              {...register('projectNumber', { valueAsNumber: true })}
+              placeholder="Enter number"
+              className="mt-1.5"
+            />
+          </div>
+        </div>
+
+        <div>
+          <Label htmlFor="kraOrCpaName">KRA/CPA Name</Label>
+          <Input
+            id="kraOrCpaName"
+            {...register('kraOrCpaName')}
+            placeholder="e.g., Marketing"
+            className="mt-1.5"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="titleObjective">Title / Objective Statement *</Label>
+          <Textarea
+            id="titleObjective"
+            {...register('titleObjective')}
+            placeholder="What is this that you want to improve?"
+            rows={3}
+            className="mt-1.5"
+          />
+          {errors.titleObjective && (
+            <p className="text-sm text-red-500 mt-1">{errors.titleObjective.message}</p>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label className="flex items-center gap-2">
+              <CalendarIcon className="h-3.5 w-3.5" />
+              Start Date *
+            </Label>
+            <div className="mt-1.5">
+              <DatePicker
+                date={watch('startDate')}
+                onSelect={(date) => setValue('startDate', date)}
+                placeholder="Select start date"
+              />
+            </div>
+            {errors.startDate && (
+              <p className="text-sm text-red-500 mt-1">{errors.startDate.message}</p>
+            )}
+          </div>
+          <div>
+            <Label className="flex items-center gap-2">
+              <CalendarIcon className="h-3.5 w-3.5" />
+              End Date *
+            </Label>
+            <div className="mt-1.5">
+              <DatePicker
+                date={watch('endDate')}
+                onSelect={(date) => setValue('endDate', date)}
+                placeholder="Select end date"
+                disabled={(date) => {
+                  const startDate = watch('startDate')
+                  return startDate ? date < startDate : false
+                }}
+              />
+            </div>
+            {errors.endDate && (
+              <p className="text-sm text-red-500 mt-1">{errors.endDate.message}</p>
+            )}
+          </div>
+        </div>
+
+        {watch('startDate') && watch('endDate') && (
+          <div className="bg-green-50 border border-green-200 p-3 rounded-lg">
+            <p className="text-sm font-medium text-green-800">
+              Number of Days: {Math.ceil((new Date(watch('endDate')).getTime() - new Date(watch('startDate')).getTime()) / (1000 * 60 * 60 * 24))} days
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
 
-function Section3SuccessMeasures({ fields, register, errors, append, remove }: any) {
+function Section3SuccessMeasures({ fields, register, errors, watch, setValue, append, remove }: any) {
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Section 3: Specific Standards / Success Measures</CardTitle>
-          <CardDescription>Define success criteria (up to 4 measures)</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {fields.map((field: any, index: number) => (
-            <div key={field.id} className="flex gap-2">
-              <div className="flex-1">
-                <Label htmlFor={`successMeasures.${index}`}>
-                  {index === 0 ? 'a' : index === 1 ? 'b' : index === 2 ? 'c' : 'd'}. When... (in present tense) *
-                </Label>
-                <Textarea
-                  {...register(`successMeasures.${index}`)}
-                  placeholder="Describe the success measure"
-                  rows={2}
-                />
-                {errors.successMeasures?.[index] && (
-                  <p className="text-sm text-red-500 mt-1">{errors.successMeasures[index].message}</p>
-                )}
-              </div>
+    <div className="space-y-6 px-1">
+      <div>
+        <h3 className="text-lg font-semibold mb-1">Section 3: Specific Standards / Success Measures</h3>
+        <p className="text-sm text-muted-foreground">Define success criteria (up to 4 measures)</p>
+      </div>
+
+      <div className="space-y-4">
+        {fields.map((field: any, index: number) => (
+          <div key={field.id} className="space-y-3 pb-4 border-b last:border-b-0">
+            <div className="flex items-center justify-between">
+              <Label className="text-base font-semibold">
+                {index === 0 ? 'a' : index === 1 ? 'b' : index === 2 ? 'c' : 'd'}. Success Measure {index + 1}
+              </Label>
               {fields.length > 1 && (
                 <Button
                   type="button"
                   variant="ghost"
-                  size="icon"
+                  size="sm"
                   onClick={() => remove(index)}
-                  className="mt-6"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               )}
             </div>
-          ))}
 
-          {fields.length < 4 && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => append('')}
-              className="w-full"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Success Measure ({fields.length}/4)
-            </Button>
-          )}
-        </CardContent>
-      </Card>
+            <div>
+              <Label className="flex items-center gap-2 text-sm">
+                <CalendarIcon className="h-3.5 w-3.5" />
+                When: *
+              </Label>
+              <div className="mt-1.5">
+                <DatePicker
+                  date={watch(`successMeasures.${index}.when`)}
+                  onSelect={(date) => setValue(`successMeasures.${index}.when`, date)}
+                  placeholder="Select date"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor={`successMeasures.${index}.description`} className="text-sm">
+                Description * (in present tense)
+              </Label>
+              <Textarea
+                id={`successMeasures.${index}.description`}
+                {...register(`successMeasures.${index}`)}
+                placeholder="Describe when the success measure is achieved"
+                rows={3}
+                className="mt-1.5"
+              />
+              {errors.successMeasures?.[index] && (
+                <p className="text-sm text-red-500 mt-1">{errors.successMeasures[index].message}</p>
+              )}
+            </div>
+          </div>
+        ))}
+
+        {fields.length < 4 && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => append('')}
+            className="w-full"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Success Measure ({fields.length}/4)
+          </Button>
+        )}
+      </div>
     </div>
   )
 }
@@ -554,337 +590,358 @@ function Section4ProgramSteps({ fields, register, errors, watch, setValue, appen
   }, 0)
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Section 4: Program Steps</CardTitle>
-          <CardDescription>Define the steps and budget breakdown</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {fields.map((field: any, index: number) => (
-            <Card key={field.id} className="border-2">
-              <CardHeader className="pb-3">
-                <div className="flex justify-between items-center">
-                  <CardTitle className="text-base">Step {index + 1}</CardTitle>
-                  {fields.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => remove(index)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label>Program Step Description *</Label>
-                  <Textarea
-                    {...register(`programSteps.${index}.description`)}
-                    placeholder="Describe the activity"
-                    rows={2}
-                  />
-                  {errors.programSteps?.[index]?.description && (
-                    <p className="text-sm text-red-500 mt-1">{errors.programSteps[index].description.message}</p>
-                  )}
-                </div>
+    <div className="space-y-6 px-1">
+      <div>
+        <h3 className="text-lg font-semibold mb-1">Section 4: Program Steps</h3>
+        <p className="text-sm text-muted-foreground">Define the steps and budget breakdown</p>
+      </div>
 
-                <div>
-                  <Label>Responsible Person / Unit *</Label>
-                  <Input
-                    {...register(`programSteps.${index}.responsiblePerson`)}
-                    placeholder="Who will do it"
-                  />
-                  {errors.programSteps?.[index]?.responsiblePerson && (
-                    <p className="text-sm text-red-500 mt-1">{errors.programSteps[index].responsiblePerson.message}</p>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Deadline *</Label>
-                    <DatePicker
-                      value={watch(`programSteps.${index}.deadline`)}
-                      onChange={(date) => setValue(`programSteps.${index}.deadline`, date)}
-                    />
-                    {errors.programSteps?.[index]?.deadline && (
-                      <p className="text-sm text-red-500 mt-1">{errors.programSteps[index].deadline.message}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label>Budget (₱) *</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      {...register(`programSteps.${index}.budget`, { valueAsNumber: true })}
-                      placeholder="0.00"
-                    />
-                    {errors.programSteps?.[index]?.budget && (
-                      <p className="text-sm text-red-500 mt-1">{errors.programSteps[index].budget.message}</p>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => append({
-              stepNumber: fields.length + 1,
-              description: '',
-              responsiblePerson: '',
-              deadline: new Date(),
-              budget: 0
-            })}
-            className="w-full"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Program Step
-          </Button>
-
-          <div className="bg-primary/10 p-4 rounded-lg">
+      <div className="space-y-4">
+        {fields.map((field: any, index: number) => (
+          <div key={field.id} className="border rounded-lg p-4 space-y-4">
             <div className="flex justify-between items-center">
-              <span className="font-semibold text-lg">Total Budget:</span>
-              <span className="text-2xl font-bold">₱{totalBudget.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
+              <h4 className="font-semibold">Step {index + 1}</h4>
+              {fields.length > 1 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => remove(index)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+
+            <div>
+              <Label>Program Step Description *</Label>
+              <Textarea
+                {...register(`programSteps.${index}.description`)}
+                placeholder="Describe the activity"
+                rows={2}
+                className="mt-1.5"
+              />
+              {errors.programSteps?.[index]?.description && (
+                <p className="text-sm text-red-500 mt-1">{errors.programSteps[index].description.message}</p>
+              )}
+            </div>
+
+            <div>
+              <Label>Responsible Person / Unit *</Label>
+              <Input
+                {...register(`programSteps.${index}.responsiblePerson`)}
+                placeholder="Who will do it"
+                className="mt-1.5"
+              />
+              {errors.programSteps?.[index]?.responsiblePerson && (
+                <p className="text-sm text-red-500 mt-1">{errors.programSteps[index].responsiblePerson.message}</p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="flex items-center gap-2">
+                  <CalendarIcon className="h-3.5 w-3.5" />
+                  Deadline *
+                </Label>
+                <div className="mt-1.5">
+                  <DatePicker
+                    date={watch(`programSteps.${index}.deadline`)}
+                    onSelect={(date) => setValue(`programSteps.${index}.deadline`, date)}
+                    placeholder="Select deadline"
+                  />
+                </div>
+                {errors.programSteps?.[index]?.deadline && (
+                  <p className="text-sm text-red-500 mt-1">{errors.programSteps[index].deadline.message}</p>
+                )}
+              </div>
+              <div>
+                <Label>Budget (₱) *</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  {...register(`programSteps.${index}.budget`, { valueAsNumber: true })}
+                  placeholder="0.00"
+                  className="mt-1.5"
+                />
+                {errors.programSteps?.[index]?.budget && (
+                  <p className="text-sm text-red-500 mt-1">{errors.programSteps[index].budget.message}</p>
+                )}
+              </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        ))}
+
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => append({
+            stepNumber: fields.length + 1,
+            description: '',
+            responsiblePerson: '',
+            deadline: new Date(),
+            budget: 0
+          })}
+          className="w-full"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Add Program Step
+        </Button>
+
+        <div className="bg-primary/10 p-4 rounded-lg border-2 border-primary/20">
+          <div className="flex justify-between items-center">
+            <span className="font-semibold text-lg">Total Budget:</span>
+            <span className="text-2xl font-bold">₱{totalBudget.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
 
 function Section5Signatories({ register, errors, watch, setValue }: any) {
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Section 5: Signatories</CardTitle>
-          <CardDescription>Approval chain and signatory information</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Prepared By */}
-          <div className="space-y-4">
-            <h4 className="font-medium text-sm">Prepared By</h4>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Name</Label>
-                <Input {...register('preparedBy')} placeholder="Name" />
-              </div>
-              <div>
-                <Label>Position</Label>
-                <Input {...register('preparedByPosition')} placeholder="Position" />
-              </div>
+    <div className="space-y-6 px-1">
+      <div>
+        <h3 className="text-lg font-semibold mb-1">Section 5: Signatories</h3>
+        <p className="text-sm text-muted-foreground">Approval chain and signatory information</p>
+      </div>
+
+      <div className="space-y-6">
+        {/* Prepared By */}
+        <div className="space-y-3 pb-4 border-b">
+          <h4 className="font-medium">Prepared By</h4>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Name</Label>
+              <Input {...register('preparedBy')} placeholder="Name" className="mt-1.5" />
             </div>
             <div>
-              <Label>Date Prepared</Label>
+              <Label>Position</Label>
+              <Input {...register('preparedByPosition')} placeholder="Position" className="mt-1.5" />
+            </div>
+          </div>
+          <div>
+            <Label className="flex items-center gap-2">
+              <CalendarIcon className="h-3.5 w-3.5" />
+              Date Prepared
+            </Label>
+            <div className="mt-1.5">
               <DatePicker
-                value={watch('datePrepared')}
-                onChange={(date) => setValue('datePrepared', date)}
+                date={watch('datePrepared')}
+                onSelect={(date) => setValue('datePrepared', date)}
+                placeholder="Select date"
               />
             </div>
           </div>
+        </div>
 
-          <Separator />
-
-          {/* Endorsed By */}
-          <div className="space-y-4">
-            <h4 className="font-medium text-sm">Endorsed By</h4>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Name</Label>
-                <Input {...register('endorsedBy')} placeholder="Name" />
-              </div>
-              <div>
-                <Label>Position</Label>
-                <Input {...register('endorsedByPosition')} placeholder="Position" />
-              </div>
+        {/* Endorsed By */}
+        <div className="space-y-3 pb-4 border-b">
+          <h4 className="font-medium">Endorsed By</h4>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Name</Label>
+              <Input {...register('endorsedBy')} placeholder="Name" className="mt-1.5" />
             </div>
             <div>
-              <Label>Date Endorsed</Label>
+              <Label>Position</Label>
+              <Input {...register('endorsedByPosition')} placeholder="Position" className="mt-1.5" />
+            </div>
+          </div>
+          <div>
+            <Label className="flex items-center gap-2">
+              <CalendarIcon className="h-3.5 w-3.5" />
+              Date Endorsed
+            </Label>
+            <div className="mt-1.5">
               <DatePicker
-                value={watch('dateEndorsed')}
-                onChange={(date) => setValue('dateEndorsed', date)}
+                date={watch('dateEndorsed')}
+                onSelect={(date) => setValue('dateEndorsed', date)}
+                placeholder="Select date"
               />
             </div>
           </div>
+        </div>
 
-          <Separator />
-
-          {/* Recommended By */}
-          <div className="space-y-4">
-            <h4 className="font-medium text-sm">Recommended By</h4>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Name</Label>
-                <Input {...register('recommendedBy')} placeholder="Name" />
-              </div>
-              <div>
-                <Label>Position</Label>
-                <Input {...register('recommendedByPosition')} placeholder="Position" />
-              </div>
+        {/* Recommended By */}
+        <div className="space-y-3 pb-4 border-b">
+          <h4 className="font-medium">Recommended By</h4>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Name</Label>
+              <Input {...register('recommendedBy')} placeholder="Name" className="mt-1.5" />
             </div>
             <div>
-              <Label>Date Recommended</Label>
+              <Label>Position</Label>
+              <Input {...register('recommendedByPosition')} placeholder="Position" className="mt-1.5" />
+            </div>
+          </div>
+          <div>
+            <Label className="flex items-center gap-2">
+              <CalendarIcon className="h-3.5 w-3.5" />
+              Date Recommended
+            </Label>
+            <div className="mt-1.5">
               <DatePicker
-                value={watch('dateRecommended')}
-                onChange={(date) => setValue('dateRecommended', date)}
+                date={watch('dateRecommended')}
+                onSelect={(date) => setValue('dateRecommended', date)}
+                placeholder="Select date"
               />
             </div>
           </div>
+        </div>
 
-          <Separator />
-
-          {/* Approved By */}
-          <div className="space-y-4">
-            <h4 className="font-medium text-sm">Approved By</h4>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Name</Label>
-                <Input {...register('approvedBy')} placeholder="Name" />
-              </div>
-              <div>
-                <Label>Position</Label>
-                <Input {...register('approvedByPosition')} placeholder="Position" />
-              </div>
+        {/* Approved By */}
+        <div className="space-y-3">
+          <h4 className="font-medium">Approved By</h4>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Name</Label>
+              <Input {...register('approvedBy')} placeholder="Name" className="mt-1.5" />
             </div>
             <div>
-              <Label>Date Approved</Label>
+              <Label>Position</Label>
+              <Input {...register('approvedByPosition')} placeholder="Position" className="mt-1.5" />
+            </div>
+          </div>
+          <div>
+            <Label className="flex items-center gap-2">
+              <CalendarIcon className="h-3.5 w-3.5" />
+              Date Approved
+            </Label>
+            <div className="mt-1.5">
               <DatePicker
-                value={watch('dateApproved')}
-                onChange={(date) => setValue('dateApproved', date)}
+                date={watch('dateApproved')}
+                onSelect={(date) => setValue('dateApproved', date)}
+                placeholder="Select date"
               />
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   )
 }
 
 function Section6Attachments({ register, errors, watch, setValue, uploadedFiles, onFileUpload, onRemoveFile }: any) {
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Section 6: Attachments / Supporting Documents</CardTitle>
-          <CardDescription>Upload supporting files and documentation</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="hasGuidelines"
-                checked={watch('hasGuidelines')}
-                onCheckedChange={(checked) => setValue('hasGuidelines', checked)}
-              />
-              <Label htmlFor="hasGuidelines" className="cursor-pointer">
-                Guidelines, Systems, and Procedures
-              </Label>
-            </div>
+    <div className="space-y-6 px-1">
+      <div>
+        <h3 className="text-lg font-semibold mb-1">Section 6: Attachments / Supporting Documents</h3>
+        <p className="text-sm text-muted-foreground">Upload supporting files and documentation</p>
+      </div>
 
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="hasComputationValue"
-                checked={watch('hasComputationValue')}
-                onCheckedChange={(checked) => setValue('hasComputationValue', checked)}
-              />
-              <Label htmlFor="hasComputationValue" className="cursor-pointer">
-                Computation of Value (Revenue minus cost)
-              </Label>
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="otherAttachments">Others (Please specify)</Label>
-            <Input
-              id="otherAttachments"
-              {...register('otherAttachments')}
-              placeholder="Specify other attachments"
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="hasGuidelines"
+              checked={watch('hasGuidelines')}
+              onCheckedChange={(checked) => setValue('hasGuidelines', checked)}
             />
+            <Label htmlFor="hasGuidelines" className="cursor-pointer">
+              Guidelines, Systems, and Procedures
+            </Label>
           </div>
 
-          <Separator />
-
-          <div>
-            <Label>Upload Files (Optional)</Label>
-            <p className="text-sm text-muted-foreground mb-2">
-              Supported formats: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, GIF (Max 10MB)
-            </p>
-            <div className="flex items-center gap-2">
-              <Input
-                type="file"
-                onChange={onFileUpload}
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif"
-                className="cursor-pointer"
-              />
-            </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="hasComputationValue"
+              checked={watch('hasComputationValue')}
+              onCheckedChange={(checked) => setValue('hasComputationValue', checked)}
+            />
+            <Label htmlFor="hasComputationValue" className="cursor-pointer">
+              Computation of Value (Revenue minus cost)
+            </Label>
           </div>
+        </div>
 
-          {uploadedFiles.length > 0 && (
+        <div>
+          <Label htmlFor="otherAttachments">Others (Please specify)</Label>
+          <Input
+            id="otherAttachments"
+            {...register('otherAttachments')}
+            placeholder="Specify other attachments"
+            className="mt-1.5"
+          />
+        </div>
+
+        <Separator />
+
+        <div>
+          <Label>Upload Files (Optional)</Label>
+          <p className="text-sm text-muted-foreground mb-2">
+            Supported formats: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, GIF (Max 10MB)
+          </p>
+          <Input
+            type="file"
+            onChange={onFileUpload}
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif"
+            className="cursor-pointer mt-1.5"
+          />
+        </div>
+
+        {uploadedFiles.length > 0 && (
+          <div className="space-y-2">
+            <Label>Uploaded Files</Label>
             <div className="space-y-2">
-              <Label>Uploaded Files</Label>
-              <div className="space-y-2">
-                {uploadedFiles.map((file, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 bg-muted rounded-md">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
-                      <span className="text-sm">{file.fileName}</span>
-                      <Badge variant="secondary">{(file.fileSize / 1024).toFixed(2)} KB</Badge>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onRemoveFile(index)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+              {uploadedFiles.map((file, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-md">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    <span className="text-sm">{file.fileName}</span>
+                    <Badge variant="secondary">{(file.fileSize / 1024).toFixed(2)} KB</Badge>
                   </div>
-                ))}
-              </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onRemoveFile(index)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
 
 function Section7CCRemarks({ register, errors }: any) {
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Section 7: CC / Remarks</CardTitle>
-          <CardDescription>Additional recipients and notes</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="ccRecipients">CC / Recipients</Label>
-            <Textarea
-              id="ccRecipients"
-              {...register('ccRecipients')}
-              placeholder="Additional recipients or departments"
-              rows={2}
-            />
-          </div>
+    <div className="space-y-6 px-1">
+      <div>
+        <h3 className="text-lg font-semibold mb-1">Section 7: CC / Remarks</h3>
+        <p className="text-sm text-muted-foreground">Additional recipients and notes</p>
+      </div>
 
-          <div>
-            <Label htmlFor="remarks">Remarks / Notes</Label>
-            <Textarea
-              id="remarks"
-              {...register('remarks')}
-              placeholder="Optional comments"
-              rows={3}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        <div>
+          <Label htmlFor="ccRecipients">CC / Recipients</Label>
+          <Textarea
+            id="ccRecipients"
+            {...register('ccRecipients')}
+            placeholder="Additional recipients or departments"
+            rows={2}
+            className="mt-1.5"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="remarks">Remarks / Notes</Label>
+          <Textarea
+            id="remarks"
+            {...register('remarks')}
+            placeholder="Optional comments"
+            rows={3}
+            className="mt-1.5"
+          />
+        </div>
+      </div>
     </div>
   )
 }

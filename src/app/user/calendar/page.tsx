@@ -528,8 +528,8 @@ export default function CalendarPage() {
               editable={true}
               selectable={true}
               selectMirror={true}
-              dayMaxEvents={false}
-              dayMaxEventRows={false}
+              dayMaxEvents={3}
+              dayMaxEventRows={3}
               moreLinkClick="popover"
               weekends={true}
               events={events}
@@ -537,10 +537,14 @@ export default function CalendarPage() {
               select={handleDateSelect}
               aspectRatio={1.2}
               contentHeight="auto"
-              eventDisplay="auto"
+              eventDisplay="block"
               eventTextColor="#fff"
               displayEventTime={false}
               displayEventEnd={false}
+              eventMinHeight={28}
+              eventOrder="start,-duration,allDay,title"
+              nextDayThreshold="00:00:00"
+              progressiveEventRendering={true}
               eventTimeFormat={{
                 hour: 'numeric',
                 minute: '2-digit',
@@ -565,6 +569,15 @@ export default function CalendarPage() {
                   classes.push('gmail-event')
                 } else {
                   classes.push('regular-event')
+                }
+                // Add class for multi-day events
+                if (arg.event.start && arg.event.end) {
+                  const start = new Date(arg.event.start)
+                  const end = new Date(arg.event.end)
+                  const daysDiff = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+                  if (daysDiff > 1) {
+                    classes.push('multi-day-event')
+                  }
                 }
                 return classes
               }}

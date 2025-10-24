@@ -639,3 +639,243 @@
 .multi-select-option:nth-child(8) { animation-delay: 0.16s; }
 .multi-select-option:nth-child(9) { animation-delay: 0.18s; }
 .multi-select-option:nth-child(10) { animation-delay: 0.20s; }
+
+/* ========================================
+   FULLCALENDAR PROFESSIONAL STYLING
+   Senior Frontend Developer - FullCalendar Expert
+   ======================================== */
+
+/* Calendar Container */
+.calendar-square-grid {
+  min-height: 600px;
+}
+
+/* Multi-Day Event Styling - CRITICAL FIX */
+.fc-event {
+  border-radius: 4px !important;
+  border: none !important;
+  padding: 2px 6px !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  cursor: pointer !important;
+}
+
+.fc-event:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15) !important;
+  z-index: 10 !important;
+}
+
+/* Multi-day events - continuous bar styling */
+.fc-daygrid-event {
+  margin-top: 1px !important;
+  margin-bottom: 1px !important;
+}
+
+.fc-daygrid-event.multi-day-event {
+  margin-bottom: 2px !important;
+  border-radius: 4px !important;
+}
+
+/* First day of multi-day event */
+.fc-daygrid-event.fc-event-start {
+  border-top-left-radius: 6px !important;
+  border-bottom-left-radius: 6px !important;
+  padding-left: 8px !important;
+}
+
+/* Middle days of multi-day event */
+.fc-daygrid-event.fc-event-not-start.fc-event-not-end {
+  border-radius: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Last day of multi-day event */
+.fc-daygrid-event.fc-event-end {
+  border-top-right-radius: 6px !important;
+  border-bottom-right-radius: 6px !important;
+  padding-right: 8px !important;
+}
+
+/* Event content */
+.fc-event-main {
+  padding: 2px 0 !important;
+}
+
+.fc-event-title {
+  font-weight: 600 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Task Events - Special Styling */
+.task-event {
+  font-weight: 600 !important;
+  background: linear-gradient(135deg, var(--fc-event-bg-color) 0%, var(--fc-event-bg-color) 100%) !important;
+  border-left: 4px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+.task-event:hover {
+  filter: brightness(1.1) !important;
+}
+
+/* Gmail Events */
+.gmail-event {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  border-left: 4px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Holiday Events */
+.holiday-event {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+  font-weight: 700 !important;
+  border-left: 4px solid rgba(255, 255, 255, 0.4) !important;
+}
+
+/* Regular Events */
+.regular-event {
+  background: linear-gradient(135deg, var(--fc-event-bg-color) 0%, var(--fc-event-bg-color) 100%) !important;
+}
+
+/* More Link Styling */
+.fc-daygrid-more-link {
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  color: hsl(var(--primary)) !important;
+  padding: 2px 6px !important;
+  border-radius: 3px !important;
+  transition: all 0.2s !important;
+}
+
+.fc-daygrid-more-link:hover {
+  background: hsl(var(--accent)) !important;
+  color: hsl(var(--primary)) !important;
+}
+
+/* Today Cell Highlighting */
+.fc-day-today {
+  background: hsl(var(--primary) / 0.05) !important;
+}
+
+.fc-day-today .fc-daygrid-day-number {
+  background: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 50% !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-weight: 700 !important;
+  margin: 4px !important;
+}
+
+/* Weekend Cells */
+.weekend-cell {
+  background: hsl(var(--muted) / 0.3) !important;
+}
+
+/* Day Numbers */
+.fc-daygrid-day-number {
+  padding: 6px !important;
+  font-weight: 500 !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+/* Header Styling */
+.fc-col-header-cell {
+  padding: 12px 0 !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  font-size: 0.75rem !important;
+  letter-spacing: 0.05em !important;
+  color: hsl(var(--muted-foreground)) !important;
+  background: hsl(var(--muted) / 0.3) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+/* Toolbar Buttons */
+.fc-button {
+  border-radius: 6px !important;
+  padding: 8px 16px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s !important;
+  border: 1px solid hsl(var(--border)) !important;
+  background: hsl(var(--background)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.fc-button:hover {
+  background: hsl(var(--accent)) !important;
+  border-color: hsl(var(--primary)) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.fc-button-primary {
+  background: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+  border-color: hsl(var(--primary)) !important;
+}
+
+.fc-button-primary:hover {
+  background: hsl(var(--primary) / 0.9) !important;
+}
+
+.fc-button-active {
+  background: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Title */
+.fc-toolbar-title {
+  font-size: 1.5rem !important;
+  font-weight: 700 !important;
+  color: hsl(var(--foreground)) !important;
+  letter-spacing: -0.025em !important;
+}
+
+/* Grid Lines */
+.fc-theme-standard td,
+.fc-theme-standard th {
+  border-color: hsl(var(--border)) !important;
+}
+
+/* Popover for More Events */
+.fc-popover {
+  border-radius: 8px !important;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  background: hsl(var(--background)) !important;
+}
+
+.fc-popover-header {
+  background: hsl(var(--muted)) !important;
+  padding: 12px !important;
+  font-weight: 700 !important;
+  border-bottom: 1px solid hsl(var(--border)) !important;
+}
+
+/* Ensure events don't overlap visually */
+.fc-daygrid-event-harness {
+  margin-bottom: 2px !important;
+}
+
+/* Animation for event interactions */
+@keyframes eventPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+.fc-event:active {
+  animation: eventPulse 0.3s ease-in-out !important;
+}

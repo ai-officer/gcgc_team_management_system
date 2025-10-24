@@ -459,38 +459,40 @@ function Section2ProjectInfo({ register, errors, watch, setValue }: any) {
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label className="flex items-center gap-2">
+          <div className="space-y-3">
+            <Label htmlFor="startDate" className="text-sm font-medium flex items-center gap-2">
               <CalendarIcon className="h-3.5 w-3.5" />
-              Start Date *
+              Start Date
+              <span className="text-xs text-orange-600 font-semibold">
+                *Required
+              </span>
             </Label>
-            <div className="mt-1.5">
-              <DatePicker
-                date={watch('startDate')}
-                onSelect={(date) => setValue('startDate', date)}
-                placeholder="Select start date"
-              />
-            </div>
+            <DatePicker
+              date={watch('startDate')}
+              onSelect={(date) => setValue('startDate', date)}
+              placeholder="Select start date"
+            />
             {errors.startDate && (
               <p className="text-sm text-red-500 mt-1">{errors.startDate.message}</p>
             )}
           </div>
-          <div>
-            <Label className="flex items-center gap-2">
-              <CalendarIcon className="h-3.5 w-3.5" />
-              End Date *
+          <div className="space-y-3">
+            <Label htmlFor="endDate" className="text-sm font-medium flex items-center gap-2">
+              <CalendarIcon className="h-3.5 w-3.5 text-orange-600" />
+              End Date
+              <span className="text-xs text-orange-600 font-semibold">
+                *Required
+              </span>
             </Label>
-            <div className="mt-1.5">
-              <DatePicker
-                date={watch('endDate')}
-                onSelect={(date) => setValue('endDate', date)}
-                placeholder="Select end date"
-                disabled={(date) => {
-                  const startDate = watch('startDate')
-                  return startDate ? date < startDate : false
-                }}
-              />
-            </div>
+            <DatePicker
+              date={watch('endDate')}
+              onSelect={(date) => setValue('endDate', date)}
+              placeholder="Select end date"
+              disabled={(date) => {
+                const startDate = watch('startDate')
+                return startDate ? date < startDate : false
+              }}
+            />
             {errors.endDate && (
               <p className="text-sm text-red-500 mt-1">{errors.endDate.message}</p>
             )}
@@ -536,18 +538,16 @@ function Section3SuccessMeasures({ fields, register, errors, watch, setValue, ap
               )}
             </div>
 
-            <div>
-              <Label className="flex items-center gap-2 text-sm">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium flex items-center gap-2">
                 <CalendarIcon className="h-3.5 w-3.5" />
                 When: *
               </Label>
-              <div className="mt-1.5">
-                <DatePicker
-                  date={watch(`successMeasures.${index}.when`)}
-                  onSelect={(date) => setValue(`successMeasures.${index}.when`, date)}
-                  placeholder="Select date"
-                />
-              </div>
+              <DatePicker
+                date={watch(`successMeasures.${index}.when`)}
+                onSelect={(date) => setValue(`successMeasures.${index}.when`, date)}
+                placeholder="Select date"
+              />
             </div>
 
             <div>
@@ -639,30 +639,27 @@ function Section4ProgramSteps({ fields, register, errors, watch, setValue, appen
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="flex items-center gap-2">
+              <div className="space-y-3">
+                <Label className="text-sm font-medium flex items-center gap-2">
                   <CalendarIcon className="h-3.5 w-3.5" />
                   Deadline *
                 </Label>
-                <div className="mt-1.5">
-                  <DatePicker
-                    date={watch(`programSteps.${index}.deadline`)}
-                    onSelect={(date) => setValue(`programSteps.${index}.deadline`, date)}
-                    placeholder="Select deadline"
-                  />
-                </div>
+                <DatePicker
+                  date={watch(`programSteps.${index}.deadline`)}
+                  onSelect={(date) => setValue(`programSteps.${index}.deadline`, date)}
+                  placeholder="Select deadline"
+                />
                 {errors.programSteps?.[index]?.deadline && (
                   <p className="text-sm text-red-500 mt-1">{errors.programSteps[index].deadline.message}</p>
                 )}
               </div>
-              <div>
-                <Label>Budget (₱) *</Label>
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Budget (₱) *</Label>
                 <Input
                   type="number"
                   step="0.01"
                   {...register(`programSteps.${index}.budget`, { valueAsNumber: true })}
                   placeholder="0.00"
-                  className="mt-1.5"
                 />
                 {errors.programSteps?.[index]?.budget && (
                   <p className="text-sm text-red-500 mt-1">{errors.programSteps[index].budget.message}</p>
@@ -712,27 +709,25 @@ function Section5Signatories({ register, errors, watch, setValue }: any) {
         <div className="space-y-3 pb-4 border-b">
           <h4 className="font-medium">Prepared By</h4>
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Name</Label>
-              <Input {...register('preparedBy')} placeholder="Name" className="mt-1.5" />
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Name</Label>
+              <Input {...register('preparedBy')} placeholder="Name" />
             </div>
-            <div>
-              <Label>Position</Label>
-              <Input {...register('preparedByPosition')} placeholder="Position" className="mt-1.5" />
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Position</Label>
+              <Input {...register('preparedByPosition')} placeholder="Position" />
             </div>
           </div>
-          <div>
-            <Label className="flex items-center gap-2">
+          <div className="space-y-2">
+            <Label className="text-sm font-medium flex items-center gap-2">
               <CalendarIcon className="h-3.5 w-3.5" />
               Date Prepared
             </Label>
-            <div className="mt-1.5">
-              <DatePicker
-                date={watch('datePrepared')}
-                onSelect={(date) => setValue('datePrepared', date)}
-                placeholder="Select date"
-              />
-            </div>
+            <DatePicker
+              date={watch('datePrepared')}
+              onSelect={(date) => setValue('datePrepared', date)}
+              placeholder="Select date"
+            />
           </div>
         </div>
 
@@ -740,27 +735,25 @@ function Section5Signatories({ register, errors, watch, setValue }: any) {
         <div className="space-y-3 pb-4 border-b">
           <h4 className="font-medium">Endorsed By</h4>
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Name</Label>
-              <Input {...register('endorsedBy')} placeholder="Name" className="mt-1.5" />
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Name</Label>
+              <Input {...register('endorsedBy')} placeholder="Name" />
             </div>
-            <div>
-              <Label>Position</Label>
-              <Input {...register('endorsedByPosition')} placeholder="Position" className="mt-1.5" />
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Position</Label>
+              <Input {...register('endorsedByPosition')} placeholder="Position" />
             </div>
           </div>
-          <div>
-            <Label className="flex items-center gap-2">
+          <div className="space-y-2">
+            <Label className="text-sm font-medium flex items-center gap-2">
               <CalendarIcon className="h-3.5 w-3.5" />
               Date Endorsed
             </Label>
-            <div className="mt-1.5">
-              <DatePicker
-                date={watch('dateEndorsed')}
-                onSelect={(date) => setValue('dateEndorsed', date)}
-                placeholder="Select date"
-              />
-            </div>
+            <DatePicker
+              date={watch('dateEndorsed')}
+              onSelect={(date) => setValue('dateEndorsed', date)}
+              placeholder="Select date"
+            />
           </div>
         </div>
 
@@ -768,27 +761,25 @@ function Section5Signatories({ register, errors, watch, setValue }: any) {
         <div className="space-y-3 pb-4 border-b">
           <h4 className="font-medium">Recommended By</h4>
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Name</Label>
-              <Input {...register('recommendedBy')} placeholder="Name" className="mt-1.5" />
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Name</Label>
+              <Input {...register('recommendedBy')} placeholder="Name" />
             </div>
-            <div>
-              <Label>Position</Label>
-              <Input {...register('recommendedByPosition')} placeholder="Position" className="mt-1.5" />
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Position</Label>
+              <Input {...register('recommendedByPosition')} placeholder="Position" />
             </div>
           </div>
-          <div>
-            <Label className="flex items-center gap-2">
+          <div className="space-y-2">
+            <Label className="text-sm font-medium flex items-center gap-2">
               <CalendarIcon className="h-3.5 w-3.5" />
               Date Recommended
             </Label>
-            <div className="mt-1.5">
-              <DatePicker
-                date={watch('dateRecommended')}
-                onSelect={(date) => setValue('dateRecommended', date)}
-                placeholder="Select date"
-              />
-            </div>
+            <DatePicker
+              date={watch('dateRecommended')}
+              onSelect={(date) => setValue('dateRecommended', date)}
+              placeholder="Select date"
+            />
           </div>
         </div>
 
@@ -796,27 +787,25 @@ function Section5Signatories({ register, errors, watch, setValue }: any) {
         <div className="space-y-3">
           <h4 className="font-medium">Approved By</h4>
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Name</Label>
-              <Input {...register('approvedBy')} placeholder="Name" className="mt-1.5" />
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Name</Label>
+              <Input {...register('approvedBy')} placeholder="Name" />
             </div>
-            <div>
-              <Label>Position</Label>
-              <Input {...register('approvedByPosition')} placeholder="Position" className="mt-1.5" />
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Position</Label>
+              <Input {...register('approvedByPosition')} placeholder="Position" />
             </div>
           </div>
-          <div>
-            <Label className="flex items-center gap-2">
+          <div className="space-y-2">
+            <Label className="text-sm font-medium flex items-center gap-2">
               <CalendarIcon className="h-3.5 w-3.5" />
               Date Approved
             </Label>
-            <div className="mt-1.5">
-              <DatePicker
-                date={watch('dateApproved')}
-                onSelect={(date) => setValue('dateApproved', date)}
-                placeholder="Select date"
-              />
-            </div>
+            <DatePicker
+              date={watch('dateApproved')}
+              onSelect={(date) => setValue('dateApproved', date)}
+              placeholder="Select date"
+            />
           </div>
         </div>
       </div>

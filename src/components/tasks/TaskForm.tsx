@@ -10,6 +10,7 @@ import { CalendarIcon, Plus, X, Users, User, Handshake } from 'lucide-react'
 import { DayPicker } from 'react-day-picker'
 import 'react-day-picker/dist/style.css'
 import '@/styles/date-picker.css'
+import '@/styles/popover-fix.css'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -116,6 +117,14 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
 
   const taskType = form.watch('taskType')
   const progressPercentage = form.watch('progressPercentage')
+
+  // Close popovers when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setStartDateOpen(false)
+      setDueDateOpen(false)
+    }
+  }, [open])
 
   // Load initial data
   useEffect(() => {

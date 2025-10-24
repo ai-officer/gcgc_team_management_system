@@ -1,0 +1,11 @@
+/* Force popover to render in portal and not inline */
+[data-radix-popper-content-wrapper] {
+  z-index: 9999 !important;
+  position: fixed !important;
+}
+
+/* Ensure DayPicker inside dialog has proper z-index */
+[role="dialog"] [data-radix-popper-content-wrapper] {
+  z-index: 200 !important;
+}
+

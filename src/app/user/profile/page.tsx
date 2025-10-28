@@ -190,15 +190,6 @@ export default function UserProfilePage() {
     }
   }
 
-  const getRoleBadgeColor = (role: string) => {
-    switch (role) {
-      case 'ADMIN': return 'bg-purple-100 text-purple-800 border-purple-200'
-      case 'LEADER': return 'bg-blue-100 text-blue-800 border-blue-200'
-      case 'MEMBER': return 'bg-green-100 text-green-800 border-green-200'
-      default: return 'bg-gray-100 text-gray-800 border-gray-200'
-    }
-  }
-
   const getInitials = (name?: string) => {
     if (!name) return 'U'
     const parts = name.split(' ')
@@ -211,14 +202,14 @@ export default function UserProfilePage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        {/* Skeleton Loader */}
-        <div className="h-48 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl animate-pulse" />
-        <div className="grid gap-6 md:grid-cols-3">
-          {[1, 2, 3].map(i => (
-            <Card key={i} className="animate-pulse">
+        {/* Skeleton Loader - Clean & Minimalistic */}
+        <div className="h-48 bg-gradient-to-br from-slate-100 to-slate-50 rounded-xl animate-pulse border border-border/40" />
+        <div className="grid gap-4 md:grid-cols-4">
+          {[1, 2, 3, 4].map(i => (
+            <Card key={i} className="animate-pulse border-border/40">
               <CardContent className="p-6">
-                <div className="h-4 bg-gray-200 rounded w-3/4 mb-4" />
-                <div className="h-8 bg-gray-200 rounded w-1/2" />
+                <div className="h-3 bg-slate-100 rounded w-3/4 mb-3" />
+                <div className="h-7 bg-slate-100 rounded w-1/2" />
               </CardContent>
             </Card>
           ))}
@@ -258,23 +249,23 @@ export default function UserProfilePage() {
     const value = editedProfile[field] as string || ''
 
     return (
-      <div className="flex items-center justify-between p-4 rounded-lg hover:bg-muted/50 transition-colors group">
+      <div className="flex items-center justify-between p-4 rounded-lg hover:bg-slate-50/50 transition-colors group border border-transparent hover:border-border/40">
         <div className="flex items-center gap-3 flex-1">
-          <div className="p-2 rounded-lg bg-primary/10">
-            <Icon className="h-4 w-4 text-primary" />
+          <div className="p-2 rounded-lg bg-slate-50 border border-slate-100">
+            <Icon className="h-4 w-4 text-slate-600" />
           </div>
           <div className="flex-1">
-            <Label className="text-xs text-muted-foreground">{label}</Label>
+            <Label className="text-xs text-muted-foreground font-medium">{label}</Label>
             {isEditing ? (
               <Input
                 type={type}
                 value={value}
                 onChange={(e) => setEditedProfile(prev => ({ ...prev, [field]: e.target.value }))}
-                className="mt-1 h-8"
+                className="mt-1 h-9 border-border/40 focus:border-primary"
                 autoFocus
               />
             ) : (
-              <p className="font-medium">{value || 'Not set'}</p>
+              <p className="font-medium text-sm mt-0.5">{value || 'Not set'}</p>
             )}
           </div>
         </div>
@@ -318,17 +309,18 @@ export default function UserProfilePage() {
 
   return (
     <div className="space-y-6 pb-8">
-      {/* Hero Header with Cover */}
-      <Card className="overflow-hidden border-none shadow-lg">
-        <div className="h-32 sm:h-48 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 relative">
-          <div className="absolute inset-0 bg-grid-white/10" />
+      {/* Hero Header with Cover - Clean & Minimalistic */}
+      <Card className="overflow-hidden border border-border/40 shadow-sm">
+        <div className="h-32 sm:h-48 bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 relative">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.05),transparent_50%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(99,102,241,0.04),transparent_50%)]" />
         </div>
         <CardContent className="relative pb-6">
           <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4 -mt-16 sm:-mt-20">
             <div className="relative group">
-              <Avatar className="h-32 w-32 border-4 border-background shadow-xl">
+              <Avatar className="h-32 w-32 border-4 border-background shadow-lg ring-1 ring-black/5">
                 <AvatarImage src={profile.image} alt={profile.name} />
-                <AvatarFallback className="text-2xl bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+                <AvatarFallback className="text-2xl bg-gradient-to-br from-slate-600 to-slate-700 text-white font-medium">
                   {getInitials(profile.name)}
                 </AvatarFallback>
               </Avatar>
@@ -354,19 +346,21 @@ export default function UserProfilePage() {
 
             <div className="flex-1 text-center sm:text-left">
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
-                <h1 className="text-2xl sm:text-3xl font-bold">{profile.name}</h1>
-                <Badge variant="outline" className={getRoleBadgeColor(profile.role)}>
-                  <Shield className="h-3 w-3 mr-1" />
-                  {profile.role}
-                </Badge>
-                {profile.isLeader && (
-                  <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200">
-                    <Award className="h-3 w-3 mr-1" />
-                    Team Leader
+                <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">{profile.name}</h1>
+                <div className="flex items-center gap-2 justify-center sm:justify-start">
+                  <Badge variant="secondary" className="bg-slate-100 text-slate-700 border-slate-200 font-medium">
+                    <Shield className="h-3 w-3 mr-1" />
+                    {profile.role}
                   </Badge>
-                )}
+                  {profile.isLeader && (
+                    <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-200 font-medium">
+                      <Award className="h-3 w-3 mr-1" />
+                      Team Leader
+                    </Badge>
+                  )}
+                </div>
               </div>
-              <p className="text-muted-foreground flex items-center justify-center sm:justify-start gap-2">
+              <p className="text-muted-foreground flex items-center justify-center sm:justify-start gap-2 font-medium">
                 <Briefcase className="h-4 w-4" />
                 {profile.positionTitle || 'No position title'}
               </p>
@@ -390,10 +384,10 @@ export default function UserProfilePage() {
 
             <div className="flex gap-2">
               <Badge
-                variant={profile.isActive ? 'default' : 'secondary'}
-                className={profile.isActive ? 'bg-green-100 text-green-800 border-green-200' : ''}
+                variant="secondary"
+                className={profile.isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-600 border-slate-200'}
               >
-                <div className={`h-2 w-2 rounded-full mr-1 ${profile.isActive ? 'bg-green-600' : 'bg-gray-400'}`} />
+                <div className={`h-1.5 w-1.5 rounded-full mr-1.5 ${profile.isActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
                 {profile.isActive ? 'Active' : 'Inactive'}
               </Badge>
             </div>
@@ -401,91 +395,103 @@ export default function UserProfilePage() {
         </CardContent>
       </Card>
 
-      {/* Quick Stats */}
+      {/* Quick Stats - Clean & Minimalistic */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card className="hover:shadow-lg transition-shadow">
+        <Card className="border-border/40 hover:border-border transition-all hover:shadow-sm">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Department</p>
-                <p className="text-2xl font-bold">{profile.department || 'N/A'}</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Department</p>
+                <p className="text-2xl font-semibold text-foreground">{profile.department || 'N/A'}</p>
               </div>
-              <div className="p-3 rounded-lg bg-blue-100">
-                <Building2 className="h-6 w-6 text-blue-600" />
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <Building2 className="h-5 w-5 text-slate-600" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow">
+        <Card className="border-border/40 hover:border-border transition-all hover:shadow-sm">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Team</p>
-                <p className="text-2xl font-bold">{profile.team || 'N/A'}</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Team</p>
+                <p className="text-2xl font-semibold text-foreground">{profile.team || 'N/A'}</p>
               </div>
-              <div className="p-3 rounded-lg bg-purple-100">
-                <User className="h-6 w-6 text-purple-600" />
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <User className="h-5 w-5 text-slate-600" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow">
+        <Card className="border-border/40 hover:border-border transition-all hover:shadow-sm">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Hierarchy Level</p>
-                <p className="text-2xl font-bold">{profile.hierarchyLevel || 'N/A'}</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Hierarchy Level</p>
+                <p className="text-2xl font-semibold text-foreground">{profile.hierarchyLevel || 'N/A'}</p>
               </div>
-              <div className="p-3 rounded-lg bg-green-100">
-                <TrendingUp className="h-6 w-6 text-green-600" />
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <TrendingUp className="h-5 w-5 text-slate-600" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow">
+        <Card className="border-border/40 hover:border-border transition-all hover:shadow-sm">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Job Level</p>
-                <p className="text-2xl font-bold">{profile.jobLevel || 'N/A'}</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Job Level</p>
+                <p className="text-2xl font-semibold text-foreground">{profile.jobLevel || 'N/A'}</p>
               </div>
-              <div className="p-3 rounded-lg bg-orange-100">
-                <Award className="h-6 w-6 text-orange-600" />
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <Award className="h-5 w-5 text-slate-600" />
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Tabbed Content */}
+      {/* Tabbed Content - Modern Design */}
       <Tabs defaultValue="personal" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="personal" className="flex items-center gap-2">
+        <TabsList className="grid w-full grid-cols-3 bg-slate-50/50 p-1 border border-border/40">
+          <TabsTrigger
+            value="personal"
+            className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+          >
             <User className="h-4 w-4" />
-            Personal Info
+            <span className="hidden sm:inline">Personal Info</span>
+            <span className="sm:hidden">Personal</span>
           </TabsTrigger>
-          <TabsTrigger value="organization" className="flex items-center gap-2">
+          <TabsTrigger
+            value="organization"
+            className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+          >
             <Building2 className="h-4 w-4" />
-            Organization
+            <span className="hidden sm:inline">Organization</span>
+            <span className="sm:hidden">Org</span>
           </TabsTrigger>
-          <TabsTrigger value="account" className="flex items-center gap-2">
+          <TabsTrigger
+            value="account"
+            className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+          >
             <Settings className="h-4 w-4" />
-            Account
+            <span className="hidden sm:inline">Account</span>
+            <span className="sm:hidden">Account</span>
           </TabsTrigger>
         </TabsList>
 
         {/* Personal Information Tab */}
         <TabsContent value="personal" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
+          <Card className="border-border/40">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+                <User className="h-5 w-5 text-muted-foreground" />
                 Personal Information
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm">
                 Click on any field to edit. Changes are saved immediately.
               </CardDescription>
             </CardHeader>
@@ -501,13 +507,13 @@ export default function UserProfilePage() {
 
         {/* Organization Tab */}
         <TabsContent value="organization" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building2 className="h-5 w-5" />
+          <Card className="border-border/40">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+                <Building2 className="h-5 w-5 text-muted-foreground" />
                 Organizational Structure
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm">
                 Your position within the organizational hierarchy
               </CardDescription>
             </CardHeader>
@@ -521,9 +527,9 @@ export default function UserProfilePage() {
               <InlineEditField field="hierarchyLevel" label="Hierarchy Level" icon={TrendingUp} editable={false} />
 
               {profile.organizationalPath && (
-                <div className="mt-4 p-4 bg-muted/50 rounded-lg">
-                  <Label className="text-xs text-muted-foreground mb-2 block">Full Organizational Path</Label>
-                  <p className="text-sm font-mono">{profile.organizationalPath}</p>
+                <div className="mt-4 p-4 bg-slate-50/50 rounded-lg border border-border/40">
+                  <Label className="text-xs text-muted-foreground font-medium mb-2 block">Full Organizational Path</Label>
+                  <p className="text-sm font-mono text-slate-700">{profile.organizationalPath}</p>
                 </div>
               )}
             </CardContent>
@@ -532,13 +538,13 @@ export default function UserProfilePage() {
 
         {/* Account Tab */}
         <TabsContent value="account" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5" />
+          <Card className="border-border/40">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+                <Settings className="h-5 w-5 text-muted-foreground" />
                 Account Settings
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm">
                 Account credentials and security information
               </CardDescription>
             </CardHeader>
@@ -548,41 +554,41 @@ export default function UserProfilePage() {
 
               <Separator className="my-4" />
 
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-4 rounded-lg bg-slate-50/50 border border-border/40 hover:border-border transition-colors">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-primary/10">
-                      <Calendar className="h-4 w-4 text-primary" />
+                    <div className="p-2 rounded-lg bg-white border border-slate-100">
+                      <Calendar className="h-4 w-4 text-slate-600" />
                     </div>
                     <div>
-                      <Label className="text-xs text-muted-foreground">Account Created</Label>
-                      <p className="font-medium">{format(new Date(profile.createdAt), 'PPP')}</p>
+                      <Label className="text-xs text-muted-foreground font-medium">Account Created</Label>
+                      <p className="font-medium text-sm mt-0.5">{format(new Date(profile.createdAt), 'PPP')}</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
+                <div className="flex items-center justify-between p-4 rounded-lg bg-slate-50/50 border border-border/40 hover:border-border transition-colors">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-primary/10">
-                      <Clock className="h-4 w-4 text-primary" />
+                    <div className="p-2 rounded-lg bg-white border border-slate-100">
+                      <Clock className="h-4 w-4 text-slate-600" />
                     </div>
                     <div>
-                      <Label className="text-xs text-muted-foreground">Last Updated</Label>
-                      <p className="font-medium">{format(new Date(profile.updatedAt), 'PPP')}</p>
+                      <Label className="text-xs text-muted-foreground font-medium">Last Updated</Label>
+                      <p className="font-medium text-sm mt-0.5">{format(new Date(profile.updatedAt), 'PPP')}</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
+                <div className="flex items-center justify-between p-4 rounded-lg bg-slate-50/50 border border-border/40 hover:border-border transition-colors">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-primary/10">
-                      <Activity className="h-4 w-4 text-primary" />
+                    <div className="p-2 rounded-lg bg-white border border-slate-100">
+                      <Activity className="h-4 w-4 text-slate-600" />
                     </div>
                     <div>
-                      <Label className="text-xs text-muted-foreground">Account Status</Label>
+                      <Label className="text-xs text-muted-foreground font-medium">Account Status</Label>
                       <div className="flex items-center gap-2 mt-1">
-                        <div className={`h-2 w-2 rounded-full ${profile.isActive ? 'bg-green-600' : 'bg-gray-400'}`} />
-                        <p className="font-medium">{profile.isActive ? 'Active' : 'Inactive'}</p>
+                        <div className={`h-1.5 w-1.5 rounded-full ${profile.isActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+                        <p className="font-medium text-sm">{profile.isActive ? 'Active' : 'Inactive'}</p>
                       </div>
                     </div>
                   </div>

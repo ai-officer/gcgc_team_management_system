@@ -1,13 +1,15 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
-import {
-  Plus,
-  Search,
-  Clock,
-  User,
+import { 
+  Plus, 
+  Search, 
+  Filter, 
+  Calendar, 
+  Clock, 
+  User, 
   Users,
   Handshake,
   AlertCircle,
@@ -15,14 +17,9 @@ import {
   MoreHorizontal,
   Edit,
   Eye,
-  Trash2,
-  X,
-  ChevronDown,
-  ChevronUp,
-  Zap,
-  Inbox
+  Trash2
 } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -125,46 +122,10 @@ interface User {
 }
 
 const COLUMN_CONFIG = {
-  TODO: {
-    title: 'To Do',
-    color: 'bg-gradient-to-br from-slate-50 to-slate-100',
-    borderColor: 'border-slate-200',
-    textColor: 'text-slate-700',
-    badgeColor: 'bg-slate-600',
-    icon: Inbox,
-    description: 'Tasks waiting to start',
-    wipLimit: 10
-  },
-  IN_PROGRESS: {
-    title: 'In Progress',
-    color: 'bg-gradient-to-br from-blue-50 to-blue-100',
-    borderColor: 'border-blue-200',
-    textColor: 'text-blue-700',
-    badgeColor: 'bg-blue-600',
-    icon: Zap,
-    description: 'Currently active tasks',
-    wipLimit: 5
-  },
-  IN_REVIEW: {
-    title: 'In Review',
-    color: 'bg-gradient-to-br from-amber-50 to-amber-100',
-    borderColor: 'border-amber-200',
-    textColor: 'text-amber-700',
-    badgeColor: 'bg-amber-600',
-    icon: Eye,
-    description: 'Awaiting review',
-    wipLimit: 5
-  },
-  COMPLETED: {
-    title: 'Completed',
-    color: 'bg-gradient-to-br from-emerald-50 to-emerald-100',
-    borderColor: 'border-emerald-200',
-    textColor: 'text-emerald-700',
-    badgeColor: 'bg-emerald-600',
-    icon: CheckSquare,
-    description: 'Finished tasks',
-    wipLimit: null
-  }
+  TODO: { title: 'To Do', color: 'bg-gray-100', textColor: 'text-gray-700' },
+  IN_PROGRESS: { title: 'In Progress', color: 'bg-blue-100', textColor: 'text-blue-700' },
+  IN_REVIEW: { title: 'In Review', color: 'bg-yellow-100', textColor: 'text-yellow-700' },
+  COMPLETED: { title: 'Completed', color: 'bg-green-100', textColor: 'text-green-700' },
 }
 
 export default function TasksPage() {
@@ -174,6 +135,7 @@ export default function TasksPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [selectedTeam, setSelectedTeam] = useState<string>('')
   const [selectedUser, setSelectedUser] = useState<string>('')
   const [users, setUsers] = useState<User[]>([])
   const [showTaskForm, setShowTaskForm] = useState(false)
@@ -181,12 +143,6 @@ export default function TasksPage() {
   const [deletingTask, setDeletingTask] = useState<Task | null>(null)
   const [viewingTask, setViewingTask] = useState<Task | null>(null)
   const [showViewModal, setShowViewModal] = useState(false)
-
-  // Enhanced Kanban features
-  const [selectedPriorities, setSelectedPriorities] = useState<string[]>([])
-  const [selectedTaskTypes, setSelectedTaskTypes] = useState<string[]>([])
-  const [collapsedColumns, setCollapsedColumns] = useState<Set<string>>(new Set())
-  const [viewMode, setViewMode] = useState<'comfortable' | 'compact'>('comfortable')
 
   const fetchTasks = async () => {
     if (!session?.user) return
@@ -196,6 +152,7 @@ export default function TasksPage() {
       setError(null)
       const params = new URLSearchParams()
       if (searchTerm) params.append('search', searchTerm)
+      if (selectedTeam) params.append('teamId', selectedTeam)
       if (selectedUser) params.append('userId', selectedUser)
       
       console.log('Current user session:', {
@@ -228,7 +185,7 @@ export default function TasksPage() {
 
   useEffect(() => {
     fetchTasks()
-  }, [session, searchTerm, selectedUser])
+  }, [session, searchTerm, selectedTeam, selectedUser])
 
   const fetchUsers = async () => {
     try {
@@ -349,70 +306,15 @@ export default function TasksPage() {
     }
   }
 
-  // Memoized filtered tasks based on quick filters
-  const filteredTasks = useMemo(() => {
-    let filtered = tasks
-
-    // Apply priority filter
-    if (selectedPriorities.length > 0) {
-      filtered = filtered.filter(task => selectedPriorities.includes(task.priority))
-    }
-
-    // Apply task type filter
-    if (selectedTaskTypes.length > 0) {
-      filtered = filtered.filter(task => selectedTaskTypes.includes(task.taskType))
-    }
-
-    return filtered
-  }, [tasks, selectedPriorities, selectedTaskTypes])
-
-  const getTasksByStatus = (status: Task['status']) =>
-    filteredTasks.filter(task => task.status === status)
-
-  // Toggle column collapse
-  const toggleColumnCollapse = (status: string) => {
-    setCollapsedColumns(prev => {
-      const newSet = new Set(prev)
-      if (newSet.has(status)) {
-        newSet.delete(status)
-      } else {
-        newSet.add(status)
-      }
-      return newSet
-    })
+  const getProgressColor = (percentage: number) => {
+    if (percentage < 25) return 'bg-red-500'
+    if (percentage < 50) return 'bg-orange-500' 
+    if (percentage < 75) return 'bg-yellow-500'
+    return 'bg-green-500'
   }
 
-  // Toggle priority filter
-  const togglePriorityFilter = (priority: string) => {
-    setSelectedPriorities(prev =>
-      prev.includes(priority)
-        ? prev.filter(p => p !== priority)
-        : [...prev, priority]
-    )
-  }
-
-  // Toggle task type filter
-  const toggleTaskTypeFilter = (taskType: string) => {
-    setSelectedTaskTypes(prev =>
-      prev.includes(taskType)
-        ? prev.filter(t => t !== taskType)
-        : [...prev, taskType]
-    )
-  }
-
-  // Clear all filters
-  const clearAllFilters = () => {
-    setSelectedPriorities([])
-    setSelectedTaskTypes([])
-    setSelectedUser('')
-    setSearchTerm('')
-  }
-
-  // Check if any filters are active
-  const hasActiveFilters = selectedPriorities.length > 0 ||
-    selectedTaskTypes.length > 0 ||
-    selectedUser !== '' ||
-    searchTerm !== ''
+  const getTasksByStatus = (status: Task['status']) => 
+    tasks.filter(task => task.status === status)
 
   const handleCreateTask = async (taskData: any) => {
     try {
@@ -638,299 +540,107 @@ export default function TasksPage() {
         </Button>
       </div>
 
-      {/* Enhanced Filters */}
-      <Card className="border-2 shadow-sm">
-        <CardContent className="p-4">
-          <div className="space-y-4">
-            {/* Search and User Filter Row */}
-            <div className="flex gap-4 items-center flex-wrap">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search tasks by title, description, or users..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-
-              <Select value={selectedUser || "all"} onValueChange={(value) => setSelectedUser(value === "all" ? "" : value)}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Filter by user" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All users</SelectItem>
-                  {users.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-5 w-5">
-                          <AvatarImage src={user.image || undefined} />
-                          <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium text-xs">
-                            {user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : user.email[0].toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span>{user.name || user.email}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {hasActiveFilters && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={clearAllFilters}
-                  className="gap-2"
-                >
-                  <X className="h-3 w-3" />
-                  Clear All
-                </Button>
-              )}
-            </div>
-
-            {/* Quick Filters Row */}
-            <div className="flex gap-4 items-start flex-wrap">
-              {/* Priority Filters */}
-              <div className="flex flex-col gap-2">
-                <span className="text-xs font-medium text-muted-foreground">Priority</span>
-                <div className="flex gap-2">
-                  {['URGENT', 'HIGH', 'MEDIUM', 'LOW'].map((priority) => (
-                    <Button
-                      key={priority}
-                      variant={selectedPriorities.includes(priority) ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => togglePriorityFilter(priority)}
-                      className={`gap-2 ${
-                        selectedPriorities.includes(priority)
-                          ? getPriorityColor(priority) + ' text-white hover:opacity-90'
-                          : ''
-                      }`}
-                    >
-                      <div className={`w-2 h-2 rounded-full ${getPriorityColor(priority)}`} />
-                      <span className="capitalize text-xs">{priority.toLowerCase()}</span>
-                    </Button>
-                  ))}
+      {/* Filters */}
+      <div className="flex gap-4 items-center flex-wrap">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search tasks by title, description, or users..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        
+        <Select value={selectedUser || "all"} onValueChange={(value) => setSelectedUser(value === "all" ? "" : value)}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Filter by user" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All users</SelectItem>
+            {users.map((user) => (
+              <SelectItem key={user.id} value={user.id}>
+                <div className="flex items-center gap-2">
+                  <Avatar className="h-5 w-5">
+                    <AvatarImage src={user.image || undefined} />
+                    <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium text-xs">
+                      {user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : user.email[0].toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span>{user.name || user.email}</span>
                 </div>
-              </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-              {/* Task Type Filters */}
-              <div className="flex flex-col gap-2">
-                <span className="text-xs font-medium text-muted-foreground">Task Type</span>
-                <div className="flex gap-2">
-                  {['INDIVIDUAL', 'TEAM', 'COLLABORATION'].map((taskType) => (
-                    <Button
-                      key={taskType}
-                      variant={selectedTaskTypes.includes(taskType) ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => toggleTaskTypeFilter(taskType)}
-                      className="gap-2"
-                    >
-                      {getTaskTypeIcon(taskType)}
-                      <span className="capitalize text-xs">
-                        {taskType.toLowerCase().replace('_', ' ')}
-                      </span>
-                    </Button>
-                  ))}
-                </div>
-              </div>
+        {(selectedUser || searchTerm) && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => {
+              setSelectedUser('')
+              setSearchTerm('')
+            }}
+          >
+            Clear Filters
+          </Button>
+        )}
+      </div>
 
-              {/* View Mode Toggle */}
-              <div className="flex flex-col gap-2 ml-auto">
-                <span className="text-xs font-medium text-muted-foreground">View</span>
-                <div className="flex gap-2">
-                  <Button
-                    variant={viewMode === 'comfortable' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setViewMode('comfortable')}
-                    className="text-xs"
-                  >
-                    Comfortable
-                  </Button>
-                  <Button
-                    variant={viewMode === 'compact' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setViewMode('compact')}
-                    className="text-xs"
-                  >
-                    Compact
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            {/* Active Filters Display */}
-            {hasActiveFilters && (
-              <div className="flex gap-2 items-center flex-wrap pt-2 border-t">
-                <span className="text-xs font-medium text-muted-foreground">Active filters:</span>
-                {selectedPriorities.map(priority => (
-                  <Badge key={priority} variant="secondary" className="gap-1">
-                    {priority}
-                    <X
-                      className="h-3 w-3 cursor-pointer"
-                      onClick={() => togglePriorityFilter(priority)}
-                    />
-                  </Badge>
-                ))}
-                {selectedTaskTypes.map(taskType => (
-                  <Badge key={taskType} variant="secondary" className="gap-1">
-                    {taskType}
-                    <X
-                      className="h-3 w-3 cursor-pointer"
-                      onClick={() => toggleTaskTypeFilter(taskType)}
-                    />
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Enhanced Kanban Board */}
+      {/* Kanban Board */}
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 min-h-[700px]">
           {Object.entries(COLUMN_CONFIG).map(([status, config]) => {
             const columnTasks = getTasksByStatus(status as Task['status'])
-            const isCollapsed = collapsedColumns.has(status)
-            const wipLimit = config.wipLimit
-            const isOverLimit = wipLimit && columnTasks.length > wipLimit
-            const ColumnIcon = config.icon
-
+            
             return (
               <div key={status} className="min-w-0 space-y-4">
-                {/* Enhanced Column Header */}
-                <div
-                  className={`p-4 rounded-xl ${config.color} shadow-md border-2 ${config.borderColor}
-                    transition-all duration-300 hover:shadow-lg`}
-                >
-                  <div className="space-y-3">
-                    {/* Title Row */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className={`p-2 rounded-lg bg-white/50 ${config.textColor}`}>
-                          <ColumnIcon className="h-4 w-4" />
-                        </div>
-                        <div>
-                          <h3 className={`font-bold ${config.textColor} text-sm flex items-center gap-2`}>
-                            {config.title}
-                            <Badge
-                              className={`${config.badgeColor} text-white font-bold ${
-                                isOverLimit ? 'animate-pulse' : ''
-                              }`}
-                            >
-                              {columnTasks.length}
-                              {wipLimit && ` / ${wipLimit}`}
-                            </Badge>
-                          </h3>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {config.description}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Collapse Button */}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleColumnCollapse(status)}
-                        className="h-8 w-8 p-0"
-                      >
-                        {isCollapsed ? (
-                          <ChevronDown className="h-4 w-4" />
-                        ) : (
-                          <ChevronUp className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-
-                    {/* WIP Limit Warning */}
-                    {isOverLimit && !isCollapsed && (
-                      <div className="bg-red-100 border border-red-300 rounded-lg p-2 flex items-center gap-2">
-                        <AlertCircle className="h-3 w-3 text-red-600" />
-                        <span className="text-xs text-red-700 font-medium">
-                          Over WIP limit by {columnTasks.length - wipLimit!}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Column Statistics */}
-                    {!isCollapsed && columnTasks.length > 0 && (
-                      <div className="flex gap-2 text-xs">
-                        <div className="bg-white/50 rounded px-2 py-1">
-                          <span className="font-medium text-gray-700">
-                            🔴 {columnTasks.filter(t => t.priority === 'URGENT').length}
-                          </span>
-                        </div>
-                        <div className="bg-white/50 rounded px-2 py-1">
-                          <span className="font-medium text-gray-700">
-                            🟠 {columnTasks.filter(t => t.priority === 'HIGH').length}
-                          </span>
-                        </div>
-                        <div className="bg-white/50 rounded px-2 py-1">
-                          <span className="font-medium text-gray-700">
-                            🟡 {columnTasks.filter(t => t.priority === 'MEDIUM').length}
-                          </span>
-                        </div>
-                        <div className="bg-white/50 rounded px-2 py-1">
-                          <span className="font-medium text-gray-700">
-                            🟢 {columnTasks.filter(t => t.priority === 'LOW').length}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                <div className={`p-3 rounded-lg ${config.color} shadow-sm`}>
+                  <h3 className={`font-semibold ${config.textColor} flex items-center justify-between text-sm`}>
+                    {config.title}
+                    <Badge variant="secondary" className="ml-2 text-xs">
+                      {columnTasks.length}
+                    </Badge>
+                  </h3>
                 </div>
 
-                {/* Droppable Area */}
-                {!isCollapsed && (
-                  <Droppable droppableId={status}>
-                    {(provided, snapshot) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.droppableProps}
-                        className={`space-y-3 p-3 rounded-xl transition-all duration-300 ${
-                          viewMode === 'comfortable' ? 'min-h-[550px]' : 'min-h-[400px]'
-                        } ${
-                          snapshot.isDraggingOver
-                            ? 'bg-primary/5 border-2 border-dashed border-primary/40 shadow-inner scale-[1.02]'
-                            : 'bg-transparent'
-                        }`}
-                      >
+                <Droppable droppableId={status}>
+                  {(provided, snapshot) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                      className={`space-y-3 min-h-[550px] p-2 rounded-lg transition-colors ${
+                        snapshot.isDraggingOver ? 'bg-muted/20 border-2 border-dashed border-primary/30' : ''
+                      }`}
+                    >
                       {columnTasks.map((task, index) => (
                         <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={!canUserChangeTaskStatus(task)}>
                           {(provided, snapshot) => {
                             const canDrag = canUserChangeTaskStatus(task)
-                            const cardHeight = viewMode === 'comfortable' ? 'min-h-[180px]' : 'min-h-[140px]'
-
                             return (
-                              <Card
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                {...(canDrag ? provided.dragHandleProps : {})}
-                                className={`relative cursor-pointer transition-all duration-200 ${cardHeight} ${
-                                  canDrag
-                                    ? 'hover:cursor-grab active:cursor-grabbing'
-                                    : 'cursor-default'
-                                } ${
-                                  snapshot.isDragging
-                                    ? 'shadow-2xl rotate-3 scale-110 z-50 ring-4 ring-primary/20'
-                                    : canDrag
-                                      ? 'hover:shadow-lg hover:-translate-y-2 shadow-md'
-                                      : 'shadow-sm'
-                                } bg-white border-2 ${
-                                  isOverLimit
-                                    ? 'border-red-300 bg-red-50/30'
-                                    : 'border-gray-200'
-                                } rounded-xl ${
-                                  !canDrag ? 'opacity-95' : ''
-                                }`}
-                                onClick={() => {
-                                  if (!snapshot.isDragging) {
-                                    handleTaskClick(task)
-                                  }
-                                }}
-                              >
+                            <Card
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...(canDrag ? provided.dragHandleProps : {})}
+                              className={`relative cursor-pointer transition-all duration-200 min-h-[160px] ${
+                                canDrag 
+                                  ? 'hover:cursor-grab active:cursor-grabbing'
+                                  : 'cursor-default'
+                              } ${
+                                snapshot.isDragging 
+                                  ? 'shadow-xl rotate-2 scale-105 z-50' 
+                                  : canDrag ? 'hover:shadow-md hover:-translate-y-1 shadow-sm' : 'shadow-sm'
+                              } bg-white border border-gray-200 rounded-lg ${
+                                !canDrag ? 'opacity-90' : ''
+                              }`}
+                              onClick={(e) => {
+                                // Only open edit if not dragging and clicked on card content
+                                if (!snapshot.isDragging) {
+                                  handleTaskClick(task)
+                                }
+                              }}
+                            >
                               <CardContent className="p-4">
                                 {/* New Task Indicator */}
                                 {isTaskNew(task) && !isTaskCreatedByUser(task) && (
@@ -1138,26 +848,14 @@ export default function TasksPage() {
                                 </div>
                               </CardContent>
                             </Card>
-                            )
-                          }}
+                          )}
+                        }
                         </Draggable>
                       ))}
-                      {columnTasks.length === 0 && (
-                        <div className="flex flex-col items-center justify-center py-12 text-center">
-                          <div className="rounded-full bg-muted p-4 mb-3">
-                            <Inbox className="h-8 w-8 text-muted-foreground" />
-                          </div>
-                          <p className="text-sm text-muted-foreground font-medium">No tasks</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {hasActiveFilters ? 'Try adjusting your filters' : 'Drag tasks here or create a new one'}
-                          </p>
-                        </div>
-                      )}
                       {provided.placeholder}
                     </div>
                   )}
                 </Droppable>
-                )}
               </div>
             )
           })}

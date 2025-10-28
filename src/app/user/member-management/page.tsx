@@ -558,9 +558,9 @@ export default function MemberManagementPage() {
     <div className="space-y-8">
       {/* Header Section */}
       <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-start">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">Member Management</h1>
-          <p className="text-muted-foreground">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-semibold tracking-tight">Member Management</h1>
+          <p className="text-sm text-muted-foreground font-medium">
             Assign tasks, track progress, and optimize team workload distribution
           </p>
         </div>
@@ -993,63 +993,63 @@ export default function MemberManagementPage() {
         </div>
       </div>
 
-      {/* Team Stats Dashboard */}
+      {/* Team Stats Dashboard - Clean & Minimalistic */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="hover:shadow-md transition-shadow border-l-4 border-l-blue-500">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Tasks</CardTitle>
-            <div className="p-2 rounded-full bg-blue-100">
-              <BarChart3 className="h-4 w-4 text-blue-600" />
+        <Card className="border-border/40 hover:border-border hover:shadow-sm transition-all">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Tasks</CardTitle>
+            <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
+              <BarChart3 className="h-4 w-4 text-slate-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-blue-600">{teamStats.totalTasks}</div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <div className="text-3xl font-semibold text-foreground">{teamStats.totalTasks}</div>
+            <p className="text-xs text-muted-foreground mt-1.5 font-medium">
               Assigned to {teamStats.totalMembers} members
             </p>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow border-l-4 border-l-green-500">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">In Progress</CardTitle>
-            <div className="p-2 rounded-full bg-green-100">
-              <Activity className="h-4 w-4 text-green-600" />
+        <Card className="border-border/40 hover:border-border hover:shadow-sm transition-all">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">In Progress</CardTitle>
+            <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
+              <Activity className="h-4 w-4 text-slate-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-green-600">{teamStats.inProgressTasks}</div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <div className="text-3xl font-semibold text-foreground">{teamStats.inProgressTasks}</div>
+            <p className="text-xs text-muted-foreground mt-1.5 font-medium">
               Active work items
             </p>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow border-l-4 border-l-purple-500">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Completed</CardTitle>
-            <div className="p-2 rounded-full bg-purple-100">
-              <Award className="h-4 w-4 text-purple-600" />
+        <Card className="border-border/40 hover:border-border hover:shadow-sm transition-all">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Completed</CardTitle>
+            <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
+              <Award className="h-4 w-4 text-slate-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-purple-600">{teamStats.completedTasks}</div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <div className="text-3xl font-semibold text-foreground">{teamStats.completedTasks}</div>
+            <p className="text-xs text-muted-foreground mt-1.5 font-medium">
               Tasks finished
             </p>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow border-l-4 border-l-red-500">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Urgent & Overdue</CardTitle>
-            <div className="p-2 rounded-full bg-red-100">
-              <AlertTriangle className="h-4 w-4 text-red-600" />
+        <Card className="border-border/40 hover:border-border hover:shadow-sm transition-all">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Urgent & Overdue</CardTitle>
+            <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
+              <AlertTriangle className="h-4 w-4 text-slate-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-red-600">{teamStats.urgentTasks + teamStats.overdueTasks}</div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <div className="text-3xl font-semibold text-foreground">{teamStats.urgentTasks + teamStats.overdueTasks}</div>
+            <p className="text-xs text-muted-foreground mt-1.5 font-medium">
               {teamStats.urgentTasks} urgent • {teamStats.overdueTasks} overdue
             </p>
           </CardContent>
@@ -1057,14 +1057,14 @@ export default function MemberManagementPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Team Members Sidebar */}
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <UserCheck className="h-5 w-5" />
+        {/* Team Members Sidebar - Clean & Minimalistic */}
+        <Card className="lg:col-span-1 border-border/40">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+              <UserCheck className="h-5 w-5 text-muted-foreground" />
               Team Members
             </CardTitle>
-            <CardDescription className="text-xs">
+            <CardDescription className="text-xs font-medium">
               {teamMembers.length} member{teamMembers.length !== 1 ? 's' : ''}
             </CardDescription>
           </CardHeader>
@@ -1131,9 +1131,9 @@ export default function MemberManagementPage() {
                       )}
                       onClick={() => setSelectedMember(member.id === selectedMember ? '' : member.id)}
                     >
-                      <Avatar className="h-10 w-10 ring-2 ring-transparent group-hover:ring-primary/20 transition-all">
+                      <Avatar className="h-10 w-10 ring-1 ring-black/5 group-hover:ring-slate-200 transition-all">
                         <AvatarImage src={member.image} />
-                        <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium">
+                        <AvatarFallback className="bg-gradient-to-br from-slate-100 to-slate-200 text-slate-700 font-semibold">
                           {member.name ? member.name.split(' ').map(n => n[0]).join('') : member.email[0].toUpperCase()}
                         </AvatarFallback>
                       </Avatar>

@@ -737,11 +737,11 @@ export default function TeamOverviewPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header Section */}
+      {/* Header Section - Clean & Minimalistic */}
       <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-start">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">Team Overview</h1>
-          <p className="text-muted-foreground">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-semibold tracking-tight">Team Overview</h1>
+          <p className="text-sm text-muted-foreground font-medium">
             Manage your team members, track performance, and collaborate effectively
           </p>
         </div>
@@ -1738,64 +1738,64 @@ export default function TeamOverviewPage() {
         </div>
       </div>
 
-      {/* Team Stats - Enhanced Visual Design */}
+      {/* Team Stats - Clean & Minimalistic */}
       {teamStats && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="hover:shadow-md transition-shadow border-l-4 border-l-blue-500">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Team Members</CardTitle>
-              <div className="p-2 rounded-full bg-blue-100">
-                <Users className="h-4 w-4 text-blue-600" />
+          <Card className="border-border/40 hover:border-border hover:shadow-sm transition-all">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Team Members</CardTitle>
+              <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
+                <Users className="h-4 w-4 text-slate-600" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-blue-600">{teamStats.totalMembers}</div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <div className="text-3xl font-semibold text-foreground">{teamStats.totalMembers}</div>
+              <p className="text-xs text-muted-foreground mt-1.5 font-medium">
                 Active in your team
               </p>
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-md transition-shadow border-l-4 border-l-green-500">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Tasks</CardTitle>
-              <div className="p-2 rounded-full bg-green-100">
-                <Activity className="h-4 w-4 text-green-600" />
+          <Card className="border-border/40 hover:border-border hover:shadow-sm transition-all">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Active Tasks</CardTitle>
+              <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
+                <Activity className="h-4 w-4 text-slate-600" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-green-600">{teamStats.activeTasks}</div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <div className="text-3xl font-semibold text-foreground">{teamStats.activeTasks}</div>
+              <p className="text-xs text-muted-foreground mt-1.5 font-medium">
                 Currently in progress
               </p>
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-md transition-shadow border-l-4 border-l-purple-500">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Completed</CardTitle>
-              <div className="p-2 rounded-full bg-purple-100">
-                <Award className="h-4 w-4 text-purple-600" />
+          <Card className="border-border/40 hover:border-border hover:shadow-sm transition-all">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Completed</CardTitle>
+              <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
+                <Award className="h-4 w-4 text-slate-600" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-purple-600">{teamStats.completedTasks}</div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <div className="text-3xl font-semibold text-foreground">{teamStats.completedTasks}</div>
+              <p className="text-xs text-muted-foreground mt-1.5 font-medium">
                 Tasks finished
               </p>
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-md transition-shadow border-l-4 border-l-red-500">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Overdue</CardTitle>
-              <div className="p-2 rounded-full bg-red-100">
-                <AlertCircle className="h-4 w-4 text-red-600" />
+          <Card className="border-border/40 hover:border-border hover:shadow-sm transition-all">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Overdue</CardTitle>
+              <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
+                <AlertCircle className="h-4 w-4 text-slate-600" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-red-600">{teamStats.overdueTasks}</div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <div className="text-3xl font-semibold text-foreground">{teamStats.overdueTasks}</div>
+              <p className="text-xs text-muted-foreground mt-1.5 font-medium">
                 Need attention
               </p>
             </CardContent>
@@ -1803,52 +1803,56 @@ export default function TeamOverviewPage() {
         </div>
       )}
 
-      {/* Advanced Filters & Search */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by name, email, or position..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+      {/* Filters & Search - Clean & Minimalistic */}
+      <Card className="border-border/40 shadow-sm">
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name, email, or position..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 border-border/40 focus:border-primary"
+              />
+            </div>
 
-        <div className="flex gap-2">
-          <Select value={filterStatus} onValueChange={(value: FilterStatus) => setFilterStatus(value)}>
-            <SelectTrigger className="w-[180px]">
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4" />
-                <SelectValue placeholder="Filter status" />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Members</SelectItem>
-              <SelectItem value="active">Active Only</SelectItem>
-              <SelectItem value="inactive">Inactive Only</SelectItem>
-            </SelectContent>
-          </Select>
+            <div className="flex gap-2">
+              <Select value={filterStatus} onValueChange={(value: FilterStatus) => setFilterStatus(value)}>
+                <SelectTrigger className="w-[180px] border-border/40">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    <SelectValue placeholder="Filter status" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Members</SelectItem>
+                  <SelectItem value="active">Active Only</SelectItem>
+                  <SelectItem value="inactive">Inactive Only</SelectItem>
+                </SelectContent>
+              </Select>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon">
-                {viewMode === 'grid' ? <Users className="h-4 w-4" /> : <Users className="h-4 w-4" />}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>View Mode</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setViewMode('grid')}>
-                Grid View
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setViewMode('list')}>
-                List View
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="border-border/40">
+                    {viewMode === 'grid' ? <Users className="h-4 w-4" /> : <Users className="h-4 w-4" />}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>View Mode</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setViewMode('grid')}>
+                    Grid View
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setViewMode('list')}>
+                    List View
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Team Members Grid/List */}
       {filteredMembers.length === 0 ? (
@@ -1883,7 +1887,7 @@ export default function TeamOverviewPage() {
             <Card
               key={member.id}
               className={cn(
-                "hover:shadow-md transition-all duration-200 group",
+                "border-border/40 hover:border-border hover:shadow-sm transition-all duration-200 group",
                 viewMode === 'grid' && "hover:-translate-y-1"
               )}
             >
@@ -1897,11 +1901,11 @@ export default function TeamOverviewPage() {
                 )}>
                   <div className="relative">
                     <Avatar className={cn(
-                      "ring-2 ring-transparent group-hover:ring-primary/20 transition-all",
+                      "ring-1 ring-black/5 group-hover:ring-slate-200 transition-all",
                       viewMode === 'grid' ? "h-20 w-20" : "h-12 w-12"
                     )}>
                       <AvatarImage src={member.image || undefined} />
-                      <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-semibold">
+                      <AvatarFallback className="bg-gradient-to-br from-slate-100 to-slate-200 text-slate-700 font-semibold">
                         {member.name
                           ? member.name.split(' ').map(n => n[0]).join('').slice(0, 2)
                           : member.email?.[0]?.toUpperCase()
@@ -1910,7 +1914,7 @@ export default function TeamOverviewPage() {
                     </Avatar>
                     <div className={cn(
                       "absolute rounded-full border-2 border-background",
-                      member.isActive ? "bg-green-500" : "bg-gray-400",
+                      member.isActive ? "bg-emerald-500 animate-pulse" : "bg-slate-400",
                       viewMode === 'grid' ? "w-5 h-5 -bottom-1 -right-1" : "w-3 h-3 -bottom-0.5 -right-0.5"
                     )} />
                   </div>
@@ -1926,7 +1930,15 @@ export default function TeamOverviewPage() {
                       )}>
                         {member.name || 'Unnamed User'}
                       </h4>
-                      <Badge variant={member.isActive ? 'default' : 'secondary'} className="text-xs">
+                      <Badge
+                        variant="secondary"
+                        className={cn(
+                          "text-xs",
+                          member.isActive
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            : "bg-slate-100 text-slate-600 border-slate-200"
+                        )}
+                      >
                         {member.isActive ? 'Active' : 'Inactive'}
                       </Badge>
                     </div>

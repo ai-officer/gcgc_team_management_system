@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import { Calendar, CheckSquare, Clock, Users, TrendingUp, AlertCircle, ArrowRight, Star, Zap, Target, Activity, Award, BarChart3, Calendar as CalendarIcon, Filter, RefreshCw } from 'lucide-react'
+import { Calendar, CheckSquare, Clock, Users, AlertCircle, ArrowRight, Star, Zap, Target, Activity, Award, BarChart3, Calendar as CalendarIcon, RefreshCw, Plus } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
@@ -580,54 +580,45 @@ export default function UserDashboard() {
       </div>
 
       {/* Performance Insights Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Productivity Overview */}
-        <Card className="card-modern h-full flex flex-col">
-          <CardHeader className="flex-shrink-0">
-            <CardTitle className="flex items-center gap-2 text-lg">
+        <Card className="card-modern w-full">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
               <div className="p-2 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900 dark:to-purple-900 rounded-lg">
-                <BarChart3 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <BarChart3 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               </div>
               Productivity Overview
             </CardTitle>
-            <CardDescription className="mt-1.5">
+            <CardDescription>
               Your performance this month
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4 flex-1 flex flex-col">
+          <CardContent className="space-y-4">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-muted-foreground">Task Completion Rate</span>
-                <span className="text-lg font-bold text-foreground">{calculateTaskCompletionRate()}%</span>
+                <span className="text-sm text-muted-foreground">Task Completion Rate</span>
+                <span className="text-sm font-medium">{calculateTaskCompletionRate()}%</span>
               </div>
-              <Progress value={calculateTaskCompletionRate()} className="h-2.5" />
+              <Progress value={calculateTaskCompletionRate()} className="h-2" />
             </div>
 
-            <div className="grid grid-cols-2 gap-4 pt-2">
-              <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 rounded-xl border border-green-200 dark:border-green-800 shadow-sm">
-                <div className="text-3xl font-bold text-green-600 mb-1">{dashboardData.stats.myCompletedTasks}</div>
-                <div className="text-xs font-medium text-green-700 dark:text-green-400 uppercase tracking-wide">Completed</div>
+            <div className="grid grid-cols-2 gap-4 pt-4">
+              <div className="text-center p-3 bg-green-50 dark:bg-green-950 rounded-lg">
+                <div className="text-2xl font-bold text-green-600">{dashboardData.stats.myCompletedTasks}</div>
+                <div className="text-xs text-green-700 dark:text-green-400">Completed</div>
               </div>
-              <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 rounded-xl border border-blue-200 dark:border-blue-800 shadow-sm">
-                <div className="text-3xl font-bold text-blue-600 mb-1">{dashboardData.stats.myTasks - dashboardData.stats.myCompletedTasks}</div>
-                <div className="text-xs font-medium text-blue-700 dark:text-blue-400 uppercase tracking-wide">In Progress</div>
+              <div className="text-center p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                <div className="text-2xl font-bold text-blue-600">{dashboardData.stats.myTasks}</div>
+                <div className="text-xs text-blue-700 dark:text-blue-400">In Progress</div>
               </div>
             </div>
 
             {calculateTaskCompletionRate() >= 80 && (
-              <div className="flex items-center gap-2 p-3 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950 dark:to-amber-950 border border-yellow-200 dark:border-yellow-800 rounded-lg shadow-sm mt-auto">
-                <Star className="h-5 w-5 text-yellow-600 flex-shrink-0" />
+              <div className="flex items-center gap-2 p-3 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                <Star className="h-4 w-4 text-yellow-600" />
                 <span className="text-sm text-yellow-800 dark:text-yellow-200 font-medium">
                   Outstanding performance! Keep it up! 🌟
-                </span>
-              </div>
-            )}
-
-            {calculateTaskCompletionRate() < 50 && calculateTaskCompletionRate() > 0 && (
-              <div className="flex items-center gap-2 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border border-blue-200 dark:border-blue-800 rounded-lg shadow-sm mt-auto">
-                <TrendingUp className="h-5 w-5 text-blue-600 flex-shrink-0" />
-                <span className="text-sm text-blue-800 dark:text-blue-200 font-medium">
-                  Keep going! You're making progress 💪
                 </span>
               </div>
             )}
@@ -635,73 +626,51 @@ export default function UserDashboard() {
         </Card>
 
         {/* Recent Activity */}
-        <Card className="card-modern h-full flex flex-col">
-          <CardHeader className="flex-shrink-0">
-            <CardTitle className="flex items-center gap-2 text-lg">
+        <Card className="card-modern w-full">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
               <div className="p-2 bg-gradient-to-r from-green-100 to-blue-100 dark:from-green-900 dark:to-blue-900 rounded-lg">
-                <Activity className="h-5 w-5 text-green-600 dark:text-green-400" />
+                <Activity className="h-4 w-4 text-green-600 dark:text-green-400" />
               </div>
               Recent Activity
             </CardTitle>
-            <CardDescription className="mt-1.5">
+            <CardDescription>
               Your latest actions
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex-1">
+          <CardContent>
             <div className="space-y-3">
               {dashboardData.recentTasks.slice(0, 3).map((task) => (
-                <div key={task.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-all duration-200 cursor-pointer border border-transparent hover:border-primary/20 hover:shadow-sm"
-                     onClick={() => window.location.href = `/user/tasks?id=${task.id}`}>
-                  <div className={`p-2 rounded-full flex-shrink-0 shadow-sm ${
-                    task.status === 'COMPLETED' ? 'bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900 dark:to-green-800' :
-                    task.status === 'IN_PROGRESS' ? 'bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800' :
-                    'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700'
+                <div key={task.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/30 transition-colors">
+                  <div className={`p-1 rounded-full ${
+                    task.status === 'COMPLETED' ? 'bg-green-100 dark:bg-green-900' :
+                    task.status === 'IN_PROGRESS' ? 'bg-blue-100 dark:bg-blue-900' :
+                    'bg-gray-100 dark:bg-gray-800'
                   }`}>
                     {task.status === 'COMPLETED' ? (
-                      <Award className="h-4 w-4 text-green-600 dark:text-green-400" />
+                      <Award className="h-3 w-3 text-green-600" />
                     ) : task.status === 'IN_PROGRESS' ? (
-                      <Activity className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      <Activity className="h-3 w-3 text-blue-600" />
                     ) : (
-                      <Clock className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                      <Clock className="h-3 w-3 text-gray-600" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate text-foreground">{task.title}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <p className="text-xs text-muted-foreground">
-                        {task.status === 'COMPLETED' ? 'Completed' :
-                         task.status === 'IN_PROGRESS' ? 'Working on' : 'Started'}
-                      </p>
-                      <span className="text-xs text-muted-foreground">•</span>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(task.updatedAt), { addSuffix: true })}
-                      </p>
-                    </div>
+                    <p className="text-sm font-medium truncate">{task.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {task.status === 'COMPLETED' ? 'Completed' :
+                       task.status === 'IN_PROGRESS' ? 'Working on' : 'Started'} •
+                      {formatDistanceToNow(new Date(task.updatedAt), { addSuffix: true })}
+                    </p>
                   </div>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors flex-shrink-0 mt-1" />
                 </div>
               ))}
 
               {dashboardData.recentTasks.length === 0 && (
-                <div className="text-center py-8">
-                  <div className="p-4 bg-muted/50 rounded-full w-fit mx-auto mb-3">
-                    <Activity className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                  <p className="text-sm font-medium text-muted-foreground mb-1">No recent activity</p>
-                  <p className="text-xs text-muted-foreground">Your activities will appear here</p>
+                <div className="text-center py-4">
+                  <Activity className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">No recent activity</p>
                 </div>
-              )}
-
-              {dashboardData.recentTasks.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full mt-2"
-                  onClick={() => window.location.href = '/user/tasks'}
-                >
-                  View All Activity
-                  <ArrowRight className="h-3 w-3 ml-2" />
-                </Button>
               )}
             </div>
           </CardContent>

@@ -313,9 +313,9 @@ export default function UserDashboard() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Enhanced Recent Tasks */}
-        <div className="xl:col-span-2">
+        <div>
           <Card className="card-modern">
             <CardHeader>
               <div className="flex items-center justify-between">

@@ -179,26 +179,26 @@ export default function UserDashboard() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Enhanced Welcome Header */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 p-6 rounded-xl border border-blue-100 dark:border-blue-800">
+      {/* Clean Welcome Header */}
+      <div className="bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 dark:from-slate-950 dark:to-indigo-950 p-6 rounded-xl border border-border/40">
         <div className="flex items-center justify-between">
           <div className="space-y-2">
-            <h1 className="text-3xl font-bold text-foreground">
+            <h1 className="text-3xl font-semibold text-foreground tracking-tight">
               {getGreeting()}, {session?.user?.name?.split(' ')[0] || 'User'}! 👋
             </h1>
-            <p className="text-lg text-muted-foreground">
-              {isLeader 
-                ? "Here's your team's progress and your tasks for today." 
+            <p className="text-base text-muted-foreground font-medium">
+              {isLeader
+                ? "Here's your team's progress and your tasks for today."
                 : "Here's your productivity overview and task status."
               }
             </p>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
               <Calendar className="h-4 w-4" />
               <span>{format(new Date(), 'EEEE, MMMM do, yyyy')}</span>
             </div>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={refreshDashboard} disabled={loading}>
+            <Button variant="outline" size="sm" onClick={refreshDashboard} disabled={loading} className="border-border/40">
               <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
@@ -207,61 +207,61 @@ export default function UserDashboard() {
         </div>
       </div>
 
-      {/* Enhanced Stats Overview */}
+      {/* Clean Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="card-modern hover:shadow-md transition-shadow cursor-pointer" onClick={() => window.location.href = '/user/tasks'}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">My Active Tasks</CardTitle>
-            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-              <CheckSquare className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+        <Card className="border-border/40 hover:border-border hover:shadow-sm transition-all cursor-pointer" onClick={() => window.location.href = '/user/tasks'}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">My Active Tasks</CardTitle>
+            <div className="p-2 bg-slate-50 border border-slate-100 dark:bg-slate-900 rounded-xl">
+              <CheckSquare className="h-4 w-4 text-slate-600 dark:text-slate-400" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-blue-600">{dashboardData.stats.myTasks}</div>
+            <div className="text-3xl font-semibold text-foreground">{dashboardData.stats.myTasks}</div>
             <div className="flex items-center justify-between mt-2">
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground font-medium">
                 Tasks in progress
               </p>
               <ArrowRight className="h-3 w-3 text-muted-foreground" />
             </div>
-            <Progress value={calculateTaskCompletionRate()} className="mt-2 h-1" />
+            <Progress value={calculateTaskCompletionRate()} className="mt-3 h-1.5" />
           </CardContent>
         </Card>
 
-        <Card className="card-modern hover:shadow-md transition-shadow cursor-pointer" onClick={() => window.location.href = '/user/tasks?status=completed'}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Completed</CardTitle>
-            <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
-              <Award className="h-4 w-4 text-green-600 dark:text-green-400" />
+        <Card className="border-border/40 hover:border-border hover:shadow-sm transition-all cursor-pointer" onClick={() => window.location.href = '/user/tasks?status=completed'}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Completed</CardTitle>
+            <div className="p-2 bg-slate-50 border border-slate-100 dark:bg-slate-900 rounded-xl">
+              <Award className="h-4 w-4 text-slate-600 dark:text-slate-400" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-green-600">{dashboardData.stats.myCompletedTasks}</div>
+            <div className="text-3xl font-semibold text-foreground">{dashboardData.stats.myCompletedTasks}</div>
             <div className="flex items-center justify-between mt-2">
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground font-medium">
                 This month
               </p>
-              <span className="text-xs font-medium text-green-600">+{Math.floor(Math.random() * 15 + 5)} from last</span>
+              <span className="text-xs font-medium text-emerald-600">+{Math.floor(Math.random() * 15 + 5)} from last</span>
             </div>
             <div className="mt-2 flex items-center gap-1">
-              <Star className="h-3 w-3 text-yellow-500" />
-              <span className="text-xs text-muted-foreground">Great progress!</span>
+              <Star className="h-3 w-3 text-amber-500" />
+              <span className="text-xs text-muted-foreground font-medium">Great progress!</span>
             </div>
           </CardContent>
         </Card>
 
         {isLeader && (
-          <Card className="card-modern hover:shadow-md transition-shadow cursor-pointer" onClick={() => window.location.href = '/user/team-overview'}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Team Tasks</CardTitle>
-              <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
-                <Target className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+          <Card className="border-border/40 hover:border-border hover:shadow-sm transition-all cursor-pointer" onClick={() => window.location.href = '/user/team-overview'}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Team Tasks</CardTitle>
+              <div className="p-2 bg-slate-50 border border-slate-100 dark:bg-slate-900 rounded-xl">
+                <Target className="h-4 w-4 text-slate-600 dark:text-slate-400" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-purple-600">{dashboardData.stats.teamTasks}</div>
+              <div className="text-3xl font-semibold text-foreground">{dashboardData.stats.teamTasks}</div>
               <div className="flex items-center justify-between mt-2">
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground font-medium">
                   Active team tasks
                 </p>
                 <Activity className="h-3 w-3 text-muted-foreground" />
@@ -269,33 +269,33 @@ export default function UserDashboard() {
               <div className="mt-2 flex items-center gap-1">
                 <div className="flex -space-x-1">
                   {dashboardData.teamMembers.slice(0, 3).map((member, i) => (
-                    <Avatar key={member.id} className="h-5 w-5 border border-white">
-                      <AvatarFallback className="text-xs bg-gradient-to-br from-primary/10 to-primary/20">
+                    <Avatar key={member.id} className="h-5 w-5 border-2 border-white ring-1 ring-black/5">
+                      <AvatarFallback className="text-xs bg-gradient-to-br from-slate-100 to-slate-200 text-slate-700 font-semibold">
                         {member.name?.[0] || member.email[0]}
                       </AvatarFallback>
                     </Avatar>
                   ))}
                 </div>
-                <span className="text-xs text-muted-foreground ml-2">Team active</span>
+                <span className="text-xs text-muted-foreground ml-2 font-medium">Team active</span>
               </div>
             </CardContent>
           </Card>
         )}
 
 
-        <Card className={`card-modern hover:shadow-md transition-shadow ${dashboardData.stats.overdueTasks > 0 ? 'cursor-pointer' : ''}`} onClick={() => dashboardData.stats.overdueTasks > 0 && (window.location.href = '/user/tasks?status=overdue')}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Overdue Tasks</CardTitle>
-            <div className={`p-2 rounded-lg ${dashboardData.stats.overdueTasks > 0 ? 'bg-red-100 dark:bg-red-900' : 'bg-gray-100 dark:bg-gray-800'}`}>
-              <AlertCircle className={`h-4 w-4 ${dashboardData.stats.overdueTasks > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-400'}`} />
+        <Card className={`border-border/40 hover:border-border hover:shadow-sm transition-all ${dashboardData.stats.overdueTasks > 0 ? 'cursor-pointer' : ''}`} onClick={() => dashboardData.stats.overdueTasks > 0 && (window.location.href = '/user/tasks?status=overdue')}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Overdue Tasks</CardTitle>
+            <div className={`p-2 rounded-xl border ${dashboardData.stats.overdueTasks > 0 ? 'bg-red-50 border-red-100 dark:bg-red-900' : 'bg-slate-50 border-slate-100 dark:bg-slate-800'}`}>
+              <AlertCircle className={`h-4 w-4 ${dashboardData.stats.overdueTasks > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-400'}`} />
             </div>
           </CardHeader>
           <CardContent>
-            <div className={`text-3xl font-bold ${dashboardData.stats.overdueTasks > 0 ? 'text-red-600' : 'text-gray-400'}`}>
+            <div className={`text-3xl font-semibold ${dashboardData.stats.overdueTasks > 0 ? 'text-red-600' : 'text-slate-400'}`}>
               {dashboardData.stats.overdueTasks}
             </div>
             <div className="flex items-center justify-between mt-2">
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground font-medium">
                 {dashboardData.stats.overdueTasks > 0 ? 'Need attention' : 'All caught up!'}
               </p>
               {dashboardData.stats.overdueTasks === 0 && (
@@ -314,24 +314,24 @@ export default function UserDashboard() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        {/* Enhanced Recent Tasks */}
+        {/* Clean Recent Tasks */}
         <div>
-          <Card className="card-modern">
-            <CardHeader>
+          <Card className="border-border/40">
+            <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                      <CheckSquare className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+                    <div className="p-2 bg-slate-50 border border-slate-100 dark:bg-slate-900 rounded-xl">
+                      <CheckSquare className="h-4 w-4 text-slate-600 dark:text-slate-400" />
                     </div>
                     Recent Tasks
                   </CardTitle>
-                  <CardDescription className="mt-1">
+                  <CardDescription className="mt-1.5 text-sm font-medium">
                     Your latest assignments and progress
                   </CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => window.location.href = '/user/tasks'}>
+                  <Button variant="ghost" size="sm" onClick={() => window.location.href = '/user/tasks'} className="text-xs font-medium">
                     View All
                     <ArrowRight className="h-3 w-3 ml-1" />
                   </Button>
@@ -350,7 +350,7 @@ export default function UserDashboard() {
                 </div>
               ) : (
                 dashboardData.recentTasks.map((task, index) => (
-                  <div key={task.id} className="group p-4 border border-border rounded-lg hover:shadow-md hover:border-primary/20 transition-all duration-200 cursor-pointer"
+                  <div key={task.id} className="group p-4 border border-border/40 rounded-lg hover:shadow-sm hover:border-border transition-all duration-200 cursor-pointer"
                        onClick={() => window.location.href = `/user/tasks?id=${task.id}`}>
                     <div className="flex items-start justify-between mb-3">
                       <div className="space-y-2 flex-1">
@@ -359,29 +359,29 @@ export default function UserDashboard() {
                             {task.title}
                           </h4>
                           {index === 0 && (
-                            <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                            <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900 dark:text-blue-300">
                               Latest
                             </Badge>
                           )}
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
-                          <Badge className={`text-xs ${getPriorityColor(task.priority)} font-medium`}>
+                          <Badge className={`text-xs ${getPriorityColor(task.priority)} font-medium border`}>
                             {task.priority}
                           </Badge>
                           {task.dueDate && (
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded">
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded border border-slate-100">
                               <Clock className="h-3 w-3" />
                               Due {format(new Date(task.dueDate), 'MMM dd')}
                             </div>
                           )}
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="outline" className="text-xs border-border/40">
                             {task.team?.name || 'Personal'}
                           </Badge>
                           {task.assignee && task.assignee.id !== session?.user?.id && (
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
                               <span>by</span>
-                              <Avatar className="h-4 w-4">
-                                <AvatarFallback className="text-xs bg-gradient-to-br from-primary/10 to-primary/20">
+                              <Avatar className="h-4 w-4 ring-1 ring-black/5">
+                                <AvatarFallback className="text-xs bg-gradient-to-br from-slate-100 to-slate-200 text-slate-700 font-semibold">
                                   {task.assignee.name?.[0] || task.assignee.email[0]}
                                 </AvatarFallback>
                               </Avatar>
@@ -391,10 +391,10 @@ export default function UserDashboard() {
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-2">
-                        <Badge variant={task.status === 'COMPLETED' ? 'default' : task.status === 'IN_PROGRESS' ? 'secondary' : 'outline'} className="text-xs whitespace-nowrap">
+                        <Badge variant={task.status === 'COMPLETED' ? 'default' : task.status === 'IN_PROGRESS' ? 'secondary' : 'outline'} className="text-xs whitespace-nowrap border-border/40">
                           {task.status.replace('_', ' ')}
                         </Badge>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-muted-foreground font-medium">
                           {formatDistanceToNow(new Date(task.updatedAt), { addSuffix: true })}
                         </span>
                       </div>
@@ -428,21 +428,21 @@ export default function UserDashboard() {
           </Card>
         </div>
 
-        {/* Enhanced Sidebar */}
+        {/* Clean Sidebar */}
         <div className="space-y-4">
 
-          {/* Enhanced Upcoming Deadlines */}
-          <Card className="card-modern">
-            <CardHeader>
+          {/* Clean Upcoming Deadlines */}
+          <Card className="border-border/40">
+            <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
-                      <Clock className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                  <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+                    <div className="p-2 bg-slate-50 border border-slate-100 dark:bg-slate-900 rounded-xl">
+                      <Clock className="h-4 w-4 text-slate-600 dark:text-slate-400" />
                     </div>
                     Upcoming Deadlines
                   </CardTitle>
-                  <CardDescription className="mt-1">
+                  <CardDescription className="mt-1.5 text-sm font-medium">
                     Next 7 days
                   </CardDescription>
                 </div>
@@ -460,11 +460,11 @@ export default function UserDashboard() {
                   const dueDate = task.dueDate ? new Date(task.dueDate) : null
                   const isUrgent = dueDate && dueDate.getTime() - new Date().getTime() < 2 * 24 * 60 * 60 * 1000
                   return (
-                    <div key={task.id} className={`p-3 rounded-lg border transition-all duration-200 cursor-pointer hover:shadow-md ${
-                      isUrgent ? 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950' : 'border-border hover:border-primary/20'
+                    <div key={task.id} className={`p-3 rounded-lg border transition-all duration-200 cursor-pointer hover:shadow-sm ${
+                      isUrgent ? 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950' : 'border-border/40 hover:border-border'
                     }`} onClick={() => window.location.href = `/user/tasks?id=${task.id}`}>
                       <div className="flex items-start justify-between mb-2">
-                        <div className="font-medium text-sm flex-1 pr-2">{task.title}</div>
+                        <div className="font-semibold text-sm flex-1 pr-2">{task.title}</div>
                         {isUrgent && (
                           <Badge variant="destructive" className="text-xs">
                             Urgent
@@ -472,16 +472,16 @@ export default function UserDashboard() {
                         )}
                       </div>
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">{task.team?.name || 'Personal'}</span>
+                        <span className="text-muted-foreground font-medium">{task.team?.name || 'Personal'}</span>
                         {dueDate && (
-                          <div className={`flex items-center gap-1 ${isUrgent ? 'text-red-600 font-medium' : 'text-muted-foreground'}`}>
+                          <div className={`flex items-center gap-1 ${isUrgent ? 'text-red-600 font-medium' : 'text-muted-foreground font-medium'}`}>
                             <Clock className="h-3 w-3" />
                             {format(dueDate, 'MMM dd')} ({formatDistanceToNow(dueDate, { addSuffix: false })})
                           </div>
                         )}
                       </div>
                       <div className="mt-2">
-                        <Badge className={`text-xs ${getPriorityColor(task.priority)}`}>
+                        <Badge className={`text-xs ${getPriorityColor(task.priority)} border font-medium`}>
                           {task.priority} Priority
                         </Badge>
                       </div>
@@ -492,46 +492,46 @@ export default function UserDashboard() {
             </CardContent>
           </Card>
 
-          {/* Enhanced Quick Actions */}
-          <Card className="card-modern">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
-                  <Zap className="h-4 w-4 text-green-600 dark:text-green-400" />
+          {/* Clean Quick Actions */}
+          <Card className="border-border/40">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+                <div className="p-2 bg-slate-50 border border-slate-100 dark:bg-slate-900 rounded-xl">
+                  <Zap className="h-4 w-4 text-slate-600 dark:text-slate-400" />
                 </div>
                 Quick Actions
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Button 
+              <Button
                 onClick={() => window.location.href = '/user/tasks'}
-                className="w-full justify-start h-auto p-3"
+                className="w-full justify-start h-auto p-3 border-border/40"
                 variant="ghost"
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                    <CheckSquare className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <div className="p-2 bg-slate-50 border border-slate-100 dark:bg-slate-900 rounded-xl">
+                    <CheckSquare className="h-4 w-4 text-slate-600 dark:text-slate-400" />
                   </div>
                   <div className="text-left">
-                    <div className="font-medium text-sm">Manage Tasks</div>
-                    <div className="text-xs text-muted-foreground">Create and track progress</div>
+                    <div className="font-semibold text-sm">Manage Tasks</div>
+                    <div className="text-xs text-muted-foreground font-medium">Create and track progress</div>
                   </div>
                 </div>
                 <ArrowRight className="h-4 w-4 ml-auto" />
               </Button>
 
-              <Button 
+              <Button
                 onClick={() => window.location.href = '/user/calendar'}
-                className="w-full justify-start h-auto p-3"
+                className="w-full justify-start h-auto p-3 border-border/40"
                 variant="ghost"
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
-                    <CalendarIcon className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  <div className="p-2 bg-slate-50 border border-slate-100 dark:bg-slate-900 rounded-xl">
+                    <CalendarIcon className="h-4 w-4 text-slate-600 dark:text-slate-400" />
                   </div>
                   <div className="text-left">
-                    <div className="font-medium text-sm">View Calendar</div>
-                    <div className="text-xs text-muted-foreground">Check your schedule</div>
+                    <div className="font-semibold text-sm">View Calendar</div>
+                    <div className="text-xs text-muted-foreground font-medium">Check your schedule</div>
                   </div>
                 </div>
                 <ArrowRight className="h-4 w-4 ml-auto" />
@@ -539,35 +539,35 @@ export default function UserDashboard() {
 
               {isLeader && (
                 <>
-                  <Button 
+                  <Button
                     onClick={() => window.location.href = '/user/team-overview'}
-                    className="w-full justify-start h-auto p-3"
+                    className="w-full justify-start h-auto p-3 border-border/40"
                     variant="ghost"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-indigo-100 dark:bg-indigo-900 rounded-lg">
-                        <Users className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                      <div className="p-2 bg-slate-50 border border-slate-100 dark:bg-slate-900 rounded-xl">
+                        <Users className="h-4 w-4 text-slate-600 dark:text-slate-400" />
                       </div>
                       <div className="text-left">
-                        <div className="font-medium text-sm">Team Overview</div>
-                        <div className="text-xs text-muted-foreground">Monitor team progress</div>
+                        <div className="font-semibold text-sm">Team Overview</div>
+                        <div className="text-xs text-muted-foreground font-medium">Monitor team progress</div>
                       </div>
                     </div>
                     <ArrowRight className="h-4 w-4 ml-auto" />
                   </Button>
 
-                  <Button 
+                  <Button
                     onClick={() => window.location.href = '/user/member-management'}
-                    className="w-full justify-start h-auto p-3"
+                    className="w-full justify-start h-auto p-3 border-border/40"
                     variant="ghost"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
-                        <Target className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                      <div className="p-2 bg-slate-50 border border-slate-100 dark:bg-slate-900 rounded-xl">
+                        <Target className="h-4 w-4 text-slate-600 dark:text-slate-400" />
                       </div>
                       <div className="text-left">
-                        <div className="font-medium text-sm">Assign Tasks</div>
-                        <div className="text-xs text-muted-foreground">Delegate to team</div>
+                        <div className="font-semibold text-sm">Assign Tasks</div>
+                        <div className="text-xs text-muted-foreground font-medium">Delegate to team</div>
                       </div>
                     </div>
                     <ArrowRight className="h-4 w-4 ml-auto" />

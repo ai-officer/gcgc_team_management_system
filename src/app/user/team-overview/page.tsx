@@ -1738,6 +1738,7 @@ export default function TeamOverviewPage() {
           </Dialog>
         </div>
       </div>
+      </div>
 
       {/* Team Stats - Flat Design */}
       {teamStats && (

@@ -179,26 +179,26 @@ export default function UserDashboard() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Clean Welcome Header */}
-      <div className="bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 dark:from-slate-950 dark:to-indigo-950 p-6 rounded-xl border border-border/40">
+      {/* Flat Design Welcome Header */}
+      <div className="bg-blue-500 dark:bg-blue-600 p-6 rounded-none">
         <div className="flex items-center justify-between">
           <div className="space-y-2">
-            <h1 className="text-3xl font-semibold text-foreground tracking-tight">
+            <h1 className="text-3xl font-bold text-white">
               {getGreeting()}, {session?.user?.name?.split(' ')[0] || 'User'}! 👋
             </h1>
-            <p className="text-base text-muted-foreground font-medium">
+            <p className="text-base text-blue-50 font-normal">
               {isLeader
                 ? "Here's your team's progress and your tasks for today."
                 : "Here's your productivity overview and task status."
               }
             </p>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
+            <div className="flex items-center gap-2 text-sm text-blue-50">
               <Calendar className="h-4 w-4" />
               <span>{format(new Date(), 'EEEE, MMMM do, yyyy')}</span>
             </div>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={refreshDashboard} disabled={loading} className="border-border/40">
+            <Button variant="outline" size="sm" onClick={refreshDashboard} disabled={loading} className="bg-white text-blue-600 border-0 hover:bg-blue-50">
               <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
@@ -207,95 +207,95 @@ export default function UserDashboard() {
         </div>
       </div>
 
-      {/* Clean Stats Overview */}
+      {/* Flat Design Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-border/40 hover:border-border hover:shadow-sm transition-all cursor-pointer" onClick={() => window.location.href = '/user/tasks'}>
+        <Card className="border-0 bg-purple-500 hover:bg-purple-600 transition-colors cursor-pointer rounded-none" onClick={() => window.location.href = '/user/tasks'}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">My Active Tasks</CardTitle>
-            <div className="p-2 bg-slate-50 border border-slate-100 dark:bg-slate-900 rounded-xl">
-              <CheckSquare className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+            <CardTitle className="text-xs font-bold text-purple-100 uppercase tracking-wider">My Active Tasks</CardTitle>
+            <div className="p-2 bg-purple-600 rounded-none">
+              <CheckSquare className="h-4 w-4 text-white" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-semibold text-foreground">{dashboardData.stats.myTasks}</div>
+            <div className="text-3xl font-bold text-white">{dashboardData.stats.myTasks}</div>
             <div className="flex items-center justify-between mt-2">
-              <p className="text-xs text-muted-foreground font-medium">
+              <p className="text-xs text-purple-100 font-normal">
                 Tasks in progress
               </p>
-              <ArrowRight className="h-3 w-3 text-muted-foreground" />
+              <ArrowRight className="h-3 w-3 text-purple-100" />
             </div>
-            <Progress value={calculateTaskCompletionRate()} className="mt-3 h-1.5" />
+            <Progress value={calculateTaskCompletionRate()} className="mt-3 h-2 bg-purple-600" />
           </CardContent>
         </Card>
 
-        <Card className="border-border/40 hover:border-border hover:shadow-sm transition-all cursor-pointer" onClick={() => window.location.href = '/user/tasks?status=completed'}>
+        <Card className="border-0 bg-emerald-500 hover:bg-emerald-600 transition-colors cursor-pointer rounded-none" onClick={() => window.location.href = '/user/tasks?status=completed'}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Completed</CardTitle>
-            <div className="p-2 bg-slate-50 border border-slate-100 dark:bg-slate-900 rounded-xl">
-              <Award className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+            <CardTitle className="text-xs font-bold text-emerald-100 uppercase tracking-wider">Completed</CardTitle>
+            <div className="p-2 bg-emerald-600 rounded-none">
+              <Award className="h-4 w-4 text-white" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-semibold text-foreground">{dashboardData.stats.myCompletedTasks}</div>
+            <div className="text-3xl font-bold text-white">{dashboardData.stats.myCompletedTasks}</div>
             <div className="flex items-center justify-between mt-2">
-              <p className="text-xs text-muted-foreground font-medium">
+              <p className="text-xs text-emerald-100 font-normal">
                 This month
               </p>
-              <span className="text-xs font-medium text-emerald-600">+{Math.floor(Math.random() * 15 + 5)} from last</span>
+              <span className="text-xs font-bold text-white">+{Math.floor(Math.random() * 15 + 5)} from last</span>
             </div>
             <div className="mt-2 flex items-center gap-1">
-              <Star className="h-3 w-3 text-amber-500" />
-              <span className="text-xs text-muted-foreground font-medium">Great progress!</span>
+              <Star className="h-3 w-3 text-yellow-300" />
+              <span className="text-xs text-emerald-100">Great progress!</span>
             </div>
           </CardContent>
         </Card>
 
         {isLeader && (
-          <Card className="border-border/40 hover:border-border hover:shadow-sm transition-all cursor-pointer" onClick={() => window.location.href = '/user/team-overview'}>
+          <Card className="border-0 bg-orange-500 hover:bg-orange-600 transition-colors cursor-pointer rounded-none" onClick={() => window.location.href = '/user/team-overview'}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Team Tasks</CardTitle>
-              <div className="p-2 bg-slate-50 border border-slate-100 dark:bg-slate-900 rounded-xl">
-                <Target className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+              <CardTitle className="text-xs font-bold text-orange-100 uppercase tracking-wider">Team Tasks</CardTitle>
+              <div className="p-2 bg-orange-600 rounded-none">
+                <Target className="h-4 w-4 text-white" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-semibold text-foreground">{dashboardData.stats.teamTasks}</div>
+              <div className="text-3xl font-bold text-white">{dashboardData.stats.teamTasks}</div>
               <div className="flex items-center justify-between mt-2">
-                <p className="text-xs text-muted-foreground font-medium">
+                <p className="text-xs text-orange-100 font-normal">
                   Active team tasks
                 </p>
-                <Activity className="h-3 w-3 text-muted-foreground" />
+                <Activity className="h-3 w-3 text-orange-100" />
               </div>
               <div className="mt-2 flex items-center gap-1">
                 <div className="flex -space-x-1">
                   {dashboardData.teamMembers.slice(0, 3).map((member, i) => (
-                    <Avatar key={member.id} className="h-5 w-5 border-2 border-white ring-1 ring-black/5">
-                      <AvatarFallback className="text-xs bg-gradient-to-br from-slate-100 to-slate-200 text-slate-700 font-semibold">
+                    <Avatar key={member.id} className="h-5 w-5 border-2 border-white">
+                      <AvatarFallback className="text-xs bg-orange-600 text-white font-bold">
                         {member.name?.[0] || member.email[0]}
                       </AvatarFallback>
                     </Avatar>
                   ))}
                 </div>
-                <span className="text-xs text-muted-foreground ml-2 font-medium">Team active</span>
+                <span className="text-xs text-orange-100 ml-2">Team active</span>
               </div>
             </CardContent>
           </Card>
         )}
 
 
-        <Card className={`border-border/40 hover:border-border hover:shadow-sm transition-all ${dashboardData.stats.overdueTasks > 0 ? 'cursor-pointer' : ''}`} onClick={() => dashboardData.stats.overdueTasks > 0 && (window.location.href = '/user/tasks?status=overdue')}>
+        <Card className={`border-0 transition-colors rounded-none ${dashboardData.stats.overdueTasks > 0 ? 'bg-red-500 hover:bg-red-600 cursor-pointer' : 'bg-gray-300 hover:bg-gray-400'}`} onClick={() => dashboardData.stats.overdueTasks > 0 && (window.location.href = '/user/tasks?status=overdue')}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Overdue Tasks</CardTitle>
-            <div className={`p-2 rounded-xl border ${dashboardData.stats.overdueTasks > 0 ? 'bg-red-50 border-red-100 dark:bg-red-900' : 'bg-slate-50 border-slate-100 dark:bg-slate-800'}`}>
-              <AlertCircle className={`h-4 w-4 ${dashboardData.stats.overdueTasks > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-400'}`} />
+            <CardTitle className={`text-xs font-bold uppercase tracking-wider ${dashboardData.stats.overdueTasks > 0 ? 'text-red-100' : 'text-gray-600'}`}>Overdue Tasks</CardTitle>
+            <div className={`p-2 rounded-none ${dashboardData.stats.overdueTasks > 0 ? 'bg-red-600' : 'bg-gray-400'}`}>
+              <AlertCircle className={`h-4 w-4 ${dashboardData.stats.overdueTasks > 0 ? 'text-white' : 'text-gray-700'}`} />
             </div>
           </CardHeader>
           <CardContent>
-            <div className={`text-3xl font-semibold ${dashboardData.stats.overdueTasks > 0 ? 'text-red-600' : 'text-slate-400'}`}>
+            <div className={`text-3xl font-bold ${dashboardData.stats.overdueTasks > 0 ? 'text-white' : 'text-gray-700'}`}>
               {dashboardData.stats.overdueTasks}
             </div>
             <div className="flex items-center justify-between mt-2">
-              <p className="text-xs text-muted-foreground font-medium">
+              <p className={`text-xs font-normal ${dashboardData.stats.overdueTasks > 0 ? 'text-red-100' : 'text-gray-600'}`}>
                 {dashboardData.stats.overdueTasks > 0 ? 'Need attention' : 'All caught up!'}
               </p>
               {dashboardData.stats.overdueTasks === 0 && (

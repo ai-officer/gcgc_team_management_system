@@ -736,16 +736,17 @@ export default function TeamOverviewPage() {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Header Section - Clean & Minimalistic */}
-      <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-start">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-semibold tracking-tight">Team Overview</h1>
-          <p className="text-sm text-muted-foreground font-medium">
-            Manage your team members, track performance, and collaborate effectively
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
+    <div className="space-y-6">
+      {/* Header Section - Flat Design */}
+      <div className="bg-teal-500 p-6 rounded-none">
+        <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-start">
+          <div className="space-y-2">
+            <h1 className="text-3xl font-bold text-white">Team Overview</h1>
+            <p className="text-base text-teal-50">
+              Manage your team members, track performance, and collaborate effectively
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
           <CreateTaskButton size="sm" onTaskCreated={fetchTeamData} />
           <Dialog open={isAddMemberDialogOpen} onOpenChange={handleDialogOpenChange}>
             <DialogTrigger asChild>
@@ -1738,64 +1739,64 @@ export default function TeamOverviewPage() {
         </div>
       </div>
 
-      {/* Team Stats - Clean & Minimalistic */}
+      {/* Team Stats - Flat Design */}
       {teamStats && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="border-border/40 hover:border-border hover:shadow-sm transition-all">
+          <Card className="border-0 bg-cyan-500 hover:bg-cyan-600 transition-colors rounded-none">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Team Members</CardTitle>
-              <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
-                <Users className="h-4 w-4 text-slate-600" />
+              <CardTitle className="text-xs font-bold text-cyan-100 uppercase tracking-wider">Team Members</CardTitle>
+              <div className="p-2 bg-cyan-600 rounded-none">
+                <Users className="h-4 w-4 text-white" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-semibold text-foreground">{teamStats.totalMembers}</div>
-              <p className="text-xs text-muted-foreground mt-1.5 font-medium">
+              <div className="text-3xl font-bold text-white">{teamStats.totalMembers}</div>
+              <p className="text-xs text-cyan-100">
                 Active in your team
               </p>
             </CardContent>
           </Card>
 
-          <Card className="border-border/40 hover:border-border hover:shadow-sm transition-all">
+          <Card className="border-0 bg-indigo-500 hover:bg-indigo-600 transition-colors rounded-none">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Active Tasks</CardTitle>
-              <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
-                <Activity className="h-4 w-4 text-slate-600" />
+              <CardTitle className="text-xs font-bold text-indigo-100 uppercase tracking-wider">Active Tasks</CardTitle>
+              <div className="p-2 bg-indigo-600 rounded-none">
+                <Activity className="h-4 w-4 text-white" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-semibold text-foreground">{teamStats.activeTasks}</div>
-              <p className="text-xs text-muted-foreground mt-1.5 font-medium">
+              <div className="text-3xl font-bold text-white">{teamStats.activeTasks}</div>
+              <p className="text-xs text-indigo-100">
                 Currently in progress
               </p>
             </CardContent>
           </Card>
 
-          <Card className="border-border/40 hover:border-border hover:shadow-sm transition-all">
+          <Card className="border-0 bg-emerald-500 hover:bg-emerald-600 transition-colors rounded-none">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Completed</CardTitle>
-              <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
-                <Award className="h-4 w-4 text-slate-600" />
+              <CardTitle className="text-xs font-bold text-emerald-100 uppercase tracking-wider">Completed</CardTitle>
+              <div className="p-2 bg-emerald-600 rounded-none">
+                <Award className="h-4 w-4 text-white" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-semibold text-foreground">{teamStats.completedTasks}</div>
-              <p className="text-xs text-muted-foreground mt-1.5 font-medium">
+              <div className="text-3xl font-bold text-white">{teamStats.completedTasks}</div>
+              <p className="text-xs text-emerald-100">
                 Tasks finished
               </p>
             </CardContent>
           </Card>
 
-          <Card className="border-border/40 hover:border-border hover:shadow-sm transition-all">
+          <Card className="border-0 bg-red-500 hover:bg-red-600 transition-colors rounded-none">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Overdue</CardTitle>
-              <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
-                <AlertCircle className="h-4 w-4 text-slate-600" />
+              <CardTitle className="text-xs font-bold text-red-100 uppercase tracking-wider">Overdue</CardTitle>
+              <div className="p-2 bg-red-600 rounded-none">
+                <AlertCircle className="h-4 w-4 text-white" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-semibold text-foreground">{teamStats.overdueTasks}</div>
-              <p className="text-xs text-muted-foreground mt-1.5 font-medium">
+              <div className="text-3xl font-bold text-white">{teamStats.overdueTasks}</div>
+              <p className="text-xs text-red-100">
                 Need attention
               </p>
             </CardContent>

@@ -103,83 +103,83 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Clean Header */}
-      <div className="space-y-2">
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Dashboard</h1>
-        <p className="text-sm text-muted-foreground font-medium">Overview of users and system growth metrics</p>
+      {/* Flat Design Header */}
+      <div className="bg-indigo-500 p-6 rounded-none">
+        <h1 className="text-3xl font-bold text-white">Dashboard</h1>
+        <p className="text-sm text-indigo-100 font-bold">Overview of users and system growth metrics</p>
       </div>
 
-      {/* Clean Key Metrics */}
+      {/* Flat Design Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-border/40 hover:border-border hover:shadow-sm transition-all">
+        <Card className="border-0 bg-blue-500 hover:bg-blue-600 transition-colors cursor-pointer rounded-none">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Users</CardTitle>
-            <div className="p-2 bg-slate-50 border border-slate-100 rounded-xl">
-              <Users className="h-4 w-4 text-slate-600" />
+            <CardTitle className="text-xs font-bold text-blue-100 uppercase tracking-wider">Total Users</CardTitle>
+            <div className="p-2 bg-blue-600 rounded-none">
+              <Users className="h-4 w-4 text-white" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-semibold text-foreground">{stats.totalUsers}</div>
-            <p className="text-xs text-muted-foreground mt-1.5 font-medium">
+            <div className="text-3xl font-bold text-white">{stats.totalUsers}</div>
+            <p className="text-xs text-blue-100 mt-1.5 font-bold">
               {stats.newUsersThisMonth} new this month
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-border/40 hover:border-border hover:shadow-sm transition-all">
+        <Card className="border-0 bg-emerald-500 hover:bg-emerald-600 transition-colors cursor-pointer rounded-none">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Active Users</CardTitle>
-            <div className="p-2 bg-slate-50 border border-slate-100 rounded-xl">
-              <Activity className="h-4 w-4 text-slate-600" />
+            <CardTitle className="text-xs font-bold text-emerald-100 uppercase tracking-wider">Active Users</CardTitle>
+            <div className="p-2 bg-emerald-600 rounded-none">
+              <Activity className="h-4 w-4 text-white" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-semibold text-foreground">{stats.activeUsers}</div>
-            <p className="text-xs text-muted-foreground mt-1.5 font-medium">
+            <div className="text-3xl font-bold text-white">{stats.activeUsers}</div>
+            <p className="text-xs text-emerald-100 mt-1.5 font-bold">
               {((stats.activeUsers / stats.totalUsers) * 100).toFixed(1)}% of total
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-border/40 hover:border-border hover:shadow-sm transition-all">
+        <Card className="border-0 bg-orange-500 hover:bg-orange-600 transition-colors cursor-pointer rounded-none">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Growth Rate</CardTitle>
-            <div className="p-2 bg-slate-50 border border-slate-100 rounded-xl">
-              <TrendingUp className="h-4 w-4 text-slate-600" />
+            <CardTitle className="text-xs font-bold text-orange-100 uppercase tracking-wider">Growth Rate</CardTitle>
+            <div className="p-2 bg-orange-600 rounded-none">
+              <TrendingUp className="h-4 w-4 text-white" />
             </div>
           </CardHeader>
           <CardContent>
             <div className="flex items-center space-x-2">
-              <div className="text-3xl font-semibold text-foreground">
+              <div className="text-3xl font-bold text-white">
                 {userGrowthPercentage === 0 ? '0' :
                  userGrowthPercentage === 100 ? '+100' :
                  userGrowthPercentage > 0 ? '+' + userGrowthPercentage.toFixed(1) :
                  userGrowthPercentage.toFixed(1)}%
               </div>
               {userGrowthPercentage > 0 ? (
-                <ArrowUpRight className="h-4 w-4 text-emerald-500" />
+                <ArrowUpRight className="h-4 w-4 text-white" />
               ) : userGrowthPercentage < 0 ? (
-                <ArrowDownRight className="h-4 w-4 text-red-500" />
+                <ArrowDownRight className="h-4 w-4 text-white" />
               ) : (
                 <div className="h-4 w-4" />
               )}
             </div>
-            <p className="text-xs text-muted-foreground mt-1.5 font-medium">
+            <p className="text-xs text-orange-100 mt-1.5 font-bold">
               {stats.newUsersThisMonth} this month vs {stats.newUsersLastMonth} last month
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-border/40 hover:border-border hover:shadow-sm transition-all">
+        <Card className="border-0 bg-purple-500 hover:bg-purple-600 transition-colors cursor-pointer rounded-none">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Organization</CardTitle>
-            <div className="p-2 bg-slate-50 border border-slate-100 rounded-xl">
-              <Building2 className="h-4 w-4 text-slate-600" />
+            <CardTitle className="text-xs font-bold text-purple-100 uppercase tracking-wider">Organization</CardTitle>
+            <div className="p-2 bg-purple-600 rounded-none">
+              <Building2 className="h-4 w-4 text-white" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-semibold text-foreground">{stats.totalTeams}</div>
-            <p className="text-xs text-muted-foreground mt-1.5 font-medium">
+            <div className="text-3xl font-bold text-white">{stats.totalTeams}</div>
+            <p className="text-xs text-purple-100 mt-1.5 font-bold">
               {stats.totalSections} sections
             </p>
           </CardContent>
@@ -187,16 +187,16 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Clean User Distribution */}
-        <Card className="border-border/40">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-              <div className="p-2 bg-slate-50 border border-slate-100 rounded-xl">
-                <Shield className="h-4 w-4 text-slate-600" />
+        {/* Flat Design User Distribution */}
+        <Card className="border-0 rounded-none">
+          <CardHeader className="pb-4 bg-teal-500">
+            <CardTitle className="flex items-center gap-2 text-lg font-bold text-white">
+              <div className="p-2 bg-teal-600 rounded-none">
+                <Shield className="h-4 w-4 text-white" />
               </div>
               User Distribution
             </CardTitle>
-            <CardDescription className="text-sm font-medium">Users by role and hierarchy level</CardDescription>
+            <CardDescription className="text-sm font-bold text-teal-100">Users by role and hierarchy level</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -233,34 +233,34 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        {/* Clean User Growth Chart */}
-        <Card className="border-border/40">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-              <div className="p-2 bg-slate-50 border border-slate-100 rounded-xl">
-                <TrendingUp className="h-4 w-4 text-slate-600" />
+        {/* Flat Design User Growth Chart */}
+        <Card className="border-0 rounded-none">
+          <CardHeader className="pb-4 bg-cyan-500">
+            <CardTitle className="flex items-center gap-2 text-lg font-bold text-white">
+              <div className="p-2 bg-cyan-600 rounded-none">
+                <TrendingUp className="h-4 w-4 text-white" />
               </div>
               User Growth
             </CardTitle>
-            <CardDescription className="text-sm font-medium">New user registrations over time</CardDescription>
+            <CardDescription className="text-sm font-bold text-cyan-100">New user registrations over time</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               {stats.userGrowth.slice(-6).map((data) => (
                 <div key={data.month} className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground font-medium">{data.month}</span>
+                  <span className="text-sm font-bold">{data.month}</span>
                   <div className="flex items-center space-x-2">
-                    <div className="w-24 bg-slate-100 rounded-full h-2">
+                    <div className="w-24 bg-gray-300 rounded-none h-2">
                       <div
-                        className="bg-slate-600 h-2 rounded-full transition-all duration-300"
+                        className="bg-cyan-600 h-2 rounded-none transition-all duration-300"
                         style={{
                           width: `${Math.max((data.users / Math.max(...stats.userGrowth.map(d => d.users))) * 100, 5)}%`
                         }}
                       ></div>
                     </div>
-                    <span className="text-sm font-semibold min-w-[2rem] text-right">{data.users}</span>
+                    <span className="text-sm font-bold min-w-[2rem] text-right">{data.users}</span>
                     {data.change !== 0 && (
-                      <div className={`flex items-center text-xs font-medium ${data.change > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                      <div className={`flex items-center text-xs font-bold ${data.change > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                         {data.change > 0 ? (
                           <ArrowUpRight className="h-3 w-3" />
                         ) : (
@@ -277,51 +277,51 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Clean Recent Users */}
-      <Card className="border-border/40">
-        <CardHeader className="pb-4">
+      {/* Flat Design Recent Users */}
+      <Card className="border-0 rounded-none">
+        <CardHeader className="pb-4 bg-pink-500">
           <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-lg font-semibold">
-              <div className="p-2 bg-slate-50 border border-slate-100 rounded-xl">
-                <UserPlus className="h-4 w-4 text-slate-600" />
+            <div className="flex items-center gap-2 text-lg font-bold text-white">
+              <div className="p-2 bg-pink-600 rounded-none">
+                <UserPlus className="h-4 w-4 text-white" />
               </div>
               Recent Users
             </div>
-            <div className="text-sm text-muted-foreground font-medium">
+            <div className="text-sm text-pink-100 font-bold">
               Showing {((stats.recentUsers.pagination.page - 1) * stats.recentUsers.pagination.limit) + 1}-{Math.min(stats.recentUsers.pagination.page * stats.recentUsers.pagination.limit, stats.recentUsers.pagination.total)} of {stats.recentUsers.pagination.total}
             </div>
           </CardTitle>
-          <CardDescription className="text-sm font-medium">Recently registered users in the system</CardDescription>
+          <CardDescription className="text-sm font-bold text-pink-100">Recently registered users in the system</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {stats.recentUsers.data.map((user) => (
-              <div key={user.id} className="flex items-center justify-between p-4 border border-border/40 rounded-lg hover:border-border hover:shadow-sm transition-all">
+              <div key={user.id} className="flex items-center justify-between p-4 border-0 rounded-none bg-gray-100 hover:bg-gray-200 transition-colors">
                 <div className="flex items-center space-x-4">
-                  <Avatar className="h-10 w-10 ring-1 ring-black/5">
-                    <AvatarFallback className="bg-gradient-to-br from-slate-100 to-slate-200 text-slate-700 font-semibold">
+                  <Avatar className="h-10 w-10 rounded-none">
+                    <AvatarFallback className="bg-indigo-500 text-white font-bold rounded-none">
                       {user.name ? user.name.split(' ').map(n => n[0]).join('') : '??'}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <div className="font-semibold">{user.name}</div>
-                    <div className="text-sm text-muted-foreground font-medium">{user.email}</div>
+                    <div className="font-bold">{user.name}</div>
+                    <div className="text-sm font-bold text-gray-600">{user.email}</div>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3 text-sm">
-                  <Badge variant="secondary" className={user.role === 'LEADER' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-slate-100 text-slate-700 border-slate-200'}>
+                  <Badge variant="secondary" className={user.role === 'LEADER' ? 'bg-blue-500 text-white border-0 font-bold rounded-none' : 'bg-gray-500 text-white border-0 font-bold rounded-none'}>
                     {user.role}
                   </Badge>
                   {user.hierarchyLevel && (
-                    <Badge variant="outline" className="border-border/40">
+                    <Badge variant="outline" className="border-0 bg-gray-300 font-bold rounded-none">
                       {user.hierarchyLevel}
                     </Badge>
                   )}
                   <div className="text-right">
-                    <div className="font-semibold text-sm">
+                    <div className="font-bold text-sm">
                       {new Date(user.createdAt).toLocaleDateString()}
                     </div>
-                    <Badge variant="secondary" className={user.isActive ? "bg-emerald-50 text-emerald-700 border-emerald-200 text-xs" : "bg-slate-100 text-slate-600 border-slate-200 text-xs"}>
+                    <Badge variant="secondary" className={user.isActive ? "bg-emerald-500 text-white border-0 text-xs font-bold rounded-none" : "bg-gray-400 text-white border-0 text-xs font-bold rounded-none"}>
                       {user.isActive ? 'Active' : 'Inactive'}
                     </Badge>
                   </div>

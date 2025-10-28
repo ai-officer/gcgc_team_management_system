@@ -556,15 +556,16 @@ export default function MemberManagementPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header Section */}
-      <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-start">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-semibold tracking-tight">Member Management</h1>
-          <p className="text-sm text-muted-foreground font-medium">
-            Assign tasks, track progress, and optimize team workload distribution
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
+      {/* Flat Design Header */}
+      <div className="bg-pink-500 p-6 rounded-none">
+        <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-start">
+          <div className="space-y-2">
+            <h1 className="text-3xl font-bold text-white">Member Management</h1>
+            <p className="text-base text-pink-50">
+              Assign tasks, track progress, and optimize team workload distribution
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
           <CreateTaskButton size="sm" onTaskCreated={() => { fetchData(); fetchMemberSuggestions(); }} />
           <Dialog open={isCreateTaskDialogOpen} onOpenChange={setIsCreateTaskDialogOpen}>
             <DialogTrigger asChild>
@@ -993,63 +994,63 @@ export default function MemberManagementPage() {
         </div>
       </div>
 
-      {/* Team Stats Dashboard - Clean & Minimalistic */}
+      {/* Team Stats Dashboard - Flat Design */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-border/40 hover:border-border hover:shadow-sm transition-all">
+        <Card className="border-0 bg-violet-500 hover:bg-violet-600 transition-colors rounded-none">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Tasks</CardTitle>
-            <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
-              <BarChart3 className="h-4 w-4 text-slate-600" />
+            <CardTitle className="text-xs font-bold text-violet-100 uppercase tracking-wider">Total Tasks</CardTitle>
+            <div className="p-2 bg-violet-600 rounded-none">
+              <BarChart3 className="h-4 w-4 text-white" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-semibold text-foreground">{teamStats.totalTasks}</div>
-            <p className="text-xs text-muted-foreground mt-1.5 font-medium">
+            <div className="text-3xl font-bold text-white">{teamStats.totalTasks}</div>
+            <p className="text-xs text-violet-100">
               Assigned to {teamStats.totalMembers} members
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-border/40 hover:border-border hover:shadow-sm transition-all">
+        <Card className="border-0 bg-sky-500 hover:bg-sky-600 transition-colors rounded-none">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">In Progress</CardTitle>
-            <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
-              <Activity className="h-4 w-4 text-slate-600" />
+            <CardTitle className="text-xs font-bold text-sky-100 uppercase tracking-wider">In Progress</CardTitle>
+            <div className="p-2 bg-sky-600 rounded-none">
+              <Activity className="h-4 w-4 text-white" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-semibold text-foreground">{teamStats.inProgressTasks}</div>
-            <p className="text-xs text-muted-foreground mt-1.5 font-medium">
+            <div className="text-3xl font-bold text-white">{teamStats.inProgressTasks}</div>
+            <p className="text-xs text-sky-100">
               Active work items
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-border/40 hover:border-border hover:shadow-sm transition-all">
+        <Card className="border-0 bg-emerald-500 hover:bg-emerald-600 transition-colors rounded-none">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Completed</CardTitle>
-            <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
-              <Award className="h-4 w-4 text-slate-600" />
+            <CardTitle className="text-xs font-bold text-emerald-100 uppercase tracking-wider">Completed</CardTitle>
+            <div className="p-2 bg-emerald-600 rounded-none">
+              <Award className="h-4 w-4 text-white" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-semibold text-foreground">{teamStats.completedTasks}</div>
-            <p className="text-xs text-muted-foreground mt-1.5 font-medium">
+            <div className="text-3xl font-bold text-white">{teamStats.completedTasks}</div>
+            <p className="text-xs text-emerald-100">
               Tasks finished
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-border/40 hover:border-border hover:shadow-sm transition-all">
+        <Card className="border-0 bg-red-500 hover:bg-red-600 transition-colors rounded-none">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Urgent & Overdue</CardTitle>
-            <div className="p-2 rounded-xl bg-slate-50 border border-slate-100">
-              <AlertTriangle className="h-4 w-4 text-slate-600" />
+            <CardTitle className="text-xs font-bold text-red-100 uppercase tracking-wider">Urgent & Overdue</CardTitle>
+            <div className="p-2 bg-red-600 rounded-none">
+              <AlertTriangle className="h-4 w-4 text-white" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-semibold text-foreground">{teamStats.urgentTasks + teamStats.overdueTasks}</div>
-            <p className="text-xs text-muted-foreground mt-1.5 font-medium">
+            <div className="text-3xl font-bold text-white">{teamStats.urgentTasks + teamStats.overdueTasks}</div>
+            <p className="text-xs text-red-100">
               {teamStats.urgentTasks} urgent • {teamStats.overdueTasks} overdue
             </p>
           </CardContent>

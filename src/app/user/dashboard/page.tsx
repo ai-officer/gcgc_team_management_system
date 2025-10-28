@@ -580,10 +580,10 @@ export default function UserDashboard() {
       </div>
 
       {/* Performance Insights Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="flex flex-col lg:flex-row gap-6">
         {/* Productivity Overview */}
-        <div className="min-w-0">
-          <Card className="card-modern">
+        <div className="flex-1 min-w-0">
+          <Card className="card-modern h-full">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <div className="p-2 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900 dark:to-purple-900 rounded-lg">
@@ -628,8 +628,8 @@ export default function UserDashboard() {
         </div>
 
         {/* Recent Activity */}
-        <div className="min-w-0">
-          <Card className="card-modern">
+        <div className="flex-1 min-w-0">
+          <Card className="card-modern h-full">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <div className="p-2 bg-gradient-to-r from-green-100 to-blue-100 dark:from-green-900 dark:to-blue-900 rounded-lg">

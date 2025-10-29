@@ -737,12 +737,12 @@ export default function TeamOverviewPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header Section - Flat Design */}
-      <div className="bg-teal-500 p-6 rounded-none">
+      {/* Header Section - Blue Flat Design */}
+      <div className="bg-blue-500 p-6 rounded-none">
         <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-start">
           <div className="space-y-2">
             <h1 className="text-3xl font-bold text-white">Team Overview</h1>
-            <p className="text-base text-teal-50">
+            <p className="text-base text-blue-50">
               Manage your team members, track performance, and collaborate effectively
             </p>
           </div>
@@ -1740,34 +1740,34 @@ export default function TeamOverviewPage() {
       </div>
       </div>
 
-      {/* Team Stats - Flat Design */}
+      {/* Team Stats - Blue Flat Design */}
       {teamStats && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="border-0 bg-cyan-500 hover:bg-cyan-600 transition-colors rounded-none">
+          <Card className="border-0 bg-blue-500 hover:bg-blue-600 transition-colors rounded-none">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-xs font-bold text-cyan-100 uppercase tracking-wider">Team Members</CardTitle>
-              <div className="p-2 bg-cyan-600 rounded-none">
+              <CardTitle className="text-xs font-bold text-blue-100 uppercase tracking-wider">Team Members</CardTitle>
+              <div className="p-2 bg-blue-600 rounded-none">
                 <Users className="h-4 w-4 text-white" />
               </div>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-white">{teamStats.totalMembers}</div>
-              <p className="text-xs text-cyan-100">
+              <p className="text-xs text-blue-100">
                 Active in your team
               </p>
             </CardContent>
           </Card>
 
-          <Card className="border-0 bg-indigo-500 hover:bg-indigo-600 transition-colors rounded-none">
+          <Card className="border-0 bg-blue-400 hover:bg-blue-500 transition-colors rounded-none">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-xs font-bold text-indigo-100 uppercase tracking-wider">Active Tasks</CardTitle>
-              <div className="p-2 bg-indigo-600 rounded-none">
+              <CardTitle className="text-xs font-bold text-blue-100 uppercase tracking-wider">Active Tasks</CardTitle>
+              <div className="p-2 bg-blue-500 rounded-none">
                 <Activity className="h-4 w-4 text-white" />
               </div>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-white">{teamStats.activeTasks}</div>
-              <p className="text-xs text-indigo-100">
+              <p className="text-xs text-blue-100">
                 Currently in progress
               </p>
             </CardContent>
@@ -1805,23 +1805,23 @@ export default function TeamOverviewPage() {
         </div>
       )}
 
-      {/* Filters & Search - Clean & Minimalistic */}
-      <Card className="border-border/40 shadow-sm">
+      {/* Filters & Search - Blue Flat Design */}
+      <Card className="border-0 rounded-none bg-gray-50">
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
               <Input
                 placeholder="Search by name, email, or position..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 border-border/40 focus:border-primary"
+                className="pl-10 border-0 focus:border-blue-500 rounded-none bg-white"
               />
             </div>
 
             <div className="flex gap-2">
               <Select value={filterStatus} onValueChange={(value: FilterStatus) => setFilterStatus(value)}>
-                <SelectTrigger className="w-[180px] border-border/40">
+                <SelectTrigger className="w-[180px] border-0 rounded-none bg-white">
                   <div className="flex items-center gap-2">
                     <Filter className="h-4 w-4" />
                     <SelectValue placeholder="Filter status" />
@@ -1836,7 +1836,7 @@ export default function TeamOverviewPage() {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" className="border-border/40">
+                  <Button variant="outline" size="icon" className="border-0 rounded-none bg-white hover:bg-blue-50">
                     {viewMode === 'grid' ? <Users className="h-4 w-4" /> : <Users className="h-4 w-4" />}
                   </Button>
                 </DropdownMenuTrigger>
@@ -1858,20 +1858,20 @@ export default function TeamOverviewPage() {
 
       {/* Team Members Grid/List */}
       {filteredMembers.length === 0 ? (
-        <Card>
+        <Card className="border-0 rounded-none bg-gray-50">
           <CardContent className="py-12">
             <div className="text-center">
-              <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
-              <h3 className="text-lg font-semibold mb-2">
+              <Users className="h-16 w-16 text-gray-400 mx-auto mb-4 opacity-50" />
+              <h3 className="text-lg font-bold mb-2 text-gray-900">
                 {searchTerm || filterStatus !== 'all' ? 'No members match your filters' : 'No team members yet'}
               </h3>
-              <p className="text-muted-foreground mb-6">
+              <p className="text-gray-600 font-bold mb-6">
                 {searchTerm || filterStatus !== 'all'
                   ? 'Try adjusting your search or filters'
                   : 'Start building your team by adding members'}
               </p>
               {!searchTerm && filterStatus === 'all' && (
-                <Button onClick={() => setIsAddMemberDialogOpen(true)}>
+                <Button onClick={() => setIsAddMemberDialogOpen(true)} className="border-0 rounded-none bg-blue-500 hover:bg-blue-600 text-white font-bold">
                   <UserPlus className="h-4 w-4 mr-2" />
                   Add First Member
                 </Button>
@@ -1889,7 +1889,7 @@ export default function TeamOverviewPage() {
             <Card
               key={member.id}
               className={cn(
-                "border-border/40 hover:border-border hover:shadow-sm transition-all duration-200 group",
+                "border-0 rounded-none bg-gray-50 hover:bg-gray-100 transition-all duration-200 group",
                 viewMode === 'grid' && "hover:-translate-y-1"
               )}
             >
@@ -1903,11 +1903,11 @@ export default function TeamOverviewPage() {
                 )}>
                   <div className="relative">
                     <Avatar className={cn(
-                      "ring-1 ring-black/5 group-hover:ring-slate-200 transition-all",
+                      "ring-0 border-0 rounded-none group-hover:ring-2 group-hover:ring-blue-400 transition-all",
                       viewMode === 'grid' ? "h-20 w-20" : "h-12 w-12"
                     )}>
                       <AvatarImage src={member.image || undefined} />
-                      <AvatarFallback className="bg-gradient-to-br from-slate-100 to-slate-200 text-slate-700 font-semibold">
+                      <AvatarFallback className="bg-blue-100 text-blue-700 font-bold rounded-none">
                         {member.name
                           ? member.name.split(' ').map(n => n[0]).join('').slice(0, 2)
                           : member.email?.[0]?.toUpperCase()
@@ -1915,8 +1915,8 @@ export default function TeamOverviewPage() {
                       </AvatarFallback>
                     </Avatar>
                     <div className={cn(
-                      "absolute rounded-full border-2 border-background",
-                      member.isActive ? "bg-emerald-500 animate-pulse" : "bg-slate-400",
+                      "absolute rounded-none border-0",
+                      member.isActive ? "bg-emerald-500" : "bg-gray-400",
                       viewMode === 'grid' ? "w-5 h-5 -bottom-1 -right-1" : "w-3 h-3 -bottom-0.5 -right-0.5"
                     )} />
                   </div>
@@ -1927,7 +1927,7 @@ export default function TeamOverviewPage() {
                   )}>
                     <div className="flex items-center gap-2 justify-center">
                       <h4 className={cn(
-                        "font-semibold text-foreground truncate",
+                        "font-bold text-gray-900 truncate",
                         viewMode === 'grid' ? "text-lg" : "text-base"
                       )}>
                         {member.name || 'Unnamed User'}
@@ -1935,10 +1935,10 @@ export default function TeamOverviewPage() {
                       <Badge
                         variant="secondary"
                         className={cn(
-                          "text-xs",
+                          "text-xs border-0 rounded-none font-bold",
                           member.isActive
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                            : "bg-slate-100 text-slate-600 border-slate-200"
+                            ? "bg-emerald-500 text-white"
+                            : "bg-gray-400 text-white"
                         )}
                       >
                         {member.isActive ? 'Active' : 'Inactive'}
@@ -1946,7 +1946,7 @@ export default function TeamOverviewPage() {
                     </div>
 
                     <div className={cn(
-                      "flex items-center gap-3 text-xs text-muted-foreground",
+                      "flex items-center gap-3 text-xs text-gray-600 font-bold",
                       viewMode === 'grid' ? "flex-col" : "flex-row"
                     )}>
                       <div className="flex items-center gap-1">
@@ -1962,7 +1962,7 @@ export default function TeamOverviewPage() {
                     </div>
 
                     {member._count && (
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground justify-center">
+                      <div className="flex items-center gap-1 text-xs text-gray-600 font-bold justify-center">
                         <CheckSquare className="h-3 w-3" />
                         <span>{member._count.assignedTasks} tasks assigned</span>
                       </div>
@@ -1976,25 +1976,25 @@ export default function TeamOverviewPage() {
                       variant="ghost"
                       size="icon"
                       className={cn(
-                        "opacity-0 group-hover:opacity-100 transition-opacity",
+                        "opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-50 border-0 rounded-none",
                         viewMode === 'grid' && "absolute top-2 right-2"
                       )}
                     >
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleViewProfile(member.id)}>
+                  <DropdownMenuContent align="end" className="border-0 rounded-none">
+                    <DropdownMenuItem onClick={() => handleViewProfile(member.id)} className="font-bold">
                       <Eye className="h-4 w-4 mr-2" />
                       View Profile
                     </DropdownMenuItem>
-                    <DropdownMenuItem>
+                    <DropdownMenuItem className="font-bold">
                       <CheckSquare className="h-4 w-4 mr-2" />
                       Assign Task
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
-                      className="text-red-600 focus:text-red-600"
+                      className="text-red-600 focus:text-red-600 font-bold"
                       onClick={() => handleRemoveMember(member.id)}
                     >
                       <Users className="h-4 w-4 mr-2" />

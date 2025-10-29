@@ -311,14 +311,14 @@ export default function UserProfilePage() {
     <div className="space-y-6 pb-8">
       {/* Hero Header with Cover - Flat Design */}
       <Card className="overflow-hidden border-0 rounded-none">
-        <div className="h-32 sm:h-48 bg-indigo-500 relative">
+        <div className="h-32 sm:h-48 bg-blue-500 relative">
         </div>
         <CardContent className="relative pb-6">
           <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4 -mt-16 sm:-mt-20">
             <div className="relative group">
               <Avatar className="h-32 w-32 border-4 border-background rounded-none">
                 <AvatarImage src={profile.image} alt={profile.name} />
-                <AvatarFallback className="text-2xl bg-indigo-600 text-white font-bold rounded-none">
+                <AvatarFallback className="text-2xl bg-blue-600 text-white font-bold rounded-none">
                   {getInitials(profile.name)}
                 </AvatarFallback>
               </Avatar>
@@ -395,56 +395,56 @@ export default function UserProfilePage() {
 
       {/* Quick Stats - Flat Design */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card className="border-0 bg-purple-500 hover:bg-purple-600 transition-colors cursor-pointer rounded-none">
+        <Card className="border-0 bg-blue-500 hover:bg-blue-600 transition-colors cursor-pointer rounded-none">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-bold text-purple-100 uppercase tracking-wider mb-1">Department</p>
+                <p className="text-xs font-bold text-blue-100 uppercase tracking-wider mb-1">Department</p>
                 <p className="text-2xl font-bold text-white">{profile.department || 'N/A'}</p>
               </div>
-              <div className="p-3 rounded-none bg-purple-600">
+              <div className="p-3 rounded-none bg-blue-600">
                 <Building2 className="h-5 w-5 text-white" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-0 bg-cyan-500 hover:bg-cyan-600 transition-colors cursor-pointer rounded-none">
+        <Card className="border-0 bg-blue-400 hover:bg-blue-500 transition-colors cursor-pointer rounded-none">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-bold text-cyan-100 uppercase tracking-wider mb-1">Team</p>
+                <p className="text-xs font-bold text-blue-100 uppercase tracking-wider mb-1">Team</p>
                 <p className="text-2xl font-bold text-white">{profile.team || 'N/A'}</p>
               </div>
-              <div className="p-3 rounded-none bg-cyan-600">
+              <div className="p-3 rounded-none bg-blue-500">
                 <User className="h-5 w-5 text-white" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-0 bg-teal-500 hover:bg-teal-600 transition-colors cursor-pointer rounded-none">
+        <Card className="border-0 bg-gray-500 hover:bg-gray-600 transition-colors cursor-pointer rounded-none">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-bold text-teal-100 uppercase tracking-wider mb-1">Hierarchy Level</p>
+                <p className="text-xs font-bold text-gray-100 uppercase tracking-wider mb-1">Hierarchy Level</p>
                 <p className="text-2xl font-bold text-white">{profile.hierarchyLevel || 'N/A'}</p>
               </div>
-              <div className="p-3 rounded-none bg-teal-600">
+              <div className="p-3 rounded-none bg-gray-600">
                 <TrendingUp className="h-5 w-5 text-white" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-0 bg-amber-500 hover:bg-amber-600 transition-colors cursor-pointer rounded-none">
+        <Card className="border-0 bg-gray-400 hover:bg-gray-500 transition-colors cursor-pointer rounded-none">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-bold text-amber-100 uppercase tracking-wider mb-1">Job Level</p>
+                <p className="text-xs font-bold text-gray-100 uppercase tracking-wider mb-1">Job Level</p>
                 <p className="text-2xl font-bold text-white">{profile.jobLevel || 'N/A'}</p>
               </div>
-              <div className="p-3 rounded-none bg-amber-600">
+              <div className="p-3 rounded-none bg-gray-500">
                 <Award className="h-5 w-5 text-white" />
               </div>
             </div>

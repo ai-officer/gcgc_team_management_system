@@ -104,9 +104,9 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-6">
       {/* Flat Design Header */}
-      <div className="bg-indigo-500 p-6 rounded-none">
+      <div className="bg-blue-500 p-6 rounded-none">
         <h1 className="text-3xl font-bold text-white">Dashboard</h1>
-        <p className="text-sm text-indigo-100 font-bold">Overview of users and system growth metrics</p>
+        <p className="text-sm text-blue-100 font-bold">Overview of users and system growth metrics</p>
       </div>
 
       {/* Flat Design Key Metrics */}
@@ -141,10 +141,10 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="border-0 bg-orange-500 hover:bg-orange-600 transition-colors cursor-pointer rounded-none">
+        <Card className="border-0 bg-blue-400 hover:bg-blue-500 transition-colors cursor-pointer rounded-none">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-xs font-bold text-orange-100 uppercase tracking-wider">Growth Rate</CardTitle>
-            <div className="p-2 bg-orange-600 rounded-none">
+            <CardTitle className="text-xs font-bold text-blue-100 uppercase tracking-wider">Growth Rate</CardTitle>
+            <div className="p-2 bg-blue-500 rounded-none">
               <TrendingUp className="h-4 w-4 text-white" />
             </div>
           </CardHeader>
@@ -164,22 +164,22 @@ export default function AdminDashboard() {
                 <div className="h-4 w-4" />
               )}
             </div>
-            <p className="text-xs text-orange-100 mt-1.5 font-bold">
+            <p className="text-xs text-blue-100 mt-1.5 font-bold">
               {stats.newUsersThisMonth} this month vs {stats.newUsersLastMonth} last month
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-0 bg-purple-500 hover:bg-purple-600 transition-colors cursor-pointer rounded-none">
+        <Card className="border-0 bg-gray-500 hover:bg-gray-600 transition-colors cursor-pointer rounded-none">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-xs font-bold text-purple-100 uppercase tracking-wider">Organization</CardTitle>
-            <div className="p-2 bg-purple-600 rounded-none">
+            <CardTitle className="text-xs font-bold text-gray-100 uppercase tracking-wider">Organization</CardTitle>
+            <div className="p-2 bg-gray-600 rounded-none">
               <Building2 className="h-4 w-4 text-white" />
             </div>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-white">{stats.totalTeams}</div>
-            <p className="text-xs text-purple-100 mt-1.5 font-bold">
+            <p className="text-xs text-gray-100 mt-1.5 font-bold">
               {stats.totalSections} sections
             </p>
           </CardContent>

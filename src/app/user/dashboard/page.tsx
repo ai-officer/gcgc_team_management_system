@@ -178,135 +178,214 @@ export default function UserDashboard() {
   const isLeader = session?.user?.role === 'LEADER'
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Flat Design Welcome Header */}
-      <div className="bg-blue-500 dark:bg-blue-600 p-6 rounded-none">
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold text-white">
-              {getGreeting()}, {session?.user?.name?.split(' ')[0] || 'User'}! 👋
-            </h1>
-            <p className="text-base text-blue-50 font-normal">
-              {isLeader
-                ? "Here's your team's progress and your tasks for today."
-                : "Here's your productivity overview and task status."
-              }
-            </p>
-            <div className="flex items-center gap-2 text-sm text-blue-50">
-              <Calendar className="h-4 w-4" />
-              <span>{format(new Date(), 'EEEE, MMMM do, yyyy')}</span>
+    <div className="space-y-8 animate-fade-in">
+      {/* Professional Header with Subtle Styling */}
+      <div className="relative overflow-hidden">
+        {/* Subtle background gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-slate-50 to-purple-50 opacity-60"></div>
+        <div className="relative backdrop-blur-sm bg-white/40 border border-slate-200/60 rounded-xl shadow-sm p-8">
+          <div className="flex items-start justify-between">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+                  {getGreeting()}, {session?.user?.name?.split(' ')[0] || 'User'}
+                </h1>
+                <span className="text-2xl">👋</span>
+              </div>
+              <p className="text-slate-600 text-base font-medium max-w-2xl">
+                {isLeader
+                  ? "Monitor your team's progress and stay on top of your tasks."
+                  : "Focus on what matters. Here's your productivity snapshot."
+                }
+              </p>
+              <div className="flex items-center gap-6 text-sm text-slate-500">
+                <div className="flex items-center gap-2">
+                  <CalendarIcon className="h-4 w-4" />
+                  <span className="font-medium">{format(new Date(), 'EEEE, MMMM do')}</span>
+                </div>
+                <div className="h-4 w-px bg-slate-300"></div>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  <span className="font-medium">{format(new Date(), 'h:mm a')}</span>
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={refreshDashboard} disabled={loading} className="bg-white text-blue-600 border-0 hover:bg-blue-50">
-              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
-            <CreateTaskButton size="sm" onTaskCreated={refreshDashboard} />
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={refreshDashboard}
+                disabled={loading}
+                className="border-slate-300 bg-white hover:bg-slate-50 text-slate-700 shadow-sm transition-all duration-200 hover:shadow-md"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+              <CreateTaskButton size="sm" onTaskCreated={refreshDashboard} />
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Flat Design Stats Overview - Blue Theme */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-0 bg-blue-500 hover:bg-blue-600 transition-colors cursor-pointer rounded-none" onClick={() => window.location.href = '/user/tasks'}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-xs font-bold text-blue-100 uppercase tracking-wider">My Active Tasks</CardTitle>
-            <div className="p-2 bg-blue-600 rounded-none">
-              <CheckSquare className="h-4 w-4 text-white" />
+      {/* Professional Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Active Tasks Card */}
+        <Card
+          className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl hover:-translate-y-1"
+          onClick={() => window.location.href = '/user/tasks'}
+        >
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-blue-600"></div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Active Tasks</CardTitle>
+            <div className="p-2.5 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
+              <CheckSquare className="h-5 w-5 text-blue-600" />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-white">{dashboardData.stats.myTasks}</div>
-            <div className="flex items-center justify-between mt-2">
-              <p className="text-xs text-blue-100 font-normal">
-                Tasks in progress
-              </p>
-              <ArrowRight className="h-3 w-3 text-blue-100" />
+          <CardContent className="space-y-3">
+            <div className="flex items-baseline gap-2">
+              <div className="text-4xl font-bold text-slate-900">{dashboardData.stats.myTasks}</div>
+              <span className="text-sm text-slate-500 font-medium">tasks</span>
             </div>
-            <Progress value={calculateTaskCompletionRate()} className="mt-3 h-2 bg-blue-600" />
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 bg-emerald-500 hover:bg-emerald-600 transition-colors cursor-pointer rounded-none" onClick={() => window.location.href = '/user/tasks?status=completed'}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-xs font-bold text-emerald-100 uppercase tracking-wider">Completed</CardTitle>
-            <div className="p-2 bg-emerald-600 rounded-none">
-              <Award className="h-4 w-4 text-white" />
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-600 font-medium">Completion rate</span>
+                <span className="text-slate-900 font-semibold">{calculateTaskCompletionRate()}%</span>
+              </div>
+              <Progress value={calculateTaskCompletionRate()} className="h-2 bg-slate-100" />
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-white">{dashboardData.stats.myCompletedTasks}</div>
-            <div className="flex items-center justify-between mt-2">
-              <p className="text-xs text-emerald-100 font-normal">
-                This month
-              </p>
-              <span className="text-xs font-bold text-white">+{Math.floor(Math.random() * 15 + 5)} from last</span>
-            </div>
-            <div className="mt-2 flex items-center gap-1">
-              <Star className="h-3 w-3 text-yellow-300" />
-              <span className="text-xs text-emerald-100">Great progress!</span>
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+              <span className="text-xs text-slate-500">In progress</span>
+              <ArrowRight className="h-4 w-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
             </div>
           </CardContent>
         </Card>
 
+        {/* Completed Tasks Card */}
+        <Card
+          className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl hover:-translate-y-1"
+          onClick={() => window.location.href = '/user/tasks?status=completed'}
+        >
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-emerald-600"></div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Completed</CardTitle>
+            <div className="p-2.5 bg-emerald-50 rounded-lg group-hover:bg-emerald-100 transition-colors">
+              <Award className="h-5 w-5 text-emerald-600" />
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-baseline gap-2">
+              <div className="text-4xl font-bold text-slate-900">{dashboardData.stats.myCompletedTasks}</div>
+              <span className="text-sm text-slate-500 font-medium">done</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 rounded-md w-fit">
+              <Star className="h-3.5 w-3.5 text-emerald-600" />
+              <span className="text-xs text-emerald-700 font-semibold">Excellent progress!</span>
+            </div>
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+              <span className="text-xs text-slate-500">This month</span>
+              <span className="text-xs text-emerald-600 font-semibold">+{Math.floor(Math.random() * 15 + 5)} from last</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Team Tasks Card (for Leaders) */}
         {isLeader && (
-          <Card className="border-0 bg-blue-400 hover:bg-blue-500 transition-colors cursor-pointer rounded-none" onClick={() => window.location.href = '/user/team-overview'}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-xs font-bold text-blue-100 uppercase tracking-wider">Team Tasks</CardTitle>
-              <div className="p-2 bg-blue-500 rounded-none">
-                <Target className="h-4 w-4 text-white" />
+          <Card
+            className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl hover:-translate-y-1"
+            onClick={() => window.location.href = '/user/team-overview'}
+          >
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-purple-600"></div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Team Tasks</CardTitle>
+              <div className="p-2.5 bg-purple-50 rounded-lg group-hover:bg-purple-100 transition-colors">
+                <Target className="h-5 w-5 text-purple-600" />
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-white">{dashboardData.stats.teamTasks}</div>
-              <div className="flex items-center justify-between mt-2">
-                <p className="text-xs text-blue-100 font-normal">
-                  Active team tasks
-                </p>
-                <Activity className="h-3 w-3 text-blue-100" />
+            <CardContent className="space-y-3">
+              <div className="flex items-baseline gap-2">
+                <div className="text-4xl font-bold text-slate-900">{dashboardData.stats.teamTasks}</div>
+                <span className="text-sm text-slate-500 font-medium">active</span>
               </div>
-              <div className="mt-2 flex items-center gap-1">
-                <div className="flex -space-x-1">
-                  {dashboardData.teamMembers.slice(0, 3).map((member, i) => (
-                    <Avatar key={member.id} className="h-5 w-5 border-2 border-white">
-                      <AvatarFallback className="text-xs bg-blue-500 text-white font-bold">
+              <div className="flex items-center gap-2">
+                <div className="flex -space-x-2">
+                  {dashboardData.teamMembers.slice(0, 3).map((member) => (
+                    <Avatar key={member.id} className="h-7 w-7 border-2 border-white ring-1 ring-slate-200">
+                      <AvatarImage src={member.image} />
+                      <AvatarFallback className="text-xs bg-gradient-to-br from-blue-400 to-purple-500 text-white font-semibold">
                         {member.name?.[0] || member.email[0]}
                       </AvatarFallback>
                     </Avatar>
                   ))}
                 </div>
-                <span className="text-xs text-blue-100 ml-2">Team active</span>
+                <span className="text-xs text-slate-600 font-medium">{dashboardData.teamMembers.length} members</span>
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                <span className="text-xs text-slate-500">Team activity</span>
+                <Activity className="h-4 w-4 text-purple-600" />
               </div>
             </CardContent>
           </Card>
         )}
 
 
-        <Card className={`border-0 transition-colors rounded-none ${dashboardData.stats.overdueTasks > 0 ? 'bg-red-500 hover:bg-red-600 cursor-pointer' : 'bg-gray-300 hover:bg-gray-400'}`} onClick={() => dashboardData.stats.overdueTasks > 0 && (window.location.href = '/user/tasks?status=overdue')}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className={`text-xs font-bold uppercase tracking-wider ${dashboardData.stats.overdueTasks > 0 ? 'text-red-100' : 'text-gray-600'}`}>Overdue Tasks</CardTitle>
-            <div className={`p-2 rounded-none ${dashboardData.stats.overdueTasks > 0 ? 'bg-red-600' : 'bg-gray-400'}`}>
-              <AlertCircle className={`h-4 w-4 ${dashboardData.stats.overdueTasks > 0 ? 'text-white' : 'text-gray-700'}`} />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className={`text-3xl font-bold ${dashboardData.stats.overdueTasks > 0 ? 'text-white' : 'text-gray-700'}`}>
-              {dashboardData.stats.overdueTasks}
-            </div>
-            <div className="flex items-center justify-between mt-2">
-              <p className={`text-xs font-normal ${dashboardData.stats.overdueTasks > 0 ? 'text-red-100' : 'text-gray-600'}`}>
-                {dashboardData.stats.overdueTasks > 0 ? 'Need attention' : 'All caught up!'}
-              </p>
-              {dashboardData.stats.overdueTasks === 0 && (
-                <Zap className="h-3 w-3 text-green-500" />
+        {/* Overdue Tasks Card */}
+        <Card
+          className={`group relative overflow-hidden border transition-all duration-300 rounded-xl ${
+            dashboardData.stats.overdueTasks > 0
+              ? 'border-red-200 bg-red-50 hover:shadow-lg cursor-pointer hover:-translate-y-1'
+              : 'border-slate-200 bg-white hover:shadow-md'
+          }`}
+          onClick={() => dashboardData.stats.overdueTasks > 0 && (window.location.href = '/user/tasks?status=overdue')}
+        >
+          <div className={`absolute top-0 left-0 w-full h-1 ${
+            dashboardData.stats.overdueTasks > 0
+              ? 'bg-gradient-to-r from-red-500 to-red-600'
+              : 'bg-gradient-to-r from-slate-300 to-slate-400'
+          }`}></div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className={`text-sm font-semibold uppercase tracking-wide ${
+              dashboardData.stats.overdueTasks > 0 ? 'text-red-700' : 'text-slate-600'
+            }`}>
+              Overdue
+            </CardTitle>
+            <div className={`p-2.5 rounded-lg group-hover:scale-110 transition-transform ${
+              dashboardData.stats.overdueTasks > 0
+                ? 'bg-red-100'
+                : 'bg-slate-100'
+            }`}>
+              {dashboardData.stats.overdueTasks > 0 ? (
+                <AlertCircle className="h-5 w-5 text-red-600" />
+              ) : (
+                <CheckSquare className="h-5 w-5 text-slate-500" />
               )}
             </div>
-            <div className="mt-2 text-xs">
-              {dashboardData.stats.overdueTasks > 0 ? (
-                <span className="text-red-600 font-medium">Action required</span>
-              ) : (
-                <span className="text-green-600 font-medium">Great job! 🎉</span>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-baseline gap-2">
+              <div className={`text-4xl font-bold ${
+                dashboardData.stats.overdueTasks > 0 ? 'text-red-600' : 'text-slate-400'
+              }`}>
+                {dashboardData.stats.overdueTasks}
+              </div>
+              <span className="text-sm text-slate-500 font-medium">tasks</span>
+            </div>
+            {dashboardData.stats.overdueTasks > 0 ? (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-red-100 rounded-md w-fit">
+                <AlertCircle className="h-3.5 w-3.5 text-red-600" />
+                <span className="text-xs text-red-700 font-semibold">Needs attention</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 rounded-md w-fit">
+                <Zap className="h-3.5 w-3.5 text-emerald-600" />
+                <span className="text-xs text-emerald-700 font-semibold">All caught up!</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+              <span className="text-xs text-slate-500">
+                {dashboardData.stats.overdueTasks > 0 ? 'Action required' : 'Great job'}
+              </span>
+              {dashboardData.stats.overdueTasks === 0 && (
+                <span className="text-lg">🎉</span>
               )}
             </div>
           </CardContent>
@@ -314,28 +393,31 @@ export default function UserDashboard() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        {/* Flat Design Recent Tasks - Blue Theme */}
+        {/* Professional Recent Tasks */}
         <div>
-          <Card className="border-0 rounded-none">
-            <CardHeader className="pb-4 bg-blue-500">
+          <Card className="border border-slate-200 bg-white shadow-sm rounded-xl">
+            <CardHeader className="pb-4 border-b border-slate-100">
               <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2 text-lg font-bold text-white">
-                    <div className="p-2 bg-blue-600 rounded-none">
-                      <CheckSquare className="h-4 w-4 text-white" />
+                <div className="space-y-1">
+                  <CardTitle className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+                    <div className="p-2 bg-blue-50 rounded-lg">
+                      <CheckSquare className="h-4 w-4 text-blue-600" />
                     </div>
                     Recent Tasks
                   </CardTitle>
-                  <CardDescription className="mt-1.5 text-sm font-bold text-blue-100">
+                  <CardDescription className="text-sm text-slate-600">
                     Your latest assignments and progress
                   </CardDescription>
                 </div>
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => window.location.href = '/user/tasks'} className="text-xs font-bold text-white hover:bg-blue-600">
-                    View All
-                    <ArrowRight className="h-3 w-3 ml-1" />
-                  </Button>
-                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => window.location.href = '/user/tasks'}
+                  className="text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                >
+                  View All
+                  <ArrowRight className="h-4 w-4 ml-1" />
+                </Button>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -350,48 +432,62 @@ export default function UserDashboard() {
                 </div>
               ) : (
                 dashboardData.recentTasks.map((task, index) => (
-                  <div key={task.id} className="group p-4 border-0 rounded-none bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
-                       onClick={() => window.location.href = `/user/tasks?id=${task.id}`}>
-                    <div className="flex items-start justify-between mb-3">
+                  <div
+                    key={task.id}
+                    className="group relative border border-slate-200 bg-white rounded-lg p-4 hover:shadow-md hover:border-slate-300 transition-all duration-200 cursor-pointer"
+                    onClick={() => window.location.href = `/user/tasks?id=${task.id}`}
+                  >
+                    {/* Priority indicator bar */}
+                    <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-lg ${
+                      task.priority === 'URGENT' ? 'bg-red-500' :
+                      task.priority === 'HIGH' ? 'bg-orange-500' :
+                      task.priority === 'MEDIUM' ? 'bg-yellow-500' :
+                      'bg-emerald-500'
+                    }`}></div>
+
+                    <div className="flex items-start justify-between ml-3">
                       <div className="space-y-2 flex-1">
                         <div className="flex items-center gap-2">
-                          <h4 className="font-bold text-foreground group-hover:text-blue-600 transition-colors">
+                          <h4 className="font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">
                             {task.title}
                           </h4>
                           {index === 0 && (
-                            <Badge variant="secondary" className="text-xs bg-blue-500 text-white border-0 font-bold rounded-none">
+                            <Badge className="text-xs bg-blue-100 text-blue-700 border-0 font-medium rounded-md">
                               Latest
                             </Badge>
                           )}
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
-                          <Badge className={`text-xs ${getPriorityColor(task.priority)} font-bold border-0 rounded-none`}>
+                          <Badge className={`text-xs ${getPriorityColor(task.priority)} font-medium rounded-md`}>
                             {task.priority}
                           </Badge>
                           {task.dueDate && (
-                            <div className="flex items-center gap-1 text-xs font-bold text-gray-700 bg-gray-200 px-2 py-1 rounded-none border-0">
+                            <div className="flex items-center gap-1 text-xs text-slate-600 bg-slate-100 px-2 py-1 rounded-md">
                               <Clock className="h-3 w-3" />
                               Due {format(new Date(task.dueDate), 'MMM dd')}
                             </div>
                           )}
-                          <Badge variant="outline" className="text-xs border-0 bg-gray-200 rounded-none font-bold">
+                          <Badge variant="outline" className="text-xs border-slate-200 text-slate-700 rounded-md">
                             {task.team?.name || 'Personal'}
                           </Badge>
                           {task.assignee && task.assignee.id !== session?.user?.id && (
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
+                            <div className="flex items-center gap-1 text-xs text-slate-500">
                               <span>by</span>
-                              <Avatar className="h-4 w-4 ring-1 ring-black/5">
-                                <AvatarFallback className="text-xs bg-gradient-to-br from-slate-100 to-slate-200 text-slate-700 font-semibold">
+                              <Avatar className="h-4 w-4 ring-1 ring-slate-200">
+                                <AvatarFallback className="text-xs bg-gradient-to-br from-blue-100 to-purple-100 text-slate-700 font-medium">
                                   {task.assignee.name?.[0] || task.assignee.email[0]}
                                 </AvatarFallback>
                               </Avatar>
-                              <span>{task.assignee.name?.split(' ')[0] || 'User'}</span>
+                              <span className="font-medium">{task.assignee.name?.split(' ')[0] || 'User'}</span>
                             </div>
                           )}
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-2">
-                        <Badge variant={task.status === 'COMPLETED' ? 'default' : task.status === 'IN_PROGRESS' ? 'secondary' : 'outline'} className="text-xs whitespace-nowrap border-border/40">
+                        <Badge
+                          variant={task.status === 'COMPLETED' ? 'default' : task.status === 'IN_PROGRESS' ? 'secondary' : 'outline'}
+                          className="text-xs whitespace-nowrap border-slate-200 rounded-md"
+                        >
                           {task.status.replace('_', ' ')}
                         </Badge>
                         <span className="text-xs text-muted-foreground font-medium">

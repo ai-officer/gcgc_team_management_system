@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
       'Access-Control-Allow-Origin': 'https://tms-client-staging.up.railway.app',
       'Access-Control-Allow-Credentials': 'true',
     }
-  })
+  }) 
 }
 
 export async function OPTIONS(request: NextRequest) {

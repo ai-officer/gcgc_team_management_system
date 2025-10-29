@@ -556,18 +556,20 @@ export default function MemberManagementPage() {
 
   return (
     <div className="space-y-8">
-      {/* Flat Design Header */}
-      <div className="bg-blue-500 p-6 rounded-none">
-        <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-start">
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold text-white">Member Management</h1>
-            <p className="text-base text-blue-50 font-bold">
-              Assign tasks, track progress, and optimize team workload distribution
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-          <CreateTaskButton size="sm" onTaskCreated={() => { fetchData(); fetchMemberSuggestions(); }} />
-          <Dialog open={isCreateTaskDialogOpen} onOpenChange={setIsCreateTaskDialogOpen}>
+      {/* Professional Glassmorphism Header */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-slate-50 to-purple-50 opacity-60"></div>
+        <div className="relative backdrop-blur-sm bg-white/40 border border-slate-200/60 rounded-xl shadow-sm p-8">
+          <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-start">
+            <div className="space-y-2">
+              <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Member Management</h1>
+              <p className="text-slate-600 text-base font-medium max-w-2xl">
+                Assign tasks, track progress, and optimize team workload distribution
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <CreateTaskButton size="sm" onTaskCreated={() => { fetchData(); fetchMemberSuggestions(); }} />
+              <Dialog open={isCreateTaskDialogOpen} onOpenChange={setIsCreateTaskDialogOpen}>
             <DialogTrigger asChild>
               <Button className="shadow-sm">
                 <Plus className="h-4 w-4 mr-2" />
@@ -991,128 +993,169 @@ export default function MemberManagementPage() {
               </div>
             </DialogContent>
           </Dialog>
+            </div>
+          </div>
         </div>
       </div>
-      </div>
 
-      {/* Team Stats Dashboard - Flat Design */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-0 bg-blue-500 hover:bg-blue-600 transition-colors rounded-none">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-xs font-bold text-blue-100 uppercase tracking-wider">Total Tasks</CardTitle>
-            <div className="p-2 bg-blue-600 rounded-none">
-              <BarChart3 className="h-4 w-4 text-white" />
+      {/* Team Stats Dashboard - Professional */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl hover:-translate-y-1">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-blue-600"></div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Total Tasks</CardTitle>
+            <div className="p-2.5 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
+              <BarChart3 className="h-5 w-5 text-blue-600" />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-white">{teamStats.totalTasks}</div>
-            <p className="text-xs text-blue-100 font-bold">
-              Assigned to {teamStats.totalMembers} members
-            </p>
+          <CardContent className="space-y-3">
+            <div className="flex items-baseline gap-2">
+              <div className="text-4xl font-bold text-slate-900">{teamStats.totalTasks}</div>
+              <span className="text-sm text-slate-500 font-medium">tasks</span>
+            </div>
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+              <span className="text-xs text-slate-500">Assigned to {teamStats.totalMembers} members</span>
+              <BarChart3 className="h-4 w-4 text-blue-600" />
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="border-0 bg-blue-400 hover:bg-blue-500 transition-colors rounded-none">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-xs font-bold text-blue-100 uppercase tracking-wider">In Progress</CardTitle>
-            <div className="p-2 bg-blue-500 rounded-none">
-              <Activity className="h-4 w-4 text-white" />
+        <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl hover:-translate-y-1">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-purple-600"></div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">In Progress</CardTitle>
+            <div className="p-2.5 bg-purple-50 rounded-lg group-hover:bg-purple-100 transition-colors">
+              <Activity className="h-5 w-5 text-purple-600" />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-white">{teamStats.inProgressTasks}</div>
-            <p className="text-xs text-blue-100 font-bold">
-              Active work items
-            </p>
+          <CardContent className="space-y-3">
+            <div className="flex items-baseline gap-2">
+              <div className="text-4xl font-bold text-slate-900">{teamStats.inProgressTasks}</div>
+              <span className="text-sm text-slate-500 font-medium">active</span>
+            </div>
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+              <span className="text-xs text-slate-500">Active work items</span>
+              <Activity className="h-4 w-4 text-purple-600" />
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="border-0 bg-emerald-500 hover:bg-emerald-600 transition-colors rounded-none">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-xs font-bold text-emerald-100 uppercase tracking-wider">Completed</CardTitle>
-            <div className="p-2 bg-emerald-600 rounded-none">
-              <Award className="h-4 w-4 text-white" />
+        <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl hover:-translate-y-1">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-emerald-600"></div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Completed</CardTitle>
+            <div className="p-2.5 bg-emerald-50 rounded-lg group-hover:bg-emerald-100 transition-colors">
+              <Award className="h-5 w-5 text-emerald-600" />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-white">{teamStats.completedTasks}</div>
-            <p className="text-xs text-emerald-100 font-bold">
-              Tasks finished
-            </p>
+          <CardContent className="space-y-3">
+            <div className="flex items-baseline gap-2">
+              <div className="text-4xl font-bold text-slate-900">{teamStats.completedTasks}</div>
+              <span className="text-sm text-slate-500 font-medium">done</span>
+            </div>
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+              <span className="text-xs text-slate-500">Tasks finished</span>
+              <Award className="h-4 w-4 text-emerald-600" />
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="border-0 bg-red-500 hover:bg-red-600 transition-colors rounded-none">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-xs font-bold text-red-100 uppercase tracking-wider">Urgent & Overdue</CardTitle>
-            <div className="p-2 bg-red-600 rounded-none">
-              <AlertTriangle className="h-4 w-4 text-white" />
+        <Card className={cn(
+          "group relative overflow-hidden border bg-white hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl hover:-translate-y-1",
+          teamStats.urgentTasks + teamStats.overdueTasks > 0 ? "border-red-200" : "border-slate-200"
+        )}>
+          <div className={cn(
+            "absolute top-0 left-0 w-full h-1 bg-gradient-to-r",
+            teamStats.urgentTasks + teamStats.overdueTasks > 0 ? "from-red-500 to-red-600" : "from-slate-300 to-slate-400"
+          )}></div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Urgent & Overdue</CardTitle>
+            <div className={cn(
+              "p-2.5 rounded-lg transition-colors",
+              teamStats.urgentTasks + teamStats.overdueTasks > 0 ? "bg-red-50 group-hover:bg-red-100" : "bg-slate-50 group-hover:bg-slate-100"
+            )}>
+              <AlertTriangle className={cn(
+                "h-5 w-5",
+                teamStats.urgentTasks + teamStats.overdueTasks > 0 ? "text-red-600" : "text-slate-400"
+              )} />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-white">{teamStats.urgentTasks + teamStats.overdueTasks}</div>
-            <p className="text-xs text-red-100 font-bold">
-              {teamStats.urgentTasks} urgent • {teamStats.overdueTasks} overdue
-            </p>
+          <CardContent className="space-y-3">
+            <div className="flex items-baseline gap-2">
+              <div className={cn(
+                "text-4xl font-bold",
+                teamStats.urgentTasks + teamStats.overdueTasks > 0 ? "text-slate-900" : "text-slate-400"
+              )}>{teamStats.urgentTasks + teamStats.overdueTasks}</div>
+              <span className="text-sm text-slate-500 font-medium">tasks</span>
+            </div>
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+              <span className="text-xs text-slate-500">
+                {teamStats.urgentTasks} urgent • {teamStats.overdueTasks} overdue
+              </span>
+              <AlertTriangle className={cn(
+                "h-4 w-4",
+                teamStats.urgentTasks + teamStats.overdueTasks > 0 ? "text-red-600" : "text-slate-400"
+              )} />
+            </div>
           </CardContent>
         </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Team Members Sidebar - Clean & Minimalistic */}
-        <Card className="lg:col-span-1 border-0 rounded-none bg-gray-50">
-          <CardHeader className="pb-4 bg-blue-500 rounded-none">
-            <CardTitle className="flex items-center gap-2 text-lg font-bold text-white">
-              <div className="p-2 bg-blue-600 rounded-none">
-                <UserCheck className="h-4 w-4 text-white" />
+        {/* Team Members Sidebar - Professional */}
+        <Card className="lg:col-span-1 border border-slate-200 rounded-xl bg-white shadow-sm">
+          <CardHeader className="pb-4 border-b border-slate-100">
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <UserCheck className="h-4 w-4 text-blue-600" />
               </div>
               Team Members
             </CardTitle>
-            <CardDescription className="text-xs font-bold text-blue-100">
+            <CardDescription className="text-sm text-slate-600 font-medium">
               {teamMembers.length} member{teamMembers.length !== 1 ? 's' : ''}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
                   placeholder="Search members..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 border-0 rounded-none bg-white"
+                  className="pl-10 border-slate-200 rounded-lg bg-white focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
 
-              <div className="space-y-2 max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+              <div className="space-y-2 max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
                 <div
                   className={cn(
-                    "flex items-center space-x-3 p-3 rounded-none cursor-pointer transition-all border-0",
+                    "flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-all",
                     !selectedMember
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-white hover:bg-blue-50'
+                      ? 'bg-blue-50 border border-blue-200'
+                      : 'bg-white border border-slate-200 hover:border-blue-200 hover:bg-slate-50'
                   )}
                   onClick={() => setSelectedMember('')}
                 >
                   <div className={cn(
-                    "p-2 rounded-none",
-                    !selectedMember ? 'bg-blue-600' : 'bg-blue-100'
+                    "p-2 rounded-lg",
+                    !selectedMember ? 'bg-blue-100' : 'bg-slate-100'
                   )}>
                     <Users className={cn(
                       "h-4 w-4",
-                      !selectedMember ? 'text-white' : 'text-blue-600'
+                      !selectedMember ? 'text-blue-600' : 'text-slate-600'
                     )} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className={cn(
-                      "font-bold text-sm",
-                      !selectedMember ? 'text-white' : 'text-gray-900'
+                      "font-semibold text-sm",
+                      !selectedMember ? 'text-blue-900' : 'text-slate-900'
                     )}>
                       All Members
                     </p>
                     <p className={cn(
-                      "text-xs font-bold",
-                      !selectedMember ? 'text-blue-100' : 'text-gray-600'
+                      "text-xs font-medium",
+                      !selectedMember ? 'text-blue-600' : 'text-slate-600'
                     )}>
                       View all tasks
                     </p>
@@ -1120,7 +1163,7 @@ export default function MemberManagementPage() {
                 </div>
 
                 {filteredMembers.length === 0 ? (
-                  <p className="text-center text-gray-600 py-4 text-sm font-bold">
+                  <p className="text-center text-slate-600 py-4 text-sm font-medium">
                     {searchTerm ? 'No members match' : 'No members found'}
                   </p>
                 ) : (
@@ -1128,29 +1171,29 @@ export default function MemberManagementPage() {
                     <div
                       key={member.id}
                       className={cn(
-                        "flex items-center space-x-3 p-3 rounded-none cursor-pointer transition-all group border-0",
+                        "flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-all group",
                         selectedMember === member.id
-                          ? 'bg-blue-100'
-                          : 'bg-white hover:bg-blue-50'
+                          ? 'bg-blue-50 border border-blue-200'
+                          : 'bg-white border border-slate-200 hover:border-blue-200 hover:bg-slate-50'
                       )}
                       onClick={() => setSelectedMember(member.id === selectedMember ? '' : member.id)}
                     >
-                      <Avatar className="h-10 w-10 ring-0 border-0 rounded-none group-hover:ring-2 group-hover:ring-blue-400 transition-all">
+                      <Avatar className="h-10 w-10 ring-2 rounded-lg group-hover:ring-blue-400 transition-all ring-slate-200">
                         <AvatarImage src={member.image} />
-                        <AvatarFallback className="bg-blue-100 text-blue-700 font-bold rounded-none">
+                        <AvatarFallback className="bg-blue-100 text-blue-700 font-bold rounded-lg">
                           {member.name ? member.name.split(' ').map(n => n[0]).join('') : member.email[0].toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
 
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold text-sm truncate text-gray-900">
+                        <p className="font-semibold text-sm truncate text-slate-900">
                           {member.name || 'Unnamed User'}
                         </p>
-                        <p className="text-xs text-gray-600 truncate font-bold">
+                        <p className="text-xs text-slate-600 truncate font-medium">
                           {member.email}
                         </p>
                         {member._count && (
-                          <Badge variant="secondary" className="text-xs mt-1 border-0 rounded-none bg-blue-500 text-white font-bold">
+                          <Badge variant="secondary" className="text-xs mt-1 rounded-md bg-blue-50 text-blue-700 border-blue-200 font-medium">
                             <CheckSquare className="h-3 w-3 mr-1" />
                             {member._count.assignedTasks} tasks
                           </Badge>
@@ -1166,20 +1209,20 @@ export default function MemberManagementPage() {
 
         {/* Tasks Area */}
         <div className="lg:col-span-3">
-          <Card className="border-0 rounded-none">
-            <CardHeader className="bg-blue-400 rounded-none">
+          <Card className="border border-slate-200 rounded-xl shadow-sm">
+            <CardHeader className="border-b border-slate-100 bg-white rounded-t-xl">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                  <CardTitle className="flex items-center gap-2 text-white font-bold">
-                    <div className="p-2 bg-blue-500 rounded-none">
-                      <Target className="h-4 w-4 text-white" />
+                  <CardTitle className="flex items-center gap-2 text-slate-900 font-semibold">
+                    <div className="p-2 bg-blue-50 rounded-lg">
+                      <Target className="h-4 w-4 text-blue-600" />
                     </div>
                     {selectedMember
                       ? `Tasks for ${teamMembers.find(m => m.id === selectedMember)?.name || 'Selected Member'}`
                       : 'All Team Tasks'
                     }
                   </CardTitle>
-                  <CardDescription className="mt-1 text-blue-100 font-bold">
+                  <CardDescription className="mt-1 text-slate-600 font-medium">
                     {selectedMember
                       ? 'Tasks assigned to the selected member'
                       : 'Tasks assigned to all team members'}
@@ -1188,13 +1231,13 @@ export default function MemberManagementPage() {
 
                 <div className="flex items-center gap-2">
                   <Select value={statusFilter} onValueChange={(value: StatusFilter) => setStatusFilter(value)}>
-                    <SelectTrigger className="w-[180px] border-0 rounded-none bg-white">
+                    <SelectTrigger className="w-[180px] border-slate-200 rounded-lg bg-white">
                       <div className="flex items-center gap-2">
-                        <Filter className="h-4 w-4" />
+                        <Filter className="h-4 w-4 text-slate-600" />
                         <SelectValue placeholder="Status" />
                       </div>
                     </SelectTrigger>
-                    <SelectContent className="border-0 rounded-none">
+                    <SelectContent className="border border-slate-200 rounded-lg shadow-lg">
                       <SelectItem value="all">All Status</SelectItem>
                       <SelectItem value="TODO">To Do</SelectItem>
                       <SelectItem value="IN_PROGRESS">In Progress</SelectItem>

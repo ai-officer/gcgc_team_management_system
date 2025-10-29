@@ -736,18 +736,20 @@ export default function TeamOverviewPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header Section - Blue Flat Design */}
-      <div className="bg-blue-500 p-6 rounded-none">
-        <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-start">
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold text-white">Team Overview</h1>
-            <p className="text-base text-blue-50">
-              Manage your team members, track performance, and collaborate effectively
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-          <CreateTaskButton size="sm" onTaskCreated={fetchTeamData} />
+    <div className="space-y-8">
+      {/* Professional Header */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-slate-50 to-purple-50 opacity-60"></div>
+        <div className="relative backdrop-blur-sm bg-white/40 border border-slate-200/60 rounded-xl shadow-sm p-8">
+          <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-start">
+            <div className="space-y-3">
+              <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Team Overview</h1>
+              <p className="text-slate-600 text-base font-medium max-w-2xl">
+                Manage your team members, track performance, and collaborate effectively
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <CreateTaskButton size="sm" onTaskCreated={fetchTeamData} />
           <Dialog open={isAddMemberDialogOpen} onOpenChange={handleDialogOpenChange}>
             <DialogTrigger asChild>
               <Button className="shadow-sm">
@@ -1736,98 +1738,141 @@ export default function TeamOverviewPage() {
               </div>
             </DialogContent>
           </Dialog>
+            </div>
+          </div>
         </div>
       </div>
-      </div>
 
-      {/* Team Stats - Blue Flat Design */}
+      {/* Professional Team Stats */}
       {teamStats && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="border-0 bg-blue-500 hover:bg-blue-600 transition-colors rounded-none">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-xs font-bold text-blue-100 uppercase tracking-wider">Team Members</CardTitle>
-              <div className="p-2 bg-blue-600 rounded-none">
-                <Users className="h-4 w-4 text-white" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl hover:-translate-y-1">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-blue-600"></div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Team Members</CardTitle>
+              <div className="p-2.5 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
+                <Users className="h-5 w-5 text-blue-600" />
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-white">{teamStats.totalMembers}</div>
-              <p className="text-xs text-blue-100">
-                Active in your team
-              </p>
+            <CardContent className="space-y-3">
+              <div className="flex items-baseline gap-2">
+                <div className="text-4xl font-bold text-slate-900">{teamStats.totalMembers}</div>
+                <span className="text-sm text-slate-500 font-medium">members</span>
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                <span className="text-xs text-slate-500">Active in team</span>
+                <Users className="h-4 w-4 text-blue-600" />
+              </div>
             </CardContent>
           </Card>
 
-          <Card className="border-0 bg-blue-400 hover:bg-blue-500 transition-colors rounded-none">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-xs font-bold text-blue-100 uppercase tracking-wider">Active Tasks</CardTitle>
-              <div className="p-2 bg-blue-500 rounded-none">
-                <Activity className="h-4 w-4 text-white" />
+          <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl hover:-translate-y-1">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-purple-600"></div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Active Tasks</CardTitle>
+              <div className="p-2.5 bg-purple-50 rounded-lg group-hover:bg-purple-100 transition-colors">
+                <Activity className="h-5 w-5 text-purple-600" />
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-white">{teamStats.activeTasks}</div>
-              <p className="text-xs text-blue-100">
-                Currently in progress
-              </p>
+            <CardContent className="space-y-3">
+              <div className="flex items-baseline gap-2">
+                <div className="text-4xl font-bold text-slate-900">{teamStats.activeTasks}</div>
+                <span className="text-sm text-slate-500 font-medium">tasks</span>
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                <span className="text-xs text-slate-500">In progress</span>
+                <Activity className="h-4 w-4 text-purple-600" />
+              </div>
             </CardContent>
           </Card>
 
-          <Card className="border-0 bg-emerald-500 hover:bg-emerald-600 transition-colors rounded-none">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-xs font-bold text-emerald-100 uppercase tracking-wider">Completed</CardTitle>
-              <div className="p-2 bg-emerald-600 rounded-none">
-                <Award className="h-4 w-4 text-white" />
+          <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl hover:-translate-y-1">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-emerald-600"></div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Completed</CardTitle>
+              <div className="p-2.5 bg-emerald-50 rounded-lg group-hover:bg-emerald-100 transition-colors">
+                <Award className="h-5 w-5 text-emerald-600" />
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-white">{teamStats.completedTasks}</div>
-              <p className="text-xs text-emerald-100">
-                Tasks finished
-              </p>
+            <CardContent className="space-y-3">
+              <div className="flex items-baseline gap-2">
+                <div className="text-4xl font-bold text-slate-900">{teamStats.completedTasks}</div>
+                <span className="text-sm text-slate-500 font-medium">done</span>
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                <span className="text-xs text-slate-500">Tasks finished</span>
+                <Award className="h-4 w-4 text-emerald-600" />
+              </div>
             </CardContent>
           </Card>
 
-          <Card className="border-0 bg-red-500 hover:bg-red-600 transition-colors rounded-none">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-xs font-bold text-red-100 uppercase tracking-wider">Overdue</CardTitle>
-              <div className="p-2 bg-red-600 rounded-none">
-                <AlertCircle className="h-4 w-4 text-white" />
+          <Card className={`group relative overflow-hidden border transition-all duration-300 rounded-xl ${
+            teamStats.overdueTasks > 0
+              ? 'border-red-200 bg-red-50 hover:shadow-lg cursor-pointer hover:-translate-y-1'
+              : 'border-slate-200 bg-white hover:shadow-md'
+          }`}>
+            <div className={`absolute top-0 left-0 w-full h-1 ${
+              teamStats.overdueTasks > 0
+                ? 'bg-gradient-to-r from-red-500 to-red-600'
+                : 'bg-gradient-to-r from-slate-300 to-slate-400'
+            }`}></div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className={`text-sm font-semibold uppercase tracking-wide ${
+                teamStats.overdueTasks > 0 ? 'text-red-700' : 'text-slate-600'
+              }`}>
+                Overdue
+              </CardTitle>
+              <div className={`p-2.5 rounded-lg group-hover:scale-110 transition-transform ${
+                teamStats.overdueTasks > 0 ? 'bg-red-100' : 'bg-slate-100'
+              }`}>
+                <AlertCircle className={`h-5 w-5 ${teamStats.overdueTasks > 0 ? 'text-red-600' : 'text-slate-500'}`} />
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-white">{teamStats.overdueTasks}</div>
-              <p className="text-xs text-red-100">
-                Need attention
-              </p>
+            <CardContent className="space-y-3">
+              <div className="flex items-baseline gap-2">
+                <div className={`text-4xl font-bold ${
+                  teamStats.overdueTasks > 0 ? 'text-red-600' : 'text-slate-400'
+                }`}>
+                  {teamStats.overdueTasks}
+                </div>
+                <span className="text-sm text-slate-500 font-medium">tasks</span>
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                <span className="text-xs text-slate-500">
+                  {teamStats.overdueTasks > 0 ? 'Need attention' : 'All clear'}
+                </span>
+                {teamStats.overdueTasks === 0 && (
+                  <span className="text-lg">✓</span>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
       )}
 
-      {/* Filters & Search - Blue Flat Design */}
-      <Card className="border-0 rounded-none bg-gray-50">
-        <CardContent className="p-4">
+      {/* Professional Filters & Search */}
+      <Card className="border border-slate-200 bg-white shadow-sm rounded-xl">
+        <CardContent className="p-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
                 placeholder="Search by name, email, or position..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 border-0 focus:border-blue-500 rounded-none bg-white"
+                className="pl-10 border-slate-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg"
               />
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <Select value={filterStatus} onValueChange={(value: FilterStatus) => setFilterStatus(value)}>
-                <SelectTrigger className="w-[180px] border-0 rounded-none bg-white">
+                <SelectTrigger className="w-[180px] border-slate-200 rounded-lg">
                   <div className="flex items-center gap-2">
                     <Filter className="h-4 w-4" />
                     <SelectValue placeholder="Filter status" />
                   </div>
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-lg">
                   <SelectItem value="all">All Members</SelectItem>
                   <SelectItem value="active">Active Only</SelectItem>
                   <SelectItem value="inactive">Inactive Only</SelectItem>
@@ -1836,17 +1881,17 @@ export default function TeamOverviewPage() {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" className="border-0 rounded-none bg-white hover:bg-blue-50">
-                    {viewMode === 'grid' ? <Users className="h-4 w-4" /> : <Users className="h-4 w-4" />}
+                  <Button variant="outline" size="icon" className="border-slate-200 rounded-lg hover:bg-slate-50">
+                    <Users className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>View Mode</DropdownMenuLabel>
+                <DropdownMenuContent align="end" className="rounded-lg">
+                  <DropdownMenuLabel className="font-semibold">View Mode</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setViewMode('grid')}>
+                  <DropdownMenuItem onClick={() => setViewMode('grid')} className="cursor-pointer">
                     Grid View
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setViewMode('list')}>
+                  <DropdownMenuItem onClick={() => setViewMode('list')} className="cursor-pointer">
                     List View
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -1856,22 +1901,22 @@ export default function TeamOverviewPage() {
         </CardContent>
       </Card>
 
-      {/* Team Members Grid/List */}
+      {/* Professional Team Members Grid/List */}
       {filteredMembers.length === 0 ? (
-        <Card className="border-0 rounded-none bg-gray-50">
+        <Card className="border border-slate-200 bg-white shadow-sm rounded-xl">
           <CardContent className="py-12">
             <div className="text-center">
-              <Users className="h-16 w-16 text-gray-400 mx-auto mb-4 opacity-50" />
-              <h3 className="text-lg font-bold mb-2 text-gray-900">
+              <Users className="h-16 w-16 text-slate-400 mx-auto mb-4 opacity-50" />
+              <h3 className="text-lg font-semibold mb-2 text-slate-900">
                 {searchTerm || filterStatus !== 'all' ? 'No members match your filters' : 'No team members yet'}
               </h3>
-              <p className="text-gray-600 font-bold mb-6">
+              <p className="text-slate-600 mb-6">
                 {searchTerm || filterStatus !== 'all'
                   ? 'Try adjusting your search or filters'
                   : 'Start building your team by adding members'}
               </p>
               {!searchTerm && filterStatus === 'all' && (
-                <Button onClick={() => setIsAddMemberDialogOpen(true)} className="border-0 rounded-none bg-blue-500 hover:bg-blue-600 text-white font-bold">
+                <Button onClick={() => setIsAddMemberDialogOpen(true)} className="rounded-lg bg-blue-600 hover:bg-blue-700">
                   <UserPlus className="h-4 w-4 mr-2" />
                   Add First Member
                 </Button>
@@ -1882,19 +1927,19 @@ export default function TeamOverviewPage() {
       ) : (
         <div className={cn(
           viewMode === 'grid'
-            ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-            : "space-y-3"
+            ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            : "space-y-4"
         )}>
           {filteredMembers.map((member) => (
             <Card
               key={member.id}
               className={cn(
-                "border-0 rounded-none bg-gray-50 hover:bg-gray-100 transition-all duration-200 group",
+                "border border-slate-200 bg-white hover:shadow-md hover:border-slate-300 transition-all duration-200 group rounded-xl",
                 viewMode === 'grid' && "hover:-translate-y-1"
               )}
             >
               <CardContent className={cn(
-                "p-4",
+                "p-6",
                 viewMode === 'list' && "flex items-center justify-between"
               )}>
                 <div className={cn(
@@ -1903,11 +1948,11 @@ export default function TeamOverviewPage() {
                 )}>
                   <div className="relative">
                     <Avatar className={cn(
-                      "ring-0 border-0 rounded-none group-hover:ring-2 group-hover:ring-blue-400 transition-all",
+                      "ring-2 ring-slate-200 group-hover:ring-blue-400 transition-all rounded-lg",
                       viewMode === 'grid' ? "h-20 w-20" : "h-12 w-12"
                     )}>
                       <AvatarImage src={member.image || undefined} />
-                      <AvatarFallback className="bg-blue-100 text-blue-700 font-bold rounded-none">
+                      <AvatarFallback className="bg-blue-100 text-blue-700 font-bold rounded-lg">
                         {member.name
                           ? member.name.split(' ').map(n => n[0]).join('').slice(0, 2)
                           : member.email?.[0]?.toUpperCase()
@@ -1915,8 +1960,8 @@ export default function TeamOverviewPage() {
                       </AvatarFallback>
                     </Avatar>
                     <div className={cn(
-                      "absolute rounded-none border-0",
-                      member.isActive ? "bg-emerald-500" : "bg-gray-400",
+                      "absolute rounded-full border-2 border-white",
+                      member.isActive ? "bg-emerald-500" : "bg-slate-400",
                       viewMode === 'grid' ? "w-5 h-5 -bottom-1 -right-1" : "w-3 h-3 -bottom-0.5 -right-0.5"
                     )} />
                   </div>
@@ -1927,7 +1972,7 @@ export default function TeamOverviewPage() {
                   )}>
                     <div className="flex items-center gap-2 justify-center">
                       <h4 className={cn(
-                        "font-bold text-gray-900 truncate",
+                        "font-semibold text-slate-900 truncate",
                         viewMode === 'grid' ? "text-lg" : "text-base"
                       )}>
                         {member.name || 'Unnamed User'}
@@ -1935,10 +1980,10 @@ export default function TeamOverviewPage() {
                       <Badge
                         variant="secondary"
                         className={cn(
-                          "text-xs border-0 rounded-none font-bold",
+                          "text-xs rounded-md font-medium",
                           member.isActive
-                            ? "bg-emerald-500 text-white"
-                            : "bg-gray-400 text-white"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            : "bg-slate-100 text-slate-600 border-slate-200"
                         )}
                       >
                         {member.isActive ? 'Active' : 'Inactive'}
@@ -1946,24 +1991,24 @@ export default function TeamOverviewPage() {
                     </div>
 
                     <div className={cn(
-                      "flex items-center gap-3 text-xs text-gray-600 font-bold",
+                      "flex items-center gap-3 text-xs text-slate-600 font-medium",
                       viewMode === 'grid' ? "flex-col" : "flex-row"
                     )}>
                       <div className="flex items-center gap-1">
-                        <Mail className="h-3 w-3" />
+                        <Mail className="h-3 w-3 text-slate-400" />
                         <span className="truncate">{member.email}</span>
                       </div>
                       {member.positionTitle && (
                         <div className="flex items-center gap-1">
-                          <Target className="h-3 w-3" />
+                          <Target className="h-3 w-3 text-slate-400" />
                           <span>{member.positionTitle}</span>
                         </div>
                       )}
                     </div>
 
                     {member._count && (
-                      <div className="flex items-center gap-1 text-xs text-gray-600 font-bold justify-center">
-                        <CheckSquare className="h-3 w-3" />
+                      <div className="flex items-center gap-1 text-xs text-slate-600 font-medium justify-center">
+                        <CheckSquare className="h-3 w-3 text-slate-400" />
                         <span>{member._count.assignedTasks} tasks assigned</span>
                       </div>
                     )}
@@ -1976,25 +2021,25 @@ export default function TeamOverviewPage() {
                       variant="ghost"
                       size="icon"
                       className={cn(
-                        "opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-50 border-0 rounded-none",
+                        "opacity-0 group-hover:opacity-100 transition-opacity hover:bg-slate-100 rounded-lg",
                         viewMode === 'grid' && "absolute top-2 right-2"
                       )}
                     >
-                      <MoreHorizontal className="h-4 w-4" />
+                      <MoreHorizontal className="h-4 w-4 text-slate-600" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="border-0 rounded-none">
-                    <DropdownMenuItem onClick={() => handleViewProfile(member.id)} className="font-bold">
-                      <Eye className="h-4 w-4 mr-2" />
+                  <DropdownMenuContent align="end" className="border border-slate-200 rounded-lg shadow-lg">
+                    <DropdownMenuItem onClick={() => handleViewProfile(member.id)} className="rounded-md">
+                      <Eye className="h-4 w-4 mr-2 text-slate-600" />
                       View Profile
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="font-bold">
-                      <CheckSquare className="h-4 w-4 mr-2" />
+                    <DropdownMenuItem className="rounded-md">
+                      <CheckSquare className="h-4 w-4 mr-2 text-slate-600" />
                       Assign Task
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
-                      className="text-red-600 focus:text-red-600 font-bold"
+                      className="text-red-600 focus:text-red-600 rounded-md"
                       onClick={() => handleRemoveMember(member.id)}
                     >
                       <Users className="h-4 w-4 mr-2" />

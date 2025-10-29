@@ -207,24 +207,24 @@ export default function UserDashboard() {
         </div>
       </div>
 
-      {/* Flat Design Stats Overview */}
+      {/* Flat Design Stats Overview - Blue Theme */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-0 bg-purple-500 hover:bg-purple-600 transition-colors cursor-pointer rounded-none" onClick={() => window.location.href = '/user/tasks'}>
+        <Card className="border-0 bg-blue-500 hover:bg-blue-600 transition-colors cursor-pointer rounded-none" onClick={() => window.location.href = '/user/tasks'}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-xs font-bold text-purple-100 uppercase tracking-wider">My Active Tasks</CardTitle>
-            <div className="p-2 bg-purple-600 rounded-none">
+            <CardTitle className="text-xs font-bold text-blue-100 uppercase tracking-wider">My Active Tasks</CardTitle>
+            <div className="p-2 bg-blue-600 rounded-none">
               <CheckSquare className="h-4 w-4 text-white" />
             </div>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-white">{dashboardData.stats.myTasks}</div>
             <div className="flex items-center justify-between mt-2">
-              <p className="text-xs text-purple-100 font-normal">
+              <p className="text-xs text-blue-100 font-normal">
                 Tasks in progress
               </p>
-              <ArrowRight className="h-3 w-3 text-purple-100" />
+              <ArrowRight className="h-3 w-3 text-blue-100" />
             </div>
-            <Progress value={calculateTaskCompletionRate()} className="mt-3 h-2 bg-purple-600" />
+            <Progress value={calculateTaskCompletionRate()} className="mt-3 h-2 bg-blue-600" />
           </CardContent>
         </Card>
 
@@ -251,32 +251,32 @@ export default function UserDashboard() {
         </Card>
 
         {isLeader && (
-          <Card className="border-0 bg-orange-500 hover:bg-orange-600 transition-colors cursor-pointer rounded-none" onClick={() => window.location.href = '/user/team-overview'}>
+          <Card className="border-0 bg-blue-400 hover:bg-blue-500 transition-colors cursor-pointer rounded-none" onClick={() => window.location.href = '/user/team-overview'}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-xs font-bold text-orange-100 uppercase tracking-wider">Team Tasks</CardTitle>
-              <div className="p-2 bg-orange-600 rounded-none">
+              <CardTitle className="text-xs font-bold text-blue-100 uppercase tracking-wider">Team Tasks</CardTitle>
+              <div className="p-2 bg-blue-500 rounded-none">
                 <Target className="h-4 w-4 text-white" />
               </div>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-white">{dashboardData.stats.teamTasks}</div>
               <div className="flex items-center justify-between mt-2">
-                <p className="text-xs text-orange-100 font-normal">
+                <p className="text-xs text-blue-100 font-normal">
                   Active team tasks
                 </p>
-                <Activity className="h-3 w-3 text-orange-100" />
+                <Activity className="h-3 w-3 text-blue-100" />
               </div>
               <div className="mt-2 flex items-center gap-1">
                 <div className="flex -space-x-1">
                   {dashboardData.teamMembers.slice(0, 3).map((member, i) => (
                     <Avatar key={member.id} className="h-5 w-5 border-2 border-white">
-                      <AvatarFallback className="text-xs bg-orange-600 text-white font-bold">
+                      <AvatarFallback className="text-xs bg-blue-500 text-white font-bold">
                         {member.name?.[0] || member.email[0]}
                       </AvatarFallback>
                     </Avatar>
                   ))}
                 </div>
-                <span className="text-xs text-orange-100 ml-2">Team active</span>
+                <span className="text-xs text-blue-100 ml-2">Team active</span>
               </div>
             </CardContent>
           </Card>
@@ -314,24 +314,24 @@ export default function UserDashboard() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        {/* Clean Recent Tasks */}
+        {/* Flat Design Recent Tasks - Blue Theme */}
         <div>
-          <Card className="border-border/40">
-            <CardHeader className="pb-4">
+          <Card className="border-0 rounded-none">
+            <CardHeader className="pb-4 bg-blue-500">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-                    <div className="p-2 bg-slate-50 border border-slate-100 dark:bg-slate-900 rounded-xl">
-                      <CheckSquare className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                  <CardTitle className="flex items-center gap-2 text-lg font-bold text-white">
+                    <div className="p-2 bg-blue-600 rounded-none">
+                      <CheckSquare className="h-4 w-4 text-white" />
                     </div>
                     Recent Tasks
                   </CardTitle>
-                  <CardDescription className="mt-1.5 text-sm font-medium">
+                  <CardDescription className="mt-1.5 text-sm font-bold text-blue-100">
                     Your latest assignments and progress
                   </CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => window.location.href = '/user/tasks'} className="text-xs font-medium">
+                  <Button variant="ghost" size="sm" onClick={() => window.location.href = '/user/tasks'} className="text-xs font-bold text-white hover:bg-blue-600">
                     View All
                     <ArrowRight className="h-3 w-3 ml-1" />
                   </Button>
@@ -350,31 +350,31 @@ export default function UserDashboard() {
                 </div>
               ) : (
                 dashboardData.recentTasks.map((task, index) => (
-                  <div key={task.id} className="group p-4 border border-border/40 rounded-lg hover:shadow-sm hover:border-border transition-all duration-200 cursor-pointer"
+                  <div key={task.id} className="group p-4 border-0 rounded-none bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
                        onClick={() => window.location.href = `/user/tasks?id=${task.id}`}>
                     <div className="flex items-start justify-between mb-3">
                       <div className="space-y-2 flex-1">
                         <div className="flex items-center gap-2">
-                          <h4 className="font-semibold text-foreground group-hover:text-primary transition-colors">
+                          <h4 className="font-bold text-foreground group-hover:text-blue-600 transition-colors">
                             {task.title}
                           </h4>
                           {index === 0 && (
-                            <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900 dark:text-blue-300">
+                            <Badge variant="secondary" className="text-xs bg-blue-500 text-white border-0 font-bold rounded-none">
                               Latest
                             </Badge>
                           )}
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
-                          <Badge className={`text-xs ${getPriorityColor(task.priority)} font-medium border`}>
+                          <Badge className={`text-xs ${getPriorityColor(task.priority)} font-bold border-0 rounded-none`}>
                             {task.priority}
                           </Badge>
                           {task.dueDate && (
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded border border-slate-100">
+                            <div className="flex items-center gap-1 text-xs font-bold text-gray-700 bg-gray-200 px-2 py-1 rounded-none border-0">
                               <Clock className="h-3 w-3" />
                               Due {format(new Date(task.dueDate), 'MMM dd')}
                             </div>
                           )}
-                          <Badge variant="outline" className="text-xs border-border/40">
+                          <Badge variant="outline" className="text-xs border-0 bg-gray-200 rounded-none font-bold">
                             {task.team?.name || 'Personal'}
                           </Badge>
                           {task.assignee && task.assignee.id !== session?.user?.id && (
@@ -428,21 +428,21 @@ export default function UserDashboard() {
           </Card>
         </div>
 
-        {/* Clean Sidebar */}
+        {/* Flat Design Sidebar - Blue Theme */}
         <div className="space-y-4">
 
-          {/* Clean Upcoming Deadlines */}
-          <Card className="border-border/40">
-            <CardHeader className="pb-4">
+          {/* Flat Design Upcoming Deadlines - Blue Theme */}
+          <Card className="border-0 rounded-none">
+            <CardHeader className="pb-4 bg-blue-400">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-                    <div className="p-2 bg-slate-50 border border-slate-100 dark:bg-slate-900 rounded-xl">
-                      <Clock className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                  <CardTitle className="flex items-center gap-2 text-lg font-bold text-white">
+                    <div className="p-2 bg-blue-500 rounded-none">
+                      <Clock className="h-4 w-4 text-white" />
                     </div>
                     Upcoming Deadlines
                   </CardTitle>
-                  <CardDescription className="mt-1.5 text-sm font-medium">
+                  <CardDescription className="mt-1.5 text-sm font-bold text-blue-100">
                     Next 7 days
                   </CardDescription>
                 </div>
@@ -460,21 +460,21 @@ export default function UserDashboard() {
                   const dueDate = task.dueDate ? new Date(task.dueDate) : null
                   const isUrgent = dueDate && dueDate.getTime() - new Date().getTime() < 2 * 24 * 60 * 60 * 1000
                   return (
-                    <div key={task.id} className={`p-3 rounded-lg border transition-all duration-200 cursor-pointer hover:shadow-sm ${
-                      isUrgent ? 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950' : 'border-border/40 hover:border-border'
+                    <div key={task.id} className={`p-3 rounded-none border-0 transition-colors cursor-pointer ${
+                      isUrgent ? 'bg-red-100 hover:bg-red-200' : 'bg-gray-50 hover:bg-gray-100'
                     }`} onClick={() => window.location.href = `/user/tasks?id=${task.id}`}>
                       <div className="flex items-start justify-between mb-2">
-                        <div className="font-semibold text-sm flex-1 pr-2">{task.title}</div>
+                        <div className="font-bold text-sm flex-1 pr-2">{task.title}</div>
                         {isUrgent && (
-                          <Badge variant="destructive" className="text-xs">
+                          <Badge variant="destructive" className="text-xs bg-red-500 text-white border-0 font-bold rounded-none">
                             Urgent
                           </Badge>
                         )}
                       </div>
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground font-medium">{task.team?.name || 'Personal'}</span>
+                        <span className="text-gray-600 font-bold">{task.team?.name || 'Personal'}</span>
                         {dueDate && (
-                          <div className={`flex items-center gap-1 ${isUrgent ? 'text-red-600 font-medium' : 'text-muted-foreground font-medium'}`}>
+                          <div className={`flex items-center gap-1 ${isUrgent ? 'text-red-600 font-bold' : 'text-gray-600 font-bold'}`}>
                             <Clock className="h-3 w-3" />
                             {format(dueDate, 'MMM dd')} ({formatDistanceToNow(dueDate, { addSuffix: false })})
                           </div>
@@ -492,12 +492,12 @@ export default function UserDashboard() {
             </CardContent>
           </Card>
 
-          {/* Clean Quick Actions */}
-          <Card className="border-border/40">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-                <div className="p-2 bg-slate-50 border border-slate-100 dark:bg-slate-900 rounded-xl">
-                  <Zap className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+          {/* Flat Design Quick Actions - Blue Theme */}
+          <Card className="border-0 rounded-none">
+            <CardHeader className="pb-4 bg-blue-500">
+              <CardTitle className="flex items-center gap-2 text-lg font-bold text-white">
+                <div className="p-2 bg-blue-600 rounded-none">
+                  <Zap className="h-4 w-4 text-white" />
                 </div>
                 Quick Actions
               </CardTitle>
@@ -505,16 +505,16 @@ export default function UserDashboard() {
             <CardContent className="space-y-2">
               <Button
                 onClick={() => window.location.href = '/user/tasks'}
-                className="w-full justify-start h-auto p-3 border-border/40"
+                className="w-full justify-start h-auto p-3 border-0 rounded-none bg-gray-50 hover:bg-blue-50"
                 variant="ghost"
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-slate-50 border border-slate-100 dark:bg-slate-900 rounded-xl">
-                    <CheckSquare className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                  <div className="p-2 bg-blue-500 rounded-none">
+                    <CheckSquare className="h-4 w-4 text-white" />
                   </div>
                   <div className="text-left">
-                    <div className="font-semibold text-sm">Manage Tasks</div>
-                    <div className="text-xs text-muted-foreground font-medium">Create and track progress</div>
+                    <div className="font-bold text-sm">Manage Tasks</div>
+                    <div className="text-xs text-gray-600 font-bold">Create and track progress</div>
                   </div>
                 </div>
                 <ArrowRight className="h-4 w-4 ml-auto" />
@@ -522,16 +522,16 @@ export default function UserDashboard() {
 
               <Button
                 onClick={() => window.location.href = '/user/calendar'}
-                className="w-full justify-start h-auto p-3 border-border/40"
+                className="w-full justify-start h-auto p-3 border-0 rounded-none bg-gray-50 hover:bg-blue-50"
                 variant="ghost"
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-slate-50 border border-slate-100 dark:bg-slate-900 rounded-xl">
-                    <CalendarIcon className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                  <div className="p-2 bg-blue-500 rounded-none">
+                    <CalendarIcon className="h-4 w-4 text-white" />
                   </div>
                   <div className="text-left">
-                    <div className="font-semibold text-sm">View Calendar</div>
-                    <div className="text-xs text-muted-foreground font-medium">Check your schedule</div>
+                    <div className="font-bold text-sm">View Calendar</div>
+                    <div className="text-xs text-gray-600 font-bold">Check your schedule</div>
                   </div>
                 </div>
                 <ArrowRight className="h-4 w-4 ml-auto" />
@@ -541,16 +541,16 @@ export default function UserDashboard() {
                 <>
                   <Button
                     onClick={() => window.location.href = '/user/team-overview'}
-                    className="w-full justify-start h-auto p-3 border-border/40"
+                    className="w-full justify-start h-auto p-3 border-0 rounded-none bg-gray-50 hover:bg-blue-50"
                     variant="ghost"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-slate-50 border border-slate-100 dark:bg-slate-900 rounded-xl">
-                        <Users className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                      <div className="p-2 bg-blue-500 rounded-none">
+                        <Users className="h-4 w-4 text-white" />
                       </div>
                       <div className="text-left">
-                        <div className="font-semibold text-sm">Team Overview</div>
-                        <div className="text-xs text-muted-foreground font-medium">Monitor team progress</div>
+                        <div className="font-bold text-sm">Team Overview</div>
+                        <div className="text-xs text-gray-600 font-bold">Monitor team progress</div>
                       </div>
                     </div>
                     <ArrowRight className="h-4 w-4 ml-auto" />
@@ -558,16 +558,16 @@ export default function UserDashboard() {
 
                   <Button
                     onClick={() => window.location.href = '/user/member-management'}
-                    className="w-full justify-start h-auto p-3 border-border/40"
+                    className="w-full justify-start h-auto p-3 border-0 rounded-none bg-gray-50 hover:bg-blue-50"
                     variant="ghost"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-slate-50 border border-slate-100 dark:bg-slate-900 rounded-xl">
-                        <Target className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                      <div className="p-2 bg-blue-500 rounded-none">
+                        <Target className="h-4 w-4 text-white" />
                       </div>
                       <div className="text-left">
-                        <div className="font-semibold text-sm">Assign Tasks</div>
-                        <div className="text-xs text-muted-foreground font-medium">Delegate to team</div>
+                        <div className="font-bold text-sm">Assign Tasks</div>
+                        <div className="text-xs text-gray-600 font-bold">Delegate to team</div>
                       </div>
                     </div>
                     <ArrowRight className="h-4 w-4 ml-auto" />

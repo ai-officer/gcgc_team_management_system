@@ -102,101 +102,138 @@ export default function AdminDashboard() {
   const userGrowthPercentage = stats.growthRate
 
   return (
-    <div className="space-y-6">
-      {/* Flat Design Header */}
-      <div className="bg-blue-500 p-6 rounded-none">
-        <h1 className="text-3xl font-bold text-white">Dashboard</h1>
-        <p className="text-sm text-blue-100 font-bold">Overview of users and system growth metrics</p>
+    <div className="space-y-8">
+      {/* Professional Glassmorphism Header */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-slate-50 to-purple-50 opacity-60"></div>
+        <div className="relative backdrop-blur-sm bg-white/40 border border-slate-200/60 rounded-xl shadow-sm p-8">
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Admin Dashboard</h1>
+          <p className="text-slate-600 text-base font-medium max-w-2xl">Overview of users and system growth metrics</p>
+        </div>
       </div>
 
-      {/* Flat Design Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-0 bg-blue-500 hover:bg-blue-600 transition-colors cursor-pointer rounded-none">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-xs font-bold text-blue-100 uppercase tracking-wider">Total Users</CardTitle>
-            <div className="p-2 bg-blue-600 rounded-none">
-              <Users className="h-4 w-4 text-white" />
+      {/* Professional Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl hover:-translate-y-1">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-blue-600"></div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Total Users</CardTitle>
+            <div className="p-2.5 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
+              <Users className="h-5 w-5 text-blue-600" />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-white">{stats.totalUsers}</div>
-            <p className="text-xs text-blue-100 mt-1.5 font-bold">
-              {stats.newUsersThisMonth} new this month
-            </p>
+          <CardContent className="space-y-3">
+            <div className="flex items-baseline gap-2">
+              <div className="text-4xl font-bold text-slate-900">{stats.totalUsers}</div>
+              <span className="text-sm text-slate-500 font-medium">users</span>
+            </div>
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+              <span className="text-xs text-slate-500">{stats.newUsersThisMonth} new this month</span>
+              <Users className="h-4 w-4 text-blue-600" />
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="border-0 bg-emerald-500 hover:bg-emerald-600 transition-colors cursor-pointer rounded-none">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-xs font-bold text-emerald-100 uppercase tracking-wider">Active Users</CardTitle>
-            <div className="p-2 bg-emerald-600 rounded-none">
-              <Activity className="h-4 w-4 text-white" />
+        <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl hover:-translate-y-1">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-emerald-600"></div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Active Users</CardTitle>
+            <div className="p-2.5 bg-emerald-50 rounded-lg group-hover:bg-emerald-100 transition-colors">
+              <Activity className="h-5 w-5 text-emerald-600" />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-white">{stats.activeUsers}</div>
-            <p className="text-xs text-emerald-100 mt-1.5 font-bold">
-              {((stats.activeUsers / stats.totalUsers) * 100).toFixed(1)}% of total
-            </p>
+          <CardContent className="space-y-3">
+            <div className="flex items-baseline gap-2">
+              <div className="text-4xl font-bold text-slate-900">{stats.activeUsers}</div>
+              <span className="text-sm text-slate-500 font-medium">active</span>
+            </div>
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+              <span className="text-xs text-slate-500">{((stats.activeUsers / stats.totalUsers) * 100).toFixed(1)}% of total</span>
+              <Activity className="h-4 w-4 text-emerald-600" />
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="border-0 bg-blue-400 hover:bg-blue-500 transition-colors cursor-pointer rounded-none">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-xs font-bold text-blue-100 uppercase tracking-wider">Growth Rate</CardTitle>
-            <div className="p-2 bg-blue-500 rounded-none">
-              <TrendingUp className="h-4 w-4 text-white" />
+        <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl hover:-translate-y-1">
+          <div className={cn(
+            "absolute top-0 left-0 w-full h-1 bg-gradient-to-r",
+            userGrowthPercentage > 0 ? "from-emerald-500 to-emerald-600" :
+            userGrowthPercentage < 0 ? "from-red-500 to-red-600" :
+            "from-slate-300 to-slate-400"
+          )}></div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Growth Rate</CardTitle>
+            <div className={cn(
+              "p-2.5 rounded-lg transition-colors",
+              userGrowthPercentage > 0 ? "bg-emerald-50 group-hover:bg-emerald-100" :
+              userGrowthPercentage < 0 ? "bg-red-50 group-hover:bg-red-100" :
+              "bg-slate-50 group-hover:bg-slate-100"
+            )}>
+              <TrendingUp className={cn(
+                "h-5 w-5",
+                userGrowthPercentage > 0 ? "text-emerald-600" :
+                userGrowthPercentage < 0 ? "text-red-600" :
+                "text-slate-400"
+              )} />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="flex items-center space-x-2">
-              <div className="text-3xl font-bold text-white">
+          <CardContent className="space-y-3">
+            <div className="flex items-baseline gap-2">
+              <div className={cn(
+                "text-4xl font-bold flex items-center gap-1",
+                userGrowthPercentage > 0 ? "text-emerald-600" :
+                userGrowthPercentage < 0 ? "text-red-600" :
+                "text-slate-400"
+              )}>
                 {userGrowthPercentage === 0 ? '0' :
                  userGrowthPercentage === 100 ? '+100' :
                  userGrowthPercentage > 0 ? '+' + userGrowthPercentage.toFixed(1) :
                  userGrowthPercentage.toFixed(1)}%
+                {userGrowthPercentage > 0 ? (
+                  <ArrowUpRight className="h-6 w-6" />
+                ) : userGrowthPercentage < 0 ? (
+                  <ArrowDownRight className="h-6 w-6" />
+                ) : null}
               </div>
-              {userGrowthPercentage > 0 ? (
-                <ArrowUpRight className="h-4 w-4 text-white" />
-              ) : userGrowthPercentage < 0 ? (
-                <ArrowDownRight className="h-4 w-4 text-white" />
-              ) : (
-                <div className="h-4 w-4" />
-              )}
             </div>
-            <p className="text-xs text-blue-100 mt-1.5 font-bold">
-              {stats.newUsersThisMonth} this month vs {stats.newUsersLastMonth} last month
-            </p>
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+              <span className="text-xs text-slate-500">{stats.newUsersThisMonth} vs {stats.newUsersLastMonth} last month</span>
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="border-0 bg-gray-500 hover:bg-gray-600 transition-colors cursor-pointer rounded-none">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-xs font-bold text-gray-100 uppercase tracking-wider">Organization</CardTitle>
-            <div className="p-2 bg-gray-600 rounded-none">
-              <Building2 className="h-4 w-4 text-white" />
+        <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl hover:-translate-y-1">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-purple-600"></div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Organization</CardTitle>
+            <div className="p-2.5 bg-purple-50 rounded-lg group-hover:bg-purple-100 transition-colors">
+              <Building2 className="h-5 w-5 text-purple-600" />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-white">{stats.totalTeams}</div>
-            <p className="text-xs text-gray-100 mt-1.5 font-bold">
-              {stats.totalSections} sections
-            </p>
+          <CardContent className="space-y-3">
+            <div className="flex items-baseline gap-2">
+              <div className="text-4xl font-bold text-slate-900">{stats.totalTeams}</div>
+              <span className="text-sm text-slate-500 font-medium">teams</span>
+            </div>
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+              <span className="text-xs text-slate-500">{stats.totalSections} sections</span>
+              <Building2 className="h-4 w-4 text-purple-600" />
+            </div>
           </CardContent>
         </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Flat Design User Distribution */}
-        <Card className="border-0 rounded-none">
-          <CardHeader className="pb-4 bg-teal-500">
-            <CardTitle className="flex items-center gap-2 text-lg font-bold text-white">
-              <div className="p-2 bg-teal-600 rounded-none">
-                <Shield className="h-4 w-4 text-white" />
+        {/* Professional User Distribution */}
+        <Card className="border border-slate-200 rounded-xl shadow-sm">
+          <CardHeader className="pb-4 border-b border-slate-100">
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <Shield className="h-4 w-4 text-blue-600" />
               </div>
               User Distribution
             </CardTitle>
-            <CardDescription className="text-sm font-bold text-teal-100">Users by role and hierarchy level</CardDescription>
+            <CardDescription className="text-sm font-medium text-slate-600 mt-1">Users by role and hierarchy level</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -233,34 +270,34 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        {/* Flat Design User Growth Chart */}
-        <Card className="border-0 rounded-none">
-          <CardHeader className="pb-4 bg-cyan-500">
-            <CardTitle className="flex items-center gap-2 text-lg font-bold text-white">
-              <div className="p-2 bg-cyan-600 rounded-none">
-                <TrendingUp className="h-4 w-4 text-white" />
+        {/* Professional User Growth Chart */}
+        <Card className="border border-slate-200 rounded-xl shadow-sm">
+          <CardHeader className="pb-4 border-b border-slate-100">
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+              <div className="p-2 bg-emerald-50 rounded-lg">
+                <TrendingUp className="h-4 w-4 text-emerald-600" />
               </div>
               User Growth
             </CardTitle>
-            <CardDescription className="text-sm font-bold text-cyan-100">New user registrations over time</CardDescription>
+            <CardDescription className="text-sm font-medium text-slate-600 mt-1">New user registrations over time</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               {stats.userGrowth.slice(-6).map((data) => (
                 <div key={data.month} className="flex justify-between items-center">
-                  <span className="text-sm font-bold">{data.month}</span>
+                  <span className="text-sm font-medium text-slate-700">{data.month}</span>
                   <div className="flex items-center space-x-2">
-                    <div className="w-24 bg-gray-300 rounded-none h-2">
+                    <div className="w-24 bg-slate-100 rounded-full h-2">
                       <div
-                        className="bg-cyan-600 h-2 rounded-none transition-all duration-300"
+                        className="bg-gradient-to-r from-emerald-500 to-emerald-600 h-2 rounded-full transition-all duration-300"
                         style={{
                           width: `${Math.max((data.users / Math.max(...stats.userGrowth.map(d => d.users))) * 100, 5)}%`
                         }}
                       ></div>
                     </div>
-                    <span className="text-sm font-bold min-w-[2rem] text-right">{data.users}</span>
+                    <span className="text-sm font-semibold text-slate-900 min-w-[2rem] text-right">{data.users}</span>
                     {data.change !== 0 && (
-                      <div className={`flex items-center text-xs font-bold ${data.change > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                      <div className={`flex items-center text-xs font-semibold ${data.change > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                         {data.change > 0 ? (
                           <ArrowUpRight className="h-3 w-3" />
                         ) : (

@@ -239,11 +239,11 @@ export default function AdminSectorHeadsPage() {
   )
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Sector Heads</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl font-semibold text-slate-900">Sector Heads</h1>
+          <p className="text-sm font-medium text-slate-600">
             Manage sector heads for hotel operations
           </p>
         </div>
@@ -300,14 +300,14 @@ export default function AdminSectorHeadsPage() {
         </Dialog>
       </div>
 
-      <div className="mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+      <div>
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
           <Input
             placeholder="Search sector heads by initials, name, or description..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
           />
         </div>
       </div>
@@ -318,22 +318,24 @@ export default function AdminSectorHeadsPage() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredSectorHeads.map((sectorHead) => (
-              <Card key={sectorHead.id} className="relative">
-                <CardHeader className="pb-3">
+              <Card key={sectorHead.id} className="relative bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader className="pb-3 border-b border-slate-100">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg flex items-center">
-                      <Users className="mr-2 h-5 w-5" />
+                    <CardTitle className="text-lg font-semibold text-slate-900 flex items-center">
+                      <div className="p-2 bg-blue-50 rounded-lg mr-2">
+                        <Users className="h-4 w-4 text-blue-600" />
+                      </div>
                       {sectorHead.initials}
                     </CardTitle>
-                    <Badge variant={sectorHead.isActive ? 'default' : 'secondary'}>
+                    <Badge variant={sectorHead.isActive ? 'default' : 'secondary'} className="rounded-md px-2.5 py-0.5 text-xs font-medium">
                       {sectorHead.isActive ? 'Active' : 'Inactive'}
                     </Badge>
                   </div>
-                  <CardDescription>{sectorHead.fullName}</CardDescription>
+                  <CardDescription className="text-sm font-medium text-slate-600 mt-1">{sectorHead.fullName}</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-4">
                   {sectorHead.description && (
-                    <p className="text-sm text-muted-foreground mb-4">
+                    <p className="text-sm font-medium text-slate-600 mb-4">
                       {sectorHead.description}
                     </p>
                   )}

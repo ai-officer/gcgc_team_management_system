@@ -165,12 +165,12 @@ export default function AdminTeamsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Team Management</h1>
-          <p className="text-gray-600">Manage teams and their configurations</p>
+          <h1 className="text-2xl font-semibold text-slate-900">Team Management</h1>
+          <p className="text-sm font-medium text-slate-600">Manage teams and their configurations</p>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700">
+            <Button className="bg-blue-600 hover:bg-blue-700 shadow-sm">
               <Plus className="w-4 h-4 mr-2" />
               Create Team
             </Button>
@@ -218,12 +218,12 @@ export default function AdminTeamsPage() {
       {/* Search */}
       <div className="flex items-center space-x-4">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
           <Input
             placeholder="Search teams..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
           />
         </div>
       </div>
@@ -236,17 +236,17 @@ export default function AdminTeamsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {teams.map((team) => (
-            <Card key={team.id} className="p-6 hover:shadow-lg transition-shadow">
+            <Card key={team.id} className="p-6 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-2">
-                    <h3 className="font-semibold text-gray-900">{team.name}</h3>
-                    <Badge variant={team.isActive ? "default" : "secondary"}>
+                    <h3 className="font-semibold text-slate-900">{team.name}</h3>
+                    <Badge variant={team.isActive ? "default" : "secondary"} className="rounded-md px-2.5 py-0.5 text-xs font-medium">
                       {team.isActive ? 'Active' : 'Inactive'}
                     </Badge>
                   </div>
                   {team.description && (
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                    <p className="text-sm font-medium text-slate-600 mb-3 line-clamp-2">
                       {team.description}
                     </p>
                   )}
@@ -289,41 +289,41 @@ export default function AdminTeamsPage() {
 
               {/* Team Stats */}
               <div className="grid grid-cols-3 gap-4 mb-4">
-                <div className="text-center p-2 bg-blue-50 rounded-lg">
+                <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-100">
                   <div className="flex items-center justify-center mb-1">
                     <Users className="w-4 h-4 text-blue-600" />
                   </div>
                   <div className="text-lg font-semibold text-blue-900">{team.members.length}</div>
-                  <div className="text-xs text-blue-700">Members</div>
+                  <div className="text-xs font-medium text-blue-700">Members</div>
                 </div>
-                <div className="text-center p-2 bg-green-50 rounded-lg">
+                <div className="text-center p-3 bg-emerald-50 rounded-lg border border-emerald-100">
                   <div className="flex items-center justify-center mb-1">
-                    <Activity className="w-4 h-4 text-green-600" />
+                    <Activity className="w-4 h-4 text-emerald-600" />
                   </div>
-                  <div className="text-lg font-semibold text-green-900">{team._count.tasks}</div>
-                  <div className="text-xs text-green-700">Tasks</div>
+                  <div className="text-lg font-semibold text-emerald-900">{team._count.tasks}</div>
+                  <div className="text-xs font-medium text-emerald-700">Tasks</div>
                 </div>
-                <div className="text-center p-2 bg-purple-50 rounded-lg">
+                <div className="text-center p-3 bg-purple-50 rounded-lg border border-purple-100">
                   <div className="flex items-center justify-center mb-1">
                     <Settings className="w-4 h-4 text-purple-600" />
                   </div>
                   <div className="text-lg font-semibold text-purple-900">{team._count.events}</div>
-                  <div className="text-xs text-purple-700">Events</div>
+                  <div className="text-xs font-medium text-purple-700">Events</div>
                 </div>
               </div>
 
               {/* Team Members Preview */}
               {team.members.length > 0 && (
                 <div>
-                  <div className="text-sm font-medium text-gray-700 mb-2">Team Members</div>
+                  <div className="text-sm font-medium text-slate-700 mb-2">Team Members</div>
                   <div className="flex items-center space-x-2">
                     <div className="flex -space-x-2">
                       {team.members.slice(0, 4).map((member) => (
-                        <Avatar key={member.id} className="w-8 h-8 border-2 border-white">
+                        <Avatar key={member.id} className="w-8 h-8 border-2 border-white rounded-lg ring-2 ring-slate-100">
                           <AvatarImage src={member.user.image || undefined} />
-                          <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium text-xs">
-                            {member.user.name 
-                              ? member.user.name.split(' ').map(n => n[0]).join('') 
+                          <AvatarFallback className="rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 text-blue-700 font-medium text-xs">
+                            {member.user.name
+                              ? member.user.name.split(' ').map(n => n[0]).join('')
                               : member.user.email?.[0]?.toUpperCase() || '??'
                             }
                           </AvatarFallback>
@@ -331,14 +331,14 @@ export default function AdminTeamsPage() {
                       ))}
                     </div>
                     {team.members.length > 4 && (
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs font-medium text-slate-500">
                         +{team.members.length - 4} more
                       </span>
                     )}
                   </div>
                   <div className="mt-2">
                     {team.members.filter(m => m.role === 'LEADER').length > 0 && (
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="text-xs rounded-md border-slate-200 font-medium">
                         {team.members.filter(m => m.role === 'LEADER').length} Leader(s)
                       </Badge>
                     )}
@@ -347,8 +347,8 @@ export default function AdminTeamsPage() {
               )}
 
               {/* Creation Date */}
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <div className="text-xs text-gray-500">
+              <div className="mt-4 pt-4 border-t border-slate-100">
+                <div className="text-xs font-medium text-slate-500">
                   Created {new Date(team.createdAt).toLocaleDateString()}
                 </div>
               </div>

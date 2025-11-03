@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { UserRole } from '@prisma/client'
+import { getCorsHeaders } from '@/lib/cors'
 
 async function verifyAdminSession(req: NextRequest): Promise<boolean> {
   try {
@@ -55,8 +56,17 @@ async function adminMiddleware(req: NextRequest) {
 
 export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
-  
-  // Allow CORS preflight requests (OPTIONS) to pass through without authentication
+
+  // Handle CORS preflight requests (OPTIONS) for API v1 routes
+  if (req.method === 'OPTIONS' && pathname.startsWith('/api/v1')) {
+    const corsHeaders = getCorsHeaders(req)
+    return new NextResponse(null, {
+      status: 204,
+      headers: corsHeaders,
+    })
+  }
+
+  // Allow other CORS preflight requests (OPTIONS) to pass through
   if (req.method === 'OPTIONS') {
     return NextResponse.next()
   }
@@ -142,8 +152,17 @@ export default async function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL('/user/dashboard', req.url))
     }
   }
-  
-  return NextResponse.next()
+
+  // Add CORS headers to all /api/v1/* responses
+  const response = NextResponse.next()
+  if (pathname.startsWith('/api/v1')) {
+    const corsHeaders = getCorsHeaders(req)
+    Object.entries(corsHeaders).forEach(([key, value]) => {
+      response.headers.set(key, value)
+    })
+  }
+
+  return response
 }
 
 export const config = {

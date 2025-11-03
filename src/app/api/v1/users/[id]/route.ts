@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
 import { authOptions } from '@/lib/auth'
+import { handleCorsPreFlight, corsResponse } from '@/lib/cors'
 
 /**
  * Helper function to verify API Key for server-to-server authentication.
@@ -19,6 +20,10 @@ function verifyApiKey(request: NextRequest): boolean {
   return apiKey === validApiKey
 }
 
+export async function OPTIONS(req: NextRequest) {
+  return handleCorsPreFlight(req)
+}
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -32,7 +37,7 @@ export async function GET(
 
     // Allow access if either auth method is valid
     if (!hasValidApiKey && !session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return corsResponse(req, { error: 'Unauthorized' }, { status: 401 })
     }
 
     // Fetch user from database
@@ -67,12 +72,12 @@ export async function GET(
     })
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      return corsResponse(req, { error: 'User not found' }, { status: 404 })
     }
 
-    return NextResponse.json(user)
+    return corsResponse(req, user)
   } catch (error) {
     console.error('Error fetching user profile:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return corsResponse(req, { error: 'Internal server error' }, { status: 500 })
   }
 }

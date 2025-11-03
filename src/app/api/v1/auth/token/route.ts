@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { handleCorsPreFlight, corsResponse } from '@/lib/cors'
 import jwt from 'jsonwebtoken'
 
 /**
@@ -21,13 +22,19 @@ import jwt from 'jsonwebtoken'
  *
  * @returns {object} - { success: boolean, token: string, expiresAt: number, user: object }
  */
+
+export async function OPTIONS(request: NextRequest) {
+  return handleCorsPreFlight(request)
+}
+
 export async function GET(request: NextRequest) {
   try {
     // Get the current session
     const session = await getServerSession(authOptions)
 
     if (!session || !session.user) {
-      return NextResponse.json(
+      return corsResponse(
+        request,
         { error: 'Unauthorized - No active session' },
         { status: 401 }
       )
@@ -50,7 +57,7 @@ export async function GET(request: NextRequest) {
       algorithm: 'HS256'
     })
 
-    return NextResponse.json({
+    return corsResponse(request, {
       success: true,
       token,
       expiresAt: Date.now() + (60 * 60 * 1000), // 1 hour from now
@@ -64,7 +71,8 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error generating token:', error)
-    return NextResponse.json(
+    return corsResponse(
+      request,
       { error: 'Internal server error' },
       { status: 500 }
     )

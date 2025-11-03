@@ -249,8 +249,8 @@ export default function AdminsPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Administrator Management</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-2xl font-semibold text-slate-900">Administrator Management</h1>
+          <p className="text-sm font-medium text-slate-600 mt-1">
             Manage administrator accounts with secure access control
           </p>
         </div>
@@ -379,26 +379,26 @@ export default function AdminsPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
+        <Card className="bg-white border border-slate-200 rounded-xl shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Administrators</CardTitle>
-            <Shield className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-slate-900">Total Administrators</CardTitle>
+            <Shield className="h-4 w-4 text-slate-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{pagination.total}</div>
+            <div className="text-2xl font-semibold text-slate-900">{pagination.total}</div>
             <p className="text-xs text-muted-foreground">
               Admin accounts
             </p>
           </CardContent>
         </Card>
-        
-        <Card>
+
+        <Card className="bg-white border border-slate-200 rounded-xl shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Administrators</CardTitle>
-            <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-slate-900">Active Administrators</CardTitle>
+            <ShieldCheck className="h-4 w-4 text-slate-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-semibold text-slate-900">
               {admins.filter(admin => admin.isActive).length}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -406,14 +406,14 @@ export default function AdminsPage() {
             </p>
           </CardContent>
         </Card>
-        
-        <Card>
+
+        <Card className="bg-white border border-slate-200 rounded-xl shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Inactive Administrators</CardTitle>
-            <ShieldX className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-slate-900">Inactive Administrators</CardTitle>
+            <ShieldX className="h-4 w-4 text-slate-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-semibold text-slate-900">
               {includeInactive ? admins.filter(admin => !admin.isActive).length : '—'}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -424,10 +424,10 @@ export default function AdminsPage() {
       </div>
 
       {/* Administrators List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Administrator Accounts</CardTitle>
-          <CardDescription>
+      <Card className="bg-white border border-slate-200 rounded-xl shadow-sm">
+        <CardHeader className="border-b border-slate-100">
+          <CardTitle className="text-lg font-semibold text-slate-900">Administrator Accounts</CardTitle>
+          <CardDescription className="text-sm font-medium text-slate-600">
             Manage administrator access and permissions
           </CardDescription>
         </CardHeader>
@@ -437,16 +437,16 @@ export default function AdminsPage() {
               {admins.map((admin) => (
                 <div
                   key={admin.id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:border-gray-300 transition-colors"
+                  className="flex items-center justify-between p-4 border border-slate-200 rounded-xl hover:border-slate-300 hover:shadow-sm transition-all"
                 >
                   <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                    <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center ring-2 ring-slate-200">
                       <Users2 className="h-5 w-5 text-blue-600" />
                     </div>
-                    
+
                     <div>
-                      <h3 className="font-medium text-gray-900">{admin.username}</h3>
-                      <p className="text-sm text-gray-500">
+                      <h3 className="font-semibold text-slate-900">{admin.username}</h3>
+                      <p className="text-sm font-medium text-slate-500">
                         Created {new Date(admin.createdAt).toLocaleDateString()}
                       </p>
                     </div>
@@ -464,7 +464,7 @@ export default function AdminsPage() {
                       />
                     </div>
                     
-                    <Badge variant={admin.isActive ? "default" : "secondary"}>
+                    <Badge variant={admin.isActive ? "default" : "secondary"} className="rounded-md px-2.5 py-0.5 text-xs font-medium">
                       {admin.isActive ? "Active" : "Inactive"}
                     </Badge>
                     
@@ -525,12 +525,12 @@ export default function AdminsPage() {
       </Card>
 
       {/* Security Notice */}
-      <Card className="border-yellow-200 bg-yellow-50">
-        <CardHeader>
-          <CardTitle className="text-yellow-800">Security Guidelines</CardTitle>
+      <Card className="border border-amber-200 bg-amber-50 rounded-xl shadow-sm">
+        <CardHeader className="border-b border-amber-100">
+          <CardTitle className="text-lg font-semibold text-amber-900">Security Guidelines</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-yellow-800">
+        <CardContent className="pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-amber-800">
             <div>
               <h4 className="font-semibold mb-2">Account Security</h4>
               <ul className="space-y-1">

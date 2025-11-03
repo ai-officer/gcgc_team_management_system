@@ -315,51 +315,51 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Flat Design Recent Users */}
-      <Card className="border-0 rounded-none">
-        <CardHeader className="pb-4 bg-pink-500">
+      {/* Professional Recent Users */}
+      <Card className="border border-slate-200 rounded-xl shadow-sm">
+        <CardHeader className="pb-4 border-b border-slate-100">
           <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-lg font-bold text-white">
-              <div className="p-2 bg-pink-600 rounded-none">
-                <UserPlus className="h-4 w-4 text-white" />
+            <div className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <UserPlus className="h-4 w-4 text-blue-600" />
               </div>
               Recent Users
             </div>
-            <div className="text-sm text-pink-100 font-bold">
+            <div className="text-sm text-slate-600 font-medium">
               Showing {((stats.recentUsers.pagination.page - 1) * stats.recentUsers.pagination.limit) + 1}-{Math.min(stats.recentUsers.pagination.page * stats.recentUsers.pagination.limit, stats.recentUsers.pagination.total)} of {stats.recentUsers.pagination.total}
             </div>
           </CardTitle>
-          <CardDescription className="text-sm font-bold text-pink-100">Recently registered users in the system</CardDescription>
+          <CardDescription className="text-sm font-medium text-slate-600 mt-1">Recently registered users in the system</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
+          <div className="space-y-2">
             {stats.recentUsers.data.map((user) => (
-              <div key={user.id} className="flex items-center justify-between p-4 border-0 rounded-none bg-gray-100 hover:bg-gray-200 transition-colors">
+              <div key={user.id} className="flex items-center justify-between p-4 border border-slate-200 rounded-lg bg-white hover:bg-slate-50 hover:border-slate-300 transition-all duration-200">
                 <div className="flex items-center space-x-4">
-                  <Avatar className="h-10 w-10 rounded-none">
-                    <AvatarFallback className="bg-indigo-500 text-white font-bold rounded-none">
+                  <Avatar className="h-10 w-10 ring-2 ring-slate-200 rounded-lg">
+                    <AvatarFallback className="bg-blue-100 text-blue-700 font-bold rounded-lg">
                       {user.name ? user.name.split(' ').map(n => n[0]).join('') : '??'}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <div className="font-bold">{user.name}</div>
-                    <div className="text-sm font-bold text-gray-600">{user.email}</div>
+                    <div className="font-semibold text-slate-900">{user.name}</div>
+                    <div className="text-sm font-medium text-slate-600">{user.email}</div>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3 text-sm">
-                  <Badge variant="secondary" className={user.role === 'LEADER' ? 'bg-blue-500 text-white border-0 font-bold rounded-none' : 'bg-gray-500 text-white border-0 font-bold rounded-none'}>
+                  <Badge variant="secondary" className={user.role === 'LEADER' ? 'bg-blue-50 text-blue-700 border-blue-200 font-medium rounded-md' : 'bg-slate-100 text-slate-700 border-slate-200 font-medium rounded-md'}>
                     {user.role}
                   </Badge>
                   {user.hierarchyLevel && (
-                    <Badge variant="outline" className="border-0 bg-gray-300 font-bold rounded-none">
+                    <Badge variant="outline" className="border-slate-200 bg-slate-50 text-slate-700 font-medium rounded-md">
                       {user.hierarchyLevel}
                     </Badge>
                   )}
                   <div className="text-right">
-                    <div className="font-bold text-sm">
+                    <div className="font-medium text-sm text-slate-700">
                       {new Date(user.createdAt).toLocaleDateString()}
                     </div>
-                    <Badge variant="secondary" className={user.isActive ? "bg-emerald-500 text-white border-0 text-xs font-bold rounded-none" : "bg-gray-400 text-white border-0 text-xs font-bold rounded-none"}>
+                    <Badge variant="secondary" className={user.isActive ? "bg-emerald-50 text-emerald-700 border-emerald-200 text-xs font-medium rounded-md" : "bg-slate-100 text-slate-600 border-slate-200 text-xs font-medium rounded-md"}>
                       {user.isActive ? 'Active' : 'Inactive'}
                     </Badge>
                   </div>

@@ -224,15 +224,15 @@ export default function JobLevelsPage() {
 
   const getHierarchyColor = (order: number) => {
     const colors = [
-      'bg-red-100 text-red-800',      // RF1 - Lowest
-      'bg-orange-100 text-orange-800', // RF2
-      'bg-yellow-100 text-yellow-800', // RF3
-      'bg-green-100 text-green-800',   // OF1
-      'bg-blue-100 text-blue-800',     // OF2
-      'bg-purple-100 text-purple-800', // M1
-      'bg-pink-100 text-pink-800',     // M2 - Highest
+      'bg-slate-50 text-slate-800 border border-slate-200',      // RF1 - Lowest
+      'bg-amber-50 text-amber-800 border border-amber-200', // RF2
+      'bg-orange-50 text-orange-800 border border-orange-200', // RF3
+      'bg-emerald-50 text-emerald-800 border border-emerald-200',   // OF1
+      'bg-blue-50 text-blue-800 border border-blue-200',     // OF2
+      'bg-purple-50 text-purple-800 border border-purple-200', // M1
+      'bg-pink-50 text-pink-800 border border-pink-200',     // M2 - Highest
     ]
-    return colors[order - 1] || 'bg-gray-100 text-gray-800'
+    return colors[order - 1] || 'bg-slate-50 text-slate-800 border border-slate-200'
   }
 
   if (loading) {
@@ -251,8 +251,8 @@ export default function JobLevelsPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Job Level Management</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-2xl font-semibold text-slate-900">Job Level Management</h1>
+          <p className="text-sm font-medium text-slate-600 mt-1">
             Manage organizational hierarchy levels - drag and drop to reorder
           </p>
         </div>
@@ -330,26 +330,26 @@ export default function JobLevelsPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
+        <Card className="bg-white border border-slate-200 rounded-xl shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Job Levels</CardTitle>
-            <Crown className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-slate-900">Total Job Levels</CardTitle>
+            <Crown className="h-4 w-4 text-slate-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{jobLevels.length}</div>
+            <div className="text-2xl font-semibold text-slate-900">{jobLevels.length}</div>
             <p className="text-xs text-muted-foreground">
               Hierarchy levels defined
             </p>
           </CardContent>
         </Card>
-        
-        <Card>
+
+        <Card className="bg-white border border-slate-200 rounded-xl shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Hierarchy Range</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-slate-900">Hierarchy Range</CardTitle>
+            <TrendingUp className="h-4 w-4 text-slate-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-semibold text-slate-900">
               {jobLevels.length > 0 ? `${jobLevels[0]?.name} - ${jobLevels[jobLevels.length - 1]?.name}` : 'None'}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -357,14 +357,14 @@ export default function JobLevelsPage() {
             </p>
           </CardContent>
         </Card>
-        
-        <Card>
+
+        <Card className="bg-white border border-slate-200 rounded-xl shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Levels</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-slate-900">Active Levels</CardTitle>
+            <Users className="h-4 w-4 text-slate-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-semibold text-slate-900">
               {jobLevels.filter(j => j.isActive).length}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -375,10 +375,10 @@ export default function JobLevelsPage() {
       </div>
 
       {/* Job Levels List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Organizational Hierarchy</CardTitle>
-          <CardDescription>
+      <Card className="bg-white border border-slate-200 rounded-xl shadow-sm">
+        <CardHeader className="border-b border-slate-100">
+          <CardTitle className="text-lg font-semibold text-slate-900">Organizational Hierarchy</CardTitle>
+          <CardDescription className="text-sm font-medium text-slate-600">
             Drag and drop to reorder hierarchy levels. Lower position = lower rank.
           </CardDescription>
         </CardHeader>
@@ -397,10 +397,10 @@ export default function JobLevelsPage() {
                         <div
                           ref={provided.innerRef}
                           {...provided.draggableProps}
-                          className={`flex items-center space-x-4 p-4 border rounded-lg transition-all ${
+                          className={`flex items-center space-x-4 p-4 border rounded-xl transition-all ${
                             snapshot.isDragging
                               ? 'shadow-lg border-blue-300 bg-blue-50'
-                              : 'border-gray-200 hover:border-gray-300'
+                              : 'border-slate-200 hover:border-slate-300'
                           }`}
                         >
                           <div
@@ -411,18 +411,18 @@ export default function JobLevelsPage() {
                           </div>
                           
                           <div className="flex items-center space-x-3 flex-1">
-                            <Badge className={`text-xs ${getHierarchyColor(jobLevel.order)}`}>
+                            <Badge className={`text-xs rounded-md px-2.5 py-0.5 font-medium ${getHierarchyColor(jobLevel.order)}`}>
                               #{jobLevel.order}
                             </Badge>
-                            
+
                             <div className="flex-1">
-                              <h3 className="font-medium text-gray-900">{jobLevel.name}</h3>
+                              <h3 className="font-semibold text-slate-900">{jobLevel.name}</h3>
                               {jobLevel.description && (
-                                <p className="text-sm text-gray-600">{jobLevel.description}</p>
+                                <p className="text-sm font-medium text-slate-600">{jobLevel.description}</p>
                               )}
                             </div>
-                            
-                            <Badge variant={jobLevel.isActive ? "default" : "secondary"}>
+
+                            <Badge variant={jobLevel.isActive ? "default" : "secondary"} className="rounded-md px-2.5 py-0.5 text-xs font-medium">
                               {jobLevel.isActive ? "Active" : "Inactive"}
                             </Badge>
                           </div>
@@ -489,10 +489,10 @@ export default function JobLevelsPage() {
       </Card>
 
       {/* Default Hierarchy Guide */}
-      <Card className="border-blue-200 bg-blue-50">
-        <CardHeader>
-          <CardTitle className="text-blue-800">Default Hierarchy Guide</CardTitle>
-          <CardDescription className="text-blue-700">
+      <Card className="border border-blue-200 bg-blue-50 rounded-xl shadow-sm">
+        <CardHeader className="border-b border-blue-100">
+          <CardTitle className="text-lg font-semibold text-blue-900">Default Hierarchy Guide</CardTitle>
+          <CardDescription className="text-sm font-medium text-blue-700">
             Recommended organizational hierarchy structure
           </CardDescription>
         </CardHeader>

@@ -109,13 +109,13 @@ export default function AdminHierarchyPage() {
     const hierarchyOrder = [HierarchyLevel.RF1, HierarchyLevel.RF2, HierarchyLevel.RF3, HierarchyLevel.OF1, HierarchyLevel.OF2, HierarchyLevel.M1, HierarchyLevel.M2]
     const index = hierarchyOrder.indexOf(level)
     const colors = [
-      'bg-gray-100 text-gray-700 border-gray-200',
-      'bg-yellow-100 text-yellow-700 border-yellow-200',
-      'bg-orange-100 text-orange-700 border-orange-200',
-      'bg-blue-100 text-blue-700 border-blue-200',
-      'bg-indigo-100 text-indigo-700 border-indigo-200',
-      'bg-purple-100 text-purple-700 border-purple-200',
-      'bg-pink-100 text-pink-700 border-pink-200'
+      'bg-slate-50 text-slate-700 border border-slate-200',
+      'bg-amber-50 text-amber-700 border border-amber-200',
+      'bg-orange-50 text-orange-700 border border-orange-200',
+      'bg-blue-50 text-blue-700 border border-blue-200',
+      'bg-indigo-50 text-indigo-700 border border-indigo-200',
+      'bg-purple-50 text-purple-700 border border-purple-200',
+      'bg-pink-50 text-pink-700 border border-pink-200'
     ]
     return colors[index] || colors[0]
   }
@@ -150,14 +150,14 @@ export default function AdminHierarchyPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Hierarchy Management</h1>
-          <p className="text-gray-600">Manage organizational hierarchy and user promotions</p>
+          <h1 className="text-2xl font-semibold text-slate-900">Hierarchy Management</h1>
+          <p className="text-sm font-medium text-slate-600">Manage organizational hierarchy and user promotions</p>
         </div>
       </div>
 
       {/* Bulk Actions */}
       {selectedUsers.length > 0 && (
-        <Card className="bg-blue-50 border-blue-200">
+        <Card className="bg-blue-50 border border-blue-200 rounded-xl shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
@@ -222,14 +222,14 @@ export default function AdminHierarchyPage() {
       {/* Hierarchy Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {hierarchyData.hierarchyLevels.map((levelData) => (
-          <Card key={levelData.level} className="relative overflow-hidden">
-            <CardHeader className="pb-3">
+          <Card key={levelData.level} className="relative overflow-hidden bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="pb-3 border-b border-slate-100">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   {getHierarchyIcon(levelData.level)}
                   <CardTitle className="text-lg">{levelData.level}</CardTitle>
                 </div>
-                <Badge className={getHierarchyColor(levelData.level)}>
+                <Badge className={`${getHierarchyColor(levelData.level)} rounded-md px-2.5 py-0.5 text-xs font-medium`}>
                   {levelData.count} users
                 </Badge>
               </div>
@@ -245,21 +245,21 @@ export default function AdminHierarchyPage() {
                       checked={selectedUsers.includes(user.id)}
                       onCheckedChange={() => toggleUserSelection(user.id)}
                     />
-                    <Avatar className="h-8 w-8">
+                    <Avatar className="h-8 w-8 rounded-lg ring-2 ring-slate-200">
                       <AvatarImage src={user.image || undefined} />
-                      <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium text-xs">
-                        {user.name 
-                          ? user.name.split(' ').map(n => n[0]).join('') 
+                      <AvatarFallback className="rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 text-blue-700 font-medium text-xs">
+                        {user.name
+                          ? user.name.split(' ').map(n => n[0]).join('')
                           : user.email?.[0]?.toUpperCase() || '?'
                         }
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
+                      <p className="text-sm font-medium text-slate-900 truncate">
                         {user.name}
                       </p>
-                      <p className="text-xs text-gray-500 truncate">
-                        {user.teamMembers.length > 0 
+                      <p className="text-xs font-medium text-slate-500 truncate">
+                        {user.teamMembers.length > 0
                           ? user.teamMembers.map(tm => tm.team.name).join(', ')
                           : 'No team assigned'
                         }

@@ -550,10 +550,10 @@ export default function AdminUsersPage() {
 
   const getRoleColor = (role: UserRole) => {
     switch (role) {
-      case UserRole.ADMIN: return 'bg-red-100 text-red-700 border-red-200'
-      case UserRole.LEADER: return 'bg-blue-100 text-blue-700 border-blue-200'
-      case UserRole.MEMBER: return 'bg-green-100 text-green-700 border-green-200'
-      default: return 'bg-gray-100 text-gray-700 border-gray-200'
+      case UserRole.ADMIN: return 'bg-red-50 text-red-700 border border-red-200'
+      case UserRole.LEADER: return 'bg-blue-50 text-blue-700 border border-blue-200'
+      case UserRole.MEMBER: return 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+      default: return 'bg-slate-50 text-slate-700 border border-slate-200'
     }
   }
 
@@ -561,13 +561,13 @@ export default function AdminUsersPage() {
     const hierarchyOrder = ['RF1', 'RF2', 'RF3', 'OF1', 'OF2', 'M1', 'M2']
     const index = hierarchyOrder.indexOf(level)
     const colors = [
-      'bg-gray-100 text-gray-700',
-      'bg-yellow-100 text-yellow-700',
-      'bg-orange-100 text-orange-700',
-      'bg-blue-100 text-blue-700',
-      'bg-indigo-100 text-indigo-700',
-      'bg-purple-100 text-purple-700',
-      'bg-pink-100 text-pink-700'
+      'bg-slate-50 text-slate-700 border border-slate-200',
+      'bg-amber-50 text-amber-700 border border-amber-200',
+      'bg-orange-50 text-orange-700 border border-orange-200',
+      'bg-blue-50 text-blue-700 border border-blue-200',
+      'bg-indigo-50 text-indigo-700 border border-indigo-200',
+      'bg-purple-50 text-purple-700 border border-purple-200',
+      'bg-pink-50 text-pink-700 border border-pink-200'
     ]
     return colors[index] || colors[0]
   }
@@ -577,12 +577,12 @@ export default function AdminUsersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">User Management</h1>
-          <p className="text-gray-600">Manage system users, roles, and hierarchy levels</p>
+          <h1 className="text-2xl font-semibold text-slate-900">User Management</h1>
+          <p className="text-sm font-medium text-slate-600">Manage system users, roles, and hierarchy levels</p>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700">
+            <Button className="bg-blue-600 hover:bg-blue-700 shadow-sm">
               <Plus className="w-4 h-4 mr-2" />
               Add User
             </Button>
@@ -1035,12 +1035,12 @@ export default function AdminUsersPage() {
       {/* Filters */}
       <div className="flex items-center space-x-4">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
           <Input
             placeholder="Search users..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
           />
         </div>
         <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as UserRole | 'all')}>
@@ -1079,39 +1079,39 @@ export default function AdminUsersPage() {
       ) : (
         <div className="grid gap-4">
           {users.map((user) => (
-            <Card key={user.id} className="p-6">
+            <Card key={user.id} className="p-6 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  <Avatar className="h-12 w-12">
-                    <AvatarFallback>
+                  <Avatar className="h-12 w-12 rounded-lg ring-2 ring-slate-200">
+                    <AvatarFallback className="rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 text-blue-700 font-semibold">
                       {user.name ? user.name.split(' ').map(n => n[0]).join('') : <User className="w-6 h-6" />}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <h3 className="font-semibold text-gray-900">{user.name}</h3>
-                    <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <h3 className="font-semibold text-slate-900">{user.name}</h3>
+                    <div className="flex items-center space-x-2 text-sm font-medium text-slate-600">
                       <Mail className="w-4 h-4" />
                       <span>{user.email}</span>
                     </div>
                     <div className="flex items-center space-x-2 mt-1">
-                      <Badge className={getRoleColor(user.role)}>
+                      <Badge className={`${getRoleColor(user.role)} rounded-md px-2.5 py-0.5 text-xs font-medium`}>
                         <Shield className="w-3 h-3 mr-1" />
                         {user.role}
                       </Badge>
                       {user.hierarchyLevel ? (
-                        <Badge className={getHierarchyColor(user.hierarchyLevel)}>
+                        <Badge className={`${getHierarchyColor(user.hierarchyLevel)} rounded-md px-2.5 py-0.5 text-xs font-medium`}>
                           {user.hierarchyLevel}
                         </Badge>
                       ) : user.role === UserRole.ADMIN ? (
-                        <Badge className="bg-purple-100 text-purple-700 border-purple-200">
+                        <Badge className="bg-purple-50 text-purple-700 border border-purple-200 rounded-md px-2.5 py-0.5 text-xs font-medium">
                           System Access
                         </Badge>
                       ) : (
-                        <Badge variant="outline">
+                        <Badge variant="outline" className="rounded-md px-2.5 py-0.5 text-xs font-medium border-slate-200">
                           No Hierarchy
                         </Badge>
                       )}
-                      <Badge variant={user.isActive ? "default" : "secondary"}>
+                      <Badge variant={user.isActive ? "default" : "secondary"} className="rounded-md px-2.5 py-0.5 text-xs font-medium">
                         {user.isActive ? 'Active' : 'Inactive'}
                       </Badge>
                     </div>

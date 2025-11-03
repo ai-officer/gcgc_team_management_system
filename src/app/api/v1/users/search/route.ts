@@ -1,25 +1,26 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
 import { authOptions } from '@/lib/auth'
+import { handleCorsPreFlight, corsResponse } from '@/lib/cors'
 
 export async function OPTIONS(req: NextRequest) {
-  return new NextResponse(null, { status: 200 })
+  return handleCorsPreFlight(req)
 }
 
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return corsResponse(req, { error: 'Unauthorized' }, { status: 401 })
     }
 
     const { searchParams } = new URL(req.url)
     const query = searchParams.get('q')
     const limit = parseInt(searchParams.get('limit') || '10')
-    
+
     if (!query || query.trim().length < 1) {
-      return NextResponse.json({ users: [] })
+      return corsResponse(req, { users: [] })
     }
 
     // Search users by name, email, or username - optimized for chat
@@ -60,10 +61,11 @@ export async function GET(req: NextRequest) {
       ]
     })
 
-    return NextResponse.json({ users })
+    return corsResponse(req, { users })
   } catch (error) {
     console.error('User search error:', error)
-    return NextResponse.json(
+    return corsResponse(
+      req,
       { error: 'Internal server error' },
       { status: 500 }
     )

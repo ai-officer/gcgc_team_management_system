@@ -1,17 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
 import { authOptions } from '@/lib/auth'
+import { handleCorsPreFlight, corsResponse } from '@/lib/cors'
 
 export async function OPTIONS(req: NextRequest) {
-  return new NextResponse(null, { status: 200 })
+  return handleCorsPreFlight(req)
 }
 
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return corsResponse(req, { error: 'Unauthorized' }, { status: 401 })
     }
 
     const user = await prisma.user.findUnique({
@@ -61,7 +62,7 @@ export async function GET(req: NextRequest) {
     })
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      return corsResponse(req, { error: 'User not found' }, { status: 404 })
     }
 
     // Add computed fields that TMS-client expects
@@ -72,9 +73,9 @@ export async function GET(req: NextRequest) {
       lastSyncedAt: new Date().toISOString(),
     }
 
-    return NextResponse.json(response)
+    return corsResponse(req, response)
   } catch (error) {
     console.error('Error fetching current user profile:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return corsResponse(req, { error: 'Internal server error' }, { status: 500 })
   }
 }

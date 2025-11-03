@@ -173,7 +173,11 @@ export default function OSSBWizardForm({ isOpen, onClose, onSuccess }: OSSBWizar
       const result = await response.json()
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to create OSSB request')
+        console.error('❌ Server validation failed:', result.details)
+        const errorMessage = result.details
+          ? `Validation failed: ${JSON.stringify(result.details, null, 2)}`
+          : result.error || 'Failed to create OSSB request'
+        throw new Error(errorMessage)
       }
 
       // Upload attachments if any

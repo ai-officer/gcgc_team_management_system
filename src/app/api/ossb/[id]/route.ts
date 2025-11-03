@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { ossbRequestSchema } from '@/lib/validations/ossb'
+import { EventType } from '@prisma/client'
+import { googleCalendarService } from '@/lib/google-calendar'
 
 /**
  * GET /api/ossb/[id]
@@ -229,7 +231,7 @@ export async function PUT(
 
 /**
  * DELETE /api/ossb/[id]
- * Delete an OSSB request
+ * Delete an OSSB request and associated calendar events
  */
 export async function DELETE(
   request: NextRequest,
@@ -268,18 +270,75 @@ export async function DELETE(
       )
     }
 
-    // Delete OSSB request (cascade will delete program steps and attachments)
+    console.log(`🗑️  Deleting OSSB request ${params.id} (${existingRequest.referenceNo}) and associated calendar events...`)
+
+    // 1. Find all associated calendar events
+    const associatedEvents = await prisma.event.findMany({
+      where: {
+        creatorId: existingRequest.creatorId,
+        OR: [
+          { title: { contains: `[OSSB] ${existingRequest.objectiveTitle}` } },
+          { title: { contains: `[OSSB Milestone] ${existingRequest.objectiveTitle}` } }
+        ],
+        type: EventType.MILESTONE
+      }
+    })
+
+    console.log(`📅 Found ${associatedEvents.length} calendar events associated with OSSB ${existingRequest.referenceNo}`)
+
+    // 2. Delete from Google Calendar first
+    let googleDeletedCount = 0
+    let googleErrorCount = 0
+
+    for (const event of associatedEvents) {
+      if (event.googleCalendarEventId && event.googleCalendarId) {
+        try {
+          await googleCalendarService.deleteEvent(
+            session.user.id,
+            event.googleCalendarEventId,
+            event.googleCalendarId
+          )
+          googleDeletedCount++
+          console.log(`✅ Deleted Google Calendar event: ${event.title}`)
+        } catch (error: any) {
+          googleErrorCount++
+          console.error(`❌ Error deleting Google Calendar event "${event.title}":`, error.message)
+        }
+      }
+    }
+
+    // 3. Delete calendar events from TMS database
+    const deletedEventsResult = await prisma.event.deleteMany({
+      where: {
+        id: {
+          in: associatedEvents.map(e => e.id)
+        }
+      }
+    })
+
+    console.log(`✅ Deleted ${deletedEventsResult.count} TMS calendar events`)
+
+    // 4. Delete OSSB request (cascade will delete program steps and attachments)
     await prisma.oSSBRequest.delete({
       where: { id: params.id }
     })
 
+    console.log(`✅ Successfully deleted OSSB request ${existingRequest.referenceNo}`)
+
     return NextResponse.json({
-      message: 'OSSB request deleted successfully'
+      success: true,
+      message: 'OSSB request and associated calendar events deleted successfully',
+      details: {
+        ossbDeleted: true,
+        tmsEventsDeleted: deletedEventsResult.count,
+        googleEventsDeleted: googleDeletedCount,
+        googleEventErrors: googleErrorCount
+      }
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error deleting OSSB request:', error)
     return NextResponse.json(
-      { error: 'Failed to delete OSSB request' },
+      { error: 'Failed to delete OSSB request', details: error.message },
       { status: 500 }
     )
   }

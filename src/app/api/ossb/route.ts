@@ -131,10 +131,25 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     console.log('📥 Received OSSB request body:', JSON.stringify(body, null, 2))
 
+    // Convert date strings to Date objects
+    const transformedBody = {
+      ...body,
+      startDate: body.startDate ? new Date(body.startDate) : undefined,
+      endDate: body.endDate ? new Date(body.endDate) : undefined,
+      datePrepared: body.datePrepared ? new Date(body.datePrepared) : null,
+      dateEndorsed: body.dateEndorsed ? new Date(body.dateEndorsed) : null,
+      dateRecommended: body.dateRecommended ? new Date(body.dateRecommended) : null,
+      dateApproved: body.dateApproved ? new Date(body.dateApproved) : null,
+      programSteps: body.programSteps?.map((step: any) => ({
+        ...step,
+        deadline: step.deadline ? new Date(step.deadline) : undefined
+      })) || []
+    }
+
     // Validate input
     let validatedData
     try {
-      validatedData = ossbRequestSchema.parse(body)
+      validatedData = ossbRequestSchema.parse(transformedBody)
       console.log('✅ Validation passed')
     } catch (validationError: any) {
       console.error('❌ Validation failed:', validationError.errors || validationError)

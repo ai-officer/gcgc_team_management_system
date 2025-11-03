@@ -129,8 +129,23 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
+    console.log('📥 Received OSSB request body:', JSON.stringify(body, null, 2))
 
     // Validate input
+    try {
+      const validatedData = ossbRequestSchema.parse(body)
+      console.log('✅ Validation passed')
+    } catch (validationError: any) {
+      console.error('❌ Validation failed:', validationError.errors || validationError)
+      return NextResponse.json(
+        {
+          error: 'Validation error',
+          details: validationError.errors || validationError.message
+        },
+        { status: 400 }
+      )
+    }
+
     const validatedData = ossbRequestSchema.parse(body)
 
     // Calculate total budget from program steps

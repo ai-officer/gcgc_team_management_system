@@ -193,9 +193,29 @@ export default function OSSBWizardForm({ isOpen, onClose, onSuccess }: OSSBWizar
         }
       }
 
+      // Show success message with sync status
+      const syncResults = result.syncResults
+      let description = 'OSSB request created successfully'
+
+      if (syncResults) {
+        description += ` (${syncResults.tmsEventsCreated} events created in TMS)`
+
+        if (syncResults.googleSyncAttempted) {
+          if (syncResults.googleSyncSucceeded > 0) {
+            description += `. ${syncResults.googleSyncSucceeded} events synced to Google Calendar`
+          }
+          if (syncResults.googleSyncFailed > 0) {
+            description += `. ⚠️ ${syncResults.googleSyncFailed} events failed to sync - try manual sync`
+          }
+        } else {
+          description += '. Google Calendar sync is disabled'
+        }
+      }
+
       toast({
         title: 'Success',
-        description: 'OSSB request created successfully'
+        description,
+        variant: syncResults?.googleSyncFailed > 0 ? 'default' : 'default'
       })
 
       onSuccess?.()

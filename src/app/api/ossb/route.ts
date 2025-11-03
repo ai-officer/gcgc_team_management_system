@@ -269,6 +269,8 @@ export async function POST(request: NextRequest) {
 
     // Create calendar events for the OSSB project
     const createdEvents: any[] = []
+    let syncSettings: any = null
+
     try {
       // 1. Create main project event (startDate to endDate)
       const projectEvent = await prisma.event.create({
@@ -316,7 +318,7 @@ export async function POST(request: NextRequest) {
       console.log(`✅ Created ${createdEvents.length} TMS calendar events for OSSB ${ossbRequest.referenceNo}`)
 
       // 3. Automatically sync to Google Calendar if enabled
-      const syncSettings = await prisma.calendarSyncSettings.findUnique({
+      syncSettings = await prisma.calendarSyncSettings.findUnique({
         where: { userId: session.user.id }
       })
 
@@ -387,9 +389,36 @@ export async function POST(request: NextRequest) {
       console.error('❌ Error creating/syncing calendar events for OSSB:', calendarError)
     }
 
+    // Collect sync results to return to user
+    const syncResults = {
+      tmsEventsCreated: createdEvents.length,
+      googleSyncAttempted: false,
+      googleSyncSucceeded: 0,
+      googleSyncFailed: 0,
+      syncErrors: [] as string[]
+    }
+
+    // Check if sync was attempted
+    if (syncSettings?.isEnabled && syncSettings.syncDirection !== 'GOOGLE_TO_TMS') {
+      syncResults.googleSyncAttempted = true
+      // Count synced events
+      for (const event of createdEvents) {
+        const updatedEvent = await prisma.event.findUnique({
+          where: { id: event.id },
+          select: { googleCalendarEventId: true }
+        })
+        if (updatedEvent?.googleCalendarEventId) {
+          syncResults.googleSyncSucceeded++
+        } else {
+          syncResults.googleSyncFailed++
+        }
+      }
+    }
+
     return NextResponse.json({
       ossbRequest,
-      message: 'OSSB request created successfully'
+      message: 'OSSB request created successfully',
+      syncResults
     }, { status: 201 })
   } catch (error: any) {
     console.error('❌ Unexpected error creating OSSB request:', error)

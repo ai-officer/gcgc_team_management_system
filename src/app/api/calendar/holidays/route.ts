@@ -4,19 +4,20 @@ import { authOptions } from '@/lib/auth'
 import { googleCalendarService } from '@/lib/google-calendar'
 
 // GET - Fetch holidays from Google Calendar
+// Returns empty array on any error to prevent UI disruption
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      console.log('[Holidays API] No session found')
+      return NextResponse.json({ holidays: [] })
     }
+
+    console.log('[Holidays API] Fetching holidays for user:', session.user.id)
 
     const { searchParams } = new URL(req.url)
     const country = searchParams.get('country') || 'en.philippines'
-
-    // Fetch holidays from Google's holiday calendar
-    // Format: en.{country}#holiday@group.v.calendar.google.com
     const holidayCalendarId = `${country}#holiday@group.v.calendar.google.com`
 
     try {
@@ -43,19 +44,18 @@ export async function GET(req: NextRequest) {
         isHoliday: true,
       }))
 
+      console.log(`[Holidays API] Successfully fetched ${holidays.length} holidays`)
       return NextResponse.json({ holidays })
     } catch (error: any) {
-      // If calendar not found or not accessible, return empty array
-      if (error.code === 404 || error.code === 403) {
-        return NextResponse.json({ holidays: [] })
-      }
-      throw error
+      console.log('[Holidays API] Calendar error:', error.message || error)
+
+      // Always return empty array for any calendar-related error
+      // This prevents UI disruption when Google Calendar is not connected
+      return NextResponse.json({ holidays: [] })
     }
-  } catch (error) {
-    console.error('Error fetching holidays:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch holidays' },
-      { status: 500 }
-    )
+  } catch (error: any) {
+    console.error('[Holidays API] Unexpected error:', error.message || error)
+    // Return empty holidays instead of 500 error to prevent UI disruption
+    return NextResponse.json({ holidays: [] })
   }
 }

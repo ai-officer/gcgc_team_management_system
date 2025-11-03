@@ -3,6 +3,51 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { ossbRequestSchema } from '@/lib/validations/ossb'
+import { EventType, MIPClassification } from '@prisma/client'
+import { googleCalendarService } from '@/lib/google-calendar'
+
+/**
+ * Helper function to create a detailed event description for OSSB projects
+ */
+function createOSSBEventDescription(ossbData: any, referenceNo: string): string {
+  let description = `OSSB Project: ${ossbData.objectiveTitle}\n\n`
+  description += `Reference No: ${referenceNo}\n`
+  description += `Classification: ${ossbData.mipClassification}\n`
+  description += `Branch/Department: ${ossbData.branchOrDepartment}\n\n`
+
+  if (ossbData.titleObjective) {
+    description += `Objective Statement:\n${ossbData.titleObjective}\n\n`
+  }
+
+  description += `Success Measures:\n`
+  ossbData.successMeasures.forEach((measure: string, index: number) => {
+    description += `${index + 1}. ${measure}\n`
+  })
+
+  if (ossbData.totalBudget > 0) {
+    description += `\nTotal Budget: ₱${ossbData.totalBudget.toLocaleString()}\n`
+  }
+
+  description += `\nStatus: ${ossbData.status}`
+
+  return description
+}
+
+/**
+ * Helper function to get color for MIP classification
+ */
+function getMIPColor(classification: MIPClassification): string {
+  switch (classification) {
+    case 'MAINTENANCE':
+      return '#3b82f6' // Blue
+    case 'IMPROVEMENT':
+      return '#f59e0b' // Orange
+    case 'PROJECT':
+      return '#8b5cf6' // Purple
+    default:
+      return '#6b7280' // Gray
+  }
+}
 
 /**
  * GET /api/ossb
@@ -167,6 +212,119 @@ export async function POST(request: NextRequest) {
         attachments: true
       }
     })
+
+    // Create calendar events for the OSSB project
+    const createdEvents: any[] = []
+    try {
+      // 1. Create main project event (startDate to endDate)
+      const projectEvent = await prisma.event.create({
+        data: {
+          title: `[OSSB] ${validatedData.objectiveTitle}`,
+          description: createOSSBEventDescription(validatedData, ossbRequest.referenceNo),
+          startTime: validatedData.startDate,
+          endTime: validatedData.endDate,
+          allDay: true,
+          type: EventType.MILESTONE,
+          color: getMIPColor(validatedData.mipClassification),
+          creatorId: session.user.id,
+        }
+      })
+      createdEvents.push(projectEvent)
+
+      // 2. Create milestone events for each success measure
+      // Distribute success measures evenly across the project timeline
+      const projectDuration = validatedData.endDate.getTime() - validatedData.startDate.getTime()
+      const successMeasureCount = validatedData.successMeasures.length
+      const milestoneInterval = projectDuration / (successMeasureCount + 1)
+
+      const successMeasureEvents = await Promise.all(
+        validatedData.successMeasures.map((measure, index) => {
+          const milestoneDate = new Date(
+            validatedData.startDate.getTime() + milestoneInterval * (index + 1)
+          )
+
+          return prisma.event.create({
+            data: {
+              title: `[OSSB Milestone] ${validatedData.objectiveTitle} - Measure ${index + 1}`,
+              description: `Success Measure ${index + 1}: ${measure}\n\nProject: ${validatedData.objectiveTitle}\nReference: ${ossbRequest.referenceNo}`,
+              startTime: milestoneDate,
+              endTime: milestoneDate,
+              allDay: true,
+              type: EventType.MILESTONE,
+              color: '#10b981', // Green for success milestones
+              creatorId: session.user.id,
+            }
+          })
+        })
+      )
+      createdEvents.push(...successMeasureEvents)
+
+      console.log(`✅ Created ${createdEvents.length} TMS calendar events for OSSB ${ossbRequest.referenceNo}`)
+
+      // 3. Automatically sync to Google Calendar if enabled
+      const syncSettings = await prisma.calendarSyncSettings.findUnique({
+        where: { userId: session.user.id }
+      })
+
+      if (syncSettings?.isEnabled && syncSettings.syncDirection !== 'GOOGLE_TO_TMS') {
+        console.log(`🔄 Syncing OSSB events to Google Calendar for user ${session.user.id}`)
+
+        // Get or create TMS_CALENDAR
+        let calendarId = syncSettings.googleCalendarId
+        if (!calendarId || calendarId === 'primary') {
+          try {
+            calendarId = await googleCalendarService.findOrCreateTMSCalendar(session.user.id)
+            await prisma.calendarSyncSettings.update({
+              where: { userId: session.user.id },
+              data: { googleCalendarId: calendarId }
+            })
+          } catch (error) {
+            console.error('❌ Error finding/creating TMS_CALENDAR:', error)
+            calendarId = syncSettings.googleCalendarId || 'primary'
+          }
+        }
+
+        // Sync each event to Google Calendar
+        let syncedCount = 0
+        for (const event of createdEvents) {
+          try {
+            const googleEvent = googleCalendarService.convertTMSEventToGoogle(event)
+            const createdGoogleEvent = await googleCalendarService.createEvent(
+              session.user.id,
+              googleEvent,
+              calendarId
+            )
+
+            // Update local event with Google Calendar IDs
+            await prisma.event.update({
+              where: { id: event.id },
+              data: {
+                googleCalendarId: calendarId,
+                googleCalendarEventId: createdGoogleEvent.id!,
+                syncedAt: new Date()
+              }
+            })
+
+            syncedCount++
+          } catch (syncError: any) {
+            console.error(`❌ Error syncing event "${event.title}" to Google Calendar:`, syncError.message)
+          }
+        }
+
+        console.log(`✅ Synced ${syncedCount}/${createdEvents.length} OSSB events to Google Calendar`)
+
+        // Update last synced timestamp
+        await prisma.calendarSyncSettings.update({
+          where: { userId: session.user.id },
+          data: { lastSyncedAt: new Date() }
+        })
+      } else {
+        console.log(`ℹ️  Google Calendar sync not enabled for user ${session.user.id}`)
+      }
+    } catch (calendarError) {
+      // Log error but don't fail the OSSB creation
+      console.error('❌ Error creating/syncing calendar events for OSSB:', calendarError)
+    }
 
     return NextResponse.json({
       ossbRequest,

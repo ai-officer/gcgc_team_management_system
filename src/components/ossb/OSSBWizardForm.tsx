@@ -63,9 +63,10 @@ export default function OSSBWizardForm({ isOpen, onClose, onSuccess }: OSSBWizar
     control,
     watch,
     setValue,
-    formState: { errors }
+    formState: { errors, isValid }
   } = useForm<OSSBRequestInput>({
     resolver: zodResolver(ossbRequestSchema),
+    mode: 'onChange', // Validate on change to show errors immediately
     defaultValues: {
       partOfAnnualPlan: false,
       status: 'DRAFT',
@@ -150,6 +151,14 @@ export default function OSSBWizardForm({ isOpen, onClose, onSuccess }: OSSBWizar
 
   const onSubmit = async (data: OSSBRequestInput) => {
     try {
+      console.log('✅ Form validation passed!')
+      console.log('🚀 Submitting OSSB request:', data)
+
+      toast({
+        title: 'Creating OSSB Request...',
+        description: 'Please wait while we create your request.'
+      })
+
       setIsSubmitting(true)
 
       const response = await fetch('/api/ossb', {
@@ -244,6 +253,45 @@ export default function OSSBWizardForm({ isOpen, onClose, onSuccess }: OSSBWizar
           <Progress value={progress} />
         </div>
 
+        {/* Validation Errors Display */}
+        {Object.keys(errors).length > 0 && (
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+            <h4 className="font-semibold text-destructive mb-2 flex items-center gap-2">
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              ⚠️ Cannot Submit - {Object.keys(errors).length} Error(s) Found:
+            </h4>
+            <ul className="list-disc list-inside space-y-1 text-sm text-destructive">
+              {Object.entries(errors).map(([key, error]: [string, any]) => {
+                const message = error?.message || error?.root?.message || 'Invalid value'
+                return (
+                  <li key={key}>
+                    <span className="font-medium capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>: {message}
+                  </li>
+                )
+              })}
+            </ul>
+            <div className="mt-3 pt-3 border-t border-destructive/20">
+              <p className="text-xs text-destructive/80">
+                💡 Tip: Go back through the steps and ensure all required fields are filled correctly.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Form Validation Status */}
+        <div className="flex items-center justify-between text-sm">
+          <Badge variant={isValid ? "default" : "destructive"}>
+            {isValid ? '✅ Form is ready to submit' : '⚠️ Form has validation errors'}
+          </Badge>
+          <span className="text-muted-foreground">
+            {Object.keys(errors).length === 0
+              ? 'All fields validated'
+              : `${Object.keys(errors).length} error(s) to fix`}
+          </span>
+        </div>
+
         {/* Step Indicators */}
         <div className="flex justify-between">
           {WIZARD_STEPS.map((step) => (
@@ -312,7 +360,24 @@ export default function OSSBWizardForm({ isOpen, onClose, onSuccess }: OSSBWizar
                   <ChevronRight className="h-4 w-4 ml-2" />
                 </Button>
               ) : (
-                <Button type="submit" disabled={isSubmitting}>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  onClick={() => {
+                    console.log('🖱️ Submit button clicked')
+                    console.log('Form is valid:', isValid)
+                    console.log('Current form errors:', errors)
+                    console.log('Current form values:', watch())
+
+                    if (Object.keys(errors).length > 0) {
+                      toast({
+                        title: 'Validation Error',
+                        description: `Please fix ${Object.keys(errors).length} error(s) before submitting.`,
+                        variant: 'destructive'
+                      })
+                    }
+                  }}
+                >
                   {isSubmitting ? 'Creating...' : 'Create OSSB Request'}
                 </Button>
               )}

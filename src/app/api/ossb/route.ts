@@ -168,8 +168,12 @@ export async function POST(request: NextRequest) {
       0
     )
 
+    console.log('💾 Creating OSSB request in database...')
+
     // Create OSSB request with program steps
-    const ossbRequest = await prisma.oSSBRequest.create({
+    let ossbRequest
+    try {
+      ossbRequest = await prisma.oSSBRequest.create({
       data: {
         // Section 1: Header Information
         branchOrDepartment: validatedData.branchOrDepartment,
@@ -240,7 +244,19 @@ export async function POST(request: NextRequest) {
         },
         attachments: true
       }
-    })
+      })
+      console.log('✅ OSSB request created:', ossbRequest.id)
+    } catch (dbError: any) {
+      console.error('❌ Database error creating OSSB:', dbError)
+      return NextResponse.json(
+        {
+          error: 'Failed to create OSSB request',
+          details: dbError.message,
+          code: dbError.code
+        },
+        { status: 500 }
+      )
+    }
 
     // Create calendar events for the OSSB project
     const createdEvents: any[] = []
@@ -359,8 +375,9 @@ export async function POST(request: NextRequest) {
       ossbRequest,
       message: 'OSSB request created successfully'
     }, { status: 201 })
-  } catch (error) {
-    console.error('Error creating OSSB request:', error)
+  } catch (error: any) {
+    console.error('❌ Unexpected error creating OSSB request:', error)
+    console.error('Error stack:', error.stack)
 
     if (error instanceof Error && error.name === 'ZodError') {
       return NextResponse.json(
@@ -370,7 +387,11 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: 'Failed to create OSSB request' },
+      {
+        error: 'Failed to create OSSB request',
+        details: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      },
       { status: 500 }
     )
   }

@@ -48,7 +48,7 @@ import {
 import { Dialog } from '@/components/ui/dialog'
 import { Plus, MoreVertical, Eye, Edit, Trash2, Calendar, Filter } from 'lucide-react'
 import OSSBWizardForm from '@/components/ossb/OSSBWizardForm'
-import { toast } from 'sonner'
+import { useToast } from '@/hooks/use-toast'
 
 type OSSBStatus = 'DRAFT' | 'SUBMITTED' | 'ENDORSED' | 'RECOMMENDED' | 'APPROVED' | 'REJECTED'
 type MIPClassification = 'MAINTENANCE' | 'IMPROVEMENT' | 'PROJECT'
@@ -89,6 +89,7 @@ const mipColors: Record<MIPClassification, string> = {
 export default function OSSBManagementPage() {
   const router = useRouter()
   const { data: session } = useSession()
+  const { toast } = useToast()
   const [ossbRequests, setOssbRequests] = useState<OSSBRequest[]>([])
   const [filteredRequests, setFilteredRequests] = useState<OSSBRequest[]>([])
   const [loading, setLoading] = useState(true)
@@ -108,7 +109,11 @@ export default function OSSBManagementPage() {
       setFilteredRequests(data.ossbRequests || [])
     } catch (error) {
       console.error('Error fetching OSSB requests:', error)
-      toast.error('Failed to load OSSB requests')
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to load OSSB requests',
+      })
     } finally {
       setLoading(false)
     }
@@ -138,8 +143,9 @@ export default function OSSBManagementPage() {
       if (!response.ok) throw new Error('Failed to delete OSSB request')
 
       const result = await response.json()
-      toast.success(result.message || 'OSSB request deleted successfully', {
-        description: `Deleted ${result.details.tmsEventsDeleted} TMS calendar events and ${result.details.googleEventsDeleted} Google Calendar events`,
+      toast({
+        title: 'Success',
+        description: `${result.message}. Deleted ${result.details.tmsEventsDeleted} TMS events and ${result.details.googleEventsDeleted} Google events.`,
       })
 
       fetchOSSBRequests()
@@ -147,8 +153,10 @@ export default function OSSBManagementPage() {
       setSelectedOSSB(null)
     } catch (error: any) {
       console.error('Error deleting OSSB:', error)
-      toast.error('Failed to delete OSSB request', {
-        description: error.message,
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: `Failed to delete OSSB request: ${error.message}`,
       })
     } finally {
       setDeleting(false)

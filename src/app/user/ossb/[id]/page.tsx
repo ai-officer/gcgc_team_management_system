@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Separator } from '@/components/ui/separator'
 import { ArrowLeft, Edit, Trash2, Calendar, DollarSign, Users, FileText } from 'lucide-react'
-import { toast } from 'sonner'
+import { useToast } from '@/hooks/use-toast'
 
 type OSSBStatus = 'DRAFT' | 'SUBMITTED' | 'ENDORSED' | 'RECOMMENDED' | 'APPROVED' | 'REJECTED'
 type MIPClassification = 'MAINTENANCE' | 'IMPROVEMENT' | 'PROJECT'
@@ -100,6 +100,7 @@ const mipColors: Record<MIPClassification, string> = {
 export default function OSSBDetailPage() {
   const router = useRouter()
   const params = useParams()
+  const { toast } = useToast()
   const [ossb, setOssb] = useState<OSSBRequest | null>(null)
   const [loading, setLoading] = useState(true)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -111,7 +112,11 @@ export default function OSSBDetailPage() {
       const response = await fetch(`/api/ossb/${params.id}`)
       if (!response.ok) {
         if (response.status === 404) {
-          toast.error('OSSB request not found')
+          toast({
+            variant: 'destructive',
+            title: 'Not Found',
+            description: 'OSSB request not found',
+          })
           router.push('/user/ossb')
           return
         }
@@ -121,7 +126,11 @@ export default function OSSBDetailPage() {
       setOssb(data.ossbRequest)
     } catch (error) {
       console.error('Error fetching OSSB:', error)
-      toast.error('Failed to load OSSB request')
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to load OSSB request',
+      })
     } finally {
       setLoading(false)
     }
@@ -143,15 +152,18 @@ export default function OSSBDetailPage() {
       if (!response.ok) throw new Error('Failed to delete OSSB request')
 
       const result = await response.json()
-      toast.success(result.message || 'OSSB request deleted successfully', {
-        description: `Deleted ${result.details.tmsEventsDeleted} TMS events and ${result.details.googleEventsDeleted} Google events`,
+      toast({
+        title: 'Success',
+        description: `${result.message}. Deleted ${result.details.tmsEventsDeleted} TMS events and ${result.details.googleEventsDeleted} Google events.`,
       })
 
       router.push('/user/ossb')
     } catch (error: any) {
       console.error('Error deleting OSSB:', error)
-      toast.error('Failed to delete OSSB request', {
-        description: error.message,
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: `Failed to delete OSSB request: ${error.message}`,
       })
       setDeleting(false)
     }

@@ -180,45 +180,117 @@ export default function OSSBManagementPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading OSSB requests...</p>
-          </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-slate-600 font-medium">Loading OSSB requests...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">OSSB Requests</h1>
-          <p className="text-muted-foreground">
-            Manage your Objective/Specific Steps Budget requests
-          </p>
+    <div className="space-y-8">
+      {/* Professional Glassmorphism Header */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-slate-50 to-purple-50 opacity-60"></div>
+        <div className="relative backdrop-blur-sm bg-white/40 border border-slate-200/60 rounded-xl shadow-sm p-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900 tracking-tight">OSSB Requests</h1>
+              <p className="text-slate-600 text-base font-medium max-w-2xl">
+                Manage your Objective/Specific Steps Budget requests
+              </p>
+            </div>
+            <Button
+              onClick={() => setIsCreateOpen(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all duration-200"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Create OSSB Request
+            </Button>
+          </div>
         </div>
-        <Button onClick={() => setIsCreateOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create OSSB Request
-        </Button>
       </div>
 
-      <Card>
+      {/* Professional Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 rounded-xl">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-blue-600"></div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Total Requests</CardTitle>
+            <div className="p-2.5 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
+              <FileText className="h-5 w-5 text-blue-600" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-slate-900">{ossbRequests.length}</div>
+            <p className="text-xs text-slate-500 mt-1">All OSSB requests</p>
+          </CardContent>
+        </Card>
+
+        <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 rounded-xl">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-emerald-600"></div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Approved</CardTitle>
+            <div className="p-2.5 bg-emerald-50 rounded-lg group-hover:bg-emerald-100 transition-colors">
+              <Calendar className="h-5 w-5 text-emerald-600" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-slate-900">
+              {ossbRequests.filter(r => r.status === 'APPROVED').length}
+            </div>
+            <p className="text-xs text-slate-500 mt-1">Approved requests</p>
+          </CardContent>
+        </Card>
+
+        <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 rounded-xl">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 to-amber-600"></div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Pending</CardTitle>
+            <div className="p-2.5 bg-amber-50 rounded-lg group-hover:bg-amber-100 transition-colors">
+              <Calendar className="h-5 w-5 text-amber-600" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-slate-900">
+              {ossbRequests.filter(r => ['SUBMITTED', 'ENDORSED', 'RECOMMENDED'].includes(r.status)).length}
+            </div>
+            <p className="text-xs text-slate-500 mt-1">Awaiting approval</p>
+          </CardContent>
+        </Card>
+
+        <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 rounded-xl">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-slate-500 to-slate-600"></div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Draft</CardTitle>
+            <div className="p-2.5 bg-slate-50 rounded-lg group-hover:bg-slate-100 transition-colors">
+              <Edit className="h-5 w-5 text-slate-600" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-slate-900">
+              {ossbRequests.filter(r => r.status === 'DRAFT').length}
+            </div>
+            <p className="text-xs text-slate-500 mt-1">Draft requests</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="border border-slate-200 bg-white shadow-sm rounded-xl">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>All Requests</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-xl font-bold text-slate-900">All Requests</CardTitle>
+              <CardDescription className="text-slate-600">
                 {filteredRequests.length} request{filteredRequests.length !== 1 ? 's' : ''} found
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
+              <Filter className="h-4 w-4 text-slate-500" />
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-[180px] border-slate-200">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -236,39 +308,47 @@ export default function OSSBManagementPage() {
         </CardHeader>
         <CardContent>
           {filteredRequests.length === 0 ? (
-            <div className="text-center py-12">
-              <Calendar className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No OSSB requests found</h3>
-              <p className="text-sm text-muted-foreground mb-4">
+            <div className="text-center py-16">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-4">
+                <FileText className="h-8 w-8 text-slate-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">No OSSB requests found</h3>
+              <p className="text-sm text-slate-600 mb-6 max-w-sm mx-auto">
                 {statusFilter === 'all'
-                  ? 'Create your first OSSB request to get started'
-                  : `No ${statusFilter.toLowerCase()} requests found`}
+                  ? 'Create your first OSSB request to get started with budget planning'
+                  : `No ${statusFilter.toLowerCase()} requests found in your records`}
               </p>
               {statusFilter === 'all' && (
-                <Button onClick={() => setIsCreateOpen(true)}>
+                <Button
+                  onClick={() => setIsCreateOpen(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
                   <Plus className="mr-2 h-4 w-4" />
                   Create OSSB Request
                 </Button>
               )}
             </div>
           ) : (
-            <div className="border rounded-lg">
+            <div className="border border-slate-200 rounded-lg overflow-hidden">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Reference No.</TableHead>
-                    <TableHead>Objective Title</TableHead>
-                    <TableHead>Department</TableHead>
-                    <TableHead>Classification</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Period</TableHead>
-                    <TableHead className="text-right">Total Budget</TableHead>
+                  <TableRow className="bg-slate-50 hover:bg-slate-50">
+                    <TableHead className="font-semibold text-slate-700">Reference No.</TableHead>
+                    <TableHead className="font-semibold text-slate-700">Objective Title</TableHead>
+                    <TableHead className="font-semibold text-slate-700">Department</TableHead>
+                    <TableHead className="font-semibold text-slate-700">Classification</TableHead>
+                    <TableHead className="font-semibold text-slate-700">Status</TableHead>
+                    <TableHead className="font-semibold text-slate-700">Period</TableHead>
+                    <TableHead className="text-right font-semibold text-slate-700">Total Budget</TableHead>
                     <TableHead className="w-[70px]"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredRequests.map((ossb) => (
-                    <TableRow key={ossb.id} className="cursor-pointer hover:bg-muted/50">
+                    <TableRow
+                      key={ossb.id}
+                      className="cursor-pointer hover:bg-blue-50/50 transition-colors border-b border-slate-100 last:border-0"
+                    >
                       <TableCell className="font-mono text-sm">{ossb.referenceNo}</TableCell>
                       <TableCell className="font-medium max-w-md truncate">
                         {ossb.objectiveTitle}

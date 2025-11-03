@@ -186,12 +186,10 @@ export default function OSSBDetailPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading OSSB request...</p>
-          </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-slate-600 font-medium">Loading OSSB request...</p>
         </div>
       </div>
     )
@@ -213,34 +211,42 @@ export default function OSSBDetailPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => router.push('/user/ossb')}
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">{ossb.objectiveTitle}</h1>
-            <p className="text-muted-foreground font-mono">{ossb.referenceNo}</p>
+    <div className="space-y-8">
+      {/* Professional Glassmorphism Header */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-slate-50 to-purple-50 opacity-60"></div>
+        <div className="relative backdrop-blur-sm bg-white/40 border border-slate-200/60 rounded-xl shadow-sm p-8">
+          <div className="flex items-center gap-4 mb-4">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => router.push('/user/ossb')}
+              className="border-slate-300 hover:bg-white/80"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold text-slate-900 tracking-tight">{ossb.objectiveTitle}</h1>
+              <p className="text-slate-600 font-mono text-sm mt-1">{ossb.referenceNo}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => router.push(`/user/ossb/${ossb.id}/edit`)}
+                className="border-slate-300 hover:bg-white/80"
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+              </Button>
+              <Button
+                onClick={() => setDeleteDialogOpen(true)}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </Button>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => router.push(`/user/ossb/${ossb.id}/edit`)}>
-            <Edit className="mr-2 h-4 w-4" />
-            Edit
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={() => setDeleteDialogOpen(true)}
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Delete
-          </Button>
         </div>
       </div>
 
@@ -260,9 +266,9 @@ export default function OSSBDetailPage() {
       </div>
 
       {/* Section 1: Header Information */}
-      <Card>
+      <Card className="border border-slate-200 bg-white shadow-sm rounded-xl">
         <CardHeader>
-          <CardTitle>Header Information</CardTitle>
+          <CardTitle className="text-xl font-bold text-slate-900">Header Information</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4">
           <div className="grid grid-cols-2 gap-4">
@@ -279,7 +285,7 @@ export default function OSSBDetailPage() {
       </Card>
 
       {/* Section 2: Project Information */}
-      <Card>
+      <Card className="border border-slate-200 bg-white shadow-sm rounded-xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
@@ -327,10 +333,10 @@ export default function OSSBDetailPage() {
       </Card>
 
       {/* Section 3: Success Measures */}
-      <Card>
+      <Card className="border border-slate-200 bg-white shadow-sm rounded-xl">
         <CardHeader>
-          <CardTitle>Success Measures / Specific Standards</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-xl font-bold text-slate-900">Success Measures / Specific Standards</CardTitle>
+          <CardDescription className="text-slate-600">
             Measurable outcomes and standards for this objective
           </CardDescription>
         </CardHeader>
@@ -346,14 +352,14 @@ export default function OSSBDetailPage() {
       </Card>
 
       {/* Section 4: Program Steps and Budget */}
-      <Card>
+      <Card className="border border-slate-200 bg-white shadow-sm rounded-xl">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-900">
+            <DollarSign className="h-5 w-5 text-emerald-600" />
             Program Steps and Budget
           </CardTitle>
-          <CardDescription>
-            Total Budget: <span className="font-semibold text-lg text-foreground">{formatCurrency(ossb.totalBudget)}</span>
+          <CardDescription className="text-slate-600">
+            Total Budget: <span className="font-semibold text-lg text-emerald-600">{formatCurrency(ossb.totalBudget)}</span>
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -388,9 +394,9 @@ export default function OSSBDetailPage() {
       </Card>
 
       {/* Section 5: Signatories */}
-      <Card>
+      <Card className="border border-slate-200 bg-white shadow-sm rounded-xl">
         <CardHeader>
-          <CardTitle>Signatories</CardTitle>
+          <CardTitle className="text-xl font-bold text-slate-900">Signatories</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-6">
           {ossb.preparedBy && (
@@ -429,10 +435,10 @@ export default function OSSBDetailPage() {
       </Card>
 
       {/* Section 6 & 7: Additional Information */}
-      <Card>
+      <Card className="border border-slate-200 bg-white shadow-sm rounded-xl">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-900">
+            <FileText className="h-5 w-5 text-blue-600" />
             Additional Information
           </CardTitle>
         </CardHeader>
@@ -467,9 +473,9 @@ export default function OSSBDetailPage() {
       </Card>
 
       {/* Metadata */}
-      <Card>
+      <Card className="border border-slate-200 bg-white shadow-sm rounded-xl">
         <CardHeader>
-          <CardTitle>Metadata</CardTitle>
+          <CardTitle className="text-xl font-bold text-slate-900">Metadata</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-3 gap-4 text-sm">
           <div>

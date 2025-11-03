@@ -215,7 +215,7 @@ export default function OSSBWizardForm({ isOpen, onClose, onSuccess }: OSSBWizar
       case 2:
         return <Section2ProjectInfo register={register} errors={errors} watch={watch} setValue={setValue} />
       case 3:
-        return <Section3SuccessMeasures fields={successMeasureFields} register={register} errors={errors} watch={watch} setValue={setValue} append={appendSuccessMeasure} remove={removeSuccessMeasure} />
+        return <Section3SuccessMeasures fields={successMeasureFields} register={register} errors={errors} append={appendSuccessMeasure} remove={removeSuccessMeasure} />
       case 4:
         return <Section4ProgramSteps fields={programStepFields} register={register} errors={errors} watch={watch} setValue={setValue} append={appendProgramStep} remove={removeProgramStep} />
       case 5:
@@ -576,7 +576,7 @@ function Section2ProjectInfo({ register, errors, watch, setValue }: any) {
   )
 }
 
-function Section3SuccessMeasures({ fields, register, errors, watch, setValue, append, remove }: any) {
+function Section3SuccessMeasures({ fields, register, errors, append, remove }: any) {
   return (
     <div className="space-y-6 px-1">
       <div>
@@ -603,26 +603,14 @@ function Section3SuccessMeasures({ fields, register, errors, watch, setValue, ap
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-sm font-medium flex items-center gap-2">
-                <CalendarIcon className="h-3.5 w-3.5" />
-                When: *
-              </Label>
-              <DatePicker
-                date={watch(`successMeasures.${index}.when`)}
-                onSelect={(date) => setValue(`successMeasures.${index}.when`, date)}
-                placeholder="Select date"
-              />
-            </div>
-
             <div>
-              <Label htmlFor={`successMeasures.${index}.description`} className="text-sm">
-                Description * (in present tense)
+              <Label htmlFor={`successMeasures.${index}`} className="text-sm">
+                Success Measure Description * (minimum 5 characters)
               </Label>
               <Textarea
-                id={`successMeasures.${index}.description`}
+                id={`successMeasures.${index}`}
                 {...register(`successMeasures.${index}`)}
-                placeholder="Describe when the success measure is achieved"
+                placeholder="Describe the success criteria or measurable outcome"
                 rows={3}
                 className="mt-1.5"
               />

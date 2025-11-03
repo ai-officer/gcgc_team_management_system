@@ -18,6 +18,7 @@ import {
   ChevronLeft,
   ChevronRight,
   MessageSquare,
+  FileText,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -79,6 +80,11 @@ const userNavItems = [
     icon: Calendar,
   },
   {
+    title: 'OSSB Requests',
+    href: '/user/ossb',
+    icon: FileText,
+  },
+  {
     title: 'TMS Chat',
     href: process.env.NEXT_PUBLIC_TMS_CHAT_URL || 'https://tms-client-staging.up.railway.app',
     icon: MessageSquare,
@@ -106,6 +112,11 @@ const leaderNavItems = [
     title: 'Calendar',
     href: '/user/calendar',
     icon: Calendar,
+  },
+  {
+    title: 'OSSB Requests',
+    href: '/user/ossb',
+    icon: FileText,
   },
   {
     title: 'Team Overview',

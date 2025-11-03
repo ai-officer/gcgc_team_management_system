@@ -46,7 +46,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Dialog } from '@/components/ui/dialog'
-import { Plus, MoreVertical, Eye, Edit, Trash2, Calendar, Filter } from 'lucide-react'
+import { Plus, MoreVertical, Eye, Edit, Trash2, Calendar, Filter, FileText } from 'lucide-react'
 import OSSBWizardForm from '@/components/ossb/OSSBWizardForm'
 import { useToast } from '@/hooks/use-toast'
 

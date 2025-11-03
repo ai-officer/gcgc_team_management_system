@@ -188,7 +188,8 @@ export async function POST(req: NextRequest) {
           continue
         }
 
-        console.log(`🔄 Syncing ${event.type} event: ${event.title}`)
+        // MILESTONE events (like OSSB) are always synced - they're important project markers
+        console.log(`🔄 Syncing ${event.type} event: ${event.title} (ID: ${event.id})`)
         const googleEvent = googleCalendarService.convertTMSEventToGoogle(event)
 
         if (event.googleCalendarEventId) {

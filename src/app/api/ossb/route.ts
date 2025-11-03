@@ -321,27 +321,33 @@ export async function POST(request: NextRequest) {
       })
 
       if (syncSettings?.isEnabled && syncSettings.syncDirection !== 'GOOGLE_TO_TMS') {
-        console.log(`🔄 Syncing OSSB events to Google Calendar for user ${session.user.id}`)
+        console.log(`🔄 Attempting to sync ${createdEvents.length} OSSB events to Google Calendar for user ${session.user.id}`)
+        console.log(`📋 Sync settings: isEnabled=${syncSettings.isEnabled}, direction=${syncSettings.syncDirection}, calendarId=${syncSettings.googleCalendarId}`)
 
         // Get or create TMS_CALENDAR
         let calendarId = syncSettings.googleCalendarId
         if (!calendarId || calendarId === 'primary') {
           try {
+            console.log('🔍 Finding or creating TMS_CALENDAR...')
             calendarId = await googleCalendarService.findOrCreateTMSCalendar(session.user.id)
+            console.log(`✅ Got TMS_CALENDAR ID: ${calendarId}`)
             await prisma.calendarSyncSettings.update({
               where: { userId: session.user.id },
               data: { googleCalendarId: calendarId }
             })
-          } catch (error) {
-            console.error('❌ Error finding/creating TMS_CALENDAR:', error)
+          } catch (error: any) {
+            console.error('❌ Error finding/creating TMS_CALENDAR:', error.message || error)
             calendarId = syncSettings.googleCalendarId || 'primary'
           }
+        } else {
+          console.log(`✅ Using existing TMS_CALENDAR: ${calendarId}`)
         }
 
         // Sync each event to Google Calendar
         let syncedCount = 0
         for (const event of createdEvents) {
           try {
+            console.log(`📤 Syncing event: "${event.title}" (ID: ${event.id}) to calendar ${calendarId}`)
             const googleEvent = googleCalendarService.convertTMSEventToGoogle(event)
             const createdGoogleEvent = await googleCalendarService.createEvent(
               session.user.id,
@@ -359,21 +365,22 @@ export async function POST(request: NextRequest) {
               }
             })
 
+            console.log(`✅ Successfully synced event "${event.title}" - Google Event ID: ${createdGoogleEvent.id}`)
             syncedCount++
           } catch (syncError: any) {
-            console.error(`❌ Error syncing event "${event.title}" to Google Calendar:`, syncError.message)
+            console.error(`❌ Error syncing event "${event.title}" to Google Calendar:`, syncError.message || syncError)
+            console.error(`❌ Full error details:`, JSON.stringify({
+              name: syncError.name,
+              message: syncError.message,
+              code: syncError.code,
+              stack: syncError.stack?.split('\n')[0]
+            }))
           }
         }
 
-        console.log(`✅ Synced ${syncedCount}/${createdEvents.length} OSSB events to Google Calendar`)
-
-        // Update last synced timestamp
-        await prisma.calendarSyncSettings.update({
-          where: { userId: session.user.id },
-          data: { lastSyncedAt: new Date() }
-        })
+        console.log(`✅ Sync complete: ${syncedCount}/${createdEvents.length} OSSB events successfully synced to Google Calendar`)
       } else {
-        console.log(`ℹ️  Google Calendar sync not enabled for user ${session.user.id}`)
+        console.log(`⏭️  Skipping Google Calendar sync: isEnabled=${syncSettings?.isEnabled}, direction=${syncSettings?.syncDirection}`)
       }
     } catch (calendarError) {
       // Log error but don't fail the OSSB creation

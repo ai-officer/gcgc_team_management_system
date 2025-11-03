@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from 'next/navigation'
@@ -80,6 +80,7 @@ export default function OSSBWizardForm({ isOpen, onClose, onSuccess }: OSSBWizar
           budget: 0
         }
       ],
+      totalBudget: 0, // Initialize totalBudget
       hasGuidelines: false,
       hasComputationValue: false
     }
@@ -639,6 +640,11 @@ function Section4ProgramSteps({ fields, register, errors, watch, setValue, appen
   const totalBudget = fields.reduce((sum: number, _: any, index: number) => {
     return sum + (parseFloat(watch(`programSteps.${index}.budget`)) || 0)
   }, 0)
+
+  // Automatically update the totalBudget field in the form
+  React.useEffect(() => {
+    setValue('totalBudget', totalBudget)
+  }, [totalBudget, setValue])
 
   return (
     <div className="space-y-6 px-1">

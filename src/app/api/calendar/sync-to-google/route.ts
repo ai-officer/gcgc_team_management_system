@@ -69,6 +69,9 @@ export async function POST(req: NextRequest) {
       }
     })
 
+    console.log(`📊 Found ${tmsEvents.length} events to sync for user ${session.user.id}`)
+    console.log(`📋 Event types: ${tmsEvents.map(e => `${e.title} (${e.type})`).join(', ')}`)
+
     // Fetch TMS tasks that should be synced
     const tmsTasks = await prisma.task.findMany({
       where: {
@@ -173,15 +176,19 @@ export async function POST(req: NextRequest) {
       try {
         // Check if should sync this type of event
         if (event.type === 'PERSONAL' && !syncSettings.syncPersonalEvents) {
+          console.log(`⏭️  Skipping PERSONAL event: ${event.title}`)
           continue
         }
         if (event.teamId && !syncSettings.syncTeamEvents) {
+          console.log(`⏭️  Skipping TEAM event: ${event.title}`)
           continue
         }
         if (event.type === 'DEADLINE' && !syncSettings.syncTaskDeadlines) {
+          console.log(`⏭️  Skipping DEADLINE event: ${event.title}`)
           continue
         }
 
+        console.log(`🔄 Syncing ${event.type} event: ${event.title}`)
         const googleEvent = googleCalendarService.convertTMSEventToGoogle(event)
 
         if (event.googleCalendarEventId) {

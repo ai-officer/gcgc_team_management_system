@@ -170,6 +170,10 @@ export async function POST(request: NextRequest) {
 
     console.log('💾 Creating OSSB request in database...')
 
+    // Helper function to convert empty strings to null/undefined
+    const emptyToNull = (value: any) => (value === '' ? null : value)
+    const emptyToUndefined = (value: any) => (value === '' ? undefined : value)
+
     // Create OSSB request with program steps
     let ossbRequest
     try {
@@ -178,55 +182,61 @@ export async function POST(request: NextRequest) {
         // Section 1: Header Information
         branchOrDepartment: validatedData.branchOrDepartment,
         objectiveTitle: validatedData.objectiveTitle,
-        versionNo: validatedData.versionNo,
+        versionNo: emptyToUndefined(validatedData.versionNo),
         partOfAnnualPlan: validatedData.partOfAnnualPlan,
 
         // Section 2: Project Information
         mipClassification: validatedData.mipClassification,
-        kraOrCpaNumber: validatedData.kraOrCpaNumber,
-        projectNumber: validatedData.projectNumber,
-        kraOrCpaName: validatedData.kraOrCpaName,
+        kraOrCpaNumber: validatedData.kraOrCpaNumber || null,
+        projectNumber: validatedData.projectNumber || null,
+        kraOrCpaName: emptyToUndefined(validatedData.kraOrCpaName),
         titleObjective: validatedData.titleObjective,
         startDate: validatedData.startDate,
         endDate: validatedData.endDate,
 
-        // Section 3: Success Measures
+        // Section 3: Success Measures (Prisma handles JSON conversion)
         successMeasures: validatedData.successMeasures,
 
         // Section 4: Total Budget
         totalBudget,
 
-        // Section 5: Signatories
-        preparedBy: validatedData.preparedBy,
-        preparedByPosition: validatedData.preparedByPosition,
-        datePrepared: validatedData.datePrepared,
-        endorsedBy: validatedData.endorsedBy,
-        endorsedByPosition: validatedData.endorsedByPosition,
-        dateEndorsed: validatedData.dateEndorsed,
-        recommendedBy: validatedData.recommendedBy,
-        recommendedByPosition: validatedData.recommendedByPosition,
-        dateRecommended: validatedData.dateRecommended,
-        approvedBy: validatedData.approvedBy,
-        approvedByPosition: validatedData.approvedByPosition,
-        dateApproved: validatedData.dateApproved,
+        // Section 5: Signatories (convert empty strings to null)
+        preparedBy: emptyToUndefined(validatedData.preparedBy),
+        preparedByPosition: emptyToUndefined(validatedData.preparedByPosition),
+        datePrepared: validatedData.datePrepared || null,
+        endorsedBy: emptyToUndefined(validatedData.endorsedBy),
+        endorsedByPosition: emptyToUndefined(validatedData.endorsedByPosition),
+        dateEndorsed: validatedData.dateEndorsed || null,
+        recommendedBy: emptyToUndefined(validatedData.recommendedBy),
+        recommendedByPosition: emptyToUndefined(validatedData.recommendedByPosition),
+        dateRecommended: validatedData.dateRecommended || null,
+        approvedBy: emptyToUndefined(validatedData.approvedBy),
+        approvedByPosition: emptyToUndefined(validatedData.approvedByPosition),
+        dateApproved: validatedData.dateApproved || null,
 
         // Section 6: Attachments
         hasGuidelines: validatedData.hasGuidelines,
         hasComputationValue: validatedData.hasComputationValue,
-        otherAttachments: validatedData.otherAttachments,
+        otherAttachments: emptyToUndefined(validatedData.otherAttachments),
 
         // Section 7: CC/Remarks
-        ccRecipients: validatedData.ccRecipients,
-        remarks: validatedData.remarks,
+        ccRecipients: emptyToUndefined(validatedData.ccRecipients),
+        remarks: emptyToUndefined(validatedData.remarks),
 
         // Meta fields
         status: validatedData.status,
         creatorId: session.user.id,
         submittedAt: validatedData.status === 'SUBMITTED' ? new Date() : undefined,
 
-        // Create program steps
+        // Create program steps (Prisma handles nested creation)
         programSteps: {
-          create: validatedData.programSteps
+          create: validatedData.programSteps.map(step => ({
+            stepNumber: step.stepNumber,
+            description: step.description,
+            responsiblePerson: step.responsiblePerson,
+            deadline: step.deadline,
+            budget: step.budget
+          }))
         }
       },
       include: {

@@ -170,8 +170,7 @@ export async function POST(request: NextRequest) {
 
     console.log('💾 Creating OSSB request in database...')
 
-    // Helper function to convert empty strings to null/undefined
-    const emptyToNull = (value: any) => (value === '' ? null : value)
+    // Helper function to convert empty strings to undefined (for optional fields)
     const emptyToUndefined = (value: any) => (value === '' ? undefined : value)
 
     // Create OSSB request with program steps

@@ -300,15 +300,23 @@ export class GoogleCalendarService {
 
   // Convert TMS event to Google Calendar format
   convertTMSEventToGoogle(event: any): GoogleCalendarEvent {
+    // Convert Date objects to ISO strings if needed
+    const startTime = event.startTime instanceof Date
+      ? event.startTime.toISOString()
+      : event.startTime
+    const endTime = event.endTime instanceof Date
+      ? event.endTime.toISOString()
+      : event.endTime
+
     const googleEvent: GoogleCalendarEvent = {
       summary: event.title,
       description: event.description || '',
       start: event.allDay
-        ? { date: event.startTime.split('T')[0] }
-        : { dateTime: event.startTime, timeZone: 'UTC' },
+        ? { date: startTime.split('T')[0] }
+        : { dateTime: startTime, timeZone: 'UTC' },
       end: event.allDay
-        ? { date: event.endTime.split('T')[0] }
-        : { dateTime: event.endTime, timeZone: 'UTC' },
+        ? { date: endTime.split('T')[0] }
+        : { dateTime: endTime, timeZone: 'UTC' },
     }
 
     // Map event types to Google Calendar colors

@@ -606,7 +606,7 @@ function Section3SuccessMeasures({ fields, register, errors, append, remove }: a
     <div className="space-y-6 px-1">
       <div>
         <h3 className="text-lg font-semibold mb-1">Section 3: Specific Standards / Success Measures</h3>
-        <p className="text-sm text-muted-foreground">Define success criteria (add as many as needed)</p>
+        <p className="text-sm text-muted-foreground">Define success criteria (maximum 10 measures)</p>
       </div>
 
       <div className="space-y-4">
@@ -651,9 +651,12 @@ function Section3SuccessMeasures({ fields, register, errors, append, remove }: a
           variant="outline"
           onClick={() => append('')}
           className="w-full"
+          disabled={fields.length >= 10}
         >
           <Plus className="h-4 w-4 mr-2" />
-          Add Success Measure ({fields.length})
+          {fields.length >= 10
+            ? 'Maximum 10 Success Measures Reached'
+            : `Add Success Measure (${fields.length}/10)`}
         </Button>
       </div>
     </div>
@@ -674,7 +677,7 @@ function Section4ProgramSteps({ fields, register, errors, watch, setValue, appen
     <div className="space-y-6 px-1">
       <div>
         <h3 className="text-lg font-semibold mb-1">Section 4: Program Steps</h3>
-        <p className="text-sm text-muted-foreground">Define the steps and budget breakdown</p>
+        <p className="text-sm text-muted-foreground">Define the steps and budget breakdown (maximum 10 steps)</p>
       </div>
 
       <div className="space-y-4">
@@ -761,9 +764,12 @@ function Section4ProgramSteps({ fields, register, errors, watch, setValue, appen
             budget: 0
           })}
           className="w-full"
+          disabled={fields.length >= 10}
         >
           <Plus className="h-4 w-4 mr-2" />
-          Add Program Step
+          {fields.length >= 10
+            ? 'Maximum 10 Program Steps Reached'
+            : `Add Program Step (${fields.length}/10)`}
         </Button>
 
         <div className="bg-primary/10 p-4 rounded-lg border-2 border-primary/20">

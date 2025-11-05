@@ -114,7 +114,7 @@ export const ossbProgramStepSchema = z.object({
 export const ossbProgramStepsSchema = z.object({
   programSteps: z.array(ossbProgramStepSchema)
     .min(1, 'At least one program step is required')
-    .max(50, 'Cannot have more than 50 program steps'),
+    .max(10, 'Cannot have more than 10 program steps'),
   totalBudget: z.number()
     .nonnegative('Total budget must be non-negative')
     .max(9999999999.99, 'Total budget is too large')
@@ -331,7 +331,7 @@ const ossbRequestBaseSchema = z.object({
   // Section 4: Program Steps
   programSteps: z.array(ossbProgramStepSchema)
     .min(1, 'At least one program step is required')
-    .max(50, 'Cannot have more than 50 program steps'),
+    .max(10, 'Cannot have more than 10 program steps'),
   totalBudget: z.number()
     .nonnegative('Total budget must be non-negative')
     .max(9999999999.99, 'Total budget is too large')

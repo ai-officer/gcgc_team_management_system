@@ -288,8 +288,11 @@ export function Sidebar({ className }: SidebarProps) {
                   ? { target: '_blank', rel: 'noopener noreferrer' }
                   : {}
 
+                // Use regular <a> tag for external links to avoid middleware interception
+                const LinkComponent = item.external ? 'a' : Link
+
                 return (
-                  <Link
+                  <LinkComponent
                     key={item.href}
                     href={item.href}
                     {...linkProps}
@@ -312,7 +315,7 @@ export function Sidebar({ className }: SidebarProps) {
                         {item.title}
                       </span>
                     )}
-                  </Link>
+                  </LinkComponent>
                 )
               })}
             </div>

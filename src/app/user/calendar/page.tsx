@@ -364,10 +364,14 @@ export default function CalendarPage() {
           eventPropGetter={eventStyleGetter}
           views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
           defaultView={Views.MONTH}
-          popup
+          popup={true}
           showMultiDayTimes
           step={30}
           timeslots={2}
+          doShowMoreDrillDown={true}
+          messages={{
+            showMore: (total: number) => `+${total} more`
+          }}
         />
       </div>
 

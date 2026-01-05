@@ -52,7 +52,7 @@ const adminNavItems = [
   },
   {
     title: 'TMS Chat',
-    href: process.env.NEXT_PUBLIC_TMS_CHAT_URL || 'https://tms-client-staging.up.railway.app',
+    href: process.env.NEXT_PUBLIC_TMS_CHAT_URL || 'https://tms-chat-staging.hotelsogo-ai.com',
     icon: MessageSquare,
     external: true,
   },
@@ -86,7 +86,7 @@ const userNavItems = [
   },
   {
     title: 'TMS Chat',
-    href: process.env.NEXT_PUBLIC_TMS_CHAT_URL || 'https://tms-client-staging.up.railway.app',
+    href: process.env.NEXT_PUBLIC_TMS_CHAT_URL || 'https://tms-chat-staging.hotelsogo-ai.com',
     icon: MessageSquare,
     external: true,
   },
@@ -130,7 +130,7 @@ const leaderNavItems = [
   },
   {
     title: 'TMS Chat',
-    href: process.env.NEXT_PUBLIC_TMS_CHAT_URL || 'https://tms-client-staging.up.railway.app',
+    href: process.env.NEXT_PUBLIC_TMS_CHAT_URL || 'https://tms-chat-staging.hotelsogo-ai.com',
     icon: MessageSquare,
     external: true,
   },

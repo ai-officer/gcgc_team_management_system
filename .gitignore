@@ -31,6 +31,10 @@ yarn-error.log*
 .env*.local
 .env
 
+# Deployment environment files with credentials
+deployment/.env.staging
+deployment/.env.production
+
 # vercel
 .vercel
 

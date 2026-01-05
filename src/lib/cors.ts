@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 
 /**
  * CORS configuration for cross-origin requests
- * Allows TMS Client (staging/production) to access the API
+ * Allows TMS Chat (staging/production) to access the API
  */
 const ALLOWED_ORIGINS = [
-  'https://tms-client-staging.up.railway.app',
-  'https://tms-client-production.up.railway.app',
+  'https://tms-chat-staging.hotelsogo-ai.com',
+  'https://tms-chat.hotelsogo-ai.com',
   'http://localhost:3000', // Local development
   'http://localhost:3001', // Alternative local port
 ]

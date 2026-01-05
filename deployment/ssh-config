@@ -1,0 +1,28 @@
+# SSH Configuration for GCGC TMS Servers
+# Add this to your ~/.ssh/config file for easy access
+#
+# Usage after adding to ~/.ssh/config:
+#   ssh gcgc-staging
+#   ssh gcgc-production
+
+# GCGC Staging Server
+Host gcgc-staging
+    HostName ***REDACTED_STAGING_IP***
+    User root
+    IdentityFile ~/.ssh/sogo-infra-key.pem
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+
+# GCGC Production Server
+Host gcgc-production
+    HostName ***REDACTED_PRODUCTION_IP***
+    User root
+    IdentityFile ~/.ssh/sogo-infra-key.pem
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+
+# Note: If 'root' doesn't work, try 'ubuntu' or 'admin' as the User

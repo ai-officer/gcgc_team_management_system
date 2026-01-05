@@ -20,6 +20,8 @@ const nextConfig = {
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
   },
   async headers() {
+    const tmsChatUrl = process.env.NEXT_PUBLIC_TMS_CHAT_URL || 'https://tms-chat-staging.hotelsogo-ai.com'
+
     return [
       {
         // CORS for authentication routes
@@ -27,9 +29,9 @@ const nextConfig = {
         headers: [
           {
             key: 'Access-Control-Allow-Origin',
-            value: process.env.NODE_ENV === 'development' 
-              ? 'http://localhost:3000' 
-              : 'https://tms-client-staging.up.railway.app',
+            value: process.env.NODE_ENV === 'development'
+              ? 'http://localhost:3000'
+              : tmsChatUrl,
           },
           {
             key: 'Access-Control-Allow-Credentials',
@@ -51,9 +53,9 @@ const nextConfig = {
         headers: [
           {
             key: 'Access-Control-Allow-Origin',
-            value: process.env.NODE_ENV === 'development' 
-              ? 'http://localhost:3000' 
-              : 'https://tms-client-staging.up.railway.app',
+            value: process.env.NODE_ENV === 'development'
+              ? 'http://localhost:3000'
+              : tmsChatUrl,
           },
           {
             key: 'Access-Control-Allow-Credentials',

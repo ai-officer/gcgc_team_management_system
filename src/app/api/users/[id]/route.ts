@@ -10,6 +10,12 @@ const updateProfileSchema = z.object({
   middleName: z.string().optional(),
   contactNumber: z.string().optional(),
   positionTitle: z.string().optional(),
+  division: z.string().optional(),
+  department: z.string().optional(),
+  section: z.string().optional(),
+  team: z.string().optional(),
+  jobLevel: z.string().optional(),
+  hierarchyLevel: z.enum(['RF1', 'RF2', 'RF3', 'OF1', 'OF2', 'OF3', 'OF4', 'OF5', 'NR1', 'NR2', 'NR3', 'NR4']).nullable().optional(),
 })
 
 export async function GET(
@@ -102,20 +108,28 @@ export async function PATCH(
     const body = await req.json()
     const validatedData = updateProfileSchema.parse(body)
 
+    // Get current user data to compute full name
+    let computedName: string | null = null
+    if (validatedData.firstName !== undefined || validatedData.lastName !== undefined) {
+      const currentUser = await prisma.user.findUnique({
+        where: { id: params.id },
+        select: { firstName: true, lastName: true }
+      })
+
+      if (currentUser) {
+        const firstName = validatedData.firstName ?? currentUser.firstName ?? ''
+        const lastName = validatedData.lastName ?? currentUser.lastName ?? ''
+        computedName = [firstName, lastName].filter(Boolean).join(' ') || null
+      }
+    }
+
     // Update the user profile
     const updatedUser = await prisma.user.update({
       where: { id: params.id },
       data: {
         ...validatedData,
         // Compute the name field if firstName or lastName are provided
-        ...(validatedData.firstName !== undefined || validatedData.lastName !== undefined
-          ? {
-              name: [
-                validatedData.firstName ?? (await prisma.user.findUnique({ where: { id: params.id }, select: { firstName: true } }))?.firstName,
-                validatedData.lastName ?? (await prisma.user.findUnique({ where: { id: params.id }, select: { lastName: true } }))?.lastName
-              ].filter(Boolean).join(' ') || null
-            }
-          : {}),
+        ...(computedName !== null ? { name: computedName } : {}),
       },
       select: {
         id: true,
@@ -161,7 +175,7 @@ export async function PATCH(
       }
     })
 
-    return NextResponse.json(updatedUser)
+    return NextResponse.json({ user: updatedUser })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

@@ -8,22 +8,18 @@ import {
   Search,
   MoreHorizontal,
   Mail,
-  Phone,
-  Calendar,
   AlertCircle,
   CheckSquare,
-  Clock,
   UserCheck,
   Plus,
   ArrowRight,
   Eye,
   Filter,
-  TrendingUp,
   Activity,
   Target,
   Award
 } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -45,7 +41,6 @@ import {
   DropdownMenuLabel
 } from '@/components/ui/dropdown-menu'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -57,6 +52,7 @@ import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import MemberProfileModal from '@/components/shared/MemberProfileModal'
 import CreateTaskButton from '@/components/tasks/CreateTaskButton'
+import TaskForm from '@/components/tasks/TaskForm'
 
 interface TeamMember {
   id: string
@@ -69,6 +65,11 @@ interface TeamMember {
   hierarchyLevel?: string
   contactNumber?: string
   positionTitle?: string
+  division?: string
+  department?: string
+  section?: string
+  team?: string
+  jobLevel?: string
   isActive: boolean
   createdAt: string
   reportsToId: string | null
@@ -151,6 +152,8 @@ export default function TeamOverviewPage() {
   // Profile modal state
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   const [selectedMemberIdForProfile, setSelectedMemberIdForProfile] = useState<string | null>(null)
+  const [isAssignTaskDialogOpen, setIsAssignTaskDialogOpen] = useState(false)
+  const [selectedMemberForTask, setSelectedMemberForTask] = useState<string | null>(null)
 
   // Redirect if not a leader
   useEffect(() => {
@@ -293,7 +296,6 @@ export default function TeamOverviewPage() {
   }
 
   const handleSectorHeadChange = async (sectorHeadInitials: string) => {
-    const selectedHead = sectorHeads.find(head => head.initials === sectorHeadInitials)
     setSelectedSectorHead(sectorHeadInitials)
     setNewUserData(prev => ({
       ...prev,
@@ -465,12 +467,33 @@ export default function TeamOverviewPage() {
     }
   }
 
-  const handleSelectExistingUser = (userId: string) => {
+  const handleSelectExistingUser = async (userId: string) => {
     const user = availableUsers.find(u => u.id === userId)
     if (user) {
       setSelectedUserId(userId)
       setSelectedUserForPreview(user)
       setShowPreview(true)
+
+      // Fetch organizational data for editing
+      await fetchOrganizationalData()
+
+      // If user has existing organizational data, populate the selectors
+      if (user.division) {
+        const division = divisions.find(d => d.name === user.division)
+        if (division) {
+          setSelectedDivision(division)
+          // Fetch departments for this division
+          try {
+            const response = await fetch(`/api/organizational-units?parentId=${division.id}&includeInactive=true`)
+            if (response.ok) {
+              const data = await response.json()
+              setDepartments(data.data || [])
+            }
+          } catch (error) {
+            console.error('Error fetching departments:', error)
+          }
+        }
+      }
     }
   }
 
@@ -559,7 +582,12 @@ export default function TeamOverviewPage() {
           originalUser.lastName !== userToAdd.lastName ||
           originalUser.contactNumber !== userToAdd.contactNumber ||
           originalUser.positionTitle !== userToAdd.positionTitle ||
-          originalUser.hierarchyLevel !== userToAdd.hierarchyLevel
+          originalUser.hierarchyLevel !== userToAdd.hierarchyLevel ||
+          originalUser.division !== (userToAdd as any).division ||
+          originalUser.department !== (userToAdd as any).department ||
+          originalUser.section !== (userToAdd as any).section ||
+          originalUser.team !== (userToAdd as any).team ||
+          originalUser.jobLevel !== (userToAdd as any).jobLevel
         )
 
         if (hasChanges) {
@@ -572,7 +600,12 @@ export default function TeamOverviewPage() {
               lastName: userToAdd.lastName,
               contactNumber: userToAdd.contactNumber,
               positionTitle: userToAdd.positionTitle,
-              hierarchyLevel: userToAdd.hierarchyLevel
+              hierarchyLevel: userToAdd.hierarchyLevel,
+              division: (userToAdd as any).division,
+              department: (userToAdd as any).department,
+              section: (userToAdd as any).section,
+              team: (userToAdd as any).team,
+              jobLevel: (userToAdd as any).jobLevel
             })
           })
 
@@ -616,48 +649,6 @@ export default function TeamOverviewPage() {
     }
   }
 
-  const handleAddMember = async () => {
-    if (!selectedUserId) {
-      toast({
-        title: "Error",
-        description: "Please select a user to add to your team",
-        variant: "destructive"
-      })
-      return
-    }
-
-    try {
-      const response = await fetch('/api/user/team-members', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: selectedUserId })
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to add team member')
-      }
-
-      const newMember = await response.json()
-      setTeamMembers(prev => [...prev, newMember])
-      setAvailableUsers(prev => prev.filter(user => user.id !== selectedUserId))
-      setSelectedUserId('')
-      setIsAddMemberDialogOpen(false)
-
-      toast({
-        title: "Success",
-        description: "Team member added successfully"
-      })
-    } catch (err: any) {
-      console.error('Error adding team member:', err)
-      toast({
-        title: "Error",
-        description: err.message || "Failed to add team member",
-        variant: "destructive"
-      })
-    }
-  }
-
   const handleRemoveMember = async (memberId: string) => {
     try {
       const response = await fetch(`/api/user/team-members/${memberId}`, {
@@ -693,6 +684,12 @@ export default function TeamOverviewPage() {
   const handleCloseProfileModal = () => {
     setIsProfileModalOpen(false)
     setSelectedMemberIdForProfile(null)
+  }
+
+  // Handle assign task
+  const handleAssignTask = (memberId: string) => {
+    setSelectedMemberForTask(memberId)
+    setIsAssignTaskDialogOpen(true)
   }
 
   const filteredMembers = teamMembers.filter(member => {
@@ -1636,15 +1633,233 @@ export default function TeamOverviewPage() {
                     <div className="space-y-4">
                       <h4 className="font-medium text-foreground">Position Information</h4>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="preview-positionTitle">Position Title</Label>
-                        <Input
-                          id="preview-positionTitle"
-                          value={selectedUserForPreview.positionTitle || ''}
-                          onChange={(e) => setSelectedUserForPreview(prev => prev ? { ...prev, positionTitle: e.target.value } : null)}
-                          placeholder="Enter position title"
-                        />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="preview-positionTitle">Position Title</Label>
+                          <Input
+                            id="preview-positionTitle"
+                            value={selectedUserForPreview.positionTitle || ''}
+                            onChange={(e) => setSelectedUserForPreview(prev => prev ? { ...prev, positionTitle: e.target.value } : null)}
+                            placeholder="Enter position title"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="preview-jobLevel">Job Level</Label>
+                          <Select
+                            value={(selectedUserForPreview as any).jobLevel || ''}
+                            onValueChange={(value) => setSelectedUserForPreview(prev => prev ? { ...prev, jobLevel: value } : null)}
+                          >
+                            <SelectTrigger id="preview-jobLevel" className="w-full">
+                              <SelectValue placeholder="Select job level" />
+                            </SelectTrigger>
+                            <SelectContent className="max-w-[400px]">
+                              {jobLevels.map((level) => (
+                                <SelectItem key={level.name} value={level.name}>
+                                  {level.name} {level.description && `- ${level.description}`}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
+                    </div>
+
+                    {/* Organizational Information */}
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-foreground">Organizational Information</h4>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Division */}
+                        <div className="space-y-2">
+                          <Label htmlFor="preview-division">Division</Label>
+                          <Select
+                            value={selectedDivision?.id || ''}
+                            onValueChange={async (divisionId) => {
+                              const division = divisions.find(d => d.id === divisionId)
+                              if (division) {
+                                setSelectedDivision(division)
+                                setSelectedDepartment(null)
+                                setSelectedSection(null)
+                                setDepartments([])
+                                setSections([])
+                                setTeams([])
+
+                                setSelectedUserForPreview(prev => prev ? {
+                                  ...prev,
+                                  division: division.name,
+                                  department: '',
+                                  section: '',
+                                  team: ''
+                                } : null)
+
+                                // Fetch departments
+                                try {
+                                  const response = await fetch(`/api/organizational-units?parentId=${divisionId}&includeInactive=true`)
+                                  if (response.ok) {
+                                    const data = await response.json()
+                                    setDepartments(data.data || [])
+                                  }
+                                } catch (error) {
+                                  console.error('Error fetching departments:', error)
+                                }
+                              }
+                            }}
+                          >
+                            <SelectTrigger id="preview-division" className="w-full">
+                              <SelectValue placeholder="Select division" />
+                            </SelectTrigger>
+                            <SelectContent className="max-w-[400px]">
+                              {divisions.map((division) => (
+                                <SelectItem key={division.id} value={division.id}>
+                                  {division.name} {division.code && `(${division.code})`}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Department */}
+                        {departments.length > 0 && (
+                          <div className="space-y-2">
+                            <Label htmlFor="preview-department">Department</Label>
+                            <Select
+                              value={selectedDepartment?.id || ''}
+                              onValueChange={async (departmentId) => {
+                                const department = departments.find(d => d.id === departmentId)
+                                if (department) {
+                                  setSelectedDepartment(department)
+                                  setSelectedSection(null)
+                                  setSections([])
+                                  setTeams([])
+
+                                  setSelectedUserForPreview(prev => prev ? {
+                                    ...prev,
+                                    department: department.name,
+                                    section: '',
+                                    team: ''
+                                  } : null)
+
+                                  // Fetch sections
+                                  try {
+                                    const response = await fetch(`/api/organizational-units?parentId=${departmentId}&includeInactive=true`)
+                                    if (response.ok) {
+                                      const data = await response.json()
+                                      if (data.data && data.data.length > 0) {
+                                        setSections(data.data)
+                                      }
+                                    }
+                                  } catch (error) {
+                                    console.error('Error fetching sections:', error)
+                                  }
+                                }
+                              }}
+                            >
+                              <SelectTrigger id="preview-department" className="w-full">
+                                <SelectValue placeholder="Select department" />
+                              </SelectTrigger>
+                              <SelectContent className="max-w-[400px]">
+                                {departments.map((dept) => (
+                                  <SelectItem key={dept.id} value={dept.id}>
+                                    {dept.name} {dept.code && `(${dept.code})`}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Section and Team */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Section */}
+                        {sections.length > 0 && (
+                          <div className="space-y-2">
+                            <Label htmlFor="preview-section">Section</Label>
+                            <Select
+                              value={selectedSection?.id || ''}
+                              onValueChange={async (sectionId) => {
+                                const section = sections.find(s => s.id === sectionId)
+                                if (section) {
+                                  setSelectedSection(section)
+                                  setSelectedUserForPreview(prev => prev ? {
+                                    ...prev,
+                                    section: section.name,
+                                    team: ''
+                                  } : null)
+
+                                  // Fetch teams
+                                  try {
+                                    const response = await fetch(`/api/teams-data?sectionId=${sectionId}&sectionName=${encodeURIComponent(section.name)}&includeInactive=true`)
+                                    if (response.ok) {
+                                      const data = await response.json()
+                                      setTeams(data.data || [])
+                                    }
+                                  } catch (error) {
+                                    console.error('Error fetching teams:', error)
+                                  }
+                                }
+                              }}
+                            >
+                              <SelectTrigger id="preview-section" className="w-full">
+                                <SelectValue placeholder="Select section" />
+                              </SelectTrigger>
+                              <SelectContent className="max-w-[400px]">
+                                {sections.map((section) => (
+                                  <SelectItem key={section.id} value={section.id}>
+                                    {section.name} {section.code && `(${section.code})`}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+
+                        {/* Team */}
+                        {(selectedDepartment || selectedSection) && (
+                          <div className="space-y-2">
+                            <Label htmlFor="preview-team">Team</Label>
+                            {teams.length > 0 ? (
+                              <Select
+                                value={(selectedUserForPreview as any).team || ''}
+                                onValueChange={(value) => setSelectedUserForPreview(prev => prev ? { ...prev, team: value } : null)}
+                              >
+                                <SelectTrigger id="preview-team" className="w-full">
+                                  <SelectValue placeholder="Select team" />
+                                </SelectTrigger>
+                                <SelectContent className="max-w-[400px]">
+                                  {teams.map((team) => (
+                                    <SelectItem key={team.id} value={team.name}>
+                                      {team.name} {team.code && `(${team.code})`}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <Input
+                                id="preview-team"
+                                value={(selectedUserForPreview as any).team || ''}
+                                onChange={(e) => setSelectedUserForPreview(prev => prev ? { ...prev, team: e.target.value } : null)}
+                                placeholder="Enter team name (optional)"
+                              />
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Organizational Path Preview */}
+                      {((selectedUserForPreview as any).division || (selectedUserForPreview as any).department) && (
+                        <div className="p-3 bg-muted/50 rounded-lg border">
+                          <Label className="text-xs font-medium mb-2 block">Organizational Path:</Label>
+                          <div className="text-sm break-words">
+                            {[
+                              (selectedUserForPreview as any).division,
+                              (selectedUserForPreview as any).department,
+                              (selectedUserForPreview as any).section,
+                              (selectedUserForPreview as any).team
+                            ].filter(Boolean).join(' → ') || 'Not specified'}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -2029,17 +2244,17 @@ export default function TeamOverviewPage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="border border-slate-200 rounded-lg shadow-lg">
-                    <DropdownMenuItem onClick={() => handleViewProfile(member.id)} className="rounded-md">
+                    <DropdownMenuItem onClick={() => handleViewProfile(member.id)} className="rounded-md cursor-pointer">
                       <Eye className="h-4 w-4 mr-2 text-slate-600" />
                       View Profile
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="rounded-md">
+                    <DropdownMenuItem onClick={() => handleAssignTask(member.id)} className="rounded-md cursor-pointer">
                       <CheckSquare className="h-4 w-4 mr-2 text-slate-600" />
                       Assign Task
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
-                      className="text-red-600 focus:text-red-600 rounded-md"
+                      className="text-red-600 focus:text-red-600 rounded-md cursor-pointer"
                       onClick={() => handleRemoveMember(member.id)}
                     >
                       <Users className="h-4 w-4 mr-2" />
@@ -2059,6 +2274,50 @@ export default function TeamOverviewPage() {
         onClose={handleCloseProfileModal}
         memberId={selectedMemberIdForProfile}
       />
+
+      {/* Task Assignment Dialog */}
+      {isAssignTaskDialogOpen && (
+        <TaskForm
+          open={isAssignTaskDialogOpen}
+          preSelectedMemberId={selectedMemberForTask || undefined}
+          onOpenChange={(open) => {
+            setIsAssignTaskDialogOpen(open)
+            if (!open) {
+              setSelectedMemberForTask(null)
+            }
+          }}
+          onSubmit={async (data) => {
+            try {
+              const response = await fetch('/api/tasks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+              })
+
+              if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.error || 'Failed to create task')
+              }
+
+              toast({
+                title: 'Success',
+                description: 'Task assigned successfully',
+              })
+
+              setIsAssignTaskDialogOpen(false)
+              setSelectedMemberForTask(null)
+              fetchTeamData()
+            } catch (err: any) {
+              toast({
+                title: 'Error',
+                description: err.message || 'Failed to assign task',
+                variant: 'destructive',
+              })
+              throw err
+            }
+          }}
+        />
+      )}
     </div>
   )
 }

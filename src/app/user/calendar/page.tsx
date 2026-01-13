@@ -62,7 +62,13 @@ interface TaskDeadline {
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
   status: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' | 'CANCELLED'
   googleCalendarEventId?: string | null
+  creatorId?: string
   assignee?: {
+    id: string
+    name: string
+    email: string
+  }
+  creator?: {
     id: string
     name: string
     email: string
@@ -71,6 +77,22 @@ interface TaskDeadline {
     id: string
     name: string
   } | null
+  teamMembers?: Array<{
+    userId: string
+    user: {
+      id: string
+      name: string
+      email: string
+    }
+  }>
+  collaborators?: Array<{
+    userId: string
+    user: {
+      id: string
+      name: string
+      email: string
+    }
+  }>
 }
 
 export default function CalendarPage() {
@@ -147,19 +169,39 @@ export default function CalendarPage() {
         })
       }
 
-      // Add task deadlines
+      // Add task deadlines - show ALL tasks related to the user
       if (tasksData.tasks) {
-        tasksData.tasks.forEach((task: TaskDeadline) => {
+        tasksData.tasks.forEach((task: any) => {
           if (task.dueDate && task.status !== 'COMPLETED') {
-            const isLeaderTask = session?.user?.role === 'LEADER'
-            const isMyTask = task.assignee?.id === session?.user?.id
+            // Check if user is involved in this task in any way:
+            // 1. User is the assignee
+            // 2. User is a team member (for TEAM tasks)
+            // 3. User is a collaborator (for COLLABORATION tasks)
+            // 4. User is the creator
+            const isAssignee = task.assignee?.id === session?.user?.id
+            const isTeamMember = task.teamMembers?.some((tm: any) => tm.userId === session?.user?.id)
+            const isCollaborator = task.collaborators?.some((c: any) => c.userId === session?.user?.id)
+            const isCreator = task.creator?.id === session?.user?.id || task.creatorId === session?.user?.id
 
-            if (isMyTask || isLeaderTask) {
+            // Show task if user is involved in any capacity
+            if (isAssignee || isTeamMember || isCollaborator || isCreator) {
               const priorityColors = {
                 URGENT: '#dc2626',
                 HIGH: '#ea580c',
                 MEDIUM: '#d97706',
                 LOW: '#16a34a'
+              }
+
+              // Determine task type label
+              let taskTypeLabel = ''
+              if (isAssignee) {
+                taskTypeLabel = 'My Task'
+              } else if (isTeamMember) {
+                taskTypeLabel = 'Team Task'
+              } else if (isCollaborator) {
+                taskTypeLabel = 'Collaboration'
+              } else if (isCreator) {
+                taskTypeLabel = 'Created by Me'
               }
 
               // CRITICAL: Multi-day event handling
@@ -178,13 +220,13 @@ export default function CalendarPage() {
 
               calendarEvents.push({
                 id: `task-${task.id}`,
-                title: `[Task] ${task.title}`,
+                title: `[${taskTypeLabel}] ${task.title}`,
                 start: startDate,
                 end: endDate,
                 allDay: task.allDay !== undefined ? task.allDay : true,
                 resource: {
                   description: `Due: ${task.team?.name || 'Individual'} task`,
-                  color: priorityColors[task.priority],
+                  color: priorityColors[task.priority as keyof typeof priorityColors] || '#3b82f6',
                   type: 'DEADLINE',
                   team: task.team || undefined,
                   task: {

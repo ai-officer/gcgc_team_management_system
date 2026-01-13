@@ -78,9 +78,10 @@ interface TaskFormProps {
   onOpenChange: (open: boolean) => void
   task?: any // Existing task for editing
   onSubmit: (data: TaskFormData) => Promise<void>
+  preSelectedMemberId?: string // Pre-selected team member for assignment
 }
 
-export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFormProps) {
+export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelectedMemberId }: TaskFormProps) {
   const { data: session } = useSession()
   const [loading, setLoading] = useState(false)
   const [users, setUsers] = useState<User[]>([])
@@ -157,15 +158,18 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
         }
       } else {
         // Set defaults for new task based on current user
+        const initialTaskType = preSelectedMemberId ? 'TEAM' : 'INDIVIDUAL'
+        const initialTeamMemberIds = preSelectedMemberId ? [preSelectedMemberId] : []
+
         form.reset({
           title: '',
           description: '',
           status: 'TODO',
           priority: 'MEDIUM',
           progressPercentage: 0,
-          taskType: 'INDIVIDUAL',
+          taskType: initialTaskType,
           assigneeId: session?.user?.id || null, // Always current user
-          teamMemberIds: [],
+          teamMemberIds: initialTeamMemberIds,
           collaboratorIds: [],
           assignedById: session?.user?.id,
           // New Google Calendar fields
@@ -178,26 +182,35 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
           endTime: '',
         })
 
-        // Clear selected arrays
-        setSelectedTeamMembers([])
-        setSelectedCollaborators([])
+        // Set pre-selected member if provided
+        if (preSelectedMemberId) {
+          const preSelectedUser = users.find(u => u.id === preSelectedMemberId)
+          if (preSelectedUser) {
+            setSelectedTeamMembers([preSelectedUser])
+          }
+        } else {
+          // Clear selected arrays
+          setSelectedTeamMembers([])
+          setSelectedCollaborators([])
+        }
       }
     }
-  }, [open, task, form, session])
+  }, [open, task, form, session, preSelectedMemberId, users])
 
   // Handle task type changes and set appropriate defaults
   useEffect(() => {
-    if (!task && session?.user?.id) { // Only for new tasks
+    if (!task && session?.user?.id && open) { // Only for new tasks when dialog is open
       // Always assign to current user regardless of task type
       form.setValue('assigneeId', session.user.id)
-      
-      // Clear selections when changing task types
+
+      // Clear selections when changing task types (but preserve pre-selected members on first open)
       if (taskType === 'INDIVIDUAL') {
         setSelectedTeamMembers([])
         setSelectedCollaborators([])
         form.setValue('teamMemberIds', [])
         form.setValue('collaboratorIds', [])
       } else if (taskType === 'TEAM') {
+        // Only clear collaborators, keep team members (they might be pre-selected)
         setSelectedCollaborators([])
         form.setValue('collaboratorIds', [])
       } else if (taskType === 'COLLABORATION') {
@@ -205,7 +218,17 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit }: TaskFor
         form.setValue('teamMemberIds', [])
       }
     }
-  }, [taskType, session?.user?.id, task, form])
+  }, [taskType, session?.user?.id, task, form, open])
+
+  // Ensure pre-selected member is set after users are loaded
+  useEffect(() => {
+    if (open && !task && preSelectedMemberId && users.length > 0) {
+      const preSelectedUser = users.find(u => u.id === preSelectedMemberId)
+      if (preSelectedUser && selectedTeamMembers.length === 0) {
+        setSelectedTeamMembers([preSelectedUser])
+      }
+    }
+  }, [open, task, preSelectedMemberId, users, selectedTeamMembers])
 
   const fetchUsers = async () => {
     try {

@@ -2154,9 +2154,43 @@ export default function TeamOverviewPage() {
               )}
             >
               <CardContent className={cn(
-                "p-6",
+                "p-6 relative",
                 viewMode === 'list' && "flex items-center justify-between"
               )}>
+                {/* Dropdown Menu - Positioned at top-right */}
+                <div className="absolute top-4 right-4 z-10">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-slate-100 rounded-lg"
+                      >
+                        <MoreHorizontal className="h-4 w-4 text-slate-600" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="border border-slate-200 rounded-lg shadow-lg z-50">
+                    <DropdownMenuItem onClick={() => handleViewProfile(member.id)} className="rounded-md cursor-pointer">
+                      <Eye className="h-4 w-4 mr-2 text-slate-600" />
+                      View Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleAssignTask(member.id)} className="rounded-md cursor-pointer">
+                      <CheckSquare className="h-4 w-4 mr-2 text-slate-600" />
+                      Assign Task
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="text-red-600 focus:text-red-600 rounded-md cursor-pointer"
+                      onClick={() => handleRemoveMember(member.id)}
+                    >
+                      <Users className="h-4 w-4 mr-2" />
+                      Remove from Team
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                </div>
+
+                {/* Member Details */}
                 <div className={cn(
                   "flex items-center gap-4",
                   viewMode === 'grid' ? "flex-col text-center" : "flex-row"
@@ -2229,39 +2263,6 @@ export default function TeamOverviewPage() {
                     )}
                   </div>
                 </div>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={cn(
-                        "opacity-0 group-hover:opacity-100 transition-opacity hover:bg-slate-100 rounded-lg",
-                        viewMode === 'grid' && "absolute top-2 right-2"
-                      )}
-                    >
-                      <MoreHorizontal className="h-4 w-4 text-slate-600" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="border border-slate-200 rounded-lg shadow-lg">
-                    <DropdownMenuItem onClick={() => handleViewProfile(member.id)} className="rounded-md cursor-pointer">
-                      <Eye className="h-4 w-4 mr-2 text-slate-600" />
-                      View Profile
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleAssignTask(member.id)} className="rounded-md cursor-pointer">
-                      <CheckSquare className="h-4 w-4 mr-2 text-slate-600" />
-                      Assign Task
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      className="text-red-600 focus:text-red-600 rounded-md cursor-pointer"
-                      onClick={() => handleRemoveMember(member.id)}
-                    >
-                      <Users className="h-4 w-4 mr-2" />
-                      Remove from Team
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
               </CardContent>
             </Card>
           ))}

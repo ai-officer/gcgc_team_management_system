@@ -135,7 +135,7 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
           priority: task.priority,
           progressPercentage: task.progressPercentage || 0,
           taskType: task.taskType,
-          assigneeId: session?.user?.id, // Always current user
+          assigneeId: task.assigneeId || session?.user?.id, // PRESERVE original assignee when editing
           teamMemberIds: task.teamMembers?.map((tm: any) => tm.userId) || [],
           collaboratorIds: task.collaborators?.map((c: any) => c.userId) || [],
           assignedById: task.assignedById || session?.user?.id,
@@ -200,7 +200,7 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
   // Handle task type changes and set appropriate defaults
   useEffect(() => {
     if (!task && session?.user?.id && open) { // Only for new tasks when dialog is open
-      // Always assign to current user regardless of task type
+      // For NEW tasks only: Always assign to current user regardless of task type
       form.setValue('assigneeId', session.user.id)
 
       // Clear selections when changing task types (but preserve pre-selected members on first open)
@@ -218,6 +218,7 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
         form.setValue('teamMemberIds', [])
       }
     }
+    // For EDITING tasks: preserve the original assignee - do NOT override
   }, [taskType, session?.user?.id, task, form, open])
 
   // Ensure pre-selected member is set after users are loaded

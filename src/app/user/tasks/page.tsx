@@ -137,6 +137,7 @@ export default function TasksPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedTeam, setSelectedTeam] = useState<string>('')
   const [selectedUser, setSelectedUser] = useState<string>('')
+  const [selectedTaskType, setSelectedTaskType] = useState<string>('')
   const [users, setUsers] = useState<User[]>([])
   const [showTaskForm, setShowTaskForm] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
@@ -154,6 +155,7 @@ export default function TasksPage() {
       if (searchTerm) params.append('search', searchTerm)
       if (selectedTeam) params.append('teamId', selectedTeam)
       if (selectedUser) params.append('userId', selectedUser)
+      if (selectedTaskType) params.append('taskType', selectedTaskType)
       
       console.log('Current user session:', {
         id: session.user.id,
@@ -185,7 +187,7 @@ export default function TasksPage() {
 
   useEffect(() => {
     fetchTasks()
-  }, [session, searchTerm, selectedTeam, selectedUser])
+  }, [session, searchTerm, selectedTeam, selectedUser, selectedTaskType])
 
   const fetchUsers = async () => {
     try {
@@ -574,12 +576,40 @@ export default function TasksPage() {
           </SelectContent>
         </Select>
 
-        {(selectedUser || searchTerm) && (
-          <Button 
-            variant="outline" 
-            size="sm" 
+        <Select value={selectedTaskType || "all"} onValueChange={(value) => setSelectedTaskType(value === "all" ? "" : value)}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Filter by task type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All task types</SelectItem>
+            <SelectItem value="INDIVIDUAL">
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                <span>Individual</span>
+              </div>
+            </SelectItem>
+            <SelectItem value="TEAM">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                <span>Team</span>
+              </div>
+            </SelectItem>
+            <SelectItem value="COLLABORATION">
+              <div className="flex items-center gap-2">
+                <Handshake className="h-4 w-4" />
+                <span>Collaboration</span>
+              </div>
+            </SelectItem>
+          </SelectContent>
+        </Select>
+
+        {(selectedUser || selectedTaskType || searchTerm) && (
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => {
               setSelectedUser('')
+              setSelectedTaskType('')
               setSearchTerm('')
             }}
           >

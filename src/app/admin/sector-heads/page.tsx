@@ -8,6 +8,14 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -57,12 +65,22 @@ interface UpdateSectorHeadData {
   isActive?: boolean
 }
 
+interface User {
+  id: string
+  name: string
+  email: string
+  image?: string
+  role: string
+}
+
 export default function AdminSectorHeadsPage() {
   const [sectorHeads, setSectorHeads] = useState<SectorHead[]>([])
+  const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingSectorHead, setEditingSectorHead] = useState<SectorHead | null>(null)
+  const [selectedUserId, setSelectedUserId] = useState<string>('')
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 12,
@@ -113,6 +131,40 @@ export default function AdminSectorHeadsPage() {
     fetchSectorHeads()
   }, [pagination.page, searchTerm])
 
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('/api/users')
+      if (response.ok) {
+        const data = await response.json()
+        setUsers(data.users || [])
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error)
+    }
+  }
+
+  useEffect(() => {
+    fetchUsers()
+  }, [])
+
+  const handleUserSelect = (userId: string) => {
+    setSelectedUserId(userId)
+    const user = users.find(u => u.id === userId)
+    if (user) {
+      // Generate initials from user name (first letters of first and last name)
+      const nameParts = user.name.split(' ')
+      const initials = nameParts.length >= 2
+        ? `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase()
+        : user.name.slice(0, 2).toUpperCase()
+
+      setNewSectorHead(prev => ({
+        ...prev,
+        initials,
+        fullName: user.name
+      }))
+    }
+  }
+
   const handleCreateSectorHead = async () => {
     try {
       if (!newSectorHead.initials.trim() || !newSectorHead.fullName.trim()) {
@@ -142,6 +194,7 @@ export default function AdminSectorHeadsPage() {
 
       setIsCreateDialogOpen(false)
       setNewSectorHead({ initials: '', fullName: '', description: '', divisionId: '' })
+      setSelectedUserId('')
       fetchSectorHeads()
     } catch (error) {
       console.error('Error creating sector head:', error)
@@ -247,7 +300,13 @@ export default function AdminSectorHeadsPage() {
             Manage sector heads for hotel operations
           </p>
         </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
+          setIsCreateDialogOpen(open)
+          if (!open) {
+            setSelectedUserId('')
+            setNewSectorHead({ initials: '', fullName: '', description: '', divisionId: '' })
+          }
+        }}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
@@ -263,23 +322,53 @@ export default function AdminSectorHeadsPage() {
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="initials">Initials *</Label>
-                <Input
-                  id="initials"
-                  value={newSectorHead.initials}
-                  onChange={(e) => setNewSectorHead(prev => ({ ...prev, initials: e.target.value }))}
-                  placeholder="e.g., JD, ABC"
-                />
+                <Label htmlFor="user-select">Select User *</Label>
+                <Select value={selectedUserId} onValueChange={handleUserSelect}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a user" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {users.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-6 w-6">
+                            <AvatarImage src={user.image || undefined} />
+                            <AvatarFallback className="text-xs">
+                              {user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : user.email[0].toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium">{user.name}</span>
+                            <span className="text-xs text-muted-foreground">{user.email}</span>
+                          </div>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <div>
-                <Label htmlFor="fullName">Full Name *</Label>
-                <Input
-                  id="fullName"
-                  value={newSectorHead.fullName}
-                  onChange={(e) => setNewSectorHead(prev => ({ ...prev, fullName: e.target.value }))}
-                  placeholder="e.g., John Doe"
-                />
-              </div>
+              {selectedUserId && (
+                <>
+                  <div>
+                    <Label htmlFor="initials">Initials (Auto-generated)</Label>
+                    <Input
+                      id="initials"
+                      value={newSectorHead.initials}
+                      onChange={(e) => setNewSectorHead(prev => ({ ...prev, initials: e.target.value }))}
+                      placeholder="e.g., JD, ABC"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="fullName">Full Name (From User)</Label>
+                    <Input
+                      id="fullName"
+                      value={newSectorHead.fullName}
+                      disabled
+                      className="bg-muted"
+                    />
+                  </div>
+                </>
+              )}
               <div>
                 <Label htmlFor="description">Description</Label>
                 <Textarea
@@ -291,10 +380,14 @@ export default function AdminSectorHeadsPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+              <Button variant="outline" onClick={() => {
+                setIsCreateDialogOpen(false)
+                setSelectedUserId('')
+                setNewSectorHead({ initials: '', fullName: '', description: '', divisionId: '' })
+              }}>
                 Cancel
               </Button>
-              <Button onClick={handleCreateSectorHead}>Create Sector Head</Button>
+              <Button onClick={handleCreateSectorHead} disabled={!selectedUserId}>Create Sector Head</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

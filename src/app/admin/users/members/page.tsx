@@ -35,12 +35,22 @@ export default function AdminMembersPage() {
   const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 8,
     total: 0,
     totalPages: 0
   })
+
+  // Debounce search term to avoid refetching on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+    }, 500) // Wait 500ms after user stops typing
+
+    return () => clearTimeout(timer)
+  }, [searchTerm])
 
   const fetchMembers = async () => {
     try {
@@ -49,9 +59,9 @@ export default function AdminMembersPage() {
         role: 'MEMBER',
         page: pagination.page.toString(),
         limit: pagination.limit.toString(),
-        ...(searchTerm && { search: searchTerm })
+        ...(debouncedSearchTerm && { search: debouncedSearchTerm })
       })
-      
+
       const response = await fetch(`/api/admin/users?${params}`)
       const data = await response.json()
 
@@ -68,7 +78,7 @@ export default function AdminMembersPage() {
 
   useEffect(() => {
     fetchMembers()
-  }, [pagination.page, searchTerm])
+  }, [pagination.page, debouncedSearchTerm])
 
   const getHierarchyColor = (level: HierarchyLevel | null) => {
     if (!level) return 'bg-gray-100 text-gray-700 border-gray-200'

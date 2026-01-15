@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { Crown, Shield, Users, Mail, Calendar, Edit, Trash2, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -35,12 +36,22 @@ export default function AdminLeadersPage() {
   const [leaders, setLeaders] = useState<Leader[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 8,
     total: 0,
     totalPages: 0
   })
+
+  // Debounce search term to avoid refetching on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+    }, 500) // Wait 500ms after user stops typing
+
+    return () => clearTimeout(timer)
+  }, [searchTerm])
 
   const fetchLeaders = async () => {
     try {
@@ -49,7 +60,7 @@ export default function AdminLeadersPage() {
         role: 'LEADER',
         page: pagination.page.toString(),
         limit: pagination.limit.toString(),
-        ...(searchTerm && { search: searchTerm })
+        ...(debouncedSearchTerm && { search: debouncedSearchTerm })
       })
 
       const response = await fetch(`/api/admin/users?${params}`)
@@ -68,7 +79,7 @@ export default function AdminLeadersPage() {
 
   useEffect(() => {
     fetchLeaders()
-  }, [pagination.page, searchTerm])
+  }, [pagination.page, debouncedSearchTerm])
 
   const getHierarchyColor = (level: HierarchyLevel | null) => {
     if (!level) return 'bg-slate-50 text-slate-700 border border-slate-200'
@@ -234,9 +245,11 @@ export default function AdminLeadersPage() {
                 </div>
                 
                 <div className="flex space-x-2">
-                  <Button variant="outline" size="sm">
-                    <Edit className="w-4 h-4" />
-                  </Button>
+                  <Link href={`/admin/users/${leader.id}/edit`}>
+                    <Button variant="outline" size="sm">
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </div>

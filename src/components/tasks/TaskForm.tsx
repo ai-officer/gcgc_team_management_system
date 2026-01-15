@@ -116,11 +116,16 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
   const progressPercentage = form.watch('progressPercentage')
 
 
-  // Load initial data
+  // Fetch users when dialog opens
   useEffect(() => {
     if (open) {
       fetchUsers()
-      
+    }
+  }, [open])
+
+  // Initialize form when dialog opens - ONLY ONCE per open
+  useEffect(() => {
+    if (open) {
       if (task) {
         // Populate form with existing task data
         const startDateTime = task.startDate ? new Date(task.startDate) : undefined
@@ -148,7 +153,7 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
           startTime: startDateTime && !task.allDay ? startDateTime.toTimeString().slice(0, 5) : '',
           endTime: dueDateTime && !task.allDay ? dueDateTime.toTimeString().slice(0, 5) : '',
         })
-        
+
         // Set selected members and collaborators for display
         if (task.teamMembers) {
           setSelectedTeamMembers(task.teamMembers.map((tm: any) => tm.user))
@@ -182,20 +187,12 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
           endTime: '',
         })
 
-        // Set pre-selected member if provided
-        if (preSelectedMemberId) {
-          const preSelectedUser = users.find(u => u.id === preSelectedMemberId)
-          if (preSelectedUser) {
-            setSelectedTeamMembers([preSelectedUser])
-          }
-        } else {
-          // Clear selected arrays
-          setSelectedTeamMembers([])
-          setSelectedCollaborators([])
-        }
+        // Clear selected arrays
+        setSelectedTeamMembers([])
+        setSelectedCollaborators([])
       }
     }
-  }, [open, task, form, session, preSelectedMemberId, users])
+  }, [open, task, form, session, preSelectedMemberId])
 
   // Handle task type changes and set appropriate defaults
   useEffect(() => {
@@ -221,15 +218,15 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
     // For EDITING tasks: preserve the original assignee - do NOT override
   }, [taskType, session?.user?.id, task, form, open])
 
-  // Ensure pre-selected member is set after users are loaded
+  // Ensure pre-selected member is set after users are loaded - ONLY ONCE
   useEffect(() => {
-    if (open && !task && preSelectedMemberId && users.length > 0) {
+    if (open && !task && preSelectedMemberId && users.length > 0 && selectedTeamMembers.length === 0) {
       const preSelectedUser = users.find(u => u.id === preSelectedMemberId)
-      if (preSelectedUser && selectedTeamMembers.length === 0) {
+      if (preSelectedUser) {
         setSelectedTeamMembers([preSelectedUser])
       }
     }
-  }, [open, task, preSelectedMemberId, users, selectedTeamMembers])
+  }, [open, task, preSelectedMemberId, users.length])
 
   const fetchUsers = async () => {
     try {

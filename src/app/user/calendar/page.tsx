@@ -339,11 +339,13 @@ export default function CalendarPage() {
         <div className="flex gap-2">
           <CreateTaskButton onTaskCreated={fetchCalendarData} />
           <Button
-            onClick={() => setIsOSSBWizardOpen(true)}
+            disabled
             variant="outline"
+            className="opacity-50 cursor-not-allowed"
+            title="OSSB Request feature is temporarily disabled"
           >
             <FileText className="h-4 w-4 mr-2" />
-            Create OSSB Request
+            Create OSSB Request (Disabled)
           </Button>
           <Button
             variant="outline"

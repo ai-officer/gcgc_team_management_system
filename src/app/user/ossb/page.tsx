@@ -203,11 +203,12 @@ export default function OSSBManagementPage() {
               </p>
             </div>
             <Button
-              onClick={() => setIsCreateOpen(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all duration-200"
+              disabled
+              className="bg-slate-400 cursor-not-allowed text-white shadow-md opacity-60"
+              title="OSSB Request feature is temporarily disabled"
             >
               <Plus className="mr-2 h-4 w-4" />
-              Create OSSB Request
+              Create OSSB Request (Disabled)
             </Button>
           </div>
         </div>

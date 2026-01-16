@@ -43,7 +43,6 @@ interface JobLevel {
 
 export default function JobLevelsPage() {
   const [jobLevels, setJobLevels] = useState<JobLevel[]>([])
-  const [filteredJobLevels, setFilteredJobLevels] = useState<JobLevel[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -61,18 +60,6 @@ export default function JobLevelsPage() {
   useEffect(() => {
     fetchJobLevels()
   }, [])
-
-  useEffect(() => {
-    if (!searchTerm) {
-      setFilteredJobLevels(jobLevels)
-    } else {
-      const filtered = jobLevels.filter(jobLevel =>
-        jobLevel.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        jobLevel.description?.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-      setFilteredJobLevels(filtered)
-    }
-  }, [jobLevels, debouncedSearchTerm])
 
   // Debounce search term to avoid refetching on every keystroke
   useEffect(() => {
@@ -94,7 +81,6 @@ export default function JobLevelsPage() {
         const data = await response.json()
         const levels = data.jobLevels || []
         setJobLevels(levels)
-        setFilteredJobLevels(levels)
       } else {
         setError('Failed to fetch job levels')
       }
@@ -255,6 +241,14 @@ export default function JobLevelsPage() {
       </div>
     )
   }
+
+  // Filter job levels based on debounced search term
+  const filteredJobLevels = !debouncedSearchTerm
+    ? jobLevels
+    : jobLevels.filter(jobLevel =>
+        jobLevel.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        jobLevel.description?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+      )
 
   return (
     <div className="space-y-6">

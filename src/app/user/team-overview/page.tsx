@@ -703,9 +703,10 @@ export default function TeamOverviewPage() {
   }
 
   const filteredMembers = teamMembers.filter(member => {
-    const matchesSearch = member.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      member.positionTitle?.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSearch = !debouncedSearchTerm ||
+      member.name?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      member.email.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      member.positionTitle?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
 
     const matchesFilter = filterStatus === 'all' ||
       (filterStatus === 'active' && member.isActive) ||

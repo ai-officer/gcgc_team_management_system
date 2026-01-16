@@ -267,12 +267,6 @@ export default function AdminDepartmentsPage() {
     }
   }
 
-  const filteredDepartments = departments.filter(department =>
-    department.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    department.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    department.division.name.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -424,7 +418,7 @@ export default function AdminDepartmentsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredDepartments.map((department) => (
+          {departments.map((department) => (
             <Card key={department.id}>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -587,7 +581,7 @@ export default function AdminDepartmentsPage() {
         </Dialog>
       )}
 
-      {filteredDepartments.length === 0 && !loading && (
+      {departments.length === 0 && !loading && (
         <div className="text-center py-12">
           <Building2 className="mx-auto h-12 w-12 text-gray-400" />
           <h3 className="mt-2 text-sm font-semibold text-gray-900">No departments found</h3>

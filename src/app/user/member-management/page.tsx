@@ -500,8 +500,9 @@ export default function MemberManagementPage() {
   }
 
   const filteredMembers = teamMembers.filter(member =>
-    member.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    member.email.toLowerCase().includes(searchTerm.toLowerCase())
+    !debouncedSearchTerm ||
+    member.name?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+    member.email.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
   )
 
   const filteredTasks = tasks

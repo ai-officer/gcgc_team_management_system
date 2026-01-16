@@ -295,12 +295,6 @@ export default function AdminSectorHeadsPage() {
     })
   }
 
-  const filteredSectorHeads = sectorHeads.filter(sh =>
-    sh.initials.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    sh.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (sh.description && sh.description.toLowerCase().includes(searchTerm.toLowerCase()))
-  )
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -420,7 +414,7 @@ export default function AdminSectorHeadsPage() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredSectorHeads.map((sectorHead) => (
+            {sectorHeads.map((sectorHead) => (
               <Card key={sectorHead.id} className="relative bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow">
                 <CardHeader className="pb-3 border-b border-slate-100">
                   <div className="flex items-center justify-between">
@@ -555,7 +549,7 @@ export default function AdminSectorHeadsPage() {
             ))}
           </div>
 
-          {filteredSectorHeads.length === 0 && !loading && (
+          {sectorHeads.length === 0 && !loading && (
             <div className="text-center py-8">
               <Users className="mx-auto h-12 w-12 text-muted-foreground" />
               <h3 className="mt-2 text-sm font-semibold text-muted-foreground">No sector heads found</h3>

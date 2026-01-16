@@ -205,12 +205,6 @@ export default function AdminSectionsPage() {
     }
   }
 
-  const filteredSections = sections.filter(section =>
-    section.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    section.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    section.department.name.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -362,7 +356,7 @@ export default function AdminSectionsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredSections.map((section) => (
+          {sections.map((section) => (
             <Card key={section.id}>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -525,7 +519,7 @@ export default function AdminSectionsPage() {
         </Dialog>
       )}
 
-      {filteredSections.length === 0 && !loading && (
+      {sections.length === 0 && !loading && (
         <div className="text-center py-12">
           <Building2 className="mx-auto h-12 w-12 text-gray-400" />
           <h3 className="mt-2 text-sm font-semibold text-gray-900">No sections found</h3>

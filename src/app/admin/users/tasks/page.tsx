@@ -116,6 +116,7 @@ export default function UserTasksPage() {
   const [stats, setStats] = useState<TaskStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [apiSearchTerm, setApiSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all')
   const [taskTypeFilter, setTaskTypeFilter] = useState<'all' | 'individual' | 'collaborative' | 'team'>('all')

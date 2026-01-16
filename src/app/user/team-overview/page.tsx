@@ -97,6 +97,7 @@ export default function TeamOverviewPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
   const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false)
@@ -162,6 +163,15 @@ export default function TeamOverviewPage() {
       return
     }
   }, [session])
+
+  // Debounce search term to avoid refetching on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+    }, 500) // Wait 500ms after user stops typing
+
+    return () => clearTimeout(timer)
+  }, [searchTerm])
 
   const fetchTeamData = async () => {
     if (!session?.user || session.user.role !== 'LEADER') return

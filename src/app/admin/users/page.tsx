@@ -135,6 +135,7 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all')
   const [hierarchyFilter, setHierarchyFilter] = useState<HierarchyLevel | 'all'>('all')
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
@@ -196,12 +197,21 @@ export default function AdminUsersPage() {
     customTeam: ''
   })
 
+  // Debounce search term to avoid refetching on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+    }, 500) // Wait 500ms after user stops typing
+
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
   const fetchUsers = async () => {
     try {
       const params = new URLSearchParams({
         page: pagination.page.toString(),
         limit: pagination.limit.toString(),
-        ...(searchTerm && { search: searchTerm }),
+        ...(debouncedSearchTerm && { search: debouncedSearchTerm }),
         ...(roleFilter !== 'all' && { role: roleFilter }),
         ...(hierarchyFilter !== 'all' && { hierarchyLevel: hierarchyFilter })
       })
@@ -222,7 +232,7 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     fetchUsers()
-  }, [pagination.page, searchTerm, roleFilter, hierarchyFilter])
+  }, [pagination.page, debouncedSearchTerm, roleFilter, hierarchyFilter])
 
   // Fetch organizational data on component mount (copied from registration form)
   useEffect(() => {

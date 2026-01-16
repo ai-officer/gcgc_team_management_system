@@ -156,6 +156,7 @@ export default function MemberManagementPage() {
   const [error, setError] = useState<string | null>(null)
   const [deletingTask, setDeletingTask] = useState<Task | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [selectedMember, setSelectedMember] = useState<string>('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [viewMode, setViewMode] = useState<ViewMode>('list')
@@ -208,6 +209,15 @@ export default function MemberManagementPage() {
   }, [session])
 
   // Fetch member suggestions
+  // Debounce search term to avoid refetching on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+    }, 500) // Wait 500ms after user stops typing
+
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
   const fetchMemberSuggestions = async () => {
     if (!session?.user || session.user.role !== 'LEADER') return
 

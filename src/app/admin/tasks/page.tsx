@@ -135,11 +135,21 @@ export default function AdminTasksPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [selectedUser, setSelectedUser] = useState<string>('')
   const [users, setUsers] = useState<User[]>([])
   const [showTaskForm, setShowTaskForm] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [deletingTask, setDeletingTask] = useState<Task | null>(null)
+
+  // Debounce search term to avoid refetching on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+    }, 500) // Wait 500ms after user stops typing
+
+    return () => clearTimeout(timer)
+  }, [searchTerm])
 
   const fetchTasks = async () => {
     if (!session?.user) return
@@ -148,7 +158,7 @@ export default function AdminTasksPage() {
       setLoading(true)
       setError(null)
       const params = new URLSearchParams()
-      if (searchTerm) params.append('search', searchTerm)
+      if (debouncedSearchTerm) params.append('search', debouncedSearchTerm)
       if (selectedUser) params.append('userId', selectedUser)
       
       console.log('Fetching admin tasks with params:', params.toString())
@@ -174,7 +184,7 @@ export default function AdminTasksPage() {
 
   useEffect(() => {
     fetchTasks()
-  }, [session, searchTerm, selectedUser])
+  }, [session, debouncedSearchTerm, selectedUser])
 
   const fetchUsers = async () => {
     try {

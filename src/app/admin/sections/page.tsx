@@ -89,6 +89,7 @@ export default function AdminSectionsPage() {
   const [departments, setDepartments] = useState<Department[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingSection, setEditingSection] = useState<Section | null>(null)
   const [pagination, setPagination] = useState({
@@ -104,13 +105,22 @@ export default function AdminSectionsPage() {
     departmentId: ''
   })
 
+  // Debounce search term to avoid refetching on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+    }, 500) // Wait 500ms after user stops typing
+
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
   const fetchSections = async () => {
     try {
       const params = new URLSearchParams({
         page: pagination.page.toString(),
         limit: pagination.limit.toString(),
         includeInactive: 'true',
-        ...(searchTerm && { search: searchTerm })
+        ...(debouncedSearchTerm && { search: debouncedSearchTerm })
       })
 
       const response = await fetch(`/api/admin/sections?${params}`)
@@ -143,7 +153,7 @@ export default function AdminSectionsPage() {
   useEffect(() => {
     fetchSections()
     fetchDepartments()
-  }, [pagination.page, searchTerm])
+  }, [pagination.page, debouncedSearchTerm])
 
   const handleCreateSection = async () => {
     try {

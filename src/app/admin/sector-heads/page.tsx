@@ -78,6 +78,7 @@ export default function AdminSectorHeadsPage() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingSectorHead, setEditingSectorHead] = useState<SectorHead | null>(null)
   const [selectedUserId, setSelectedUserId] = useState<string>('')
@@ -95,14 +96,23 @@ export default function AdminSectorHeadsPage() {
     divisionId: ''
   })
 
-  const fetchSectorHeads = async () => {
+  // Debounce search term to avoid refetching on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+    }, 500) // Wait 500ms after user stops typing
+
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
+    const fetchSectorHeads = async () => {
     try {
       setLoading(true)
       const params = new URLSearchParams({
         page: pagination.page.toString(),
         limit: pagination.limit.toString(),
         includeInactive: 'true',
-        search: searchTerm
+        search: debouncedSearchTerm
       })
 
       const response = await fetch(`/api/admin/sector-heads?${params}`)
@@ -129,7 +139,7 @@ export default function AdminSectorHeadsPage() {
 
   useEffect(() => {
     fetchSectorHeads()
-  }, [pagination.page, searchTerm])
+  }, [pagination.page, debouncedSearchTerm])
 
   const fetchUsers = async () => {
     try {

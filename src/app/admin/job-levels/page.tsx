@@ -47,6 +47,7 @@ export default function JobLevelsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [selectedJobLevel, setSelectedJobLevel] = useState<JobLevel | null>(null)
@@ -71,7 +72,16 @@ export default function JobLevelsPage() {
       )
       setFilteredJobLevels(filtered)
     }
-  }, [jobLevels, searchTerm])
+  }, [jobLevels, debouncedSearchTerm])
+
+  // Debounce search term to avoid refetching on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+    }, 500) // Wait 500ms after user stops typing
+
+    return () => clearTimeout(timer)
+  }, [searchTerm])
 
   const fetchJobLevels = async () => {
     try {

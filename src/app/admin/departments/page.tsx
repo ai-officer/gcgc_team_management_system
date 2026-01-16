@@ -83,6 +83,7 @@ export default function AdminDepartmentsPage() {
   const [divisions, setDivisions] = useState<Division[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingDepartment, setEditingDepartment] = useState<Department | null>(null)
   const [pagination, setPagination] = useState({
@@ -97,6 +98,15 @@ export default function AdminDepartmentsPage() {
     code: '',
     divisionId: ''
   })
+
+  // Debounce search term to avoid refetching on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+    }, 500) // Wait 500ms after user stops typing
+
+    return () => clearTimeout(timer)
+  }, [searchTerm])
 
   const fetchDepartments = async () => {
     try {
@@ -154,7 +164,7 @@ export default function AdminDepartmentsPage() {
   useEffect(() => {
     fetchDepartments()
     fetchDivisions()
-  }, [pagination.page, searchTerm])
+  }, [pagination.page, debouncedSearchTerm])
 
   const handleCreateDepartment = async () => {
     try {

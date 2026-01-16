@@ -89,7 +89,6 @@ export default function DivisionsPage() {
 
   const fetchDivisions = async () => {
     try {
-      setLoading(true)
       const params = new URLSearchParams({
         includeDepartments: 'true',
         includeInactive: 'true',

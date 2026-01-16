@@ -55,7 +55,6 @@ export default function AdminLeadersPage() {
 
   const fetchLeaders = async () => {
     try {
-      setLoading(true)
       const params = new URLSearchParams({
         role: 'LEADER',
         page: pagination.page.toString(),

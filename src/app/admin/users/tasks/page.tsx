@@ -134,7 +134,6 @@ export default function UserTasksPage() {
 
   const fetchTasks = useCallback(async () => {
     try {
-      setLoading(true)
       const params = new URLSearchParams({
         page: pagination.page.toString(),
         limit: pagination.limit.toString(),

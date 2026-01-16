@@ -155,7 +155,6 @@ export default function AdminTasksPage() {
     if (!session?.user) return
 
     try {
-      setLoading(true)
       setError(null)
       const params = new URLSearchParams()
       if (debouncedSearchTerm) params.append('search', debouncedSearchTerm)

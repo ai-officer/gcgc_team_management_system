@@ -54,7 +54,6 @@ export default function AdminMembersPage() {
 
   const fetchMembers = async () => {
     try {
-      setLoading(true)
       const params = new URLSearchParams({
         role: 'MEMBER',
         page: pagination.page.toString(),

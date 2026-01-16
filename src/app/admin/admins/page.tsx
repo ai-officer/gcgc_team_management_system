@@ -72,7 +72,7 @@ export default function AdminsPage() {
 
   useEffect(() => {
     fetchAdmins()
-  }, [pagination.page, searchTerm, includeInactive])
+  }, [pagination.page, debouncedSearchTerm, includeInactive])
 
   // Debounce search term to avoid refetching on every keystroke
   useEffect(() => {
@@ -85,11 +85,10 @@ export default function AdminsPage() {
 
   const fetchAdmins = async () => {
     try {
-      setLoading(true)
       const queryParams = new URLSearchParams({
         page: pagination.page.toString(),
         limit: pagination.limit.toString(),
-        ...(searchTerm && { search: searchTerm }),
+        ...(debouncedSearchTerm && { search: debouncedSearchTerm }),
         ...(includeInactive && { includeInactive: 'true' })
       })
 

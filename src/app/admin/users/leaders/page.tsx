@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { Crown, Shield, Users, Mail, Calendar, Edit, Trash2, Search } from 'lucide-react'
+import { Crown, Shield, Users, Mail, Calendar, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -241,14 +240,6 @@ export default function AdminLeadersPage() {
                     {new Date(leader.createdAt).toLocaleDateString()}
                   </div>
                   <div>Joined</div>
-                </div>
-                
-                <div className="flex space-x-2">
-                  <Link href={`/admin/users/${leader.id}/edit`}>
-                    <Button variant="outline" size="sm">
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                  </Link>
                 </div>
               </div>
             </div>

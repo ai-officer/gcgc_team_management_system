@@ -107,7 +107,6 @@ export default function AdminSectorHeadsPage() {
 
     const fetchSectorHeads = async () => {
     try {
-      setLoading(true)
       const params = new URLSearchParams({
         page: pagination.page.toString(),
         limit: pagination.limit.toString(),

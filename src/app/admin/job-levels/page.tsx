@@ -72,7 +72,6 @@ export default function JobLevelsPage() {
 
   const fetchJobLevels = async () => {
     try {
-      setLoading(true)
       const params = new URLSearchParams({
         includeInactive: 'true'
       })

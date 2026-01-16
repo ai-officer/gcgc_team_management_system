@@ -242,8 +242,6 @@ export default function MemberManagementPage() {
     if (!session?.user || session.user.role !== 'LEADER') return
 
     try {
-      setLoading(true)
-
       const taskParams = new URLSearchParams()
       if (selectedMember) {
         taskParams.append('assigneeId', selectedMember)

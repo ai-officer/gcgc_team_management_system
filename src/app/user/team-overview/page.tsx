@@ -177,8 +177,6 @@ export default function TeamOverviewPage() {
     if (!session?.user || session.user.role !== 'LEADER') return
 
     try {
-      setLoading(true)
-
       // Fetch team members (users who report to this leader)
       const membersResponse = await fetch(`/api/user/team-members`)
       if (!membersResponse.ok) {

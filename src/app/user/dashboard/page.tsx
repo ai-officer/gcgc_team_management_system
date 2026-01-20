@@ -431,7 +431,7 @@ export default function UserDashboard() {
                   </Button>
                 </div>
               ) : (
-                dashboardData.recentTasks.map((task, index) => (
+                dashboardData.recentTasks.slice(0, 3).map((task, index) => (
                   <div
                     key={task.id}
                     className="group relative border border-slate-200 bg-white rounded-lg p-4 hover:shadow-md hover:border-slate-300 transition-all duration-200 cursor-pointer"

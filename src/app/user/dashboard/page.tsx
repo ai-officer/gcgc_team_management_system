@@ -633,6 +633,23 @@ export default function UserDashboard() {
                 <ArrowRight className="h-4 w-4 ml-auto" />
               </Button>
 
+              <Button
+                onClick={() => window.location.href = '/user/profile'}
+                className="w-full justify-start h-auto p-3 border-0 rounded-none bg-gray-50 hover:bg-blue-50"
+                variant="ghost"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-500 rounded-none">
+                    <Users className="h-4 w-4 text-white" />
+                  </div>
+                  <div className="text-left">
+                    <div className="font-bold text-sm">View Profile</div>
+                    <div className="text-xs text-gray-600 font-bold">Manage your account</div>
+                  </div>
+                </div>
+                <ArrowRight className="h-4 w-4 ml-auto" />
+              </Button>
+
               {isLeader && (
                 <>
                   <Button

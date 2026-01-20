@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Crown, Shield, Users, Mail, Calendar, Search } from 'lucide-react'
+import { Crown, Shield, Users, Mail, Calendar, Search, Edit, Eye } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -32,6 +33,7 @@ interface Leader {
 }
 
 export default function AdminLeadersPage() {
+  const router = useRouter()
   const [leaders, setLeaders] = useState<Leader[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -240,6 +242,17 @@ export default function AdminLeadersPage() {
                     {new Date(leader.createdAt).toLocaleDateString()}
                   </div>
                   <div>Joined</div>
+                </div>
+
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push(`/admin/users?editUser=${leader.id}`)}
+                  >
+                    <Edit className="w-4 h-4 mr-1" />
+                    Edit
+                  </Button>
                 </div>
               </div>
             </div>

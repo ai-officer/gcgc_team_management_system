@@ -2228,7 +2228,10 @@ export default function TeamOverviewPage() {
                     "space-y-1 min-w-0",
                     viewMode === 'grid' && "flex-1 w-full"
                   )}>
-                    <div className="flex items-center gap-2 justify-center">
+                    <div className={cn(
+                      "flex items-center gap-2",
+                      viewMode === 'grid' && "justify-center"
+                    )}>
                       <h4 className={cn(
                         "font-semibold text-slate-900 truncate",
                         viewMode === 'grid' ? "text-lg" : "text-base"
@@ -2265,7 +2268,10 @@ export default function TeamOverviewPage() {
                     </div>
 
                     {member._count && (
-                      <div className="flex items-center gap-1 text-xs text-slate-600 font-medium justify-center">
+                      <div className={cn(
+                        "flex items-center gap-1 text-xs text-slate-600 font-medium",
+                        viewMode === 'grid' && "justify-center"
+                      )}>
                         <CheckSquare className="h-3 w-3 text-slate-400" />
                         <span>{member._count.assignedTasks} tasks assigned</span>
                       </div>

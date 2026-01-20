@@ -142,7 +142,7 @@ export default function AdminSectorHeadsPage() {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('/api/users')
+      const response = await fetch('/api/admin/users?limit=100')
       if (response.ok) {
         const data = await response.json()
         setUsers(data.users || [])

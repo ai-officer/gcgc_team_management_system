@@ -496,15 +496,15 @@ export default function UserProfilePage() {
                 Personal Information
               </CardTitle>
               <CardDescription className="text-sm text-slate-600 font-medium mt-1">
-                Click on any field to edit. Changes are saved immediately.
+                Your personal information. Contact an administrator to make changes.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-1">
-              <InlineEditField field="firstName" label="First Name" icon={User} />
-              <InlineEditField field="lastName" label="Last Name" icon={User} />
-              <InlineEditField field="middleName" label="Middle Name" icon={User} />
-              <InlineEditField field="contactNumber" label="Contact Number" icon={Phone} type="tel" />
-              <InlineEditField field="positionTitle" label="Position Title" icon={Briefcase} />
+              <InlineEditField field="firstName" label="First Name" icon={User} editable={false} />
+              <InlineEditField field="lastName" label="Last Name" icon={User} editable={false} />
+              <InlineEditField field="middleName" label="Middle Name" icon={User} editable={false} />
+              <InlineEditField field="contactNumber" label="Contact Number" icon={Phone} type="tel" editable={false} />
+              <InlineEditField field="positionTitle" label="Position Title" icon={Briefcase} editable={false} />
             </CardContent>
           </Card>
         </TabsContent>

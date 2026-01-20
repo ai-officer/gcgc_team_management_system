@@ -72,10 +72,10 @@ export async function GET(req: NextRequest) {
       taskWhere.OR = [
         // Tasks assigned to matching users
         { assignee: userSearchCondition },
-        // Tasks created by matching users  
+        // Tasks created by matching users
         { creator: userSearchCondition },
         // Tasks with collaborators matching search
-        { 
+        {
           collaborators: {
             some: {
               user: userSearchCondition
@@ -86,6 +86,25 @@ export async function GET(req: NextRequest) {
         { title: { contains: search, mode: 'insensitive' } },
         { description: { contains: search, mode: 'insensitive' } }
       ]
+    }
+
+    // Apply task type filter
+    if (taskType && taskType !== 'all') {
+      switch (taskType) {
+        case 'individual':
+          // Individual: No collaborators AND no team
+          taskWhere.collaborators = { none: {} }
+          taskWhere.teamId = null
+          break
+        case 'collaborative':
+          // Collaborative: Has collaborators
+          taskWhere.collaborators = { some: {} }
+          break
+        case 'team':
+          // Team task: Has a team assigned
+          taskWhere.teamId = { not: null }
+          break
+      }
     }
 
     // Only log complex where conditions for debugging

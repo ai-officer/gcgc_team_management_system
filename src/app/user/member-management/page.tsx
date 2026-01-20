@@ -242,35 +242,52 @@ export default function MemberManagementPage() {
     if (!session?.user || session.user.role !== 'LEADER') return
 
     try {
-      const taskParams = new URLSearchParams()
-      if (selectedMember) {
-        taskParams.append('assigneeId', selectedMember)
-      } else {
-        taskParams.append('excludeCreator', session.user.id)
-      }
-
-      const [membersResponse, teamsResponse, tasksResponse, usersResponse] = await Promise.all([
+      // First fetch team members to get their IDs
+      const [membersResponse, teamsResponse, usersResponse] = await Promise.all([
         fetch('/api/user/team-members'),
         fetch('/api/teams'),
-        fetch('/api/tasks?' + taskParams.toString()),
         fetch('/api/users')
       ])
 
-      if (!membersResponse.ok || !teamsResponse.ok || !tasksResponse.ok || !usersResponse.ok) {
+      if (!membersResponse.ok || !teamsResponse.ok || !usersResponse.ok) {
         throw new Error('Failed to fetch data')
       }
 
-      const [membersData, teamsData, tasksData, usersData] = await Promise.all([
+      const [membersData, teamsData, usersData] = await Promise.all([
         membersResponse.json(),
         teamsResponse.json(),
-        tasksResponse.json(),
         usersResponse.json()
       ])
 
-      setTeamMembers(membersData.members || [])
+      const members = membersData.members || []
+      setTeamMembers(members)
       setTeams(teamsData.teams || [])
-      setTasks(tasksData.tasks || [])
       setAllUsers(usersData.users || [])
+
+      // Now fetch tasks - if a specific member is selected, filter by that member
+      // Otherwise fetch all tasks (the API returns tasks the leader can see)
+      const taskParams = new URLSearchParams()
+      taskParams.append('limit', '100') // Get more tasks
+      if (selectedMember) {
+        taskParams.append('assigneeId', selectedMember)
+      }
+
+      const tasksResponse = await fetch('/api/tasks?' + taskParams.toString())
+      if (!tasksResponse.ok) {
+        throw new Error('Failed to fetch tasks')
+      }
+      const tasksData = await tasksResponse.json()
+
+      // Filter tasks to only include those assigned to team members (when viewing all)
+      let filteredTasks = tasksData.tasks || []
+      if (!selectedMember && members.length > 0) {
+        const memberIds = members.map((m: any) => m.id)
+        filteredTasks = filteredTasks.filter((task: any) =>
+          task.assigneeId && memberIds.includes(task.assigneeId)
+        )
+      }
+
+      setTasks(filteredTasks)
     } catch (err) {
       console.error('Error fetching data:', err)
       setError('Failed to load data')

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Search, Filter, Edit, Trash2, User, Mail, Calendar, Shield, Crown } from 'lucide-react'
+import { Plus, Search, Filter, Edit, Trash2, User, Mail, Calendar, Shield, Crown, LayoutList, LayoutGrid } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -138,6 +138,7 @@ export default function AdminUsersPage() {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all')
   const [hierarchyFilter, setHierarchyFilter] = useState<HierarchyLevel | 'all'>('all')
+  const [viewMode, setViewMode] = useState<'column' | 'grid'>('column')
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [pagination, setPagination] = useState({
@@ -1079,6 +1080,26 @@ export default function AdminUsersPage() {
             <SelectItem value={HierarchyLevel.M2}>M2</SelectItem>
           </SelectContent>
         </Select>
+
+        {/* View Toggle */}
+        <div className="flex items-center border border-slate-200 rounded-lg p-1">
+          <Button
+            variant={viewMode === 'column' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('column')}
+            className={`px-3 ${viewMode === 'column' ? 'bg-blue-600 hover:bg-blue-700' : 'hover:bg-slate-100'}`}
+          >
+            <LayoutList className="w-4 h-4" />
+          </Button>
+          <Button
+            variant={viewMode === 'grid' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('grid')}
+            className={`px-3 ${viewMode === 'grid' ? 'bg-blue-600 hover:bg-blue-700' : 'hover:bg-slate-100'}`}
+          >
+            <LayoutGrid className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Users List */}
@@ -1087,70 +1108,71 @@ export default function AdminUsersPage() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
       ) : (
-        <div className="grid gap-4">
+        <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'grid gap-4'}>
           {users.map((user) => (
-            <Card key={user.id} className="p-6 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <Avatar className="h-12 w-12 rounded-lg ring-2 ring-slate-200">
-                    <AvatarFallback className="rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 text-blue-700 font-semibold">
-                      {user.name ? user.name.split(' ').map(n => n[0]).join('') : <User className="w-6 h-6" />}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h3 className="font-semibold text-slate-900">{user.name}</h3>
-                    <div className="flex items-center space-x-2 text-sm font-medium text-slate-600">
-                      <Mail className="w-4 h-4" />
-                      <span>{user.email}</span>
+            <Card key={user.id} className={`bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow ${viewMode === 'grid' ? 'p-4' : 'p-6'}`}>
+              {viewMode === 'grid' ? (
+                // Grid View - Compact vertical card
+                <div className="flex flex-col h-full">
+                  <div className="flex items-start justify-between mb-3">
+                    <Avatar className="h-14 w-14 rounded-lg ring-2 ring-slate-200">
+                      <AvatarFallback className="rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 text-blue-700 font-semibold text-lg">
+                        {user.name ? user.name.split(' ').map(n => n[0]).join('') : <User className="w-6 h-6" />}
+                      </AvatarFallback>
+                    </Avatar>
+                    <Badge variant={user.isActive ? "default" : "secondary"} className="rounded-md px-2 py-0.5 text-xs font-medium">
+                      {user.isActive ? 'Active' : 'Inactive'}
+                    </Badge>
+                  </div>
+
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-slate-900 truncate">{user.name}</h3>
+                    <div className="flex items-center space-x-1 text-xs font-medium text-slate-500 mt-1">
+                      <Mail className="w-3 h-3" />
+                      <span className="truncate">{user.email}</span>
                     </div>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <Badge className={`${getRoleColor(user.role)} rounded-md px-2.5 py-0.5 text-xs font-medium`}>
+
+                    <div className="flex flex-wrap items-center gap-1 mt-2">
+                      <Badge className={`${getRoleColor(user.role)} rounded-md px-2 py-0.5 text-xs font-medium`}>
                         <Shield className="w-3 h-3 mr-1" />
                         {user.role}
                       </Badge>
                       {user.hierarchyLevel ? (
-                        <Badge className={`${getHierarchyColor(user.hierarchyLevel)} rounded-md px-2.5 py-0.5 text-xs font-medium`}>
+                        <Badge className={`${getHierarchyColor(user.hierarchyLevel)} rounded-md px-2 py-0.5 text-xs font-medium`}>
                           {user.hierarchyLevel}
                         </Badge>
                       ) : user.role === UserRole.ADMIN ? (
-                        <Badge className="bg-purple-50 text-purple-700 border border-purple-200 rounded-md px-2.5 py-0.5 text-xs font-medium">
-                          System Access
+                        <Badge className="bg-purple-50 text-purple-700 border border-purple-200 rounded-md px-2 py-0.5 text-xs font-medium">
+                          System
                         </Badge>
-                      ) : (
-                        <Badge variant="outline" className="rounded-md px-2.5 py-0.5 text-xs font-medium border-slate-200">
-                          No Hierarchy
-                        </Badge>
-                      )}
-                      <Badge variant={user.isActive ? "default" : "secondary"} className="rounded-md px-2.5 py-0.5 text-xs font-medium">
-                        {user.isActive ? 'Active' : 'Inactive'}
-                      </Badge>
+                      ) : null}
                     </div>
                   </div>
-                </div>
-                
-                <div className="flex items-center space-x-4 text-sm text-gray-600">
-                  <div className="text-center">
-                    <div className="font-medium text-gray-900">{user._count.assignedTasks}</div>
-                    <div>Assigned Tasks</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="font-medium text-gray-900">{user.teamMembers.length}</div>
-                    <div>Teams</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="font-medium text-gray-900">
-                      {new Date(user.createdAt).toLocaleDateString()}
+
+                  <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-slate-100 text-center text-xs">
+                    <div>
+                      <div className="font-semibold text-slate-900">{user._count.assignedTasks}</div>
+                      <div className="text-slate-500">Tasks</div>
                     </div>
-                    <div>Joined</div>
+                    <div>
+                      <div className="font-semibold text-slate-900">{user.teamMembers.length}</div>
+                      <div className="text-slate-500">Teams</div>
+                    </div>
+                    <div>
+                      <div className="font-semibold text-slate-900">{new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
+                      <div className="text-slate-500">Joined</div>
+                    </div>
                   </div>
-                  
-                  <div className="flex space-x-2">
-                    <Button 
-                      variant="outline" 
+
+                  <div className="flex space-x-2 mt-3 pt-3 border-t border-slate-100">
+                    <Button
+                      variant="outline"
                       size="sm"
+                      className="flex-1"
                       onClick={() => setEditingUser(user)}
                     >
-                      <Edit className="w-4 h-4" />
+                      <Edit className="w-4 h-4 mr-1" />
+                      Edit
                     </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
@@ -1167,7 +1189,7 @@ export default function AdminUsersPage() {
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction 
+                          <AlertDialogAction
                             onClick={() => handleDeleteUser(user.id)}
                             className="bg-red-600 hover:bg-red-700"
                           >
@@ -1178,7 +1200,98 @@ export default function AdminUsersPage() {
                     </AlertDialog>
                   </div>
                 </div>
-              </div>
+              ) : (
+                // Column View - Horizontal card (original layout)
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <Avatar className="h-12 w-12 rounded-lg ring-2 ring-slate-200">
+                      <AvatarFallback className="rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 text-blue-700 font-semibold">
+                        {user.name ? user.name.split(' ').map(n => n[0]).join('') : <User className="w-6 h-6" />}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h3 className="font-semibold text-slate-900">{user.name}</h3>
+                      <div className="flex items-center space-x-2 text-sm font-medium text-slate-600">
+                        <Mail className="w-4 h-4" />
+                        <span>{user.email}</span>
+                      </div>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <Badge className={`${getRoleColor(user.role)} rounded-md px-2.5 py-0.5 text-xs font-medium`}>
+                          <Shield className="w-3 h-3 mr-1" />
+                          {user.role}
+                        </Badge>
+                        {user.hierarchyLevel ? (
+                          <Badge className={`${getHierarchyColor(user.hierarchyLevel)} rounded-md px-2.5 py-0.5 text-xs font-medium`}>
+                            {user.hierarchyLevel}
+                          </Badge>
+                        ) : user.role === UserRole.ADMIN ? (
+                          <Badge className="bg-purple-50 text-purple-700 border border-purple-200 rounded-md px-2.5 py-0.5 text-xs font-medium">
+                            System Access
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="rounded-md px-2.5 py-0.5 text-xs font-medium border-slate-200">
+                            No Hierarchy
+                          </Badge>
+                        )}
+                        <Badge variant={user.isActive ? "default" : "secondary"} className="rounded-md px-2.5 py-0.5 text-xs font-medium">
+                          {user.isActive ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-4 text-sm text-gray-600">
+                    <div className="text-center">
+                      <div className="font-medium text-gray-900">{user._count.assignedTasks}</div>
+                      <div>Assigned Tasks</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-medium text-gray-900">{user.teamMembers.length}</div>
+                      <div>Teams</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-medium text-gray-900">
+                        {new Date(user.createdAt).toLocaleDateString()}
+                      </div>
+                      <div>Joined</div>
+                    </div>
+
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditingUser(user)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Deactivate User</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to deactivate {user.name}? This will prevent them from accessing the system.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeleteUser(user.id)}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              Deactivate
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+                </div>
+              )}
             </Card>
           ))}
         </div>

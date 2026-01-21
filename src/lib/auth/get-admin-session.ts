@@ -1,9 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { getAdminSession as getJwtAdminSession, verifyAdminSession } from './admin-session'
 
 export async function getAdminSession(request?: NextRequest) {
   if (request) {
-    return await getJwtAdminSession(request)
+    // First try the admin-specific JWT session
+    const jwtSession = await getJwtAdminSession(request)
+    if (jwtSession?.isAdmin) {
+      return jwtSession
+    }
+
+    // Fall back to regular NextAuth session and check for ADMIN role
+    const nextAuthSession = await getServerSession(authOptions)
+    if (nextAuthSession?.user?.role === 'ADMIN') {
+      return {
+        sub: nextAuthSession.user.id,
+        username: nextAuthSession.user.email || '',
+        isAdmin: true,
+        iat: Date.now(),
+        exp: Date.now() + 86400000
+      }
+    }
   }
   return null
 }

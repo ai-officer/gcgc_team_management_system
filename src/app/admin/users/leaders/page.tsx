@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Crown, Shield, Users, Mail, Calendar, Search, Edit, Eye } from 'lucide-react'
+import { Crown, Shield, Users, Mail, Calendar, Search, Edit, Eye, LayoutList, LayoutGrid } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -38,6 +38,7 @@ export default function AdminLeadersPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
+  const [viewMode, setViewMode] = useState<'column' | 'grid'>('column')
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 8,
@@ -120,8 +121,8 @@ export default function AdminLeadersPage() {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="flex items-center space-x-4">
+      {/* Search and View Toggle */}
+      <div className="flex items-center justify-between">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <Input
@@ -130,6 +131,24 @@ export default function AdminLeadersPage() {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
           />
+        </div>
+        <div className="flex items-center border border-slate-200 rounded-lg p-1">
+          <Button
+            variant={viewMode === 'column' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('column')}
+            className="h-8 w-8 p-0"
+          >
+            <LayoutList className="w-4 h-4" />
+          </Button>
+          <Button
+            variant={viewMode === 'grid' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('grid')}
+            className="h-8 w-8 p-0"
+          >
+            <LayoutGrid className="w-4 h-4" />
+          </Button>
         </div>
       </div>
 
@@ -191,84 +210,159 @@ export default function AdminLeadersPage() {
       </div>
 
       {/* Leaders List */}
-      <div className="grid gap-4">
+      <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'grid gap-4'}>
         {leaders.map((leader) => (
           <Card key={leader.id} className="p-6 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <Avatar className="h-12 w-12 rounded-lg ring-2 ring-slate-200">
-                  <AvatarFallback className="rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 text-blue-700 font-semibold">
+            {viewMode === 'grid' ? (
+              // Grid View - Compact vertical layout
+              <div className="flex flex-col items-center text-center">
+                <Avatar className="h-16 w-16 rounded-lg ring-2 ring-slate-200 mb-3">
+                  <AvatarFallback className="rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 text-blue-700 font-semibold text-lg">
                     {leader.name ? leader.name.split(' ').map(n => n[0]).join('') : 'L'}
                   </AvatarFallback>
                 </Avatar>
-                <div>
-                  <h3 className="font-semibold text-slate-900">{leader.name}</h3>
-                  <div className="flex items-center space-x-2 text-sm font-medium text-slate-600">
-                    <Mail className="w-4 h-4" />
-                    <span>{leader.email}</span>
+                <h3 className="font-semibold text-slate-900 mb-1">{leader.name}</h3>
+                <div className="flex items-center justify-center text-sm font-medium text-slate-600 mb-2">
+                  <Mail className="w-4 h-4 mr-1" />
+                  <span className="truncate max-w-[180px]">{leader.email}</span>
+                </div>
+                <div className="flex items-center justify-center flex-wrap gap-1 mb-3">
+                  <Badge className="bg-blue-50 text-blue-700 border border-blue-200 rounded-md px-2 py-0.5 text-xs font-medium">
+                    <Shield className="w-3 h-3 mr-1" />
+                    {leader.role}
+                  </Badge>
+                  {leader.hierarchyLevel ? (
+                    <Badge className={`${getHierarchyColor(leader.hierarchyLevel)} rounded-md px-2 py-0.5 text-xs font-medium`}>
+                      {leader.hierarchyLevel}
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="rounded-md px-2 py-0.5 text-xs font-medium border-slate-200">
+                      No Hierarchy
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex items-center justify-center gap-4 text-sm text-gray-600 mb-3">
+                  <div className="text-center">
+                    <div className="font-medium text-gray-900">{leader.teamMembers.length}</div>
+                    <div className="text-xs">Teams</div>
                   </div>
-                  <div className="flex items-center space-x-2 mt-1">
-                    <Badge className="bg-blue-50 text-blue-700 border border-blue-200 rounded-md px-2.5 py-0.5 text-xs font-medium">
-                      <Shield className="w-3 h-3 mr-1" />
-                      {leader.role}
-                    </Badge>
-                    {leader.hierarchyLevel ? (
-                      <Badge className={`${getHierarchyColor(leader.hierarchyLevel)} rounded-md px-2.5 py-0.5 text-xs font-medium`}>
-                        {leader.hierarchyLevel}
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="rounded-md px-2.5 py-0.5 text-xs font-medium border-slate-200">
-                        No Hierarchy
-                      </Badge>
-                    )}
-                    <Badge variant={leader.isActive ? "default" : "secondary"} className="rounded-md px-2.5 py-0.5 text-xs font-medium">
-                      {leader.isActive ? 'Active' : 'Inactive'}
-                    </Badge>
+                  <div className="text-center">
+                    <div className="font-medium text-gray-900">{leader._count.assignedTasks}</div>
+                    <div className="text-xs">Tasks</div>
                   </div>
                 </div>
+                <Badge variant={leader.isActive ? "default" : "secondary"} className="rounded-md px-2.5 py-0.5 text-xs font-medium mb-3">
+                  {leader.isActive ? 'Active' : 'Inactive'}
+                </Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push(`/admin/users?editUser=${leader.id}`)}
+                  className="w-full"
+                >
+                  <Edit className="w-4 h-4 mr-1" />
+                  Edit
+                </Button>
+
+                {/* Teams Led */}
+                {leader.teamMembers.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-gray-100 w-full">
+                    <p className="text-xs font-medium text-gray-700 mb-1">Teams:</p>
+                    <div className="flex flex-wrap justify-center gap-1">
+                      {leader.teamMembers.slice(0, 2).map((tm, index) => (
+                        <Badge key={index} variant="outline" className="bg-gray-50 text-xs">
+                          {tm.team.name}
+                        </Badge>
+                      ))}
+                      {leader.teamMembers.length > 2 && (
+                        <Badge variant="outline" className="bg-gray-50 text-xs">
+                          +{leader.teamMembers.length - 2}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
-              
-              <div className="flex items-center space-x-6 text-sm text-gray-600">
-                <div className="text-center">
-                  <div className="font-medium text-gray-900">{leader.teamMembers.length}</div>
-                  <div>Teams</div>
-                </div>
-                <div className="text-center">
-                  <div className="font-medium text-gray-900">{leader._count.assignedTasks}</div>
-                  <div>Tasks</div>
-                </div>
-                <div className="text-center">
-                  <div className="font-medium text-gray-900">
-                    {new Date(leader.createdAt).toLocaleDateString()}
+            ) : (
+              // Column View - Horizontal layout
+              <>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <Avatar className="h-12 w-12 rounded-lg ring-2 ring-slate-200">
+                      <AvatarFallback className="rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 text-blue-700 font-semibold">
+                        {leader.name ? leader.name.split(' ').map(n => n[0]).join('') : 'L'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h3 className="font-semibold text-slate-900">{leader.name}</h3>
+                      <div className="flex items-center space-x-2 text-sm font-medium text-slate-600">
+                        <Mail className="w-4 h-4" />
+                        <span>{leader.email}</span>
+                      </div>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <Badge className="bg-blue-50 text-blue-700 border border-blue-200 rounded-md px-2.5 py-0.5 text-xs font-medium">
+                          <Shield className="w-3 h-3 mr-1" />
+                          {leader.role}
+                        </Badge>
+                        {leader.hierarchyLevel ? (
+                          <Badge className={`${getHierarchyColor(leader.hierarchyLevel)} rounded-md px-2.5 py-0.5 text-xs font-medium`}>
+                            {leader.hierarchyLevel}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="rounded-md px-2.5 py-0.5 text-xs font-medium border-slate-200">
+                            No Hierarchy
+                          </Badge>
+                        )}
+                        <Badge variant={leader.isActive ? "default" : "secondary"} className="rounded-md px-2.5 py-0.5 text-xs font-medium">
+                          {leader.isActive ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </div>
+                    </div>
                   </div>
-                  <div>Joined</div>
+
+                  <div className="flex items-center space-x-6 text-sm text-gray-600">
+                    <div className="text-center">
+                      <div className="font-medium text-gray-900">{leader.teamMembers.length}</div>
+                      <div>Teams</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-medium text-gray-900">{leader._count.assignedTasks}</div>
+                      <div>Tasks</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-medium text-gray-900">
+                        {new Date(leader.createdAt).toLocaleDateString()}
+                      </div>
+                      <div>Joined</div>
+                    </div>
+
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => router.push(`/admin/users?editUser=${leader.id}`)}
+                      >
+                        <Edit className="w-4 h-4 mr-1" />
+                        Edit
+                      </Button>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="flex space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => router.push(`/admin/users?editUser=${leader.id}`)}
-                  >
-                    <Edit className="w-4 h-4 mr-1" />
-                    Edit
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            {/* Teams Led */}
-            {leader.teamMembers.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <p className="text-sm font-medium text-gray-700 mb-2">Teams Leading:</p>
-                <div className="flex flex-wrap gap-2">
-                  {leader.teamMembers.map((tm, index) => (
-                    <Badge key={index} variant="outline" className="bg-gray-50">
-                      {tm.team.name}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
+                {/* Teams Led */}
+                {leader.teamMembers.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <p className="text-sm font-medium text-gray-700 mb-2">Teams Leading:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {leader.teamMembers.map((tm, index) => (
+                        <Badge key={index} variant="outline" className="bg-gray-50">
+                          {tm.team.name}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </Card>
         ))}

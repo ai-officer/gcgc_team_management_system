@@ -1,14 +1,14 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { 
-  CheckSquare, 
-  Search, 
-  User, 
-  Clock, 
-  AlertTriangle, 
-  CheckCircle, 
-  Play, 
+import {
+  CheckSquare,
+  Search,
+  User,
+  Clock,
+  AlertTriangle,
+  CheckCircle,
+  Play,
   Pause,
   Users,
   Calendar,
@@ -16,7 +16,9 @@ import {
   MessageSquare,
   Target,
   GitBranch,
-  UserPlus
+  UserPlus,
+  LayoutList,
+  LayoutGrid
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -120,6 +122,7 @@ export default function UserTasksPage() {
   const [apiSearchTerm, setApiSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all')
   const [taskTypeFilter, setTaskTypeFilter] = useState<'all' | 'individual' | 'collaborative' | 'team'>('all')
+  const [viewMode, setViewMode] = useState<'column' | 'grid'>('column')
   const [selectedTask, setSelectedTask] = useState<TaskData | null>(null)
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
@@ -322,6 +325,27 @@ export default function UserTasksPage() {
             <SelectItem value="team">Team Tasks</SelectItem>
           </SelectContent>
         </Select>
+
+        <div className="flex items-center border border-slate-200 rounded-lg p-1">
+          <Button
+            type="button"
+            variant={viewMode === 'column' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('column')}
+            className="h-8 w-8 p-0"
+          >
+            <LayoutList className="w-4 h-4" />
+          </Button>
+          <Button
+            type="button"
+            variant={viewMode === 'grid' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('grid')}
+            className="h-8 w-8 p-0"
+          >
+            <LayoutGrid className="w-4 h-4" />
+          </Button>
+        </div>
       </form>
 
       {/* Stats Cards */}
@@ -382,7 +406,7 @@ export default function UserTasksPage() {
       )}
 
       {/* Tasks List */}
-      <div className="grid gap-4">
+      <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'grid gap-4'}>
         {tasks.map((task) => (
           <Dialog key={task.id}>
             <DialogTrigger asChild>
@@ -390,158 +414,229 @@ export default function UserTasksPage() {
                 className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
                 onClick={() => setSelectedTask(task)}
               >
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-start space-x-3">
-                        <div className="flex-shrink-0">
-                          <CheckSquare className={`w-5 h-5 ${task.isOverdue ? 'text-red-500' : 'text-blue-500'}`} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-gray-900 flex items-center space-x-2">
-                            <span className="truncate">{task.title}</span>
-                            {task.isOverdue && (
-                              <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" />
-                            )}
-                          </h3>
-                          {task.description && (
-                            <p className="text-sm text-gray-600 mt-1 line-clamp-2">{task.description}</p>
-                          )}
-
-                          {/* Status and Priority Badges */}
-                          <div className="flex items-center space-x-2 mt-2">
-                            <Badge className={getStatusColor(task.status)}>
-                              {getStatusIcon(task.status)}
-                              <span className="ml-1">{task.status}</span>
-                            </Badge>
-                            {task.priority && (
-                              <Badge className={getPriorityColor(task.priority)}>
-                                {task.priority}
-                              </Badge>
-                            )}
-                            <Badge variant="outline" className="bg-gray-50">
-                              {task.taskType}
-                            </Badge>
-                            {task.dueDate && (
-                              <Badge variant={task.isOverdue ? "destructive" : "outline"}>
-                                <Calendar className="w-3 h-3 mr-1" />
-                                {new Date(task.dueDate).toLocaleDateString()}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
+                {viewMode === 'grid' ? (
+                  // Grid View - Compact vertical layout
+                  <div className="p-4">
+                    <div className="flex flex-col items-center text-center">
+                      <div className={`p-2 rounded-lg mb-3 ${task.isOverdue ? 'bg-red-100' : 'bg-blue-100'}`}>
+                        <CheckSquare className={`w-6 h-6 ${task.isOverdue ? 'text-red-500' : 'text-blue-500'}`} />
                       </div>
-                    </div>
+                      <h3 className="font-semibold text-gray-900 text-sm mb-1 line-clamp-2">
+                        {task.title}
+                        {task.isOverdue && (
+                          <AlertTriangle className="w-3 h-3 text-red-500 inline ml-1" />
+                        )}
+                      </h3>
 
-                    <div className="flex items-center space-x-2 ml-4">
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700">
-                        <Eye className="w-3 h-3 mr-1" />
-                        Click to view
+                      {/* Status and Priority */}
+                      <div className="flex items-center justify-center flex-wrap gap-1 mb-3">
+                        <Badge className={`${getStatusColor(task.status)} text-xs`}>
+                          {getStatusIcon(task.status)}
+                          <span className="ml-1">{task.status}</span>
+                        </Badge>
+                        {task.priority && (
+                          <Badge className={`${getPriorityColor(task.priority)} text-xs`}>
+                            {task.priority}
+                          </Badge>
+                        )}
+                      </div>
+
+                      <Badge variant="outline" className="bg-gray-50 text-xs mb-3">
+                        {task.taskType}
                       </Badge>
-                    </div>
-                  </div>
-                </CardHeader>
 
-                <CardContent className="pt-0">
-                  {/* User relationships summary */}
-                  <div className="space-y-3">
-                    {/* Assigned To */}
-                    {task.assignee && (
-                      <div className="flex items-center space-x-2">
-                        <Target className="w-4 h-4 text-green-600" />
-                        <span className="text-sm text-gray-600">Assigned to:</span>
-                        <div className="flex items-center space-x-2">
+                      {/* Assignee */}
+                      {task.assignee && (
+                        <div className="flex items-center justify-center space-x-2 mb-2">
                           <Avatar className="h-6 w-6">
                             <AvatarFallback className="text-xs">
                               {task.assignee.name ? task.assignee.name.split(' ').map(n => n[0]).join('') : 'A'}
                             </AvatarFallback>
                           </Avatar>
-                          <span className="text-sm font-medium">{task.assignee.name}</span>
-                          <Badge className={getRoleColor(task.assignee.role)}>
-                            {task.assignee.role}
-                          </Badge>
+                          <span className="text-xs font-medium truncate max-w-[100px]">{task.assignee.name}</span>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {/* Created By */}
-                    {task.creator && (
-                      <div className="flex items-center space-x-2">
-                        <UserPlus className="w-4 h-4 text-blue-600" />
-                        <span className="text-sm text-gray-600">Created by:</span>
-                        <div className="flex items-center space-x-2">
-                          <Avatar className="h-6 w-6">
-                            <AvatarFallback className="text-xs">
-                              {task.creator.name ? task.creator.name.split(' ').map(n => n[0]).join('') : 'C'}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-sm font-medium">{task.creator.name}</span>
-                          <Badge className={getRoleColor(task.creator.role)}>
-                            {task.creator.role}
-                          </Badge>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Collaborators */}
-                    {task.collaborators && task.collaborators.length > 0 && (
-                      <div className="flex items-start space-x-2">
-                        <Users className="w-4 h-4 text-purple-600 mt-1" />
-                        <div className="flex-1">
-                          <span className="text-sm text-gray-600">Collaborators ({task.collaborators.length}):</span>
-                          <div className="flex flex-wrap gap-2 mt-1">
-                            {task.collaborators.slice(0, 3).map((collab) => (
-                              <div key={collab.user.id} className="flex items-center space-x-1 bg-gray-100 rounded-full px-2 py-1">
-                                <Avatar className="h-4 w-4">
-                                  <AvatarFallback className="text-xs">
-                                    {collab.user.name ? collab.user.name.split(' ').map(n => n[0]).join('') : 'C'}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <span className="text-xs font-medium">{collab.user.name}</span>
-                              </div>
-                            ))}
-                            {task.collaborators.length > 3 && (
-                              <span className="text-xs text-gray-500 self-center">
-                                +{task.collaborators.length - 3} more
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Team */}
-                    {task.team && (
-                      <div className="flex items-center space-x-2">
-                        <GitBranch className="w-4 h-4 text-orange-600" />
-                        <span className="text-sm text-gray-600">Team:</span>
-                        <Badge variant="outline">
-                          <Users className="w-3 h-3 mr-1" />
-                          {task.team.name}
+                      {/* Due Date */}
+                      {task.dueDate && (
+                        <Badge variant={task.isOverdue ? "destructive" : "outline"} className="text-xs mb-3">
+                          <Calendar className="w-3 h-3 mr-1" />
+                          {new Date(task.dueDate).toLocaleDateString()}
                         </Badge>
-                      </div>
-                    )}
+                      )}
 
-                    {/* Task Stats */}
-                    <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                      <div className="flex items-center space-x-4 text-xs text-gray-500">
+                      {/* Stats */}
+                      <div className="flex items-center justify-center gap-3 text-xs text-gray-500 pt-2 border-t border-gray-100 w-full">
+                        <div className="flex items-center space-x-1">
+                          <Users className="w-3 h-3" />
+                          <span>{task.involvedUserCount}</span>
+                        </div>
                         {task._count.comments > 0 && (
                           <div className="flex items-center space-x-1">
                             <MessageSquare className="w-3 h-3" />
-                            <span>{task._count.comments} comments</span>
+                            <span>{task._count.comments}</span>
                           </div>
                         )}
-                        <div className="flex items-center space-x-1">
-                          <Users className="w-3 h-3" />
-                          <span>{task.involvedUserCount} users involved</span>
-                        </div>
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        Updated {new Date(task.updatedAt).toLocaleDateString()}
                       </div>
                     </div>
                   </div>
-                </CardContent>
+                ) : (
+                  // Column View - Horizontal layout
+                  <>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-start space-x-3">
+                            <div className="flex-shrink-0">
+                              <CheckSquare className={`w-5 h-5 ${task.isOverdue ? 'text-red-500' : 'text-blue-500'}`} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-gray-900 flex items-center space-x-2">
+                                <span className="truncate">{task.title}</span>
+                                {task.isOverdue && (
+                                  <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                                )}
+                              </h3>
+                              {task.description && (
+                                <p className="text-sm text-gray-600 mt-1 line-clamp-2">{task.description}</p>
+                              )}
+
+                              {/* Status and Priority Badges */}
+                              <div className="flex items-center space-x-2 mt-2">
+                                <Badge className={getStatusColor(task.status)}>
+                                  {getStatusIcon(task.status)}
+                                  <span className="ml-1">{task.status}</span>
+                                </Badge>
+                                {task.priority && (
+                                  <Badge className={getPriorityColor(task.priority)}>
+                                    {task.priority}
+                                  </Badge>
+                                )}
+                                <Badge variant="outline" className="bg-gray-50">
+                                  {task.taskType}
+                                </Badge>
+                                {task.dueDate && (
+                                  <Badge variant={task.isOverdue ? "destructive" : "outline"}>
+                                    <Calendar className="w-3 h-3 mr-1" />
+                                    {new Date(task.dueDate).toLocaleDateString()}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center space-x-2 ml-4">
+                          <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                            <Eye className="w-3 h-3 mr-1" />
+                            Click to view
+                          </Badge>
+                        </div>
+                      </div>
+                    </CardHeader>
+
+                    <CardContent className="pt-0">
+                      {/* User relationships summary */}
+                      <div className="space-y-3">
+                        {/* Assigned To */}
+                        {task.assignee && (
+                          <div className="flex items-center space-x-2">
+                            <Target className="w-4 h-4 text-green-600" />
+                            <span className="text-sm text-gray-600">Assigned to:</span>
+                            <div className="flex items-center space-x-2">
+                              <Avatar className="h-6 w-6">
+                                <AvatarFallback className="text-xs">
+                                  {task.assignee.name ? task.assignee.name.split(' ').map(n => n[0]).join('') : 'A'}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="text-sm font-medium">{task.assignee.name}</span>
+                              <Badge className={getRoleColor(task.assignee.role)}>
+                                {task.assignee.role}
+                              </Badge>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Created By */}
+                        {task.creator && (
+                          <div className="flex items-center space-x-2">
+                            <UserPlus className="w-4 h-4 text-blue-600" />
+                            <span className="text-sm text-gray-600">Created by:</span>
+                            <div className="flex items-center space-x-2">
+                              <Avatar className="h-6 w-6">
+                                <AvatarFallback className="text-xs">
+                                  {task.creator.name ? task.creator.name.split(' ').map(n => n[0]).join('') : 'C'}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="text-sm font-medium">{task.creator.name}</span>
+                              <Badge className={getRoleColor(task.creator.role)}>
+                                {task.creator.role}
+                              </Badge>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Collaborators */}
+                        {task.collaborators && task.collaborators.length > 0 && (
+                          <div className="flex items-start space-x-2">
+                            <Users className="w-4 h-4 text-purple-600 mt-1" />
+                            <div className="flex-1">
+                              <span className="text-sm text-gray-600">Collaborators ({task.collaborators.length}):</span>
+                              <div className="flex flex-wrap gap-2 mt-1">
+                                {task.collaborators.slice(0, 3).map((collab) => (
+                                  <div key={collab.user.id} className="flex items-center space-x-1 bg-gray-100 rounded-full px-2 py-1">
+                                    <Avatar className="h-4 w-4">
+                                      <AvatarFallback className="text-xs">
+                                        {collab.user.name ? collab.user.name.split(' ').map(n => n[0]).join('') : 'C'}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <span className="text-xs font-medium">{collab.user.name}</span>
+                                  </div>
+                                ))}
+                                {task.collaborators.length > 3 && (
+                                  <span className="text-xs text-gray-500 self-center">
+                                    +{task.collaborators.length - 3} more
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Team */}
+                        {task.team && (
+                          <div className="flex items-center space-x-2">
+                            <GitBranch className="w-4 h-4 text-orange-600" />
+                            <span className="text-sm text-gray-600">Team:</span>
+                            <Badge variant="outline">
+                              <Users className="w-3 h-3 mr-1" />
+                              {task.team.name}
+                            </Badge>
+                          </div>
+                        )}
+
+                        {/* Task Stats */}
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                          <div className="flex items-center space-x-4 text-xs text-gray-500">
+                            {task._count.comments > 0 && (
+                              <div className="flex items-center space-x-1">
+                                <MessageSquare className="w-3 h-3" />
+                                <span>{task._count.comments} comments</span>
+                              </div>
+                            )}
+                            <div className="flex items-center space-x-1">
+                              <Users className="w-3 h-3" />
+                              <span>{task.involvedUserCount} users involved</span>
+                            </div>
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Updated {new Date(task.updatedAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </>
+                )}
               </Card>
             </DialogTrigger>
 

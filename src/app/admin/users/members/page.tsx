@@ -41,7 +41,7 @@ export default function AdminMembersPage() {
   const [viewMode, setViewMode] = useState<'column' | 'grid'>('grid')
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 8,
+    limit: 6,
     total: 0,
     totalPages: 0
   })

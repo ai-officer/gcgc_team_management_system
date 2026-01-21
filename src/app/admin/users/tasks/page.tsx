@@ -126,7 +126,7 @@ export default function UserTasksPage() {
   const [selectedTask, setSelectedTask] = useState<TaskData | null>(null)
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
-    limit: 10,
+    limit: 6,
     total: 0,
     totalPages: 0,
     hasMore: false

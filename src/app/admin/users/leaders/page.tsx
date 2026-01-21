@@ -377,14 +377,12 @@ export default function AdminLeadersPage() {
               pageSize={pagination.limit}
               totalItems={pagination.total}
             />
-            {pagination.totalPages > 1 && (
-              <Pagination
-                currentPage={pagination.page}
-                totalPages={pagination.totalPages}
-                onPageChange={(page) => setPagination({ ...pagination, page })}
-                disabled={loading}
-              />
-            )}
+            <Pagination
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              onPageChange={(page) => setPagination({ ...pagination, page })}
+              disabled={loading}
+            />
           </div>
         </div>
       )}

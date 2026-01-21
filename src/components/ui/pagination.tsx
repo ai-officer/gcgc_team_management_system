@@ -133,18 +133,14 @@ export function Pagination({
     return pages
   }
 
-  if (totalPages <= 1) {
-    return null
-  }
-
   return (
-    <div className={cn("flex items-center justify-between", className)}>
+    <div className={cn("flex items-center gap-4", className)}>
       {/* Previous Button */}
       <Button
         variant="outline"
         size="sm"
         onClick={() => handlePageChange(currentPage - 1)}
-        disabled={currentPage === 1 || disabled}
+        disabled={currentPage === 1 || disabled || totalPages <= 1}
         className="flex items-center space-x-2"
       >
         <ChevronLeft className="h-4 w-4" />
@@ -152,7 +148,7 @@ export function Pagination({
       </Button>
 
       {/* Page Numbers */}
-      {showPageNumbers && (
+      {showPageNumbers && totalPages > 1 && (
         <div className="flex items-center space-x-1">
           {renderPageNumbers()}
         </div>
@@ -160,7 +156,7 @@ export function Pagination({
 
       {/* Page Info */}
       <div className="text-sm text-gray-500">
-        Page {currentPage} of {totalPages}
+        Page {currentPage} of {Math.max(totalPages, 1)}
       </div>
 
       {/* Next Button */}
@@ -168,7 +164,7 @@ export function Pagination({
         variant="outline"
         size="sm"
         onClick={() => handlePageChange(currentPage + 1)}
-        disabled={currentPage === totalPages || disabled}
+        disabled={currentPage === totalPages || disabled || totalPages <= 1}
         className="flex items-center space-x-2"
       >
         <span>Next</span>

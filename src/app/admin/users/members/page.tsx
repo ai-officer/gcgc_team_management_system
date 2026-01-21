@@ -398,7 +398,7 @@ export default function AdminMembersPage() {
       </div>
 
       {/* Pagination */}
-      {pagination.totalPages > 1 && (
+      {pagination.total > 0 && (
         <div className="mt-6">
           <div className="flex items-center justify-between">
             <PaginationInfo
@@ -406,12 +406,14 @@ export default function AdminMembersPage() {
               pageSize={pagination.limit}
               totalItems={pagination.total}
             />
-            <Pagination
-              currentPage={pagination.page}
-              totalPages={pagination.totalPages}
-              onPageChange={(page) => setPagination({ ...pagination, page })}
-              disabled={loading}
-            />
+            {pagination.totalPages > 1 && (
+              <Pagination
+                currentPage={pagination.page}
+                totalPages={pagination.totalPages}
+                onPageChange={(page) => setPagination({ ...pagination, page })}
+                disabled={loading}
+              />
+            )}
           </div>
         </div>
       )}

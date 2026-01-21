@@ -30,8 +30,6 @@ interface AdminSettings {
   maxLoginAttempts: number
   enableNotifications: boolean
   enableAuditLogging: boolean
-  maintenanceMode: boolean
-  maintenanceMessage?: string
   createdAt: string
   updatedAt: string
 }
@@ -346,48 +344,6 @@ export default function AdminSettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Maintenance Mode */}
-        <Card className="bg-amber-50 border border-amber-200 rounded-xl shadow-sm">
-          <CardHeader className="border-b border-amber-100">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-amber-100 rounded-lg">
-                <Settings className="w-4 h-4 text-amber-700" />
-              </div>
-              <CardTitle className="text-lg font-semibold text-amber-900">Maintenance Mode</CardTitle>
-            </div>
-            <CardDescription className="text-sm font-medium text-amber-700 mt-1">
-              System maintenance and downtime settings
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Enable Maintenance Mode</Label>
-                <p className="text-sm text-gray-500">Prevent users from accessing the system</p>
-              </div>
-              <Switch
-                checked={settings.maintenanceMode}
-                onCheckedChange={(checked) => updateSetting('maintenanceMode', checked)}
-              />
-            </div>
-            
-            {settings.maintenanceMode && (
-              <>
-                <Separator />
-                <div className="space-y-2">
-                  <Label htmlFor="maintenanceMessage">Maintenance Message</Label>
-                  <Textarea
-                    id="maintenanceMessage"
-                    value={settings.maintenanceMessage || ''}
-                    onChange={(e) => updateSetting('maintenanceMessage', e.target.value)}
-                    placeholder="Message to display to users during maintenance"
-                    rows={3}
-                  />
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
       </div>
 
       {/* Save Button at Bottom */}

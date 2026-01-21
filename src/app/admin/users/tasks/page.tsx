@@ -321,8 +321,8 @@ export default function UserTasksPage() {
           <SelectContent>
             <SelectItem value="all">All Types</SelectItem>
             <SelectItem value="individual">Individual</SelectItem>
-            <SelectItem value="collaborative">Collaborative</SelectItem>
-            <SelectItem value="team">Team Tasks</SelectItem>
+            <SelectItem value="collaborative">Collaboration</SelectItem>
+            <SelectItem value="team">Team</SelectItem>
           </SelectContent>
         </Select>
 

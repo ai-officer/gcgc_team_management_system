@@ -88,21 +88,17 @@ export async function GET(req: NextRequest) {
       ]
     }
 
-    // Apply task type filter
+    // Apply task type filter - use the actual taskType field
     if (taskType && taskType !== 'all') {
       switch (taskType) {
         case 'individual':
-          // Individual: No collaborators AND no team
-          taskWhere.collaborators = { none: {} }
-          taskWhere.teamId = null
+          taskWhere.taskType = 'INDIVIDUAL'
           break
         case 'collaborative':
-          // Collaborative: Has collaborators
-          taskWhere.collaborators = { some: {} }
+          taskWhere.taskType = 'COLLABORATION'
           break
         case 'team':
-          // Team task: Has a team assigned
-          taskWhere.teamId = { not: null }
+          taskWhere.taskType = 'TEAM'
           break
       }
     }

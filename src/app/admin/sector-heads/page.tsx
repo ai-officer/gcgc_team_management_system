@@ -95,6 +95,7 @@ export default function AdminSectorHeadsPage() {
     description: '',
     divisionId: ''
   })
+  const [userSearchTerm, setUserSearchTerm] = useState('')
 
   // Debounce search term to avoid refetching on every keystroke
   useEffect(() => {
@@ -155,6 +156,16 @@ export default function AdminSectorHeadsPage() {
   useEffect(() => {
     fetchUsers()
   }, [])
+
+  // Filter users based on search term
+  const filteredUsers = users.filter(user => {
+    if (!userSearchTerm) return true
+    const searchLower = userSearchTerm.toLowerCase()
+    return (
+      user.name?.toLowerCase().includes(searchLower) ||
+      user.email?.toLowerCase().includes(searchLower)
+    )
+  })
 
   const handleUserSelect = (userId: string) => {
     setSelectedUserId(userId)
@@ -307,6 +318,7 @@ export default function AdminSectorHeadsPage() {
           setIsCreateDialogOpen(open)
           if (!open) {
             setSelectedUserId('')
+            setUserSearchTerm('')
             setNewSectorHead({ initials: '', fullName: '', description: '', divisionId: '' })
           }
         }}>
@@ -326,29 +338,46 @@ export default function AdminSectorHeadsPage() {
             <div className="space-y-4">
               <div>
                 <Label htmlFor="user-select">Select User *</Label>
-                <Select value={selectedUserId} onValueChange={handleUserSelect}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a user" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {users.map((user) => (
-                      <SelectItem key={user.id} value={user.id}>
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-6 w-6">
-                            <AvatarImage src={user.image || undefined} />
-                            <AvatarFallback className="text-xs">
-                              {user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : user.email[0].toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex flex-col">
-                            <span className="text-sm font-medium">{user.name}</span>
-                            <span className="text-xs text-muted-foreground">{user.email}</span>
-                          </div>
+                <div className="relative mt-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4 z-10" />
+                  <Input
+                    placeholder="Search users by name or email..."
+                    value={userSearchTerm}
+                    onChange={(e) => setUserSearchTerm(e.target.value)}
+                    className="pl-10 mb-2"
+                  />
+                </div>
+                <div className="border rounded-md max-h-48 overflow-y-auto">
+                  {filteredUsers.length === 0 ? (
+                    <div className="p-4 text-center text-sm text-muted-foreground">
+                      No users found
+                    </div>
+                  ) : (
+                    filteredUsers.map((user) => (
+                      <div
+                        key={user.id}
+                        className={`flex items-center gap-3 p-3 cursor-pointer hover:bg-slate-50 border-b last:border-b-0 ${
+                          selectedUserId === user.id ? 'bg-blue-50 border-blue-200' : ''
+                        }`}
+                        onClick={() => handleUserSelect(user.id)}
+                      >
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={user.image || undefined} />
+                          <AvatarFallback className="text-xs">
+                            {user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : user.email[0].toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col flex-1 min-w-0">
+                          <span className="text-sm font-medium truncate">{user.name}</span>
+                          <span className="text-xs text-muted-foreground truncate">{user.email}</span>
                         </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                        {selectedUserId === user.id && (
+                          <Badge variant="default" className="text-xs">Selected</Badge>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
               {selectedUserId && (
                 <>
@@ -386,6 +415,7 @@ export default function AdminSectorHeadsPage() {
               <Button variant="outline" onClick={() => {
                 setIsCreateDialogOpen(false)
                 setSelectedUserId('')
+                setUserSearchTerm('')
                 setNewSectorHead({ initials: '', fullName: '', description: '', divisionId: '' })
               }}>
                 Cancel

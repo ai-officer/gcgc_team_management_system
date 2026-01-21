@@ -560,8 +560,8 @@ export default function AdminSectorHeadsPage() {
                         <AlertDialogHeader>
                           <AlertDialogTitle>Delete Sector Head</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Are you sure you want to delete &quot;{sectorHead.initials} - {sectorHead.fullName}&quot;? 
-                            This will deactivate the sector head.
+                            Are you sure you want to permanently delete &quot;{sectorHead.initials} - {sectorHead.fullName}&quot;?
+                            This action cannot be undone.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>

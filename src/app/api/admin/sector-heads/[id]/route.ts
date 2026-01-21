@@ -91,7 +91,7 @@ export async function DELETE(
 ) {
   try {
     const session = await getAdminSession(req)
-    
+
     if (!session?.isAdmin) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -105,15 +105,13 @@ export async function DELETE(
       return NextResponse.json({ error: 'Sector head not found' }, { status: 404 })
     }
 
-    // Soft delete by setting isActive to false
-    const deletedSectorHead = await prisma.sectorHead.update({
-      where: { id: params.id },
-      data: { isActive: false }
+    // Hard delete - permanently remove from database
+    await prisma.sectorHead.delete({
+      where: { id: params.id }
     })
 
-    return NextResponse.json({ 
-      message: 'Sector head deleted successfully',
-      sectorHead: deletedSectorHead 
+    return NextResponse.json({
+      message: 'Sector head permanently deleted'
     })
   } catch (error) {
     console.error('Error deleting sector head:', error)

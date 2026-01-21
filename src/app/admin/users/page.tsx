@@ -138,7 +138,7 @@ export default function AdminUsersPage() {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all')
   const [hierarchyFilter, setHierarchyFilter] = useState<HierarchyLevel | 'all'>('all')
-  const [viewMode, setViewMode] = useState<'column' | 'grid'>('column')
+  const [viewMode, setViewMode] = useState<'column' | 'grid'>('grid')
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [pagination, setPagination] = useState({

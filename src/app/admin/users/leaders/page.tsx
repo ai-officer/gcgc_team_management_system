@@ -38,7 +38,7 @@ export default function AdminLeadersPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
-  const [viewMode, setViewMode] = useState<'column' | 'grid'>('column')
+  const [viewMode, setViewMode] = useState<'column' | 'grid'>('grid')
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 8,

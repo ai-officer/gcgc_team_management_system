@@ -122,7 +122,7 @@ export default function UserTasksPage() {
   const [apiSearchTerm, setApiSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all')
   const [taskTypeFilter, setTaskTypeFilter] = useState<'all' | 'individual' | 'collaborative' | 'team'>('all')
-  const [viewMode, setViewMode] = useState<'column' | 'grid'>('column')
+  const [viewMode, setViewMode] = useState<'column' | 'grid'>('grid')
   const [selectedTask, setSelectedTask] = useState<TaskData | null>(null)
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,

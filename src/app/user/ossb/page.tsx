@@ -313,19 +313,18 @@ export default function OSSBManagementPage() {
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-4">
                 <FileText className="h-8 w-8 text-slate-400" />
               </div>
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">No OSSB requests found</h3>
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">Incoming feature</h3>
               <p className="text-sm text-slate-600 mb-6 max-w-sm mx-auto">
-                {statusFilter === 'all'
-                  ? 'Create your first OSSB request to get started with budget planning'
-                  : `No ${statusFilter.toLowerCase()} requests found in your records`}
+                OSSB Request feature is currently under development and will be available soon.
               </p>
               {statusFilter === 'all' && (
                 <Button
-                  onClick={() => setIsCreateOpen(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  disabled
+                  className="bg-slate-400 cursor-not-allowed text-white opacity-60"
+                  title="OSSB Request feature is temporarily disabled"
                 >
                   <Plus className="mr-2 h-4 w-4" />
-                  Create OSSB Request
+                  Create OSSB Request (Disabled)
                 </Button>
               )}
             </div>

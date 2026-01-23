@@ -273,13 +273,20 @@ export default function PrivacyPolicyPage() {
           </CardContent>
         </Card>
 
-        {/* Back to App */}
-        <div className="text-center pt-4">
+        {/* Links */}
+        <div className="flex justify-center gap-6 pt-4">
+          <Link
+            href="/terms-of-service"
+            className="text-blue-600 hover:text-blue-800 hover:underline"
+          >
+            Terms of Service
+          </Link>
+          <span className="text-gray-300">|</span>
           <Link
             href="/"
             className="text-blue-600 hover:text-blue-800 hover:underline"
           >
-            ← Back to Application
+            Back to Application
           </Link>
         </div>
       </div>

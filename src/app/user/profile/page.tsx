@@ -18,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Progress } from '@/components/ui/progress'
 import { useToast } from '@/hooks/use-toast'
 import { format } from 'date-fns'
+import { avatarEvents } from '@/lib/avatar-events'
 
 interface UserProfile {
   id: string
@@ -175,6 +176,9 @@ export default function UserProfilePage() {
           image: imageUrlWithCacheBust
         }
       })
+
+      // Emit event to sync avatar across all components (sidebar, etc.)
+      avatarEvents.emit(imageUrlWithCacheBust)
 
       toast({
         title: 'Success',

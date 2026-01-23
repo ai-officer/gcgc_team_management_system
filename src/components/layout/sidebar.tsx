@@ -23,6 +23,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
+import { avatarEvents } from '@/lib/avatar-events'
 
 const adminNavItems = [
   {
@@ -150,6 +151,22 @@ export function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname()
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined)
+
+  // Subscribe to avatar update events from profile page
+  useEffect(() => {
+    // Initialize with session image
+    if (session?.user?.image) {
+      setAvatarUrl(session.user.image)
+    }
+
+    // Subscribe to avatar updates
+    const unsubscribe = avatarEvents.subscribe((newImageUrl) => {
+      setAvatarUrl(newImageUrl)
+    })
+
+    return () => unsubscribe()
+  }, [session?.user?.image])
 
   // Handle escape key to close mobile sidebar
   useEffect(() => {
@@ -334,11 +351,11 @@ export function Sidebar({ className }: SidebarProps) {
               onClick={() => setIsMobileOpen(false)}
             >
               <Avatar
-                key={session.user.image || 'no-image'}
+                key={avatarUrl || 'no-image'}
                 className="h-8 w-8 flex-shrink-0 ring-2 ring-transparent group-hover:ring-primary/20 transition-all"
               >
                 <AvatarImage
-                  src={session.user.image || undefined}
+                  src={avatarUrl || undefined}
                   alt={session.user.name || 'Profile'}
                   className="object-cover"
                 />

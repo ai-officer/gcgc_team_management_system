@@ -76,7 +76,21 @@ export const authOptions: NextAuthOptions = {
     error: '/auth/error',
   },
   callbacks: {
-    async jwt({ token, user, account, trigger }) {
+    async jwt({ token, user, account, trigger, session }) {
+      // Handle session update (e.g., profile image change)
+      if (trigger === 'update' && session) {
+        // Update the token with the new session data
+        if (session.user?.image !== undefined) {
+          token.image = session.user.image
+        }
+        if (session.user?.name !== undefined) {
+          token.name = session.user.name
+        }
+        // Reset access token expiry to ensure the updated data persists
+        token.accessTokenExpires = Date.now() + 60 * 60 * 1000
+        return token
+      }
+
       // Initial login - set token data
       if (user) {
         token.role = user.role

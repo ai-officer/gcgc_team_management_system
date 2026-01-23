@@ -24,6 +24,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { UserAvatar } from '@/components/shared/UserAvatar'
 import { Progress } from '@/components/ui/progress'
 import { 
   DropdownMenu, 
@@ -563,12 +564,14 @@ export default function TasksPage() {
             {users.map((user) => (
               <SelectItem key={user.id} value={user.id}>
                 <div className="flex items-center gap-2">
-                  <Avatar className="h-5 w-5">
-                    <AvatarImage src={user.image || undefined} />
-                    <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium text-xs">
-                      {user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : user.email[0].toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+                  <UserAvatar
+                    userId={user.id}
+                    image={user.image}
+                    name={user.name}
+                    email={user.email}
+                    className="h-5 w-5"
+                    fallbackClassName="text-xs"
+                  />
                   <span>{user.name || user.email}</span>
                 </div>
               </SelectItem>
@@ -813,15 +816,14 @@ export default function TasksPage() {
                                 <div className="space-y-1.5">
                                   {task.assignee && (
                                     <div className="flex items-center gap-2">
-                                      <Avatar className="h-5 w-5">
-                                        <AvatarImage src={task.assignee.image || undefined} />
-                                        <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium text-xs">
-                                          {task.assignee.name ? 
-                                            task.assignee.name.split(' ').map(n => n[0]).join('').toUpperCase() : 
-                                            task.assignee.email[0].toUpperCase()
-                                          }
-                                        </AvatarFallback>
-                                      </Avatar>
+                                      <UserAvatar
+                                        userId={task.assignee.id}
+                                        image={task.assignee.image}
+                                        name={task.assignee.name}
+                                        email={task.assignee.email}
+                                        className="h-5 w-5"
+                                        fallbackClassName="text-xs"
+                                      />
                                       <span className="text-xs text-muted-foreground truncate">
                                         {task.assignee.name || task.assignee.email}
                                       </span>
@@ -833,15 +835,15 @@ export default function TasksPage() {
                                       <Users className="h-3 w-3 text-muted-foreground" />
                                       <div className="flex -space-x-1">
                                         {task.teamMembers.slice(0, 3).map((member) => (
-                                          <Avatar key={member.userId} className="h-4 w-4 border border-background">
-                                            <AvatarImage src={member.user.image || undefined} />
-                                            <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium text-xs">
-                                              {member.user.name ? 
-                                                member.user.name.split(' ').map(n => n[0]).join('').toUpperCase() : 
-                                                member.user.email[0].toUpperCase()
-                                              }
-                                            </AvatarFallback>
-                                          </Avatar>
+                                          <UserAvatar
+                                            key={member.userId}
+                                            userId={member.user.id}
+                                            image={member.user.image}
+                                            name={member.user.name}
+                                            email={member.user.email}
+                                            className="h-4 w-4 border border-background"
+                                            fallbackClassName="text-xs"
+                                          />
                                         ))}
                                         {task.teamMembers.length > 3 && (
                                           <div className="h-4 w-4 rounded-full bg-muted flex items-center justify-center border border-background">
@@ -857,15 +859,15 @@ export default function TasksPage() {
                                       <Handshake className="h-3 w-3 text-muted-foreground" />
                                       <div className="flex -space-x-1">
                                         {task.collaborators.slice(0, 3).map((collaborator) => (
-                                          <Avatar key={collaborator.userId} className="h-4 w-4 border border-background">
-                                            <AvatarImage src={collaborator.user.image || undefined} />
-                                            <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium text-xs">
-                                              {collaborator.user.name ? 
-                                                collaborator.user.name.split(' ').map(n => n[0]).join('').toUpperCase() : 
-                                                collaborator.user.email[0].toUpperCase()
-                                              }
-                                            </AvatarFallback>
-                                          </Avatar>
+                                          <UserAvatar
+                                            key={collaborator.userId}
+                                            userId={collaborator.user.id}
+                                            image={collaborator.user.image}
+                                            name={collaborator.user.name}
+                                            email={collaborator.user.email}
+                                            className="h-4 w-4 border border-background"
+                                            fallbackClassName="text-xs"
+                                          />
                                         ))}
                                         {task.collaborators.length > 3 && (
                                           <div className="h-4 w-4 rounded-full bg-muted flex items-center justify-center border border-background">

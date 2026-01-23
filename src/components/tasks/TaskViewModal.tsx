@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { UserAvatar } from '@/components/shared/UserAvatar'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
 import { format, formatDistanceToNow } from 'date-fns'
@@ -366,15 +367,14 @@ export default function TaskViewModal({
   const renderComment = (comment: Comment, isReply = false) => (
     <div key={comment.id} className={`${isReply ? 'ml-10' : ''} space-y-3`}>
       <div className="flex gap-3">
-        <Avatar className="h-8 w-8 flex-shrink-0">
-          <AvatarImage src={comment.author.image || undefined} />
-          <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium text-sm">
-            {comment.author.name
-              ? comment.author.name.split(' ').map(n => n[0]).join('')
-              : comment.author.email?.[0]?.toUpperCase()
-            }
-          </AvatarFallback>
-        </Avatar>
+        <UserAvatar
+          userId={comment.author.id}
+          image={comment.author.image}
+          name={comment.author.name}
+          email={comment.author.email}
+          className="h-8 w-8 flex-shrink-0"
+          fallbackClassName="text-sm"
+        />
         <div className="flex-1 space-y-2">
           <div className="bg-gray-50 rounded-lg p-3">
             <div className="flex items-center gap-2 mb-1">
@@ -592,15 +592,14 @@ export default function TaskViewModal({
               {/* Creator */}
               {task.creator && (
                 <div className="flex items-center gap-2 text-sm">
-                  <Avatar className="h-6 w-6">
-                    <AvatarImage src={task.creator.image || undefined} />
-                    <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium text-xs">
-                      {task.creator.name
-                        ? task.creator.name.split(' ').map(n => n[0]).join('')
-                        : task.creator.email?.[0]?.toUpperCase()
-                      }
-                    </AvatarFallback>
-                  </Avatar>
+                  <UserAvatar
+                    userId={task.creator.id}
+                    image={task.creator.image}
+                    name={task.creator.name}
+                    email={task.creator.email}
+                    className="h-6 w-6"
+                    fallbackClassName="text-xs"
+                  />
                   <span className="text-gray-600">Creator:</span>
                   <span className="font-medium">{task.creator.name || task.creator.email}</span>
                 </div>
@@ -609,15 +608,14 @@ export default function TaskViewModal({
               {/* Assignee */}
               {task.assignee && (
                 <div className="flex items-center gap-2 text-sm">
-                  <Avatar className="h-6 w-6">
-                    <AvatarImage src={task.assignee.image || undefined} />
-                    <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium text-xs">
-                      {task.assignee.name
-                        ? task.assignee.name.split(' ').map(n => n[0]).join('')
-                        : task.assignee.email?.[0]?.toUpperCase()
-                      }
-                    </AvatarFallback>
-                  </Avatar>
+                  <UserAvatar
+                    userId={task.assignee.id}
+                    image={task.assignee.image}
+                    name={task.assignee.name}
+                    email={task.assignee.email}
+                    className="h-6 w-6"
+                    fallbackClassName="text-xs"
+                  />
                   <span className="text-gray-600">Assigned to:</span>
                   <span className="font-medium">{task.assignee.name || task.assignee.email}</span>
                 </div>
@@ -633,15 +631,14 @@ export default function TaskViewModal({
                   <div className="ml-6 space-y-1">
                     {task.teamMembers.map((member) => (
                       <div key={member.userId} className="flex items-center gap-2 text-sm">
-                        <Avatar className="h-5 w-5">
-                          <AvatarImage src={member.user.image || undefined} />
-                          <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium text-xs">
-                            {member.user.name
-                              ? member.user.name.split(' ').map(n => n[0]).join('')
-                              : member.user.email?.[0]?.toUpperCase()
-                            }
-                          </AvatarFallback>
-                        </Avatar>
+                        <UserAvatar
+                          userId={member.user.id}
+                          image={member.user.image}
+                          name={member.user.name}
+                          email={member.user.email}
+                          className="h-5 w-5"
+                          fallbackClassName="text-xs"
+                        />
                         <span>{member.user.name || member.user.email}</span>
                       </div>
                     ))}
@@ -659,15 +656,14 @@ export default function TaskViewModal({
                   <div className="ml-6 space-y-1">
                     {task.collaborators.map((collaborator) => (
                       <div key={collaborator.userId} className="flex items-center gap-2 text-sm">
-                        <Avatar className="h-5 w-5">
-                          <AvatarImage src={collaborator.user.image || undefined} />
-                          <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium text-xs">
-                            {collaborator.user.name
-                              ? collaborator.user.name.split(' ').map(n => n[0]).join('')
-                              : collaborator.user.email?.[0]?.toUpperCase()
-                            }
-                          </AvatarFallback>
-                        </Avatar>
+                        <UserAvatar
+                          userId={collaborator.user.id}
+                          image={collaborator.user.image}
+                          name={collaborator.user.name}
+                          email={collaborator.user.email}
+                          className="h-5 w-5"
+                          fallbackClassName="text-xs"
+                        />
                         <span>{collaborator.user.name || collaborator.user.email}</span>
                       </div>
                     ))}
@@ -705,15 +701,14 @@ export default function TaskViewModal({
                         onClick={() => handleMentionSelect(user)}
                         className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2"
                       >
-                        <Avatar className="h-6 w-6">
-                          <AvatarImage src={user.image || undefined} />
-                          <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium text-xs">
-                            {user.name
-                              ? user.name.split(' ').map((n: string) => n[0]).join('')
-                              : user.email?.[0]?.toUpperCase()
-                            }
-                          </AvatarFallback>
-                        </Avatar>
+                        <UserAvatar
+                          userId={user.id}
+                          image={user.image}
+                          name={user.name}
+                          email={user.email}
+                          className="h-6 w-6"
+                          fallbackClassName="text-xs"
+                        />
                         <div>
                           <div className="font-medium text-sm">{user.name}</div>
                           <div className="text-xs text-gray-500">{user.email}</div>

@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { UserAvatar } from '@/components/shared/UserAvatar'
 import { Button } from '@/components/ui/button'
 import CreateTaskButton from '@/components/tasks/CreateTaskButton'
 import { format, formatDistanceToNow } from 'date-fns'
@@ -309,12 +310,15 @@ export default function UserDashboard() {
               <div className="flex items-center gap-2">
                 <div className="flex -space-x-2">
                   {dashboardData.teamMembers.slice(0, 3).map((member) => (
-                    <Avatar key={member.id} className="h-7 w-7 border-2 border-white ring-1 ring-slate-200">
-                      <AvatarImage src={member.image} />
-                      <AvatarFallback className="text-xs bg-gradient-to-br from-blue-400 to-purple-500 text-white font-semibold">
-                        {member.name?.[0] || member.email[0]}
-                      </AvatarFallback>
-                    </Avatar>
+                    <UserAvatar
+                      key={member.id}
+                      userId={member.id}
+                      image={member.image}
+                      name={member.name}
+                      email={member.email}
+                      className="h-7 w-7 border-2 border-white ring-1 ring-slate-200"
+                      fallbackClassName="text-xs bg-gradient-to-br from-blue-400 to-purple-500 text-white font-semibold"
+                    />
                   ))}
                 </div>
                 <span className="text-xs text-slate-600 font-medium">{dashboardData.teamMembers.length} members</span>

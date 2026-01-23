@@ -169,10 +169,9 @@ export default function UserProfilePage() {
 
       setProfile(prev => prev ? { ...prev, image: imageUrlWithCacheBust } : null)
 
+      // Update the session with new image - this will trigger JWT callback with trigger='update'
       await updateSession({
-        ...session,
         user: {
-          ...session?.user,
           image: imageUrlWithCacheBust
         }
       })

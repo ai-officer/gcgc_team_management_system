@@ -333,10 +333,13 @@ export function Sidebar({ className }: SidebarProps) {
               title={isCollapsed ? `${session.user.name || 'User'} - Go to Profile` : undefined}
               onClick={() => setIsMobileOpen(false)}
             >
-              <Avatar className="h-8 w-8 flex-shrink-0 ring-2 ring-transparent group-hover:ring-primary/20 transition-all">
-                <AvatarImage 
-                  src={session.user.image || undefined} 
-                  alt={session.user.name || 'Profile'} 
+              <Avatar
+                key={session.user.image || 'no-image'}
+                className="h-8 w-8 flex-shrink-0 ring-2 ring-transparent group-hover:ring-primary/20 transition-all"
+              >
+                <AvatarImage
+                  src={session.user.image || undefined}
+                  alt={session.user.name || 'Profile'}
                   className="object-cover"
                 />
                 <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium text-sm group-hover:from-primary/20 group-hover:to-primary/30 transition-all">

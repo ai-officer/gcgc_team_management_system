@@ -78,7 +78,14 @@ export default async function middleware(req: NextRequest) {
   }
   
   // Allow access to public pages
-  if (pathname === '/' || pathname.startsWith('/auth') || pathname === '/register' || pathname === '/administrator/login') {
+  if (
+    pathname === '/' ||
+    pathname.startsWith('/auth') ||
+    pathname === '/register' ||
+    pathname === '/administrator/login' ||
+    pathname === '/privacy-policy' ||
+    pathname === '/terms-of-service'
+  ) {
     return NextResponse.next()
   }
   

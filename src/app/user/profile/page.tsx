@@ -164,13 +164,16 @@ export default function UserProfilePage() {
 
       const data = await response.json()
 
-      setProfile(prev => prev ? { ...prev, image: data.imageUrl } : null)
+      // Add cache-busting timestamp to force browser to load new image
+      const imageUrlWithCacheBust = `${data.imageUrl}?t=${Date.now()}`
+
+      setProfile(prev => prev ? { ...prev, image: imageUrlWithCacheBust } : null)
 
       await updateSession({
         ...session,
         user: {
           ...session?.user,
-          image: data.imageUrl
+          image: imageUrlWithCacheBust
         }
       })
 
@@ -316,8 +319,11 @@ export default function UserProfilePage() {
         <CardContent className="relative pb-6">
           <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4 -mt-16 sm:-mt-20">
             <div className="relative group">
-              <Avatar className="h-32 w-32 border-4 border-white ring-2 ring-slate-200 rounded-xl shadow-lg">
-                <AvatarImage src={profile.image} alt={profile.name} />
+              <Avatar
+                key={profile.image || 'no-image'}
+                className="h-32 w-32 border-4 border-white ring-2 ring-slate-200 rounded-xl shadow-lg"
+              >
+                <AvatarImage src={profile.image || undefined} alt={profile.name} />
                 <AvatarFallback className="text-2xl bg-blue-100 text-blue-700 font-bold rounded-xl">
                   {getInitials(profile.name)}
                 </AvatarFallback>

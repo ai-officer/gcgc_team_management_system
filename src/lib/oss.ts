@@ -70,6 +70,7 @@ export function getSignedUrl(objectKey: string, expiresInSeconds: number = 31536
     accessKeySecret: accessKeySecret!,
     bucket,
     internal: false, // Always use public endpoint for signed URLs
+    secure: true, // Use HTTPS
   })
 
   // Generate signed URL that expires in 1 year by default

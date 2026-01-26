@@ -48,6 +48,7 @@ export async function uploadToOSS(
     headers: {
       'Content-Type': contentType,
       'Cache-Control': 'public, max-age=31536000', // 1 year cache
+      'x-oss-object-acl': 'public-read', // Make object publicly accessible
     },
   })
 

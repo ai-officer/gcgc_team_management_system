@@ -22,10 +22,10 @@ import { UserAvatar } from '@/components/shared/UserAvatar'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
 import { format, formatDistanceToNow } from 'date-fns'
-import { 
-  User, Users, Handshake, Clock, MessageSquare, Send, Edit, 
+import {
+  User, Users, Handshake, Clock, MessageSquare, Send, Edit,
   Heart, ThumbsUp, Smile, Reply, Image, Paperclip, MoreHorizontal,
-  AtSign
+  AtSign, Trash2, Pencil, X, Check
 } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { Progress } from '@/components/ui/progress'
@@ -141,7 +141,15 @@ export default function TaskViewModal({
   const [showMentions, setShowMentions] = useState(false)
   const [mentionQuery, setMentionQuery] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const editFileInputRef = useRef<HTMLInputElement>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
+
+  // Edit/Delete comment state
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null)
+  const [editCommentText, setEditCommentText] = useState('')
+  const [editCommentImage, setEditCommentImage] = useState<string | null>(null)
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null)
 
   // Load comments when task changes
   const fetchComments = async () => {
@@ -314,13 +322,160 @@ export default function TaskViewModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ emoji })
       })
-      
+
       if (response.ok) {
         // Refresh comments to get updated reactions
         fetchComments()
       }
     } catch (error) {
       console.error('Error adding reaction:', error)
+    }
+  }
+
+  // Start editing a comment
+  const startEditingComment = (comment: Comment) => {
+    setEditingCommentId(comment.id)
+    setEditCommentText(comment.content)
+    setEditCommentImage(comment.imageUrl || null)
+  }
+
+  // Cancel editing
+  const cancelEditing = () => {
+    setEditingCommentId(null)
+    setEditCommentText('')
+    setEditCommentImage(null)
+    if (editFileInputRef.current) {
+      editFileInputRef.current.value = ''
+    }
+  }
+
+  // Handle edit image upload
+  const handleEditImageUpload = async (file: File) => {
+    if (!file || !task?.id) return null
+
+    try {
+      setUploadingImage(true)
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('taskId', task.id)
+
+      const response = await fetch('/api/upload/comment-image', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setEditCommentImage(data.imageUrl)
+        return data.imageUrl
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload image. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setUploadingImage(false)
+    }
+    return null
+  }
+
+  // Save edited comment
+  const handleSaveEdit = async (commentId: string) => {
+    if (!editCommentText.trim()) return
+
+    try {
+      setSavingEdit(true)
+      const response = await fetch(`/api/comments/${commentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: editCommentText.trim(),
+          imageUrl: editCommentImage
+        })
+      })
+
+      if (response.ok) {
+        const updatedComment = await response.json()
+
+        // Update the comment in state
+        setComments(prev => prev.map(c => {
+          if (c.id === commentId) {
+            return updatedComment
+          }
+          // Check if it's a reply
+          if (c.replies) {
+            return {
+              ...c,
+              replies: c.replies.map(r => r.id === commentId ? updatedComment : r)
+            }
+          }
+          return c
+        }))
+
+        cancelEditing()
+        toast({
+          title: "Comment updated",
+          description: "Your comment has been updated successfully.",
+        })
+      } else {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to update comment')
+      }
+    } catch (error) {
+      console.error('Error updating comment:', error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update comment. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setSavingEdit(false)
+    }
+  }
+
+  // Delete a comment
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm('Are you sure you want to delete this comment?')) return
+
+    try {
+      setDeletingCommentId(commentId)
+      const response = await fetch(`/api/comments/${commentId}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        // Remove the comment from state
+        setComments(prev => {
+          // First check if it's a top-level comment
+          const filtered = prev.filter(c => c.id !== commentId)
+
+          // Also check if it's a reply
+          return filtered.map(c => ({
+            ...c,
+            replies: c.replies ? c.replies.filter(r => r.id !== commentId) : []
+          }))
+        })
+
+        toast({
+          title: "Comment deleted",
+          description: "The comment has been deleted successfully.",
+        })
+      } else {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to delete comment')
+      }
+    } catch (error) {
+      console.error('Error deleting comment:', error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete comment. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setDeletingCommentId(null)
     }
   }
 
@@ -364,150 +519,291 @@ export default function TaskViewModal({
     return status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
   }
 
-  const renderComment = (comment: Comment, isReply = false) => (
-    <div key={comment.id} className={`${isReply ? 'ml-10' : ''} space-y-3`}>
-      <div className="flex gap-3">
-        <UserAvatar
-          userId={comment.author.id}
-          image={comment.author.image}
-          name={comment.author.name}
-          email={comment.author.email}
-          className="h-8 w-8 flex-shrink-0"
-          fallbackClassName="text-sm"
-        />
-        <div className="flex-1 space-y-2">
-          <div className="bg-gray-50 rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="font-medium text-sm">
-                {comment.author.name || comment.author.email}
-              </span>
-              <span className="text-xs text-gray-500">
-                {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
-              </span>
-            </div>
-            <p className="text-sm text-gray-700 leading-relaxed">
-              {comment.content}
-            </p>
-            {comment.imageUrl && (
-              <img 
-                src={comment.imageUrl} 
-                alt="Comment attachment" 
-                className="mt-2 max-w-xs rounded-lg border"
-              />
-            )}
-          </div>
-          
-          {/* Reactions */}
-          <div className="flex items-center gap-3">
-            {/* Existing reactions display */}
-            <div className="flex items-center gap-1">
-              {REACTION_EMOJIS.map(emoji => {
-                const reactionCount = comment.reactions?.filter(r => r.emoji === emoji).length || 0
-                const hasReacted = comment.reactions?.some(r => r.emoji === emoji && r.userId === session?.user?.id)
-                
-                if (reactionCount === 0 && !hasReacted) return null
-                
-                return (
-                  <button
-                    key={emoji}
-                    onClick={() => handleReaction(comment.id, emoji)}
-                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-sm font-medium transition-all hover:scale-105 ${
-                      hasReacted 
-                        ? 'bg-blue-50 text-blue-700 border-2 border-blue-200 shadow-sm' 
-                        : 'bg-gray-50 hover:bg-gray-100 text-gray-600 border border-gray-200'
-                    }`}
-                  >
-                    <span className="text-base">{emoji}</span>
-                    <span className="text-xs font-semibold">{reactionCount}</span>
-                  </button>
-                )
-              })}
-            </div>
-            
-            {/* Add reaction button */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 px-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-                >
-                  <Smile className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-auto p-2">
-                <div className="flex items-center gap-1">
-                  {REACTION_EMOJIS.map(emoji => (
-                    <button
-                      key={emoji}
-                      onClick={() => handleReaction(comment.id, emoji)}
-                      className="flex items-center justify-center w-8 h-8 rounded-md hover:bg-gray-100 transition-colors"
+  const isTaskCreator = task?.creator?.id === session?.user?.id
+
+  const renderComment = (comment: Comment, isReply = false) => {
+    const isAuthor = comment.author.id === session?.user?.id
+    const canDelete = isAuthor || isTaskCreator || session?.user?.role === 'ADMIN'
+    const isEditing = editingCommentId === comment.id
+    const isDeleting = deletingCommentId === comment.id
+
+    return (
+      <div key={comment.id} className={`${isReply ? 'ml-10' : ''} space-y-3`}>
+        <div className="flex gap-3">
+          <UserAvatar
+            userId={comment.author.id}
+            image={comment.author.image}
+            name={comment.author.name}
+            email={comment.author.email}
+            className="h-8 w-8 flex-shrink-0"
+            fallbackClassName="text-sm"
+          />
+          <div className="flex-1 space-y-2">
+            {isEditing ? (
+              /* Edit Mode UI */
+              <div className="bg-blue-50 rounded-lg p-3 space-y-3">
+                <Textarea
+                  value={editCommentText}
+                  onChange={(e) => setEditCommentText(e.target.value)}
+                  className="min-h-[60px] resize-none text-sm bg-white"
+                  placeholder="Edit your comment..."
+                />
+
+                {/* Edit Image Section */}
+                <div className="space-y-2">
+                  {editCommentImage && (
+                    <div className="relative inline-block">
+                      <img
+                        src={editCommentImage}
+                        alt="Comment attachment"
+                        className="max-w-xs rounded-lg border"
+                      />
+                      <button
+                        onClick={() => setEditCommentImage(null)}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                        title="Remove image"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  )}
+
+                  <input
+                    ref={editFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) handleEditImageUpload(file)
+                    }}
+                  />
+
+                  {!editCommentImage && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => editFileInputRef.current?.click()}
+                      disabled={uploadingImage}
+                      className="text-gray-500"
                     >
-                      <span className="text-lg">{emoji}</span>
-                    </button>
-                  ))}
+                      {uploadingImage ? (
+                        <>
+                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-500 mr-1" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Image className="h-4 w-4 mr-1" />
+                          Add Image
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
-            {!isReply && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setReplyingTo(comment.id)}
-                className="h-6 px-2 text-xs text-gray-500"
-              >
-                <Reply className="h-3 w-3 mr-1" />
-                Reply
-              </Button>
+
+                {/* Edit Actions */}
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={cancelEditing}
+                    disabled={savingEdit}
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => handleSaveEdit(comment.id)}
+                    disabled={!editCommentText.trim() || savingEdit}
+                  >
+                    {savingEdit ? (
+                      <>
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="h-4 w-4 mr-1" />
+                        Save
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              /* Normal View Mode */
+              <div className="bg-gray-50 rounded-lg p-3">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-sm">
+                      {comment.author.name || comment.author.email}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
+                    </span>
+                  </div>
+
+                  {/* Edit/Delete Menu */}
+                  {(isAuthor || canDelete) && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {isAuthor && (
+                          <DropdownMenuItem onClick={() => startEditingComment(comment)}>
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                        )}
+                        {canDelete && (
+                          <DropdownMenuItem
+                            onClick={() => handleDeleteComment(comment.id)}
+                            className="text-red-600 focus:text-red-600"
+                            disabled={isDeleting}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            {isDeleting ? 'Deleting...' : 'Delete'}
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  {comment.content}
+                </p>
+                {comment.imageUrl && (
+                  <img
+                    src={comment.imageUrl}
+                    alt="Comment attachment"
+                    className="mt-2 max-w-xs rounded-lg border cursor-pointer hover:opacity-90"
+                    onClick={() => window.open(comment.imageUrl, '_blank')}
+                  />
+                )}
+              </div>
+            )}
+
+            {/* Reactions - Only show when not editing */}
+            {!isEditing && (
+              <div className="flex items-center gap-3">
+                {/* Existing reactions display */}
+                <div className="flex items-center gap-1">
+                  {REACTION_EMOJIS.map(emoji => {
+                    const reactionCount = comment.reactions?.filter(r => r.emoji === emoji).length || 0
+                    const hasReacted = comment.reactions?.some(r => r.emoji === emoji && r.userId === session?.user?.id)
+
+                    if (reactionCount === 0 && !hasReacted) return null
+
+                    return (
+                      <button
+                        key={emoji}
+                        onClick={() => handleReaction(comment.id, emoji)}
+                        className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-sm font-medium transition-all hover:scale-105 ${
+                          hasReacted
+                            ? 'bg-blue-50 text-blue-700 border-2 border-blue-200 shadow-sm'
+                            : 'bg-gray-50 hover:bg-gray-100 text-gray-600 border border-gray-200'
+                        }`}
+                      >
+                        <span className="text-base">{emoji}</span>
+                        <span className="text-xs font-semibold">{reactionCount}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Add reaction button */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                    >
+                      <Smile className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-auto p-2">
+                    <div className="flex items-center gap-1">
+                      {REACTION_EMOJIS.map(emoji => (
+                        <button
+                          key={emoji}
+                          onClick={() => handleReaction(comment.id, emoji)}
+                          className="flex items-center justify-center w-8 h-8 rounded-md hover:bg-gray-100 transition-colors"
+                        >
+                          <span className="text-lg">{emoji}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {!isReply && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setReplyingTo(comment.id)}
+                    className="h-6 px-2 text-xs text-gray-500"
+                  >
+                    <Reply className="h-3 w-3 mr-1" />
+                    Reply
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {/* Reply form */}
+            {replyingTo === comment.id && (
+              <div className="space-y-2">
+                <Textarea
+                  placeholder="Write a reply..."
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  className="min-h-[60px] resize-none text-sm"
+                />
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setReplyingTo(null)
+                      setReplyText('')
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={() => handleAddComment(comment.id)}
+                    disabled={!replyText.trim() || submittingComment}
+                    size="sm"
+                  >
+                    Reply
+                  </Button>
+                </div>
+              </div>
             )}
           </div>
-          
-          {/* Reply form */}
-          {replyingTo === comment.id && (
-            <div className="space-y-2">
-              <Textarea
-                placeholder="Write a reply..."
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                className="min-h-[60px] resize-none text-sm"
-              />
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setReplyingTo(null)
-                    setReplyText('')
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => handleAddComment(comment.id)}
-                  disabled={!replyText.trim() || submittingComment}
-                  size="sm"
-                >
-                  Reply
-                </Button>
-              </div>
-            </div>
-          )}
         </div>
+
+        {/* Render replies */}
+        {comment.replies && comment.replies.length > 0 && (
+          <div className="space-y-3">
+            {comment.replies.map(reply => renderComment(reply, true))}
+          </div>
+        )}
       </div>
-      
-      {/* Render replies */}
-      {comment.replies && comment.replies.length > 0 && (
-        <div className="space-y-3">
-          {comment.replies.map(reply => renderComment(reply, true))}
-        </div>
-      )}
-    </div>
-  )
+    )
+  }
 
   if (!task) return null
-
-  const isTaskCreator = task.creator?.id === session?.user?.id
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

@@ -48,12 +48,37 @@ export async function uploadToOSS(
     headers: {
       'Content-Type': contentType,
       'Cache-Control': 'public, max-age=31536000', // 1 year cache
-      'x-oss-object-acl': 'public-read', // Make object publicly accessible
     },
   })
 
-  const url = getOSSUrl(objectKey)
+  // Generate a signed URL with long expiration (1 year) for public access
+  const url = getSignedUrl(objectKey)
   return { url, objectKey }
+}
+
+// Generate a signed URL for accessing private objects (always uses public endpoint)
+export function getSignedUrl(objectKey: string, expiresInSeconds: number = 31536000): string {
+  const region = process.env.OSS_REGION
+  const accessKeyId = process.env.OSS_ACCESS_KEY_ID
+  const accessKeySecret = process.env.OSS_ACCESS_KEY_SECRET
+  const bucket = process.env.OSS_BUCKET
+
+  // Create a client with public endpoint for generating accessible URLs
+  const publicClient = new OSS({
+    region,
+    accessKeyId: accessKeyId!,
+    accessKeySecret: accessKeySecret!,
+    bucket,
+    internal: false, // Always use public endpoint for signed URLs
+  })
+
+  // Generate signed URL that expires in 1 year by default
+  const url = publicClient.signatureUrl(objectKey, {
+    expires: expiresInSeconds,
+    method: 'GET',
+  })
+
+  return url
 }
 
 // Delete a file from OSS

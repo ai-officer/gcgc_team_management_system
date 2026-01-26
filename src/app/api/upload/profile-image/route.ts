@@ -49,9 +49,12 @@ export async function POST(req: NextRequest) {
     // Upload to OSS
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
-    const { url: imageUrl } = await uploadToOSS(buffer, objectKey, file.type)
+    const { url: baseImageUrl } = await uploadToOSS(buffer, objectKey, file.type)
 
-    // Update user's profile image in database
+    // Add cache-busting timestamp to URL to prevent CDN/browser caching issues
+    const imageUrl = `${baseImageUrl}?v=${timestamp}`
+
+    // Update user's profile image in database with cache-busted URL
     await prisma.user.update({
       where: { id: session.user.id },
       data: { image: imageUrl }
@@ -83,6 +86,12 @@ export async function POST(req: NextRequest) {
       size: file.size,
       type: file.type,
       message: 'Profile picture updated successfully'
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
     })
   } catch (error) {
     console.error('Profile image upload error:', error)

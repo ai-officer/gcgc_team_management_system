@@ -121,7 +121,13 @@ export async function GET(req: NextRequest) {
         ]
       })
 
-      return NextResponse.json({ users: usersNotInOtherTeams })
+      return NextResponse.json({ users: usersNotInOtherTeams }, {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      })
     }
 
     // Default: get all users (filtered by parameters)
@@ -145,7 +151,13 @@ export async function GET(req: NextRequest) {
       ]
     })
 
-    return NextResponse.json({ users })
+    return NextResponse.json({ users }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    })
   } catch (error) {
     console.error('Users GET error:', error)
     return NextResponse.json(

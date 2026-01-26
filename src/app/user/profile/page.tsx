@@ -165,20 +165,21 @@ export default function UserProfilePage() {
 
       const data = await response.json()
 
-      // Add cache-busting timestamp to force browser to load new image
-      const imageUrlWithCacheBust = `${data.imageUrl}?t=${Date.now()}`
+      // Add client-side cache-busting to ensure browser reloads the image
+      // Server URL already has ?v=timestamp, we add &t=timestamp for extra cache-busting
+      const newImageUrl = `${data.imageUrl}&t=${Date.now()}`
 
-      setProfile(prev => prev ? { ...prev, image: imageUrlWithCacheBust } : null)
+      setProfile(prev => prev ? { ...prev, image: newImageUrl } : null)
 
       // Update the session with new image - this will trigger JWT callback with trigger='update'
       await updateSession({
         user: {
-          image: imageUrlWithCacheBust
+          image: newImageUrl
         }
       })
 
       // Emit event to sync avatar across all components (sidebar, etc.)
-      avatarEvents.emit(imageUrlWithCacheBust)
+      avatarEvents.emit(newImageUrl)
 
       toast({
         title: 'Success',
@@ -326,7 +327,12 @@ export default function UserProfilePage() {
                 key={profile.image || 'no-image'}
                 className="h-32 w-32 border-4 border-white ring-2 ring-slate-200 rounded-xl shadow-lg"
               >
-                <AvatarImage src={profile.image || undefined} alt={profile.name} />
+                {/* Force browser to reload image by using unique key on AvatarImage */}
+                <AvatarImage
+                  key={profile.image || 'no-image-src'}
+                  src={profile.image || undefined}
+                  alt={profile.name}
+                />
                 <AvatarFallback className="text-2xl bg-blue-100 text-blue-700 font-bold rounded-xl">
                   {getInitials(profile.name)}
                 </AvatarFallback>

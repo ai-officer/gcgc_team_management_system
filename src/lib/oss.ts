@@ -67,7 +67,7 @@ export async function deleteFromOSS(objectKey: string): Promise<void> {
   }
 }
 
-// Extract object key from OSS URL
+// Extract object key from OSS URL (handles URLs with query parameters)
 export function getObjectKeyFromUrl(url: string): string | null {
   const bucket = process.env.OSS_BUCKET
   const region = process.env.OSS_REGION
@@ -75,7 +75,9 @@ export function getObjectKeyFromUrl(url: string): string | null {
   const prefix = `https://${bucket}.${region}.aliyuncs.com/`
 
   if (url.startsWith(prefix)) {
-    return url.substring(prefix.length)
+    // Remove query parameters if present (e.g., ?v=timestamp)
+    const urlWithoutQuery = url.split('?')[0]
+    return urlWithoutQuery.substring(prefix.length)
   }
 
   return null

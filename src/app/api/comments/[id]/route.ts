@@ -7,7 +7,11 @@ import { deleteFromOSS, getObjectKeyFromUrl } from '@/lib/oss'
 
 const updateCommentSchema = z.object({
   content: z.string().min(1).max(1000).optional(),
-  imageUrl: z.string().nullable().optional(),
+  imageUrl: z.string().nullable().optional(), // Legacy support
+  fileUrl: z.string().nullable().optional(),
+  fileName: z.string().max(255).nullable().optional(),
+  fileType: z.string().max(100).nullable().optional(),
+  fileSize: z.number().int().positive().nullable().optional(),
 })
 
 // GET - Get a single comment
@@ -71,7 +75,7 @@ export async function PATCH(
     // Get the existing comment
     const existingComment = await prisma.comment.findUnique({
       where: { id: params.id },
-      select: { authorId: true, imageUrl: true }
+      select: { authorId: true, imageUrl: true, fileUrl: true }
     })
 
     if (!existingComment) {
@@ -86,19 +90,22 @@ export async function PATCH(
     const body = await req.json()
     const validatedData = updateCommentSchema.parse(body)
 
-    // If image is being removed or changed, delete the old one from OSS
-    if (validatedData.imageUrl !== undefined && existingComment.imageUrl) {
-      const oldImageUrl = existingComment.imageUrl
-      const newImageUrl = validatedData.imageUrl
-
-      // If image is being removed (null) or changed to a different URL
-      if (newImageUrl === null || (newImageUrl && newImageUrl !== oldImageUrl)) {
-        const objectKey = getObjectKeyFromUrl(oldImageUrl)
-        if (objectKey) {
-          await deleteFromOSS(objectKey)
+    // Helper function to cleanup old file from OSS
+    const cleanupOldFile = async (oldUrl: string | null, newUrl: string | null | undefined) => {
+      if (oldUrl && newUrl !== undefined) {
+        // If file is being removed (null) or changed to a different URL
+        if (newUrl === null || (newUrl && newUrl !== oldUrl)) {
+          const objectKey = getObjectKeyFromUrl(oldUrl)
+          if (objectKey) {
+            await deleteFromOSS(objectKey)
+          }
         }
       }
     }
+
+    // Cleanup old files from OSS if being changed/removed
+    await cleanupOldFile(existingComment.imageUrl, validatedData.imageUrl)
+    await cleanupOldFile(existingComment.fileUrl, validatedData.fileUrl)
 
     // Update the comment
     const updatedComment = await prisma.comment.update({
@@ -106,6 +113,10 @@ export async function PATCH(
       data: {
         ...(validatedData.content && { content: validatedData.content }),
         ...(validatedData.imageUrl !== undefined && { imageUrl: validatedData.imageUrl }),
+        ...(validatedData.fileUrl !== undefined && { fileUrl: validatedData.fileUrl }),
+        ...(validatedData.fileName !== undefined && { fileName: validatedData.fileName }),
+        ...(validatedData.fileType !== undefined && { fileType: validatedData.fileType }),
+        ...(validatedData.fileSize !== undefined && { fileSize: validatedData.fileSize }),
         updatedAt: new Date()
       },
       include: {
@@ -158,6 +169,7 @@ export async function DELETE(
       select: {
         authorId: true,
         imageUrl: true,
+        fileUrl: true,
         task: {
           select: { creatorId: true }
         }
@@ -177,9 +189,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'You do not have permission to delete this comment' }, { status: 403 })
     }
 
-    // Delete image from OSS if exists
-    if (existingComment.imageUrl) {
-      const objectKey = getObjectKeyFromUrl(existingComment.imageUrl)
+    // Delete files from OSS if they exist
+    const filesToDelete = [existingComment.imageUrl, existingComment.fileUrl].filter(Boolean) as string[]
+    for (const fileUrl of filesToDelete) {
+      const objectKey = getObjectKeyFromUrl(fileUrl)
       if (objectKey) {
         await deleteFromOSS(objectKey)
       }

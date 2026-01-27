@@ -25,7 +25,7 @@ import { format, formatDistanceToNow } from 'date-fns'
 import {
   User, Users, Handshake, Clock, MessageSquare, Send, Edit,
   Heart, ThumbsUp, Smile, Reply, Image, Paperclip, MoreHorizontal,
-  AtSign, Trash2, Pencil, X, Check
+  AtSign, Trash2, Pencil, X, Check, FileText, Download, File
 } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { Progress } from '@/components/ui/progress'
@@ -103,7 +103,11 @@ interface Comment {
   content: string
   createdAt: string
   parentId?: string
-  imageUrl?: string
+  imageUrl?: string  // Legacy support
+  fileUrl?: string
+  fileName?: string
+  fileType?: string
+  fileSize?: number
   author: {
     id: string
     name: string
@@ -122,6 +126,41 @@ interface TaskViewModalProps {
 }
 
 const REACTION_EMOJIS = ['👍', '❤️', '😄', '😮', '😢', '😡']
+
+// Helper functions for file handling
+const isImageFile = (fileType?: string, url?: string): boolean => {
+  if (fileType) {
+    return fileType.startsWith('image/')
+  }
+  // Fallback: check URL extension for legacy imageUrl
+  if (url) {
+    const ext = url.split('?')[0].split('.').pop()?.toLowerCase()
+    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext || '')
+  }
+  return false
+}
+
+const formatFileSize = (bytes?: number): string => {
+  if (!bytes) return ''
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+const getFileIcon = (fileType?: string) => {
+  if (!fileType) return <File className="h-5 w-5" />
+  if (fileType.startsWith('image/')) return <Image className="h-5 w-5" />
+  if (fileType.includes('pdf')) return <FileText className="h-5 w-5 text-red-500" />
+  if (fileType.includes('word') || fileType.includes('document')) return <FileText className="h-5 w-5 text-blue-500" />
+  if (fileType.includes('sheet') || fileType.includes('excel')) return <FileText className="h-5 w-5 text-green-500" />
+  if (fileType.includes('presentation') || fileType.includes('powerpoint')) return <FileText className="h-5 w-5 text-orange-500" />
+  return <File className="h-5 w-5 text-gray-500" />
+}
+
+// Get effective file URL (supports both new fileUrl and legacy imageUrl)
+const getEffectiveFileUrl = (comment: Comment): string | undefined => {
+  return comment.fileUrl || comment.imageUrl
+}
 
 export default function TaskViewModal({ 
   open, 
@@ -142,12 +181,24 @@ export default function TaskViewModal({
   const [mentionQuery, setMentionQuery] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const editFileInputRef = useRef<HTMLInputElement>(null)
-  const [uploadingImage, setUploadingImage] = useState(false)
+  const [uploadingFile, setUploadingFile] = useState(false)
+  const [pendingFile, setPendingFile] = useState<{
+    file: File
+    fileUrl: string
+    fileName: string
+    fileType: string
+    fileSize: number
+  } | null>(null)
 
   // Edit/Delete comment state
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null)
   const [editCommentText, setEditCommentText] = useState('')
-  const [editCommentImage, setEditCommentImage] = useState<string | null>(null)
+  const [editCommentFile, setEditCommentFile] = useState<{
+    fileUrl: string | null
+    fileName: string | null
+    fileType: string | null
+    fileSize: number | null
+  } | null>(null)
   const [savingEdit, setSavingEdit] = useState(false)
   const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null)
 
@@ -191,6 +242,9 @@ export default function TaskViewModal({
       setNewComment('')
       setReplyingTo(null)
       setReplyText('')
+      setPendingFile(null)
+      setEditingCommentId(null)
+      setEditCommentFile(null)
     }
   }, [open, task])
 
@@ -221,33 +275,56 @@ export default function TaskViewModal({
     setShowMentions(false)
   }
 
-  const handleImageUpload = async (file: File) => {
+  const handleFileUpload = async (file: File): Promise<{
+    fileUrl: string
+    fileName: string
+    fileType: string
+    fileSize: number
+  } | null> => {
     if (!file || !task?.id) return null
-    
+
+    // Check file size (50MB limit)
+    if (file.size > 50 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Maximum file size is 50MB.",
+        variant: "destructive",
+      })
+      return null
+    }
+
     try {
-      setUploadingImage(true)
+      setUploadingFile(true)
       const formData = new FormData()
       formData.append('file', file)
       formData.append('taskId', task.id)
-      
-      const response = await fetch('/api/upload/comment-image', {
+
+      const response = await fetch('/api/upload/comment-file', {
         method: 'POST',
         body: formData
       })
-      
+
       if (response.ok) {
         const data = await response.json()
-        return data.imageUrl
+        return {
+          fileUrl: data.fileUrl,
+          fileName: data.fileName,
+          fileType: data.fileType,
+          fileSize: data.fileSize
+        }
+      } else {
+        const error = await response.json()
+        throw new Error(error.error || 'Upload failed')
       }
     } catch (error) {
-      console.error('Error uploading image:', error)
+      console.error('Error uploading file:', error)
       toast({
         title: "Upload failed",
-        description: "Failed to upload image. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to upload file. Please try again.",
         variant: "destructive",
       })
     } finally {
-      setUploadingImage(false)
+      setUploadingFile(false)
     }
     return null
   }
@@ -255,32 +332,32 @@ export default function TaskViewModal({
   const handleAddComment = async (parentId?: string) => {
     const text = parentId ? replyText : newComment
     if (!text.trim() || !task?.id) return
-    
+
     try {
       setSubmittingComment(true)
-      
-      let imageUrl = null
-      if (fileInputRef.current?.files?.[0]) {
-        imageUrl = await handleImageUpload(fileInputRef.current.files[0])
-      }
-      
+
       const response = await fetch(`/api/tasks/${task.id}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           content: text.trim(),
           parentId,
-          imageUrl
+          ...(pendingFile && {
+            fileUrl: pendingFile.fileUrl,
+            fileName: pendingFile.fileName,
+            fileType: pendingFile.fileType,
+            fileSize: pendingFile.fileSize,
+          })
         })
       })
-      
+
       if (response.ok) {
         const comment = await response.json()
-        
+
         if (parentId) {
           // Add reply to existing comment
-          setComments(prev => prev.map(c => 
-            c.id === parentId 
+          setComments(prev => prev.map(c =>
+            c.id === parentId
               ? { ...c, replies: [comment, ...c.replies] }
               : c
           ))
@@ -290,12 +367,13 @@ export default function TaskViewModal({
           // Add new comment
           setComments(prev => [comment, ...prev])
           setNewComment('')
+          setPendingFile(null)
         }
-        
+
         if (fileInputRef.current) {
           fileInputRef.current.value = ''
         }
-        
+
         toast({
           title: "Comment posted",
           description: "Your comment has been added successfully.",
@@ -336,48 +414,73 @@ export default function TaskViewModal({
   const startEditingComment = (comment: Comment) => {
     setEditingCommentId(comment.id)
     setEditCommentText(comment.content)
-    setEditCommentImage(comment.imageUrl || null)
+    // Support both new fileUrl and legacy imageUrl
+    const effectiveUrl = comment.fileUrl || comment.imageUrl
+    setEditCommentFile(effectiveUrl ? {
+      fileUrl: effectiveUrl,
+      fileName: comment.fileName || null,
+      fileType: comment.fileType || null,
+      fileSize: comment.fileSize || null
+    } : null)
   }
 
   // Cancel editing
   const cancelEditing = () => {
     setEditingCommentId(null)
     setEditCommentText('')
-    setEditCommentImage(null)
+    setEditCommentFile(null)
     if (editFileInputRef.current) {
       editFileInputRef.current.value = ''
     }
   }
 
-  // Handle edit image upload
-  const handleEditImageUpload = async (file: File) => {
+  // Handle edit file upload
+  const handleEditFileUpload = async (file: File) => {
     if (!file || !task?.id) return null
 
+    // Check file size (50MB limit)
+    if (file.size > 50 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Maximum file size is 50MB.",
+        variant: "destructive",
+      })
+      return null
+    }
+
     try {
-      setUploadingImage(true)
+      setUploadingFile(true)
       const formData = new FormData()
       formData.append('file', file)
       formData.append('taskId', task.id)
 
-      const response = await fetch('/api/upload/comment-image', {
+      const response = await fetch('/api/upload/comment-file', {
         method: 'POST',
         body: formData
       })
 
       if (response.ok) {
         const data = await response.json()
-        setEditCommentImage(data.imageUrl)
-        return data.imageUrl
+        setEditCommentFile({
+          fileUrl: data.fileUrl,
+          fileName: data.fileName,
+          fileType: data.fileType,
+          fileSize: data.fileSize
+        })
+        return data
+      } else {
+        const error = await response.json()
+        throw new Error(error.error || 'Upload failed')
       }
     } catch (error) {
-      console.error('Error uploading image:', error)
+      console.error('Error uploading file:', error)
       toast({
         title: "Upload failed",
-        description: "Failed to upload image. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to upload file. Please try again.",
         variant: "destructive",
       })
     } finally {
-      setUploadingImage(false)
+      setUploadingFile(false)
     }
     return null
   }
@@ -393,7 +496,10 @@ export default function TaskViewModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           content: editCommentText.trim(),
-          imageUrl: editCommentImage
+          fileUrl: editCommentFile?.fileUrl ?? null,
+          fileName: editCommentFile?.fileName ?? null,
+          fileType: editCommentFile?.fileType ?? null,
+          fileSize: editCommentFile?.fileSize ?? null,
         })
       })
 
@@ -549,19 +655,35 @@ export default function TaskViewModal({
                   placeholder="Edit your comment..."
                 />
 
-                {/* Edit Image Section */}
+                {/* Edit File Section */}
                 <div className="space-y-2">
-                  {editCommentImage && (
+                  {editCommentFile?.fileUrl && (
                     <div className="relative inline-block">
-                      <img
-                        src={editCommentImage}
-                        alt="Comment attachment"
-                        className="max-w-xs rounded-lg border"
-                      />
+                      {isImageFile(editCommentFile.fileType || undefined, editCommentFile.fileUrl) ? (
+                        <img
+                          src={editCommentFile.fileUrl}
+                          alt="Comment attachment"
+                          className="max-w-xs rounded-lg border"
+                        />
+                      ) : (
+                        <div className="flex items-center gap-2 p-3 bg-white rounded-lg border">
+                          {getFileIcon(editCommentFile.fileType || undefined)}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">
+                              {editCommentFile.fileName || 'Attached file'}
+                            </p>
+                            {editCommentFile.fileSize && (
+                              <p className="text-xs text-gray-500">
+                                {formatFileSize(editCommentFile.fileSize)}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )}
                       <button
-                        onClick={() => setEditCommentImage(null)}
+                        onClick={() => setEditCommentFile(null)}
                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                        title="Remove image"
+                        title="Remove attachment"
                       >
                         <X className="h-3 w-3" />
                       </button>
@@ -571,31 +693,30 @@ export default function TaskViewModal({
                   <input
                     ref={editFileInputRef}
                     type="file"
-                    accept="image/*"
                     className="hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0]
-                      if (file) handleEditImageUpload(file)
+                      if (file) handleEditFileUpload(file)
                     }}
                   />
 
-                  {!editCommentImage && (
+                  {!editCommentFile && (
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => editFileInputRef.current?.click()}
-                      disabled={uploadingImage}
+                      disabled={uploadingFile}
                       className="text-gray-500"
                     >
-                      {uploadingImage ? (
+                      {uploadingFile ? (
                         <>
                           <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-500 mr-1" />
                           Uploading...
                         </>
                       ) : (
                         <>
-                          <Image className="h-4 w-4 mr-1" />
-                          Add Image
+                          <Paperclip className="h-4 w-4 mr-1" />
+                          Attach File
                         </>
                       )}
                     </Button>
@@ -681,14 +802,47 @@ export default function TaskViewModal({
                 <p className="text-sm text-gray-700 leading-relaxed">
                   {comment.content}
                 </p>
-                {comment.imageUrl && (
-                  <img
-                    src={comment.imageUrl}
-                    alt="Comment attachment"
-                    className="mt-2 max-w-xs rounded-lg border cursor-pointer hover:opacity-90"
-                    onClick={() => window.open(comment.imageUrl, '_blank')}
-                  />
-                )}
+                {/* File Attachment Display - supports both new fileUrl and legacy imageUrl */}
+                {(() => {
+                  const effectiveUrl = getEffectiveFileUrl(comment)
+                  if (!effectiveUrl) return null
+
+                  const isImage = isImageFile(comment.fileType, effectiveUrl)
+
+                  if (isImage) {
+                    return (
+                      <img
+                        src={effectiveUrl}
+                        alt="Comment attachment"
+                        className="mt-2 max-w-xs rounded-lg border cursor-pointer hover:opacity-90"
+                        onClick={() => window.open(effectiveUrl, '_blank')}
+                      />
+                    )
+                  }
+
+                  // Non-image file display
+                  return (
+                    <a
+                      href={effectiveUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-2 flex items-center gap-3 p-3 bg-gray-100 rounded-lg border hover:bg-gray-200 transition-colors max-w-xs"
+                    >
+                      {getFileIcon(comment.fileType)}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {comment.fileName || 'Attached file'}
+                        </p>
+                        {comment.fileSize && (
+                          <p className="text-xs text-gray-500">
+                            {formatFileSize(comment.fileSize)}
+                          </p>
+                        )}
+                      </div>
+                      <Download className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                    </a>
+                  )
+                })()}
               </div>
             )}
 
@@ -1015,27 +1169,74 @@ export default function TaskViewModal({
                 )}
               </div>
               
+              {/* Pending File Preview */}
+              {pendingFile && (
+                <div className="relative inline-block">
+                  {isImageFile(pendingFile.fileType) ? (
+                    <img
+                      src={pendingFile.fileUrl}
+                      alt="Pending attachment"
+                      className="max-w-xs rounded-lg border"
+                    />
+                  ) : (
+                    <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border">
+                      {getFileIcon(pendingFile.fileType)}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{pendingFile.fileName}</p>
+                        <p className="text-xs text-gray-500">{formatFileSize(pendingFile.fileSize)}</p>
+                      </div>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => {
+                      setPendingFile(null)
+                      if (fileInputRef.current) fileInputRef.current.value = ''
+                    }}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                    title="Remove attachment"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
+
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="image/*"
                     className="hidden"
-                    onChange={(e) => e.target.files?.[0] && setNewComment(prev => prev + ' [Image attached]')}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0]
+                      if (file) {
+                        const uploadedFile = await handleFileUpload(file)
+                        if (uploadedFile) {
+                          setPendingFile({ file, ...uploadedFile })
+                        }
+                      }
+                    }}
                   />
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => fileInputRef.current?.click()}
-                    disabled={uploadingImage}
+                    disabled={uploadingFile || !!pendingFile}
                     className="text-gray-500"
                   >
-                    <Image className="h-4 w-4 mr-1" />
-                    Image
+                    {uploadingFile ? (
+                      <>
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-500 mr-1" />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Paperclip className="h-4 w-4 mr-1" />
+                        Attach
+                      </>
+                    )}
                   </Button>
                 </div>
-                
+
                 <Button
                   onClick={() => handleAddComment()}
                   disabled={!newComment.trim() || submittingComment}

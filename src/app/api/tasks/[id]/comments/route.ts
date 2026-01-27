@@ -7,7 +7,11 @@ import { authOptions } from '@/lib/auth'
 const createCommentSchema = z.object({
   content: z.string().min(1, 'Comment cannot be empty').max(1000, 'Comment too long'),
   parentId: z.string().optional(),
-  imageUrl: z.string().url().optional().nullable(),
+  imageUrl: z.string().url().optional().nullable(), // Legacy support
+  fileUrl: z.string().url().optional().nullable(),
+  fileName: z.string().max(255).optional().nullable(),
+  fileType: z.string().max(100).optional().nullable(),
+  fileSize: z.number().int().positive().optional().nullable(),
 })
 
 export async function GET(
@@ -134,14 +138,14 @@ export async function POST(
     }
 
     const body = await req.json()
-    const { content, parentId, imageUrl } = createCommentSchema.parse(body)
+    const { content, parentId, imageUrl, fileUrl, fileName, fileType, fileSize } = createCommentSchema.parse(body)
 
     // Validate parentId if provided (must be a comment on the same task)
     if (parentId) {
       const parentComment = await prisma.comment.findUnique({
         where: { id: parentId }
       })
-      
+
       if (!parentComment || parentComment.taskId !== params.id) {
         return NextResponse.json({ error: 'Invalid parent comment' }, { status: 400 })
       }
@@ -155,6 +159,10 @@ export async function POST(
         authorId: session.user.id,
         parentId,
         imageUrl,
+        fileUrl,
+        fileName,
+        fileType,
+        fileSize,
       },
       include: {
         author: {

@@ -203,7 +203,11 @@ model Comment {
   taskId    String
   authorId  String
   parentId  String?
-  imageUrl  String?
+  imageUrl  String?           // Legacy: kept for backward compatibility
+  fileUrl   String?           // URL to file in OSS
+  fileName  String?           // Original filename
+  fileType  String?           // MIME type
+  fileSize  Int?              // Size in bytes
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
   author    User              @relation(fields: [authorId], references: [id], onDelete: Cascade)

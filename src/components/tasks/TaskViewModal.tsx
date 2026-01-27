@@ -331,7 +331,8 @@ export default function TaskViewModal({
 
   const handleAddComment = async (parentId?: string) => {
     const text = parentId ? replyText : newComment
-    if (!text.trim() || !task?.id) return
+    // Allow posting if there's text OR a pending file
+    if ((!text.trim() && !pendingFile) || !task?.id) return
 
     try {
       setSubmittingComment(true)
@@ -1239,7 +1240,7 @@ export default function TaskViewModal({
 
                 <Button
                   onClick={() => handleAddComment()}
-                  disabled={!newComment.trim() || submittingComment}
+                  disabled={(!newComment.trim() && !pendingFile) || submittingComment}
                   size="sm"
                 >
                   {submittingComment ? (

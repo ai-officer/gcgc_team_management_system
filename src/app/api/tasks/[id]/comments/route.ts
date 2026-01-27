@@ -5,14 +5,17 @@ import { prisma } from '@/lib/prisma'
 import { authOptions } from '@/lib/auth'
 
 const createCommentSchema = z.object({
-  content: z.string().min(1, 'Comment cannot be empty').max(1000, 'Comment too long'),
+  content: z.string().max(1000, 'Comment too long').default(''),
   parentId: z.string().optional(),
   imageUrl: z.string().url().optional().nullable(), // Legacy support
   fileUrl: z.string().url().optional().nullable(),
   fileName: z.string().max(255).optional().nullable(),
   fileType: z.string().max(100).optional().nullable(),
   fileSize: z.number().int().positive().optional().nullable(),
-})
+}).refine(
+  (data) => data.content.trim().length > 0 || data.fileUrl || data.imageUrl,
+  { message: 'Comment must have text or an attachment' }
+)
 
 export async function GET(
   req: NextRequest,

@@ -1132,7 +1132,7 @@ export default function TaskViewModal({
               </h4>
             </div>
 
-            {/* Add Comment with Mentions and Image Upload */}
+            {/* Add Comment with Mentions and File Attachments */}
             <div className="space-y-3 relative">
               <div className="relative">
                 <Textarea

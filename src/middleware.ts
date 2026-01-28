@@ -84,7 +84,8 @@ export default async function middleware(req: NextRequest) {
     pathname === '/register' ||
     pathname === '/administrator/login' ||
     pathname === '/privacy-policy' ||
-    pathname === '/terms-of-service'
+    pathname === '/terms-of-service' ||
+    pathname.startsWith('/google') // Google Search Console verification
   ) {
     return NextResponse.next()
   }

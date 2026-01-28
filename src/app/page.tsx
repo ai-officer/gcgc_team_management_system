@@ -200,6 +200,14 @@ export default async function HomePage() {
             <Building2 className="w-8 h-8 text-blue-400" />
             <span className="ml-2 text-xl font-bold">GCGC Team Management</span>
           </div>
+          <div className="flex items-center justify-center gap-6 mb-4">
+            <Link href="/privacy-policy" className="text-gray-400 hover:text-white transition-colors">
+              Privacy Policy
+            </Link>
+            <Link href="/terms-of-service" className="text-gray-400 hover:text-white transition-colors">
+              Terms of Service
+            </Link>
+          </div>
           <p className="text-gray-400">
             © 2024 GCGC Team Management System. All rights reserved.
           </p>

@@ -38,7 +38,7 @@ model User {
   sectorHeadInitials String?
   shortName          String?
   team               String?
-  username           String?            @unique
+  username           String             @unique
   accounts           Account[]
   activities         Activity[]
   comments           Comment[]

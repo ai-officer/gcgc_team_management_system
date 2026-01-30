@@ -346,6 +346,10 @@ export function RegistrationForm() {
     setSuccess('')
 
     try {
+      if (!formData.username || formData.username.length < 3) {
+        throw new Error("Username must be at least 3 characters")
+      }
+
       if (formData.password !== confirmPassword) {
         throw new Error("Passwords don't match")
       }
@@ -482,13 +486,14 @@ export function RegistrationForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="username">Username</Label>
+            <Label htmlFor="username">Username <span className="text-destructive">*</span></Label>
             <Input
               id="username"
               type="text"
               value={formData.username}
               onChange={(e) => handleInputChange('username', e.target.value)}
-              placeholder="Enter username (optional)"
+              placeholder="Enter username"
+              required
             />
           </div>
 

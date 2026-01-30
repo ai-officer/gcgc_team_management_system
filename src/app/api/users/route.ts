@@ -38,7 +38,7 @@ const createUserSchema = z.object({
   firstName: z.string().optional(),
   lastName: z.string().optional(),
   middleName: z.string().optional(),
-  username: z.string().optional(),
+  username: z.string().min(3, 'Username must be at least 3 characters'),
   contactNumber: z.string().optional(),
   positionTitle: z.string().optional(),
   shortName: z.string().optional(),

@@ -1302,12 +1302,13 @@ export default function TeamOverviewPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="username">Username</Label>
+                      <Label htmlFor="username">Username <span className="text-destructive">*</span></Label>
                       <Input
                         id="username"
                         value={newUserData.username}
                         onChange={(e) => setNewUserData(prev => ({ ...prev, username: e.target.value }))}
-                        placeholder="Enter username (optional)"
+                        placeholder="Enter username"
+                        required
                       />
                     </div>
                   </div>

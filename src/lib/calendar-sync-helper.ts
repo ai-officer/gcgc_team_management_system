@@ -2,9 +2,10 @@ import { prisma } from '@/lib/prisma'
 import { googleCalendarService } from '@/lib/google-calendar'
 
 /**
- * Automatically sync a task to Google Calendar if sync is enabled
+ * Automatically sync a task to Google Calendar for a specific user if sync is enabled
+ * Uses UserTaskCalendarSync table to track per-user calendar events
  */
-export async function autoSyncTask(taskId: string, userId: string) {
+async function syncTaskForUser(taskId: string, userId: string) {
   try {
     // Check if user has Google Calendar sync enabled
     const syncSettings = await prisma.calendarSyncSettings.findUnique({
@@ -75,28 +76,32 @@ export async function autoSyncTask(taskId: string, userId: string) {
       return // Task not found
     }
 
+    // Check if this user already has a calendar event for this task
+    const existingSync = await prisma.userTaskCalendarSync.findUnique({
+      where: {
+        userId_taskId: {
+          userId,
+          taskId
+        }
+      }
+    })
+
     // Only sync if task has a due date
     if (!task.dueDate) {
-      // If task previously had a Google Calendar event but no longer has due date, delete it
-      if (task.googleCalendarEventId) {
+      // If user previously had a calendar event but task no longer has due date, delete it
+      if (existingSync) {
         try {
-          const calendarId = syncSettings.googleCalendarId || 'primary'
           await googleCalendarService.deleteEvent(
             userId,
-            task.googleCalendarEventId,
-            calendarId
+            existingSync.googleCalendarEventId,
+            existingSync.googleCalendarId
           )
-          
-          await prisma.task.update({
-            where: { id: taskId },
-            data: {
-              googleCalendarId: null,
-              googleCalendarEventId: null,
-              syncedAt: null
-            }
+
+          await prisma.userTaskCalendarSync.delete({
+            where: { id: existingSync.id }
           })
         } catch (error) {
-          console.error('Error deleting Google Calendar event for task:', error)
+          console.error(`Error deleting calendar event for user ${userId}:`, error)
         }
       }
       return
@@ -113,25 +118,28 @@ export async function autoSyncTask(taskId: string, userId: string) {
           data: { googleCalendarId: calendarId }
         })
       } catch (error) {
-        console.error('Error enforcing TMS_CALENDAR in autoSyncTask:', error)
+        console.error('Error enforcing TMS_CALENDAR in syncTaskForUser:', error)
         return // Skip sync if TMS_CALENDAR cannot be found/created
       }
     }
 
     const googleEvent = googleCalendarService.convertTMSTaskToGoogle(task)
 
-    if (task.googleCalendarEventId) {
+    if (existingSync) {
       // Update existing Google Calendar event
       await googleCalendarService.updateEvent(
         userId,
-        task.googleCalendarEventId,
+        existingSync.googleCalendarEventId,
         googleEvent,
         calendarId
       )
 
-      await prisma.task.update({
-        where: { id: taskId },
-        data: { syncedAt: new Date() }
+      await prisma.userTaskCalendarSync.update({
+        where: { id: existingSync.id },
+        data: {
+          syncedAt: new Date(),
+          googleCalendarId: calendarId
+        }
       })
     } else {
       // Create new Google Calendar event
@@ -141,70 +149,125 @@ export async function autoSyncTask(taskId: string, userId: string) {
         calendarId
       )
 
-      await prisma.task.update({
-        where: { id: taskId },
+      await prisma.userTaskCalendarSync.create({
         data: {
+          userId,
+          taskId,
           googleCalendarId: calendarId,
           googleCalendarEventId: createdEvent.id!,
-          syncedAt: new Date()
         }
       })
     }
+
+    console.log(`Task ${taskId} synced to calendar for user ${userId}`)
   } catch (error) {
-    console.error('Error auto-syncing task to Google Calendar:', error)
+    console.error(`Error syncing task ${taskId} for user ${userId}:`, error)
     // Don't throw - we don't want to break task creation/update if sync fails
   }
 }
 
 /**
- * Delete a task from Google Calendar
+ * Automatically sync a task to Google Calendar for all involved users
+ * This includes: creator, assignee, team members, and collaborators
  */
-export async function deleteSyncedTask(taskId: string, userId: string) {
+export async function autoSyncTask(taskId: string, triggerUserId: string) {
+  try {
+    // First, sync for the user who triggered the action (creator/updater)
+    await syncTaskForUser(taskId, triggerUserId)
+
+    // Get all users involved in this task
+    const task = await prisma.task.findUnique({
+      where: { id: taskId },
+      select: {
+        creatorId: true,
+        assigneeId: true,
+        teamMembers: {
+          select: { userId: true }
+        },
+        collaborators: {
+          select: { userId: true }
+        }
+      }
+    })
+
+    if (!task) {
+      return
+    }
+
+    // Collect all unique user IDs involved in the task
+    const involvedUserIds = new Set<string>()
+
+    if (task.creatorId) involvedUserIds.add(task.creatorId)
+    if (task.assigneeId) involvedUserIds.add(task.assigneeId)
+    task.teamMembers.forEach(tm => involvedUserIds.add(tm.userId))
+    task.collaborators.forEach(c => involvedUserIds.add(c.userId))
+
+    // Remove the trigger user (already synced above)
+    involvedUserIds.delete(triggerUserId)
+
+    // Sync for each other involved user (in parallel for speed)
+    const syncPromises = Array.from(involvedUserIds).map(userId =>
+      syncTaskForUser(taskId, userId).catch(error => {
+        console.error(`Error syncing task ${taskId} for user ${userId}:`, error)
+      })
+    )
+
+    await Promise.all(syncPromises)
+
+    console.log(`Task ${taskId} synced to calendars for ${involvedUserIds.size + 1} users`)
+  } catch (error) {
+    console.error('Error in autoSyncTask:', error)
+    // Don't throw - we don't want to break task creation/update if sync fails
+  }
+}
+
+/**
+ * Delete a task from Google Calendar for all users who have it synced
+ */
+export async function deleteSyncedTask(taskId: string, _userId: string) {
   try {
     const task = await prisma.task.findUnique({
       where: { id: taskId },
       select: {
-        googleCalendarEventId: true,
-        googleCalendarId: true,
         title: true
       }
     })
 
-    if (!task?.googleCalendarEventId) {
-      console.log(`Task ${taskId} has no Google Calendar event to delete`)
-      return // No synced event to delete
-    }
-
-    const syncSettings = await prisma.calendarSyncSettings.findUnique({
-      where: { userId }
+    // Find all users who have this task synced to their calendar
+    const userSyncs = await prisma.userTaskCalendarSync.findMany({
+      where: { taskId }
     })
 
-    if (!syncSettings?.isEnabled) {
-      console.log(`Sync not enabled for user ${userId}, skipping calendar deletion`)
-      return // Sync not enabled
+    if (userSyncs.length === 0) {
+      console.log(`Task ${taskId} has no synced calendar events to delete`)
+      return
     }
 
-    // Use the calendar ID stored with the task, or find TMS_CALENDAR
-    let calendarId = task.googleCalendarId || syncSettings.googleCalendarId
-    if (!calendarId || calendarId === 'primary') {
+    console.log(`Deleting task "${task?.title}" from ${userSyncs.length} user calendars`)
+
+    // Delete from each user's calendar in parallel
+    const deletePromises = userSyncs.map(async (sync) => {
       try {
-        calendarId = await googleCalendarService.findOrCreateTMSCalendar(userId)
-        console.log(`Found/created TMS_CALENDAR for deletion: ${calendarId}`)
+        await googleCalendarService.deleteEvent(
+          sync.userId,
+          sync.googleCalendarEventId,
+          sync.googleCalendarId
+        )
+
+        // Remove the sync record
+        await prisma.userTaskCalendarSync.delete({
+          where: { id: sync.id }
+        })
+
+        console.log(`Deleted calendar event for user ${sync.userId}`)
       } catch (error) {
-        console.error('Error finding TMS_CALENDAR for delete:', error)
-        return // Skip if TMS_CALENDAR cannot be found
+        console.error(`Error deleting calendar event for user ${sync.userId}:`, error)
       }
-    }
+    })
 
-    console.log(`Deleting task "${task.title}" from Google Calendar (Event ID: ${task.googleCalendarEventId}, Calendar ID: ${calendarId})`)
+    await Promise.all(deletePromises)
 
-    await googleCalendarService.deleteEvent(
-      userId,
-      task.googleCalendarEventId,
-      calendarId
-    )
-
-    console.log(`Successfully deleted task "${task.title}" from Google Calendar`)
+    console.log(`Successfully deleted task "${task?.title}" from all user calendars`)
   } catch (error) {
     console.error('Error deleting synced task from Google Calendar:', error)
     // Don't throw - we don't want to break task deletion if sync delete fails

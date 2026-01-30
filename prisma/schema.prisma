@@ -427,6 +427,20 @@ model CalendarSyncSettings {
   @@map("calendar_sync_settings")
 }
 
+// Tracks per-user calendar events for tasks (allows multiple users to have the same task in their calendars)
+model UserTaskCalendarSync {
+  id                    String   @id @default(cuid())
+  userId                String
+  taskId                String
+  googleCalendarId      String
+  googleCalendarEventId String
+  syncedAt              DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@unique([userId, taskId])
+  @@map("user_task_calendar_syncs")
+}
+
 enum UserRole {
   ADMIN
   LEADER

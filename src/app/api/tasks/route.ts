@@ -82,12 +82,10 @@ export async function GET(req: NextRequest) {
     let where: any = {}
 
     // Handle subtask filtering
+    // Note: We handle this differently for non-admins below to include assigned subtasks
     if (parentId) {
       // Get subtasks of a specific parent
       where.parentId = parentId
-    } else if (includeSubtasks !== 'true') {
-      // By default, only show top-level tasks (exclude subtasks)
-      where.parentId = null
     }
 
     // Admin can see all tasks, others see tasks they're involved in
@@ -105,38 +103,64 @@ export async function GET(req: NextRequest) {
       // 4. Team member or collaborator
       const teamIds = userTeams.map(tm => tm.teamId)
       
+      // For non-admins, show:
+      // 1. Top-level tasks they're involved in (parentId = null)
+      // 2. Subtasks directly assigned to them (even if parentId is set)
       where.OR = [
-        // Team tasks where user is a team member (only if user has teams)
-        ...(teamIds.length > 0 ? [{
-          teamId: {
-            in: teamIds
-          }
-        }] : []),
-        // Tasks assigned to the user
+        // Subtasks assigned directly to the user (always show these)
         {
-          assigneeId: session.user.id
+          AND: [
+            { assigneeId: session.user.id },
+            { parentId: { not: null } }
+          ]
         },
-        // Tasks created by the user
+        // Top-level tasks where user is involved
         {
-          creatorId: session.user.id
-        },
-        // Tasks where user is a team member (for TEAM type tasks)
-        {
-          teamMembers: {
-            some: {
-              userId: session.user.id
+          AND: [
+            // Only top-level tasks (unless includeSubtasks is true)
+            ...(includeSubtasks !== 'true' ? [{ parentId: null }] : []),
+            {
+              OR: [
+                // Team tasks where user is a team member (only if user has teams)
+                ...(teamIds.length > 0 ? [{
+                  teamId: {
+                    in: teamIds
+                  }
+                }] : []),
+                // Tasks assigned to the user
+                {
+                  assigneeId: session.user.id
+                },
+                // Tasks created by the user
+                {
+                  creatorId: session.user.id
+                },
+                // Tasks where user is a team member (for TEAM type tasks)
+                {
+                  teamMembers: {
+                    some: {
+                      userId: session.user.id
+                    }
+                  }
+                },
+                // Tasks where user is a collaborator (for COLLABORATION type tasks)
+                {
+                  collaborators: {
+                    some: {
+                      userId: session.user.id
+                    }
+                  }
+                }
+              ]
             }
-          }
-        },
-        // Tasks where user is a collaborator (for COLLABORATION type tasks)
-        {
-          collaborators: {
-            some: {
-              userId: session.user.id
-            }
-          }
+          ]
         }
       ]
+    } else {
+      // For admins: by default only show top-level tasks unless includeSubtasks is true
+      if (includeSubtasks !== 'true' && !parentId) {
+        where.parentId = null
+      }
     }
 
     // Apply filters

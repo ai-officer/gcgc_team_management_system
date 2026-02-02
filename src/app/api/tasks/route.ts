@@ -20,6 +20,8 @@ const createTaskSchema = z.object({
   teamMemberIds: z.array(z.string()).default([]),
   collaboratorIds: z.array(z.string()).default([]),
   assignedById: z.string().optional(),
+  // Subtask support
+  parentId: z.string().optional(),
   // New Google Calendar-compatible fields
   location: z.string().optional(),
   meetingLink: z.string().url().optional().or(z.literal('')),
@@ -37,6 +39,8 @@ const querySchema = z.object({
   search: z.string().optional(),
   userId: z.string().optional(), // Filter by user involved in task
   excludeCreator: z.string().optional(), // Exclude tasks created by this user
+  parentId: z.string().optional(), // Filter subtasks by parent task
+  includeSubtasks: z.string().optional(), // Include subtasks in results (default: false)
 })
 
 export async function GET(req: NextRequest) {
@@ -65,7 +69,9 @@ export async function GET(req: NextRequest) {
       teamId,
       search,
       userId,
-      excludeCreator
+      excludeCreator,
+      parentId,
+      includeSubtasks
     } = querySchema.parse(Object.fromEntries(searchParams))
 
     const pageNum = parseInt(page)
@@ -74,6 +80,15 @@ export async function GET(req: NextRequest) {
 
     // Build where clause based on user role
     let where: any = {}
+
+    // Handle subtask filtering
+    if (parentId) {
+      // Get subtasks of a specific parent
+      where.parentId = parentId
+    } else if (includeSubtasks !== 'true') {
+      // By default, only show top-level tasks (exclude subtasks)
+      where.parentId = null
+    }
 
     // Admin can see all tasks, others see tasks they're involved in
     if (session.user.role !== 'ADMIN') {
@@ -314,7 +329,18 @@ export async function GET(req: NextRequest) {
             }
           },
           _count: {
-            select: { comments: true }
+            select: { comments: true, subtasks: true }
+          },
+          subtasks: {
+            select: {
+              id: true,
+              title: true,
+              status: true,
+              priority: true,
+              progressPercentage: true,
+              dueDate: true,
+            },
+            orderBy: { createdAt: 'asc' }
           }
         },
         orderBy: { createdAt: 'desc' },
@@ -372,6 +398,7 @@ export async function POST(req: NextRequest) {
       teamMemberIds,
       collaboratorIds,
       assignedById,
+      parentId,
       // New Google Calendar fields
       location,
       meetingLink,
@@ -403,6 +430,17 @@ export async function POST(req: NextRequest) {
 
     // Create task with transaction for related data
     const task = await prisma.$transaction(async (tx) => {
+      // Verify parent task exists if parentId provided
+      if (parentId) {
+        const parentTask = await tx.task.findUnique({
+          where: { id: parentId },
+          select: { id: true, creatorId: true }
+        })
+        if (!parentTask) {
+          throw new Error('Parent task not found')
+        }
+      }
+
       // Create the task
       const newTask = await tx.task.create({
         data: {
@@ -418,6 +456,7 @@ export async function POST(req: NextRequest) {
           creatorId: session.user.id,
           teamId: null, // No longer using teams
           assignedById: assignedById || session.user.id,
+          parentId: parentId || null, // Subtask support
           // New Google Calendar fields
           location: location || null,
           meetingLink: meetingLink || null,

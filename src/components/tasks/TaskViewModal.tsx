@@ -25,7 +25,8 @@ import { format, formatDistanceToNow } from 'date-fns'
 import {
   User, Users, Handshake, Clock, MessageSquare, Send, Edit,
   Heart, ThumbsUp, Smile, Reply, Image, Paperclip, MoreHorizontal,
-  AtSign, Trash2, Pencil, X, Check, FileText, Download, File
+  AtSign, Trash2, Pencil, X, Check, FileText, Download, File,
+  Plus, ListTodo, ChevronRight, CheckCircle2, Circle, AlertCircle
 } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { Progress } from '@/components/ui/progress'
@@ -83,6 +84,29 @@ interface Task {
       image?: string
     }
   }>
+  // Subtask support
+  parentId?: string
+  parent?: {
+    id: string
+    title: string
+  }
+  subtasks?: Array<{
+    id: string
+    title: string
+    status: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'
+    priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+    progressPercentage: number
+    dueDate?: string
+    assignee?: {
+      id: string
+      name: string
+      email: string
+      image?: string
+    }
+  }>
+  _count?: {
+    subtasks: number
+  }
   createdAt: string
   updatedAt: string
 }
@@ -123,6 +147,7 @@ interface TaskViewModalProps {
   onOpenChange: (open: boolean) => void
   task: Task | null
   onEdit?: (task: Task) => void
+  onTaskUpdate?: () => void
 }
 
 const REACTION_EMOJIS = ['👍', '❤️', '😄', '😮', '😢', '😡']
@@ -162,11 +187,12 @@ const getEffectiveFileUrl = (comment: Comment): string | undefined => {
   return comment.fileUrl || comment.imageUrl
 }
 
-export default function TaskViewModal({ 
-  open, 
-  onOpenChange, 
+export default function TaskViewModal({
+  open,
+  onOpenChange,
   task,
-  onEdit 
+  onEdit,
+  onTaskUpdate
 }: TaskViewModalProps) {
   const { data: session } = useSession()
   const { toast } = useToast()
@@ -201,6 +227,12 @@ export default function TaskViewModal({
   } | null>(null)
   const [savingEdit, setSavingEdit] = useState(false)
   const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null)
+
+  // Subtask state
+  const [showAddSubtask, setShowAddSubtask] = useState(false)
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState('')
+  const [addingSubtask, setAddingSubtask] = useState(false)
+  const [localSubtasks, setLocalSubtasks] = useState<Task['subtasks']>([])
 
   // Load comments when task changes
   const fetchComments = async () => {
@@ -245,8 +277,66 @@ export default function TaskViewModal({
       setPendingFile(null)
       setEditingCommentId(null)
       setEditCommentFile(null)
+      // Reset subtask state
+      setShowAddSubtask(false)
+      setNewSubtaskTitle('')
+      setLocalSubtasks(task.subtasks || [])
     }
   }, [open, task])
+
+  // Handle adding a subtask
+  const handleAddSubtask = async () => {
+    if (!newSubtaskTitle.trim() || !task?.id) return
+
+    try {
+      setAddingSubtask(true)
+      const response = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: newSubtaskTitle.trim(),
+          parentId: task.id,
+          priority: task.priority, // Inherit parent priority
+          taskType: 'INDIVIDUAL',
+          assigneeId: session?.user?.id,
+        })
+      })
+
+      if (response.ok) {
+        const newTask = await response.json()
+        // Add to local subtasks
+        setLocalSubtasks(prev => [...(prev || []), {
+          id: newTask.id,
+          title: newTask.title,
+          status: newTask.status,
+          priority: newTask.priority,
+          progressPercentage: newTask.progressPercentage,
+          dueDate: newTask.dueDate,
+          assignee: newTask.assignee,
+        }])
+        setNewSubtaskTitle('')
+        setShowAddSubtask(false)
+        toast({
+          title: "Subtask created",
+          description: "Your subtask has been added successfully.",
+        })
+        // Notify parent to refresh
+        onTaskUpdate?.()
+      } else {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to create subtask')
+      }
+    } catch (error) {
+      console.error('Error creating subtask:', error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to create subtask. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setAddingSubtask(false)
+    }
+  }
 
   // Handle mentions in comment text
   const handleCommentChange = async (text: string) => {
@@ -1123,6 +1213,181 @@ export default function TaskViewModal({
               )}
             </div>
           </div>
+
+          {/* Subtasks Section - Only show for non-subtask tasks */}
+          {!task.parentId && (
+            <div className="border-t pt-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium text-gray-900 flex items-center gap-2">
+                  <ListTodo className="h-4 w-4" />
+                  Subtasks ({localSubtasks?.length || 0})
+                </h4>
+                {isTaskCreator && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowAddSubtask(true)}
+                    className="h-7"
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Add Subtask
+                  </Button>
+                )}
+              </div>
+
+              {/* Add Subtask Form */}
+              {showAddSubtask && (
+                <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                  <Input
+                    placeholder="Enter subtask title..."
+                    value={newSubtaskTitle}
+                    onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault()
+                        handleAddSubtask()
+                      }
+                      if (e.key === 'Escape') {
+                        setShowAddSubtask(false)
+                        setNewSubtaskTitle('')
+                      }
+                    }}
+                    className="flex-1"
+                    autoFocus
+                  />
+                  <Button
+                    size="sm"
+                    onClick={handleAddSubtask}
+                    disabled={!newSubtaskTitle.trim() || addingSubtask}
+                  >
+                    {addingSubtask ? (
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white" />
+                    ) : (
+                      <Check className="h-4 w-4" />
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setShowAddSubtask(false)
+                      setNewSubtaskTitle('')
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+
+              {/* Subtasks List */}
+              {localSubtasks && localSubtasks.length > 0 ? (
+                <div className="space-y-2">
+                  {localSubtasks.map((subtask) => {
+                    const getSubtaskStatusIcon = () => {
+                      switch (subtask.status) {
+                        case 'COMPLETED':
+                          return <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        case 'IN_PROGRESS':
+                        case 'IN_REVIEW':
+                          return <AlertCircle className="h-4 w-4 text-blue-500" />
+                        default:
+                          return <Circle className="h-4 w-4 text-gray-400" />
+                      }
+                    }
+
+                    return (
+                      <div
+                        key={subtask.id}
+                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                      >
+                        {getSubtaskStatusIcon()}
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-medium truncate ${
+                            subtask.status === 'COMPLETED' ? 'text-gray-500 line-through' : 'text-gray-900'
+                          }`}>
+                            {subtask.title}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge
+                              variant="outline"
+                              className={`text-xs ${
+                                subtask.priority === 'URGENT' ? 'text-red-600 border-red-200' :
+                                subtask.priority === 'HIGH' ? 'text-orange-600 border-orange-200' :
+                                subtask.priority === 'MEDIUM' ? 'text-yellow-600 border-yellow-200' :
+                                'text-green-600 border-green-200'
+                              }`}
+                            >
+                              {subtask.priority}
+                            </Badge>
+                            {subtask.dueDate && (
+                              <span className="text-xs text-gray-500">
+                                Due {format(new Date(subtask.dueDate), 'MMM dd')}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {subtask.assignee && (
+                          <UserAvatar
+                            userId={subtask.assignee.id}
+                            image={subtask.assignee.image}
+                            name={subtask.assignee.name}
+                            email={subtask.assignee.email}
+                            className="h-6 w-6"
+                            fallbackClassName="text-xs"
+                          />
+                        )}
+                        <ChevronRight className="h-4 w-4 text-gray-400" />
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                !showAddSubtask && (
+                  <div className="text-center py-6 text-gray-500">
+                    <ListTodo className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No subtasks yet</p>
+                    {isTaskCreator && (
+                      <Button
+                        variant="link"
+                        size="sm"
+                        onClick={() => setShowAddSubtask(true)}
+                        className="mt-1"
+                      >
+                        Add a subtask
+                      </Button>
+                    )}
+                  </div>
+                )
+              )}
+
+              {/* Subtask Progress */}
+              {localSubtasks && localSubtasks.length > 0 && (
+                <div className="pt-2">
+                  <div className="flex items-center justify-between text-sm mb-1">
+                    <span className="text-gray-600">Subtask Progress</span>
+                    <span className="font-medium">
+                      {localSubtasks.filter(s => s.status === 'COMPLETED').length} / {localSubtasks.length} completed
+                    </span>
+                  </div>
+                  <Progress
+                    value={(localSubtasks.filter(s => s.status === 'COMPLETED').length / localSubtasks.length) * 100}
+                    className="h-2"
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Parent Task Link - Show if this is a subtask */}
+          {task.parent && (
+            <div className="border-t pt-4">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <ChevronRight className="h-4 w-4 rotate-180" />
+                <span>Subtask of:</span>
+                <span className="font-medium text-gray-900">{task.parent.title}</span>
+              </div>
+            </div>
+          )}
 
           {/* Enhanced Comments Section */}
           <div className="border-t pt-6 space-y-4">

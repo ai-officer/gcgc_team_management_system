@@ -82,6 +82,20 @@ export async function GET(
             }
           },
           orderBy: { createdAt: 'desc' }
+        },
+        subtasks: {
+          include: {
+            assignee: {
+              select: { id: true, name: true, email: true, image: true }
+            }
+          },
+          orderBy: { createdAt: 'asc' }
+        },
+        parent: {
+          select: { id: true, title: true }
+        },
+        _count: {
+          select: { subtasks: true }
         }
       }
     })

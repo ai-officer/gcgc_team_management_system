@@ -159,7 +159,11 @@ model Task {
   allDay                Boolean            @default(false) // All-day task flag
   recurrence            String?            // Recurrence rule (RRULE format)
   reminders             Json?              // Notification reminders in JSON format
+  // Subtask support
+  parentId              String?            // Parent task ID for subtasks
   // Relations
+  parent                Task?              @relation("TaskSubtasks", fields: [parentId], references: [id], onDelete: Cascade)
+  subtasks              Task[]             @relation("TaskSubtasks")
   comments              Comment[]
   events                Event[]
   collaborators         TaskCollaborator[]

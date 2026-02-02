@@ -18,6 +18,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { UserAvatar } from '@/components/shared/UserAvatar'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
@@ -231,8 +238,11 @@ export default function TaskViewModal({
   // Subtask state
   const [showAddSubtask, setShowAddSubtask] = useState(false)
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('')
+  const [newSubtaskAssigneeId, setNewSubtaskAssigneeId] = useState<string>('')
   const [addingSubtask, setAddingSubtask] = useState(false)
   const [localSubtasks, setLocalSubtasks] = useState<Task['subtasks']>([])
+  const [availableUsers, setAvailableUsers] = useState<Array<{id: string, name: string, email: string, image?: string}>>([])
+  const [loadingUsers, setLoadingUsers] = useState(false)
 
   // Load comments when task changes
   const fetchComments = async () => {
@@ -268,9 +278,26 @@ export default function TaskViewModal({
     return []
   }
 
+  // Fetch available users for subtask assignment
+  const fetchAvailableUsers = async () => {
+    try {
+      setLoadingUsers(true)
+      const response = await fetch('/api/users?limit=100&isActive=true')
+      if (response.ok) {
+        const data = await response.json()
+        setAvailableUsers(data.users || [])
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error)
+    } finally {
+      setLoadingUsers(false)
+    }
+  }
+
   useEffect(() => {
     if (open && task) {
       fetchComments()
+      fetchAvailableUsers()
       setNewComment('')
       setReplyingTo(null)
       setReplyText('')
@@ -280,6 +307,7 @@ export default function TaskViewModal({
       // Reset subtask state
       setShowAddSubtask(false)
       setNewSubtaskTitle('')
+      setNewSubtaskAssigneeId('')
       setLocalSubtasks(task.subtasks || [])
     }
   }, [open, task])
@@ -298,7 +326,7 @@ export default function TaskViewModal({
           parentId: task.id,
           priority: task.priority, // Inherit parent priority
           taskType: 'INDIVIDUAL',
-          assigneeId: session?.user?.id,
+          assigneeId: newSubtaskAssigneeId || session?.user?.id, // Use selected assignee or default to current user
         })
       })
 
@@ -315,6 +343,7 @@ export default function TaskViewModal({
           assignee: newTask.assignee,
         }])
         setNewSubtaskTitle('')
+        setNewSubtaskAssigneeId('')
         setShowAddSubtask(false)
         toast({
           title: "Subtask created",
@@ -717,6 +746,12 @@ export default function TaskViewModal({
   }
 
   const isTaskCreator = task?.creator?.id === session?.user?.id
+  const isTaskAssignee = task?.assignee?.id === session?.user?.id
+  const isTaskTeamMember = task?.teamMembers?.some(tm => tm.user.id === session?.user?.id)
+  const isTaskCollaborator = task?.collaborators?.some(c => c.user.id === session?.user?.id)
+
+  // Users who can add subtasks: creator, assignee, team members, collaborators
+  const canAddSubtasks = isTaskCreator || isTaskAssignee || isTaskTeamMember || isTaskCollaborator
 
   const renderComment = (comment: Comment, isReply = false) => {
     const isAuthor = comment.author.id === session?.user?.id
@@ -1222,7 +1257,7 @@ export default function TaskViewModal({
                   <ListTodo className="h-4 w-4" />
                   Subtasks ({localSubtasks?.length || 0})
                 </h4>
-                {isTaskCreator && (
+                {canAddSubtasks && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -1237,45 +1272,77 @@ export default function TaskViewModal({
 
               {/* Add Subtask Form */}
               {showAddSubtask && (
-                <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
-                  <Input
-                    placeholder="Enter subtask title..."
-                    value={newSubtaskTitle}
-                    onChange={(e) => setNewSubtaskTitle(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault()
-                        handleAddSubtask()
-                      }
-                      if (e.key === 'Escape') {
+                <div className="p-3 bg-gray-50 rounded-lg space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      placeholder="Enter subtask title..."
+                      value={newSubtaskTitle}
+                      onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault()
+                          handleAddSubtask()
+                        }
+                        if (e.key === 'Escape') {
+                          setShowAddSubtask(false)
+                          setNewSubtaskTitle('')
+                          setNewSubtaskAssigneeId('')
+                        }
+                      }}
+                      className="flex-1"
+                      autoFocus
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <Select
+                        value={newSubtaskAssigneeId}
+                        onValueChange={setNewSubtaskAssigneeId}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Assign to..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={session?.user?.id || ''}>
+                            <div className="flex items-center gap-2">
+                              <span>Myself</span>
+                            </div>
+                          </SelectItem>
+                          {availableUsers
+                            .filter(u => u.id !== session?.user?.id)
+                            .map((user) => (
+                              <SelectItem key={user.id} value={user.id}>
+                                <div className="flex items-center gap-2">
+                                  <span>{user.name || user.email}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={handleAddSubtask}
+                      disabled={!newSubtaskTitle.trim() || addingSubtask}
+                    >
+                      {addingSubtask ? (
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white" />
+                      ) : (
+                        <Check className="h-4 w-4" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
                         setShowAddSubtask(false)
                         setNewSubtaskTitle('')
-                      }
-                    }}
-                    className="flex-1"
-                    autoFocus
-                  />
-                  <Button
-                    size="sm"
-                    onClick={handleAddSubtask}
-                    disabled={!newSubtaskTitle.trim() || addingSubtask}
-                  >
-                    {addingSubtask ? (
-                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white" />
-                    ) : (
-                      <Check className="h-4 w-4" />
-                    )}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setShowAddSubtask(false)
-                      setNewSubtaskTitle('')
-                    }}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                        setNewSubtaskAssigneeId('')
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               )}
 
@@ -1346,7 +1413,7 @@ export default function TaskViewModal({
                   <div className="text-center py-6 text-gray-500">
                     <ListTodo className="h-8 w-8 mx-auto mb-2 opacity-50" />
                     <p className="text-sm">No subtasks yet</p>
-                    {isTaskCreator && (
+                    {canAddSubtasks && (
                       <Button
                         variant="link"
                         size="sm"

@@ -40,11 +40,25 @@ interface SectorHead {
   label: string
 }
 
+// Field error type
+interface FieldErrors {
+  firstName?: string
+  lastName?: string
+  email?: string
+  username?: string
+  password?: string
+  confirmPassword?: string
+  division?: string
+  jobLevel?: string
+}
+
 export function RegistrationForm() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
+  const [touched, setTouched] = useState<Record<string, boolean>>({})
   const [leaders, setLeaders] = useState<Leader[]>([])
   const [sectionHeads, setSectionHeads] = useState<SectionHead[]>([])
   const [sectorHeads, setSectorHeads] = useState<SectorHead[]>([])
@@ -176,6 +190,95 @@ export function RegistrationForm() {
       ...prev,
       [field]: value
     }))
+    // Clear field error when user starts typing
+    if (fieldErrors[field as keyof FieldErrors]) {
+      setFieldErrors(prev => ({ ...prev, [field]: undefined }))
+    }
+  }
+
+  // Validate a single field
+  const validateField = (field: string, value: string): string | undefined => {
+    switch (field) {
+      case 'firstName':
+        if (!value.trim()) return 'First name is required'
+        if (value.trim().length < 2) return 'First name must be at least 2 characters'
+        return undefined
+      case 'lastName':
+        if (!value.trim()) return 'Last name is required'
+        if (value.trim().length < 2) return 'Last name must be at least 2 characters'
+        return undefined
+      case 'email':
+        if (!value.trim()) return 'Email is required'
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        if (!emailRegex.test(value)) return 'Please enter a valid email address'
+        return undefined
+      case 'username':
+        if (!value.trim()) return 'Username is required'
+        if (value.trim().length < 3) return 'Username must be at least 3 characters'
+        if (!/^[a-zA-Z0-9_]+$/.test(value)) return 'Username can only contain letters, numbers, and underscores'
+        return undefined
+      case 'password':
+        if (!value) return 'Password is required'
+        if (value.length < 6) return 'Password must be at least 6 characters'
+        if (!/[A-Z]/.test(value)) return 'Password must contain at least one uppercase letter'
+        if (!/[a-z]/.test(value)) return 'Password must contain at least one lowercase letter'
+        if (!/[0-9]/.test(value)) return 'Password must contain at least one number'
+        return undefined
+      case 'confirmPassword':
+        if (!value) return 'Please confirm your password'
+        if (value !== formData.password) return 'Passwords do not match'
+        return undefined
+      default:
+        return undefined
+    }
+  }
+
+  // Handle field blur (when user leaves a field)
+  const handleBlur = (field: string) => {
+    setTouched(prev => ({ ...prev, [field]: true }))
+    const value = field === 'confirmPassword' ? confirmPassword : (formData[field as keyof UserFormData] as string || '')
+    const error = validateField(field, value)
+    setFieldErrors(prev => ({ ...prev, [field]: error }))
+  }
+
+  // Validate all required fields
+  const validateAllFields = (): boolean => {
+    const errors: FieldErrors = {}
+
+    errors.firstName = validateField('firstName', formData.firstName)
+    errors.lastName = validateField('lastName', formData.lastName)
+    errors.email = validateField('email', formData.email)
+    errors.username = validateField('username', formData.username)
+    errors.password = validateField('password', formData.password)
+    errors.confirmPassword = validateField('confirmPassword', confirmPassword)
+
+    if (!selectedDivision) {
+      errors.division = 'Please select a division'
+    }
+
+    if (!formData.jobLevel) {
+      errors.jobLevel = 'Please select a job level'
+    }
+
+    setFieldErrors(errors)
+    setTouched({
+      firstName: true,
+      lastName: true,
+      email: true,
+      username: true,
+      password: true,
+      confirmPassword: true,
+      division: true,
+      jobLevel: true
+    })
+
+    return !Object.values(errors).some(error => error !== undefined)
+  }
+
+  // Error message component
+  const FieldError = ({ error }: { error?: string }) => {
+    if (!error) return null
+    return <p className="text-sm text-destructive mt-1">{error}</p>
   }
 
   const handleLeaderCheckboxChange = (checked: boolean) => {
@@ -341,19 +444,18 @@ export function RegistrationForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
     setError('')
     setSuccess('')
 
+    // Validate all fields first
+    if (!validateAllFields()) {
+      setError('Please fix the errors below before submitting')
+      return
+    }
+
+    setLoading(true)
+
     try {
-      if (!formData.username || formData.username.length < 3) {
-        throw new Error("Username must be at least 3 characters")
-      }
-
-      if (formData.password !== confirmPassword) {
-        throw new Error("Passwords don't match")
-      }
-
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
@@ -411,27 +513,31 @@ export function RegistrationForm() {
           {/* Personal Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="firstName">First Name *</Label>
+              <Label htmlFor="firstName">First Name <span className="text-destructive">*</span></Label>
               <Input
                 id="firstName"
                 type="text"
-                required
                 value={formData.firstName}
                 onChange={(e) => handleInputChange('firstName', e.target.value)}
+                onBlur={() => handleBlur('firstName')}
                 placeholder="Enter first name"
+                className={touched.firstName && fieldErrors.firstName ? 'border-destructive' : ''}
               />
+              {touched.firstName && <FieldError error={fieldErrors.firstName} />}
             </div>
-            
+
             <div className="space-y-2">
-              <Label htmlFor="lastName">Last Name *</Label>
+              <Label htmlFor="lastName">Last Name <span className="text-destructive">*</span></Label>
               <Input
                 id="lastName"
                 type="text"
-                required
                 value={formData.lastName}
                 onChange={(e) => handleInputChange('lastName', e.target.value)}
+                onBlur={() => handleBlur('lastName')}
                 placeholder="Enter last name"
+                className={touched.lastName && fieldErrors.lastName ? 'border-destructive' : ''}
               />
+              {touched.lastName && <FieldError error={fieldErrors.lastName} />}
             </div>
           </div>
 
@@ -462,17 +568,19 @@ export function RegistrationForm() {
           {/* Contact Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email *</Label>
+              <Label htmlFor="email">Email <span className="text-destructive">*</span></Label>
               <Input
                 id="email"
                 type="email"
-                required
                 value={formData.email}
                 onChange={(e) => handleInputChange('email', e.target.value)}
+                onBlur={() => handleBlur('email')}
                 placeholder="Enter email address"
+                className={touched.email && fieldErrors.email ? 'border-destructive' : ''}
               />
+              {touched.email && <FieldError error={fieldErrors.email} />}
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="contactNumber">Contact Number</Label>
               <Input
@@ -492,9 +600,12 @@ export function RegistrationForm() {
               type="text"
               value={formData.username}
               onChange={(e) => handleInputChange('username', e.target.value)}
+              onBlur={() => handleBlur('username')}
               placeholder="Enter username"
-              required
+              className={touched.username && fieldErrors.username ? 'border-destructive' : ''}
             />
+            {touched.username && <FieldError error={fieldErrors.username} />}
+            <p className="text-xs text-muted-foreground">Only letters, numbers, and underscores allowed</p>
           </div>
 
           {/* Leadership Checkbox */}
@@ -543,15 +654,22 @@ export function RegistrationForm() {
             
             {/* Division Dropdown */}
             <div className="space-y-2">
-              <Label htmlFor="division">Division *</Label>
-              <Select value={selectedDivision?.id || ''} onValueChange={handleDivisionChange}>
-                <SelectTrigger>
+              <Label htmlFor="division">Division <span className="text-destructive">*</span></Label>
+              <Select
+                value={selectedDivision?.id || ''}
+                onValueChange={(value) => {
+                  handleDivisionChange(value)
+                  setFieldErrors(prev => ({ ...prev, division: undefined }))
+                  setTouched(prev => ({ ...prev, division: true }))
+                }}
+              >
+                <SelectTrigger className={touched.division && fieldErrors.division ? 'border-destructive' : ''}>
                   <SelectValue placeholder="Select division" />
                 </SelectTrigger>
                 <SelectContent>
                   {divisions.map((division) => (
-                    <SelectItem 
-                      key={division.id} 
+                    <SelectItem
+                      key={division.id}
                       value={division.id}
                       disabled={division.disabled}
                     >
@@ -560,6 +678,7 @@ export function RegistrationForm() {
                   ))}
                 </SelectContent>
               </Select>
+              {touched.division && <FieldError error={fieldErrors.division} />}
             </div>
 
             {/* Custom Division Input */}
@@ -752,9 +871,16 @@ export function RegistrationForm() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="jobLevel">Job Level *</Label>
-              <Select value={formData.jobLevel} onValueChange={(value) => handleInputChange('jobLevel', value)}>
-                <SelectTrigger>
+              <Label htmlFor="jobLevel">Job Level <span className="text-destructive">*</span></Label>
+              <Select
+                value={formData.jobLevel}
+                onValueChange={(value) => {
+                  handleInputChange('jobLevel', value)
+                  setFieldErrors(prev => ({ ...prev, jobLevel: undefined }))
+                  setTouched(prev => ({ ...prev, jobLevel: true }))
+                }}
+              >
+                <SelectTrigger className={touched.jobLevel && fieldErrors.jobLevel ? 'border-destructive' : ''}>
                   <SelectValue placeholder="Select job level" />
                 </SelectTrigger>
                 <SelectContent>
@@ -765,33 +891,46 @@ export function RegistrationForm() {
                   ))}
                 </SelectContent>
               </Select>
+              {touched.jobLevel && <FieldError error={fieldErrors.jobLevel} />}
             </div>
           </div>
 
           {/* Password */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="password">Password *</Label>
+              <Label htmlFor="password">Password <span className="text-destructive">*</span></Label>
               <Input
                 id="password"
                 type="password"
-                required
                 value={formData.password}
                 onChange={(e) => handleInputChange('password', e.target.value)}
+                onBlur={() => handleBlur('password')}
                 placeholder="Enter password"
+                className={touched.password && fieldErrors.password ? 'border-destructive' : ''}
               />
+              {touched.password && <FieldError error={fieldErrors.password} />}
+              <p className="text-xs text-muted-foreground">
+                Min 6 characters with uppercase, lowercase, and number
+              </p>
             </div>
-            
+
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password *</Label>
+              <Label htmlFor="confirmPassword">Confirm Password <span className="text-destructive">*</span></Label>
               <Input
                 id="confirmPassword"
                 type="password"
-                required
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value)
+                  if (fieldErrors.confirmPassword) {
+                    setFieldErrors(prev => ({ ...prev, confirmPassword: undefined }))
+                  }
+                }}
+                onBlur={() => handleBlur('confirmPassword')}
                 placeholder="Confirm password"
+                className={touched.confirmPassword && fieldErrors.confirmPassword ? 'border-destructive' : ''}
               />
+              {touched.confirmPassword && <FieldError error={fieldErrors.confirmPassword} />}
             </div>
           </div>
 

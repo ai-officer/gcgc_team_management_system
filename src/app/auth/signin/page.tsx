@@ -11,13 +11,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Eye, EyeOff, Mail, Lock, AlertCircle } from 'lucide-react'
 
+// Field error type
+interface FieldErrors {
+  email?: string
+  password?: string
+}
+
 function SignInForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
+  const [touched, setTouched] = useState<Record<string, boolean>>({})
+
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl') || '/admin/dashboard'
@@ -29,10 +37,61 @@ function SignInForm() {
     }
   }, [error_])
 
+  // Validate a single field
+  const validateField = (field: string, value: string): string | undefined => {
+    switch (field) {
+      case 'email':
+        if (!value.trim()) return 'Email is required'
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        if (!emailRegex.test(value)) return 'Please enter a valid email address'
+        const allowedDomains = ['gmail.com', 'globalofficium.com']
+        const emailDomain = value.split('@')[1]?.toLowerCase()
+        if (!allowedDomains.includes(emailDomain)) {
+          return 'Email must be @gmail.com or @globalofficium.com'
+        }
+        return undefined
+      case 'password':
+        if (!value) return 'Password is required'
+        return undefined
+      default:
+        return undefined
+    }
+  }
+
+  // Handle field blur
+  const handleBlur = (field: string, value: string) => {
+    setTouched(prev => ({ ...prev, [field]: true }))
+    const error = validateField(field, value)
+    setFieldErrors(prev => ({ ...prev, [field]: error }))
+  }
+
+  // Validate all fields
+  const validateAllFields = (): boolean => {
+    const errors: FieldErrors = {
+      email: validateField('email', email),
+      password: validateField('password', password)
+    }
+    setFieldErrors(errors)
+    setTouched({ email: true, password: true })
+    return !Object.values(errors).some(error => error !== undefined)
+  }
+
+  // Error message component
+  const FieldError = ({ error }: { error?: string }) => {
+    if (!error) return null
+    return <p className="text-sm text-red-500 mt-1">{error}</p>
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
     setError('')
+
+    // Validate all fields first
+    if (!validateAllFields()) {
+      return
+    }
+
+    setIsLoading(true)
 
     try {
       const result = await signIn('credentials', {
@@ -106,7 +165,7 @@ function SignInForm() {
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                    Email address
+                    Email address <span className="text-red-500">*</span>
                   </Label>
                   <div className="mt-1 relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -117,18 +176,26 @@ function SignInForm() {
                       name="email"
                       type="email"
                       autoComplete="email"
-                      required
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10 bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                      onChange={(e) => {
+                        setEmail(e.target.value)
+                        if (fieldErrors.email) {
+                          setFieldErrors(prev => ({ ...prev, email: undefined }))
+                        }
+                      }}
+                      onBlur={() => handleBlur('email', email)}
+                      className={`pl-10 bg-white text-gray-900 placeholder-gray-500 ${
+                        touched.email && fieldErrors.email ? 'border-red-500' : 'border-gray-300'
+                      }`}
                       placeholder="Enter your email"
                     />
                   </div>
+                  {touched.email && <FieldError error={fieldErrors.email} />}
                 </div>
 
                 <div>
                   <Label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                    Password
+                    Password <span className="text-red-500">*</span>
                   </Label>
                   <div className="mt-1 relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -139,10 +206,17 @@ function SignInForm() {
                       name="password"
                       type={showPassword ? 'text' : 'password'}
                       autoComplete="current-password"
-                      required
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10 pr-10 bg-white border-gray-300 text-gray-900 placeholder-gray-500"
+                      onChange={(e) => {
+                        setPassword(e.target.value)
+                        if (fieldErrors.password) {
+                          setFieldErrors(prev => ({ ...prev, password: undefined }))
+                        }
+                      }}
+                      onBlur={() => handleBlur('password', password)}
+                      className={`pl-10 pr-10 bg-white text-gray-900 placeholder-gray-500 ${
+                        touched.password && fieldErrors.password ? 'border-red-500' : 'border-gray-300'
+                      }`}
                       placeholder="Enter your password"
                     />
                     <button
@@ -157,6 +231,7 @@ function SignInForm() {
                       )}
                     </button>
                   </div>
+                  {touched.password && <FieldError error={fieldErrors.password} />}
                 </div>
               </div>
 

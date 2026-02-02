@@ -23,12 +23,12 @@ const registerSchema = z.object({
   ),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string(),
-  reportsToId: z.string().optional(),
+  reportsToId: z.string().optional(), // Required for non-leaders, validated below
   division: z.string().optional(),
   department: z.string().optional(),
   section: z.string().optional(),
   team: z.string().optional(),
-  positionTitle: z.string().optional(),
+  positionTitle: z.string().min(1, 'Position title is required'),
   shortName: z.string().optional(),
   jobLevel: z.string().optional(),
   isLeader: z.boolean(),
@@ -43,6 +43,15 @@ const registerSchema = z.object({
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
+}).refine((data) => {
+  // Reports To is required for non-leaders
+  if (!data.isLeader && !data.reportsToId) {
+    return false
+  }
+  return true
+}, {
+  message: "Please select who you report to",
+  path: ["reportsToId"],
 })
 
 export async function POST(request: NextRequest) {

@@ -49,6 +49,8 @@ interface FieldErrors {
   password?: string
   confirmPassword?: string
   contactNumber?: string
+  reportsToId?: string
+  positionTitle?: string
   division?: string
   jobLevel?: string
 }
@@ -240,6 +242,9 @@ export function RegistrationForm() {
         if (!value.startsWith('09')) return 'Contact number must start with 09'
         if (value.length !== 11) return 'Contact number must be exactly 11 digits'
         return undefined
+      case 'positionTitle':
+        if (!value.trim()) return 'Position title is required'
+        return undefined
       default:
         return undefined
     }
@@ -262,8 +267,14 @@ export function RegistrationForm() {
     errors.email = validateField('email', formData.email)
     errors.username = validateField('username', formData.username)
     errors.contactNumber = validateField('contactNumber', formData.contactNumber)
+    errors.positionTitle = validateField('positionTitle', formData.positionTitle)
     errors.password = validateField('password', formData.password)
     errors.confirmPassword = validateField('confirmPassword', confirmPassword)
+
+    // Reports To is required only for non-leaders
+    if (!formData.isLeader && !formData.reportsToId) {
+      errors.reportsToId = 'Please select who you report to'
+    }
 
     if (!selectedDivision) {
       errors.division = 'Please select a division'
@@ -280,6 +291,8 @@ export function RegistrationForm() {
       email: true,
       username: true,
       contactNumber: true,
+      reportsToId: true,
+      positionTitle: true,
       password: true,
       confirmPassword: true,
       division: true,
@@ -651,10 +664,17 @@ export function RegistrationForm() {
           {/* Reports To - Only show if not leader */}
           {!formData.isLeader && (
             <div className="space-y-2">
-              <Label htmlFor="reportsTo">Reports To (Leader)</Label>
-              <Select value={formData.reportsToId} onValueChange={(value) => handleInputChange('reportsToId', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select your leader (optional)" />
+              <Label htmlFor="reportsTo">Reports To (Leader) <span className="text-destructive">*</span></Label>
+              <Select
+                value={formData.reportsToId}
+                onValueChange={(value) => {
+                  handleInputChange('reportsToId', value)
+                  setFieldErrors(prev => ({ ...prev, reportsToId: undefined }))
+                  setTouched(prev => ({ ...prev, reportsToId: true }))
+                }}
+              >
+                <SelectTrigger className={touched.reportsToId && fieldErrors.reportsToId ? 'border-destructive' : ''}>
+                  <SelectValue placeholder="Select your leader" />
                 </SelectTrigger>
                 <SelectContent>
                   {leaders.map((leader) => (
@@ -664,6 +684,7 @@ export function RegistrationForm() {
                   ))}
                 </SelectContent>
               </Select>
+              {touched.reportsToId && <FieldError error={fieldErrors.reportsToId} />}
             </div>
           )}
 
@@ -879,14 +900,17 @@ export function RegistrationForm() {
           {/* Position Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="positionTitle">Position Title</Label>
+              <Label htmlFor="positionTitle">Position Title <span className="text-destructive">*</span></Label>
               <Input
                 id="positionTitle"
                 type="text"
                 value={formData.positionTitle}
                 onChange={(e) => handleInputChange('positionTitle', e.target.value)}
+                onBlur={() => handleBlur('positionTitle')}
                 placeholder="Enter position title"
+                className={touched.positionTitle && fieldErrors.positionTitle ? 'border-destructive' : ''}
               />
+              {touched.positionTitle && <FieldError error={fieldErrors.positionTitle} />}
             </div>
             
             <div className="space-y-2">

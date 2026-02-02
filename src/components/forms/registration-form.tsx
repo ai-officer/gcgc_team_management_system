@@ -235,7 +235,7 @@ export function RegistrationForm() {
         if (value !== formData.password) return 'Passwords do not match'
         return undefined
       case 'contactNumber':
-        if (!value.trim()) return undefined // Optional field
+        if (!value.trim()) return 'Contact number is required'
         if (!/^\d+$/.test(value)) return 'Contact number must contain only digits'
         if (!value.startsWith('09')) return 'Contact number must start with 09'
         if (value.length !== 11) return 'Contact number must be exactly 11 digits'
@@ -261,6 +261,7 @@ export function RegistrationForm() {
     errors.lastName = validateField('lastName', formData.lastName)
     errors.email = validateField('email', formData.email)
     errors.username = validateField('username', formData.username)
+    errors.contactNumber = validateField('contactNumber', formData.contactNumber)
     errors.password = validateField('password', formData.password)
     errors.confirmPassword = validateField('confirmPassword', confirmPassword)
 
@@ -278,6 +279,7 @@ export function RegistrationForm() {
       lastName: true,
       email: true,
       username: true,
+      contactNumber: true,
       password: true,
       confirmPassword: true,
       division: true,
@@ -594,7 +596,7 @@ export function RegistrationForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="contactNumber">Contact Number</Label>
+              <Label htmlFor="contactNumber">Contact Number <span className="text-destructive">*</span></Label>
               <Input
                 id="contactNumber"
                 type="tel"

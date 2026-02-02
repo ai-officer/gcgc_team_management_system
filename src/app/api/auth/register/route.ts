@@ -17,11 +17,8 @@ const registerSchema = z.object({
     { message: 'Email must be @gmail.com or @globalofficium.com' }
   ),
   username: z.string().min(3, 'Username must be at least 3 characters'),
-  contactNumber: z.string().optional().refine(
-    (val) => {
-      if (!val || val.trim() === '') return true // Optional field
-      return /^09\d{9}$/.test(val) // Must start with 09 and be 11 digits
-    },
+  contactNumber: z.string().min(1, 'Contact number is required').refine(
+    (val) => /^09\d{9}$/.test(val),
     { message: 'Contact number must start with 09 and be exactly 11 digits' }
   ),
   password: z.string().min(6, 'Password must be at least 6 characters'),

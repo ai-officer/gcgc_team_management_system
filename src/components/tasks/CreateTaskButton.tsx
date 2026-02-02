@@ -26,12 +26,15 @@ export default function CreateTaskButton({
 
   const handleTaskSubmit = async (data: any) => {
     try {
+      // Extract subtasks from data
+      const { subtasks, ...taskData } = data
+
       const response = await fetch('/api/tasks', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(taskData),
       })
 
       const result = await response.json()
@@ -40,9 +43,31 @@ export default function CreateTaskButton({
         throw new Error(result.error || 'Failed to create task')
       }
 
+      // Create subtasks if any
+      if (subtasks && subtasks.length > 0) {
+        const subtaskPromises = subtasks.map((subtask: { title: string; assigneeId: string }) =>
+          fetch('/api/tasks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: subtask.title,
+              parentId: result.id,
+              priority: taskData.priority,
+              taskType: 'INDIVIDUAL',
+              assigneeId: subtask.assigneeId,
+            }),
+          })
+        )
+
+        await Promise.all(subtaskPromises)
+      }
+
+      const subtaskCount = subtasks?.length || 0
       toast({
         title: 'Success',
-        description: 'Task created successfully',
+        description: subtaskCount > 0
+          ? `Task created with ${subtaskCount} subtask${subtaskCount !== 1 ? 's' : ''}`
+          : 'Task created successfully',
       })
 
       setIsTaskFormOpen(false)

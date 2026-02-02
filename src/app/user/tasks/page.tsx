@@ -321,12 +321,14 @@ export default function TasksPage() {
 
   const handleCreateTask = async (taskData: any) => {
     try {
-      console.log('Creating task with data:', taskData)
-      
+      // Extract subtasks from data
+      const { subtasks, ...mainTaskData } = taskData
+      console.log('Creating task with data:', mainTaskData)
+
       const response = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(taskData)
+        body: JSON.stringify(mainTaskData)
       })
 
       if (!response.ok) {
@@ -337,13 +339,34 @@ export default function TasksPage() {
 
       const newTask = await response.json()
       console.log('Task created successfully:', newTask)
-      
+
+      // Create subtasks if any
+      if (subtasks && subtasks.length > 0) {
+        const subtaskPromises = subtasks.map((subtask: { title: string; assigneeId: string }) =>
+          fetch('/api/tasks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: subtask.title,
+              parentId: newTask.id,
+              priority: mainTaskData.priority,
+              taskType: 'INDIVIDUAL',
+              assigneeId: subtask.assigneeId,
+            }),
+          })
+        )
+        await Promise.all(subtaskPromises)
+      }
+
       // Refresh tasks from server to ensure we get the latest data
       await fetchTasks()
-      
+
+      const subtaskCount = subtasks?.length || 0
       toast({
         title: 'Success',
-        description: 'Task created successfully'
+        description: subtaskCount > 0
+          ? `Task created with ${subtaskCount} subtask${subtaskCount !== 1 ? 's' : ''}`
+          : 'Task created successfully'
       })
     } catch (error) {
       console.error('Error creating task:', error)

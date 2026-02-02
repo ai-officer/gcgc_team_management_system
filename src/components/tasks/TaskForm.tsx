@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { format } from 'date-fns'
-import { CalendarIcon, Plus, X, Users, User, Handshake } from 'lucide-react'
+import { CalendarIcon, Plus, X, Users, User, Handshake, ListTodo, Trash2 } from 'lucide-react'
 import { DatePicker } from '@/components/ui/date-picker'
 import { TimePicker } from '@/components/ui/time-picker'
 import { SearchableMultiSelect, SelectOption } from '@/components/ui/searchable-multi-select'
@@ -46,6 +46,13 @@ interface User {
   role?: string
 }
 
+interface PendingSubtask {
+  id: string // Temporary ID for UI
+  title: string
+  assigneeId: string
+  assignee?: User
+}
+
 
 
 const taskFormSchema = z.object({
@@ -69,6 +76,11 @@ const taskFormSchema = z.object({
   // Time fields for non-all-day events
   startTime: z.string().optional(),
   endTime: z.string().optional(),
+  // Subtasks
+  subtasks: z.array(z.object({
+    title: z.string(),
+    assigneeId: z.string(),
+  })).optional(),
 })
 
 type TaskFormData = z.infer<typeof taskFormSchema>
@@ -87,6 +99,11 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
   const [users, setUsers] = useState<User[]>([])
   const [selectedTeamMembers, setSelectedTeamMembers] = useState<User[]>([])
   const [selectedCollaborators, setSelectedCollaborators] = useState<User[]>([])
+
+  // Subtask state
+  const [pendingSubtasks, setPendingSubtasks] = useState<PendingSubtask[]>([])
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState('')
+  const [newSubtaskAssigneeId, setNewSubtaskAssigneeId] = useState('')
 
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskFormSchema),
@@ -190,6 +207,10 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
         // Clear selected arrays
         setSelectedTeamMembers([])
         setSelectedCollaborators([])
+        // Clear subtasks
+        setPendingSubtasks([])
+        setNewSubtaskTitle('')
+        setNewSubtaskAssigneeId('')
       }
     }
   }, [open, task, form, session, preSelectedMemberId])
@@ -286,9 +307,16 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
         }
       }
 
+      // Include subtasks in submission
+      submissionData.subtasks = pendingSubtasks.map(s => ({
+        title: s.title,
+        assigneeId: s.assigneeId,
+      }))
+
       await onSubmit(submissionData)
       onOpenChange(false)
       form.reset()
+      setPendingSubtasks([])
     } catch (error) {
       console.error('Error submitting task:', error)
     } finally {
@@ -318,6 +346,33 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
   const removeCollaborator = (userId: string) => {
     setSelectedCollaborators(selectedCollaborators.filter(c => c.id !== userId))
     form.setValue('collaboratorIds', form.getValues('collaboratorIds').filter(id => id !== userId))
+  }
+
+  // Subtask handlers
+  const addSubtask = () => {
+    if (!newSubtaskTitle.trim()) return
+
+    const assigneeId = newSubtaskAssigneeId || session?.user?.id || ''
+    const assignee = users.find(u => u.id === assigneeId) || (session?.user?.id === assigneeId ? {
+      id: session.user.id,
+      name: session.user.name || undefined,
+      email: session.user.email || '',
+    } : undefined)
+
+    const newSubtask: PendingSubtask = {
+      id: `temp-${Date.now()}`,
+      title: newSubtaskTitle.trim(),
+      assigneeId,
+      assignee,
+    }
+
+    setPendingSubtasks([...pendingSubtasks, newSubtask])
+    setNewSubtaskTitle('')
+    setNewSubtaskAssigneeId('')
+  }
+
+  const removeSubtask = (id: string) => {
+    setPendingSubtasks(pendingSubtasks.filter(s => s.id !== id))
   }
 
   const getTaskTypeIcon = (type: TaskType) => {
@@ -887,6 +942,116 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
                     emptyText="No collaborators available"
                   />
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Subtasks Section */}
+          {!task && (
+            <Card className="border-2 border-amber-200 bg-amber-50/50">
+              <CardHeader className="pb-3">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-amber-100 rounded-full">
+                    <ListTodo className="h-5 w-5 text-amber-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base text-amber-900">Subtasks</CardTitle>
+                    <CardDescription className="text-amber-700">
+                      Break this task into smaller pieces and assign them to team members
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Add Subtask Form */}
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Enter subtask title..."
+                      value={newSubtaskTitle}
+                      onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          addSubtask()
+                        }
+                      }}
+                      className="flex-1"
+                    />
+                    <Select
+                      value={newSubtaskAssigneeId}
+                      onValueChange={setNewSubtaskAssigneeId}
+                    >
+                      <SelectTrigger className="w-[200px]">
+                        <SelectValue placeholder="Assign to..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={session?.user?.id || 'self'}>
+                          Myself
+                        </SelectItem>
+                        {users.filter(u => u.id !== session?.user?.id).map((user) => (
+                          <SelectItem key={user.id} value={user.id}>
+                            {user.name || user.email}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      size="icon"
+                      onClick={addSubtask}
+                      disabled={!newSubtaskTitle.trim()}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Subtasks List */}
+                {pendingSubtasks.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-sm text-amber-800">
+                      {pendingSubtasks.length} subtask{pendingSubtasks.length !== 1 ? 's' : ''} to create
+                    </Label>
+                    <div className="space-y-2">
+                      {pendingSubtasks.map((subtask) => (
+                        <div
+                          key={subtask.id}
+                          className="flex items-center justify-between p-3 bg-white rounded-lg border border-amber-200"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-2 h-2 rounded-full bg-amber-400" />
+                            <div>
+                              <p className="text-sm font-medium">{subtask.title}</p>
+                              <p className="text-xs text-muted-foreground">
+                                Assigned to: {subtask.assignee?.name || subtask.assignee?.email || 'You'}
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeSubtask(subtask.id)}
+                            className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {pendingSubtasks.length === 0 && (
+                  <div className="text-center py-4 text-amber-600">
+                    <ListTodo className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No subtasks added yet</p>
+                    <p className="text-xs text-muted-foreground">
+                      Add subtasks above to break down this task
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}

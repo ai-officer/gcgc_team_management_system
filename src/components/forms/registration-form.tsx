@@ -211,6 +211,11 @@ export function RegistrationForm() {
         if (!value.trim()) return 'Email is required'
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
         if (!emailRegex.test(value)) return 'Please enter a valid email address'
+        const allowedDomains = ['gmail.com', 'globalofficium.com']
+        const emailDomain = value.split('@')[1]?.toLowerCase()
+        if (!allowedDomains.includes(emailDomain)) {
+          return 'Email must be @gmail.com or @globalofficium.com'
+        }
         return undefined
       case 'username':
         if (!value.trim()) return 'Username is required'

@@ -8,7 +8,14 @@ const registerSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
   middleName: z.string().optional(),
-  email: z.string().email('Invalid email address'),
+  email: z.string().email('Invalid email address').refine(
+    (email) => {
+      const allowedDomains = ['gmail.com', 'globalofficium.com']
+      const domain = email.split('@')[1]?.toLowerCase()
+      return allowedDomains.includes(domain)
+    },
+    { message: 'Email must be @gmail.com or @globalofficium.com' }
+  ),
   username: z.string().min(3, 'Username must be at least 3 characters'),
   contactNumber: z.string().optional(),
   password: z.string().min(6, 'Password must be at least 6 characters'),

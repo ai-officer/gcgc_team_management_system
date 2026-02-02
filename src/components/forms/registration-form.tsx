@@ -48,6 +48,7 @@ interface FieldErrors {
   username?: string
   password?: string
   confirmPassword?: string
+  contactNumber?: string
   division?: string
   jobLevel?: string
 }
@@ -232,6 +233,12 @@ export function RegistrationForm() {
       case 'confirmPassword':
         if (!value) return 'Please confirm your password'
         if (value !== formData.password) return 'Passwords do not match'
+        return undefined
+      case 'contactNumber':
+        if (!value.trim()) return undefined // Optional field
+        if (!/^\d+$/.test(value)) return 'Contact number must contain only digits'
+        if (!value.startsWith('09')) return 'Contact number must start with 09'
+        if (value.length !== 11) return 'Contact number must be exactly 11 digits'
         return undefined
       default:
         return undefined
@@ -593,8 +600,13 @@ export function RegistrationForm() {
                 type="tel"
                 value={formData.contactNumber}
                 onChange={(e) => handleInputChange('contactNumber', e.target.value)}
-                placeholder="Enter contact number"
+                onBlur={() => handleBlur('contactNumber')}
+                placeholder="09XXXXXXXXX"
+                maxLength={11}
+                className={touched.contactNumber && fieldErrors.contactNumber ? 'border-destructive' : ''}
               />
+              {touched.contactNumber && <FieldError error={fieldErrors.contactNumber} />}
+              <p className="text-xs text-muted-foreground">Format: 09XXXXXXXXX (11 digits)</p>
             </div>
           </div>
 

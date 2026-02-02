@@ -244,6 +244,11 @@ export default function TaskViewModal({
   const [availableUsers, setAvailableUsers] = useState<Array<{id: string, name: string, email: string, image?: string}>>([])
   const [loadingUsers, setLoadingUsers] = useState(false)
 
+  // Progress editing state
+  const [isEditingProgress, setIsEditingProgress] = useState(false)
+  const [localProgress, setLocalProgress] = useState(0)
+  const [savingProgress, setSavingProgress] = useState(false)
+
   // Load comments when task changes
   const fetchComments = async () => {
     if (!task?.id) return
@@ -309,8 +314,46 @@ export default function TaskViewModal({
       setNewSubtaskTitle('')
       setNewSubtaskAssigneeId('')
       setLocalSubtasks(task.subtasks || [])
+      // Reset progress state
+      setIsEditingProgress(false)
+      setLocalProgress(task.progressPercentage || 0)
     }
   }, [open, task])
+
+  // Handle progress update
+  const handleProgressUpdate = async () => {
+    if (!task?.id) return
+
+    try {
+      setSavingProgress(true)
+      const response = await fetch(`/api/tasks/${task.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ progressPercentage: localProgress })
+      })
+
+      if (response.ok) {
+        setIsEditingProgress(false)
+        toast({
+          title: "Progress updated",
+          description: `Progress set to ${localProgress}%`,
+        })
+        onTaskUpdate?.()
+      } else {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to update progress')
+      }
+    } catch (error) {
+      console.error('Error updating progress:', error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update progress",
+        variant: "destructive",
+      })
+    } finally {
+      setSavingProgress(false)
+    }
+  }
 
   // Handle adding a subtask
   const handleAddSubtask = async () => {
@@ -1128,13 +1171,69 @@ export default function TaskViewModal({
             </Badge>
           </div>
 
-          {/* Progress Bar */}
+          {/* Progress Bar - Editable for assignees */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-600">Progress</span>
-              <span className="font-medium">{task.progressPercentage}%</span>
+              {isEditingProgress ? (
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{localProgress}%</span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 w-6 p-0"
+                    onClick={handleProgressUpdate}
+                    disabled={savingProgress}
+                  >
+                    {savingProgress ? (
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-600" />
+                    ) : (
+                      <Check className="h-3 w-3 text-green-600" />
+                    )}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 w-6 p-0"
+                    onClick={() => {
+                      setIsEditingProgress(false)
+                      setLocalProgress(task.progressPercentage)
+                    }}
+                  >
+                    <X className="h-3 w-3 text-gray-500" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{task.progressPercentage}%</span>
+                  {canAddSubtasks && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 px-2 text-xs text-gray-500 hover:text-gray-700"
+                      onClick={() => {
+                        setLocalProgress(task.progressPercentage)
+                        setIsEditingProgress(true)
+                      }}
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
-            <Progress value={task.progressPercentage} className="h-2" />
+            {isEditingProgress ? (
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={localProgress}
+                onChange={(e) => setLocalProgress(Number(e.target.value))}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+              />
+            ) : (
+              <Progress value={task.progressPercentage} className="h-2" />
+            )}
           </div>
         </DialogHeader>
 
@@ -1249,8 +1348,8 @@ export default function TaskViewModal({
             </div>
           </div>
 
-          {/* Subtasks Section - Only show for non-subtask tasks */}
-          {!task.parentId && (
+          {/* Subtasks Section - Available on all tasks including subtasks */}
+          {(
             <div className="border-t pt-6 space-y-4">
               <div className="flex items-center justify-between">
                 <h4 className="font-medium text-gray-900 flex items-center gap-2">

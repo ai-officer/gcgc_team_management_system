@@ -300,10 +300,27 @@ export default function TaskViewModal({
     }
   }
 
+  // Fetch full task data including subtasks
+  const fetchTaskDetails = async () => {
+    if (!task?.id) return
+
+    try {
+      const response = await fetch(`/api/tasks/${task.id}`)
+      if (response.ok) {
+        const fullTask = await response.json()
+        setLocalSubtasks(fullTask.subtasks || [])
+        setLocalProgress(fullTask.progressPercentage || 0)
+      }
+    } catch (error) {
+      console.error('Error fetching task details:', error)
+    }
+  }
+
   useEffect(() => {
     if (open && task) {
       fetchComments()
       fetchAvailableUsers()
+      fetchTaskDetails()
       setNewComment('')
       setReplyingTo(null)
       setReplyText('')
@@ -314,10 +331,9 @@ export default function TaskViewModal({
       setShowAddSubtask(false)
       setNewSubtaskTitle('')
       setNewSubtaskAssigneeId('')
-      setLocalSubtasks(task.subtasks || [])
+      setNewSubtaskDeadline('')
       // Reset progress state
       setIsEditingProgress(false)
-      setLocalProgress(task.progressPercentage || 0)
     }
   }, [open, task])
 

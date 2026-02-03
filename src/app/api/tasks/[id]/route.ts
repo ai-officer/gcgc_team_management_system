@@ -240,9 +240,28 @@ export async function PATCH(
 
     // Auto-set startDate if not provided but dueDate is (for calendar display)
     const finalDueDate = updateData.dueDate ? new Date(updateData.dueDate) : undefined
-    const finalStartDate = updateData.startDate 
+    const finalStartDate = updateData.startDate
       ? new Date(updateData.startDate)
       : (finalDueDate ? new Date(finalDueDate) : (updateData.dueDate !== undefined ? existingTask.startDate : undefined))
+
+    // Auto-set status based on progress percentage
+    let autoStatus: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' | undefined
+    if (updateData.progressPercentage !== undefined) {
+      const progress = updateData.progressPercentage
+      if (progress === 100) {
+        autoStatus = 'COMPLETED'
+      } else if (progress > 90) {
+        autoStatus = 'IN_REVIEW'
+      } else if (progress > 0) {
+        autoStatus = 'IN_PROGRESS'
+      }
+      // If progress is 0, don't auto-change status (let user keep it as TODO or whatever)
+    }
+
+    // Use auto-status if no explicit status was provided and we have an auto-status
+    if (autoStatus && !updateData.status) {
+      updateData.status = autoStatus
+    }
 
     // Update task with transaction for related data
     const updatedTask = await prisma.$transaction(async (tx) => {

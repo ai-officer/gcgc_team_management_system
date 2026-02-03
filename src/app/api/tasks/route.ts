@@ -448,9 +448,21 @@ export async function POST(req: NextRequest) {
 
     // Auto-set startDate if not provided but dueDate is (for calendar display)
     const finalDueDate = dueDate ? new Date(dueDate) : null
-    const finalStartDate = startDate 
-      ? new Date(startDate) 
+    const finalStartDate = startDate
+      ? new Date(startDate)
       : (finalDueDate ? new Date(finalDueDate) : null) // Auto-set to dueDate if not provided
+
+    // Auto-set status based on progress percentage
+    let finalStatus = status
+    if (progressPercentage !== undefined && !status) {
+      if (progressPercentage === 100) {
+        finalStatus = 'COMPLETED'
+      } else if (progressPercentage > 90) {
+        finalStatus = 'IN_REVIEW'
+      } else if (progressPercentage > 0) {
+        finalStatus = 'IN_PROGRESS'
+      }
+    }
 
     // Create task with transaction for related data
     const task = await prisma.$transaction(async (tx) => {
@@ -471,7 +483,7 @@ export async function POST(req: NextRequest) {
           title,
           description,
           priority,
-          status: status || 'TODO',
+          status: finalStatus || 'TODO',
           progressPercentage: progressPercentage || 0,
           taskType,
           dueDate: finalDueDate,

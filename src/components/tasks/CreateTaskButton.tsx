@@ -45,7 +45,7 @@ export default function CreateTaskButton({
 
       // Create subtasks if any
       if (subtasks && subtasks.length > 0) {
-        const subtaskPromises = subtasks.map((subtask: { title: string; assigneeId: string }) =>
+        const subtaskPromises = subtasks.map((subtask: { title: string; assigneeId: string; dueDate?: string }) =>
           fetch('/api/tasks', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -55,6 +55,7 @@ export default function CreateTaskButton({
               priority: taskData.priority,
               taskType: 'INDIVIDUAL',
               assigneeId: subtask.assigneeId,
+              dueDate: subtask.dueDate ? new Date(subtask.dueDate).toISOString() : undefined,
             }),
           })
         )

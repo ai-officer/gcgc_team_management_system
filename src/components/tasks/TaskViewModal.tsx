@@ -239,6 +239,7 @@ export default function TaskViewModal({
   const [showAddSubtask, setShowAddSubtask] = useState(false)
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('')
   const [newSubtaskAssigneeId, setNewSubtaskAssigneeId] = useState<string>('')
+  const [newSubtaskDeadline, setNewSubtaskDeadline] = useState<string>('')
   const [addingSubtask, setAddingSubtask] = useState(false)
   const [localSubtasks, setLocalSubtasks] = useState<Task['subtasks']>([])
   const [availableUsers, setAvailableUsers] = useState<Array<{id: string, name: string, email: string, image?: string}>>([])
@@ -370,6 +371,7 @@ export default function TaskViewModal({
           priority: task.priority, // Inherit parent priority
           taskType: 'INDIVIDUAL',
           assigneeId: newSubtaskAssigneeId || session?.user?.id, // Use selected assignee or default to current user
+          dueDate: newSubtaskDeadline ? new Date(newSubtaskDeadline).toISOString() : undefined,
         })
       })
 
@@ -387,6 +389,7 @@ export default function TaskViewModal({
         }])
         setNewSubtaskTitle('')
         setNewSubtaskAssigneeId('')
+        setNewSubtaskDeadline('')
         setShowAddSubtask(false)
         toast({
           title: "Subtask created",
@@ -1419,6 +1422,15 @@ export default function TaskViewModal({
                         </SelectContent>
                       </Select>
                     </div>
+                    <div className="flex-1">
+                      <Input
+                        type="date"
+                        value={newSubtaskDeadline}
+                        onChange={(e) => setNewSubtaskDeadline(e.target.value)}
+                        placeholder="Deadline"
+                        className="w-full"
+                      />
+                    </div>
                     <Button
                       size="sm"
                       onClick={handleAddSubtask}
@@ -1437,6 +1449,7 @@ export default function TaskViewModal({
                         setShowAddSubtask(false)
                         setNewSubtaskTitle('')
                         setNewSubtaskAssigneeId('')
+                        setNewSubtaskDeadline('')
                       }}
                     >
                       <X className="h-4 w-4" />

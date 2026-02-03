@@ -51,6 +51,7 @@ interface PendingSubtask {
   title: string
   assigneeId: string
   assignee?: User
+  dueDate?: string
 }
 
 
@@ -80,6 +81,7 @@ const taskFormSchema = z.object({
   subtasks: z.array(z.object({
     title: z.string(),
     assigneeId: z.string(),
+    dueDate: z.string().optional(),
   })).optional(),
 })
 
@@ -104,6 +106,7 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
   const [pendingSubtasks, setPendingSubtasks] = useState<PendingSubtask[]>([])
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('')
   const [newSubtaskAssigneeId, setNewSubtaskAssigneeId] = useState('')
+  const [newSubtaskDeadline, setNewSubtaskDeadline] = useState('')
 
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskFormSchema),
@@ -211,6 +214,7 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
         setPendingSubtasks([])
         setNewSubtaskTitle('')
         setNewSubtaskAssigneeId('')
+        setNewSubtaskDeadline('')
       }
     }
   }, [open, task, form, session, preSelectedMemberId])
@@ -364,11 +368,13 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
       title: newSubtaskTitle.trim(),
       assigneeId,
       assignee,
+      dueDate: newSubtaskDeadline || undefined,
     }
 
     setPendingSubtasks([...pendingSubtasks, newSubtask])
     setNewSubtaskTitle('')
     setNewSubtaskAssigneeId('')
+    setNewSubtaskDeadline('')
   }
 
   const removeSubtask = (id: string) => {
@@ -982,7 +988,7 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
                       value={newSubtaskAssigneeId}
                       onValueChange={setNewSubtaskAssigneeId}
                     >
-                      <SelectTrigger className="w-[200px]">
+                      <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Assign to..." />
                       </SelectTrigger>
                       <SelectContent>
@@ -996,6 +1002,13 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
                         ))}
                       </SelectContent>
                     </Select>
+                    <Input
+                      type="date"
+                      value={newSubtaskDeadline}
+                      onChange={(e) => setNewSubtaskDeadline(e.target.value)}
+                      className="w-[150px]"
+                      placeholder="Deadline"
+                    />
                     <Button
                       type="button"
                       size="icon"
@@ -1025,6 +1038,9 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
                               <p className="text-sm font-medium">{subtask.title}</p>
                               <p className="text-xs text-muted-foreground">
                                 Assigned to: {subtask.assignee?.name || subtask.assignee?.email || 'You'}
+                                {subtask.dueDate && (
+                                  <span className="ml-2">• Due: {new Date(subtask.dueDate).toLocaleDateString()}</span>
+                                )}
                               </p>
                             </div>
                           </div>

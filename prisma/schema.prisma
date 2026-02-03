@@ -54,8 +54,36 @@ model User {
   ossbRequests       OSSBRequest[]
   reportsTo          User?              @relation("UserReportsTo", fields: [reportsToId], references: [id])
   subordinates       User[]             @relation("UserReportsTo")
+  notifications      Notification[]
 
   @@map("users")
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  userId      String
+  type        NotificationType
+  title       String
+  message     String
+  isRead      Boolean          @default(false)
+  entityId    String?          // ID of related entity (task, etc.)
+  entityType  String?          // Type of entity (task, comment, etc.)
+  createdAt   DateTime         @default(now())
+  readAt      DateTime?
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  TASK_ASSIGNED
+  TASK_UPDATED
+  TASK_COMPLETED
+  COMMENT_ADDED
+  MENTION
+  DEADLINE_REMINDER
 }
 
 model Admin {

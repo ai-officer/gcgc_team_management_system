@@ -20,6 +20,7 @@ import {
   MessageSquare,
   FileText,
 } from 'lucide-react'
+import { NotificationDropdown } from '@/components/notifications/NotificationDropdown'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
@@ -340,6 +341,9 @@ export function Sidebar({ className }: SidebarProps) {
 
           {/* User section */}
           <div className="border-t border-border p-4 space-y-4">
+            {/* Notifications */}
+            <NotificationDropdown isCollapsed={isCollapsed} />
+
             {/* User info */}
             <Link
               href="/user/profile"

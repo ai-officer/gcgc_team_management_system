@@ -6,6 +6,7 @@ import { authOptions } from '@/lib/auth'
 import { hasPermission } from '@/lib/permissions'
 import { PERMISSIONS } from '@/constants'
 import { autoSyncTask } from '@/lib/calendar-sync-helper'
+import { notifyTaskAssigned, notifySubtaskAssigned } from '@/lib/notifications'
 
 const createTaskSchema = z.object({
   title: z.string().min(1).max(100),
@@ -616,6 +617,29 @@ export async function POST(req: NextRequest) {
       // Auto-sync to Google Calendar if enabled
       if (task.dueDate) {
         await autoSyncTask(task.id, session.user.id)
+      }
+
+      // Send notification if task is assigned to someone else
+      const taskAssigneeId = task.assigneeId || assigneeId
+      if (taskAssigneeId && taskAssigneeId !== session.user.id) {
+        const assignerName = session.user.name || session.user.email || 'Someone'
+
+        if (parentId) {
+          // Get parent task title for subtask notification
+          const parentTask = await prisma.task.findUnique({
+            where: { id: parentId },
+            select: { title: true }
+          })
+          await notifySubtaskAssigned(
+            taskAssigneeId,
+            task.id,
+            title,
+            parentTask?.title || 'Parent Task',
+            assignerName
+          )
+        } else {
+          await notifyTaskAssigned(taskAssigneeId, task.id, title, assignerName)
+        }
       }
     }
 

@@ -56,6 +56,21 @@ app.prepare().then(() => {
       console.log(`User ${userId} left calendar sync`)
     })
 
+    // Join user-specific room for notifications
+    socket.on('join-notifications', (userId) => {
+      if (!userId) return
+
+      socket.join(`user-${userId}`)
+      console.log(`User ${userId} joined notifications room`)
+    })
+
+    socket.on('leave-notifications', (userId) => {
+      if (!userId) return
+
+      socket.leave(`user-${userId}`)
+      console.log(`User ${userId} left notifications room`)
+    })
+
     socket.on('disconnect', () => {
       console.log('Client disconnected:', socket.id)
     })

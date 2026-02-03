@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { NotificationType } from '@prisma/client'
+import { publishNotification } from '@/lib/redis'
 
 interface CreateNotificationParams {
   userId: string
@@ -33,13 +34,12 @@ export async function createNotification({
       },
     })
 
-    // Emit socket event for real-time notification
-    if (global.io) {
-      global.io.to(`user-${userId}`).emit('new-notification', {
-        notification,
-        timestamp: new Date().toISOString(),
-      })
-      console.log(`Notification emitted to user-${userId}:`, title)
+    // Publish to Redis for Socket.IO to emit (works across PM2 cluster)
+    const published = await publishNotification(userId, notification)
+    if (published) {
+      console.log(`Notification published via Redis for user-${userId}:`, title)
+    } else {
+      console.warn(`Redis not available, notification saved but not delivered in real-time`)
     }
 
     return notification

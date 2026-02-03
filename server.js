@@ -36,11 +36,28 @@ app.prepare().then(async () => {
   try {
     const pubClient = createClient({ url: redisUrl })
     const subClient = pubClient.duplicate()
+    const notificationSubClient = pubClient.duplicate()
 
-    await Promise.all([pubClient.connect(), subClient.connect()])
+    await Promise.all([
+      pubClient.connect(),
+      subClient.connect(),
+      notificationSubClient.connect()
+    ])
 
     io.adapter(createAdapter(pubClient, subClient))
     console.log('> Socket.IO Redis adapter connected')
+
+    // Subscribe to notifications channel for real-time delivery
+    await notificationSubClient.subscribe('notifications', (message) => {
+      try {
+        const { userId, notification, timestamp } = JSON.parse(message)
+        console.log(`Received notification from Redis for user-${userId}:`, notification.title)
+        io.to(`user-${userId}`).emit('new-notification', { notification, timestamp })
+      } catch (err) {
+        console.error('Error processing notification from Redis:', err)
+      }
+    })
+    console.log('> Subscribed to Redis notifications channel')
   } catch (redisError) {
     console.warn('> Redis not available, Socket.IO running in single-instance mode')
     console.warn('> For real-time notifications in cluster mode, set REDIS_URL environment variable')

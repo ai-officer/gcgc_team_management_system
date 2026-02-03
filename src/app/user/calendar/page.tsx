@@ -63,6 +63,7 @@ interface TaskDeadline {
   status: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' | 'CANCELLED'
   googleCalendarEventId?: string | null
   creatorId?: string
+  parentId?: string | null
   assignee?: {
     id: string
     name: string
@@ -113,7 +114,7 @@ export default function CalendarPage() {
 
       const [eventsResponse, tasksResponse, syncSettingsResponse, holidaysResponse] = await Promise.all([
         fetch('/api/events'),
-        fetch('/api/tasks?status=TODO,IN_PROGRESS,IN_REVIEW'),
+        fetch('/api/tasks?status=TODO,IN_PROGRESS,IN_REVIEW&includeSubtasks=true'),
         fetch('/api/calendar/sync-settings'),
         fetch('/api/calendar/holidays')
       ])
@@ -194,7 +195,11 @@ export default function CalendarPage() {
 
               // Determine task type label
               let taskTypeLabel = ''
-              if (isAssignee) {
+              const isSubtask = !!task.parentId
+
+              if (isSubtask) {
+                taskTypeLabel = 'Subtask'
+              } else if (isAssignee) {
                 taskTypeLabel = 'My Task'
               } else if (isTeamMember) {
                 taskTypeLabel = 'Team Task'

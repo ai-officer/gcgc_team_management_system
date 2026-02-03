@@ -344,8 +344,11 @@ export class GoogleCalendarService {
     const startTime = startDate || dueDate || new Date()
     let endTime = dueDate || new Date(startTime.getTime() + 60 * 60 * 1000)
 
+    // Indicate subtasks with a different label
+    const taskLabel = task.parentId ? '[Subtask]' : '[Task]'
+
     const googleEvent: GoogleCalendarEvent = {
-      summary: `[Task] ${task.title}`,
+      summary: `${taskLabel} ${task.title}`,
       description: this.formatTaskDescription(task),
     }
 

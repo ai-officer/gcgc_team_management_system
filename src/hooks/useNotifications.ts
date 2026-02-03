@@ -62,16 +62,12 @@ export function useNotifications() {
       setNotifications(prev => [data.notification, ...prev])
       setUnreadCount(prev => prev + 1)
 
-      // Play notification sound (optional)
+      // Play notification sound
       try {
         const audio = new Audio('/sounds/notification.mp3')
         audio.volume = 0.5
-        audio.play().catch(() => {
-          // Ignore audio play errors (user hasn't interacted with page yet)
-        })
-      } catch {
-        // Ignore audio errors
-      }
+        audio.play().catch(() => {})
+      } catch {}
     })
 
     socketInstance.on('disconnect', () => {

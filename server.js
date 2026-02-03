@@ -2,6 +2,8 @@ const { createServer } = require('http')
 const { parse } = require('url')
 const next = require('next')
 const { Server } = require('socket.io')
+const { createClient } = require('redis')
+const { createAdapter } = require('@socket.io/redis-adapter')
 
 const dev = process.env.NODE_ENV !== 'production'
 const hostname = 'localhost'
@@ -10,7 +12,7 @@ const port = parseInt(process.env.PORT || '3000', 10)
 const app = next({ dev, hostname, port })
 const handle = app.getRequestHandler()
 
-app.prepare().then(() => {
+app.prepare().then(async () => {
   const httpServer = createServer(async (req, res) => {
     try {
       const parsedUrl = parse(req.url, true)
@@ -28,6 +30,21 @@ app.prepare().then(() => {
       methods: ['GET', 'POST']
     }
   })
+
+  // Set up Redis adapter for Socket.IO (required for PM2 cluster mode)
+  const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379'
+  try {
+    const pubClient = createClient({ url: redisUrl })
+    const subClient = pubClient.duplicate()
+
+    await Promise.all([pubClient.connect(), subClient.connect()])
+
+    io.adapter(createAdapter(pubClient, subClient))
+    console.log('> Socket.IO Redis adapter connected')
+  } catch (redisError) {
+    console.warn('> Redis not available, Socket.IO running in single-instance mode')
+    console.warn('> For real-time notifications in cluster mode, set REDIS_URL environment variable')
+  }
 
   // Store socket.io instance globally for webhook access
   global.io = io

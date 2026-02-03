@@ -10,7 +10,7 @@ interface JobLevelData {
   isActive: boolean
 }
 
-// Default job levels based on the hierarchy: RF1, RF2, RF3, OF1, OF2, M1, M2 (highest)
+// Default job levels based on the hierarchy: RF1, RF2, RF3, OF1, OF2, M1, M2, E3 (highest)
 const DEFAULT_JOB_LEVELS = [
   { name: 'RF1', description: 'Rank and File Level 1', order: 1 },
   { name: 'RF2', description: 'Rank and File Level 2', order: 2 },
@@ -18,7 +18,8 @@ const DEFAULT_JOB_LEVELS = [
   { name: 'OF1', description: 'Officer Level 1', order: 4 },
   { name: 'OF2', description: 'Officer Level 2', order: 5 },
   { name: 'M1', description: 'Manager Level 1', order: 6 },
-  { name: 'M2', description: 'Manager Level 2 (Highest)', order: 7 }
+  { name: 'M2', description: 'Manager Level 2', order: 7 },
+  { name: 'E3', description: 'Executive Level (Highest)', order: 8 }
 ]
 
 export async function GET(request: NextRequest) {

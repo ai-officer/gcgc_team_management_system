@@ -167,12 +167,6 @@ export function NotificationDropdown({ isCollapsed = false }: NotificationDropdo
           </ScrollArea>
         )}
 
-        <DropdownMenuSeparator />
-        <DropdownMenuItem asChild className="justify-center text-sm text-muted-foreground">
-          <Link href="/user/notifications" onClick={() => setIsOpen(false)}>
-            View all notifications
-          </Link>
-        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )

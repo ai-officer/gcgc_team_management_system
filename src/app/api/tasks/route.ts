@@ -621,24 +621,35 @@ export async function POST(req: NextRequest) {
 
       // Send notification if task is assigned to someone else
       const taskAssigneeId = task.assigneeId || assigneeId
+      console.log('Task created - checking notification:', { taskAssigneeId, currentUserId: session.user.id, parentId })
+
       if (taskAssigneeId && taskAssigneeId !== session.user.id) {
         const assignerName = session.user.name || session.user.email || 'Someone'
 
-        if (parentId) {
-          // Get parent task title for subtask notification
-          const parentTask = await prisma.task.findUnique({
-            where: { id: parentId },
-            select: { title: true }
-          })
-          await notifySubtaskAssigned(
-            taskAssigneeId,
-            task.id,
-            title,
-            parentTask?.title || 'Parent Task',
-            assignerName
-          )
-        } else {
-          await notifyTaskAssigned(taskAssigneeId, task.id, title, assignerName)
+        try {
+          if (parentId) {
+            // Get parent task title for subtask notification
+            const parentTask = await prisma.task.findUnique({
+              where: { id: parentId },
+              select: { title: true }
+            })
+            console.log('Sending subtask notification to:', taskAssigneeId)
+            await notifySubtaskAssigned(
+              taskAssigneeId,
+              task.id,
+              title,
+              parentTask?.title || 'Parent Task',
+              assignerName
+            )
+            console.log('Subtask notification sent successfully')
+          } else {
+            console.log('Sending task notification to:', taskAssigneeId)
+            await notifyTaskAssigned(taskAssigneeId, task.id, title, assignerName)
+            console.log('Task notification sent successfully')
+          }
+        } catch (notificationError) {
+          console.error('Error sending notification:', notificationError)
+          // Don't fail the task creation if notification fails
         }
       }
     }

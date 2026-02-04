@@ -59,7 +59,7 @@ interface PendingSubtask {
 const taskFormSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100, 'Title too long'),
   description: z.string().optional(),
-  dueDate: z.date().optional(),
+  dueDate: z.date({ required_error: 'Deadline is required' }),
   startDate: z.date().optional(),
   status: z.enum(['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED']),
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']),
@@ -621,7 +621,7 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
                   <div className="space-y-3">
                     <Label htmlFor="dueDate" className="text-sm font-medium flex items-center gap-2">
                       <CalendarIcon className="h-3.5 w-3.5 text-orange-600" />
-                      Due Date
+                      Deadline
                       <span className="text-xs text-orange-600 font-semibold">
                         *Required
                       </span>
@@ -629,8 +629,11 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
                     <div className="space-y-2">
                       <DatePicker
                         date={form.watch('dueDate')}
-                        onSelect={(date) => form.setValue('dueDate', date)}
-                        placeholder="Select due date"
+                        onSelect={(date) => {
+                          form.setValue('dueDate', date)
+                          form.clearErrors('dueDate')
+                        }}
+                        placeholder="Select deadline"
                         disabled={(date) => {
                           const today = new Date(new Date().setHours(0, 0, 0, 0))
                           const startDate = form.watch('startDate')
@@ -638,6 +641,11 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
                           return date < minDate
                         }}
                       />
+                      {form.formState.errors.dueDate && (
+                        <p className="text-sm text-red-500 font-medium">
+                          {form.formState.errors.dueDate.message}
+                        </p>
+                      )}
                       {!form.watch('allDay') && (
                         <TimePicker
                           value={form.watch('endTime') || undefined}

@@ -694,8 +694,8 @@ export default function TasksPage() {
                                   : canDrag ? 'hover:shadow-md hover:-translate-y-1 shadow-sm' : 'shadow-sm'
                               } ${
                                 task.parentId
-                                  ? 'bg-white border-l-4 border-l-violet-500 border-t border-r border-b border-gray-200'
-                                  : 'bg-white border border-gray-200'
+                                  ? 'bg-white border-l-4 border-l-slate-400 border-t border-r border-b border-gray-200'
+                                  : 'bg-white border-l-4 border-l-teal-500 border-t border-r border-b border-gray-200'
                               } rounded-lg ${
                                 !canDrag ? 'opacity-90' : ''
                               }`}
@@ -738,7 +738,7 @@ export default function TasksPage() {
                                         </h4>
                                         <div className="flex items-center gap-1 flex-wrap">
                                           {task.parentId && (
-                                            <Badge className="text-xs bg-violet-100 text-violet-700 border-violet-200">
+                                            <Badge className="text-xs bg-slate-100 text-slate-600 border-slate-300">
                                               Subtask
                                             </Badge>
                                           )}

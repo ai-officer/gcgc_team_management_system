@@ -64,6 +64,7 @@ interface Task {
   status: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'
   progressPercentage: number
   taskType: 'INDIVIDUAL' | 'TEAM' | 'COLLABORATION'
+  parentId?: string | null
   // Google Calendar fields
   location?: string
   meetingLink?: string
@@ -684,14 +685,18 @@ export default function TasksPage() {
                               {...provided.draggableProps}
                               {...(canDrag ? provided.dragHandleProps : {})}
                               className={`relative cursor-pointer transition-all duration-200 min-h-[160px] ${
-                                canDrag 
+                                canDrag
                                   ? 'hover:cursor-grab active:cursor-grabbing'
                                   : 'cursor-default'
                               } ${
-                                snapshot.isDragging 
-                                  ? 'shadow-xl rotate-2 scale-105 z-50' 
+                                snapshot.isDragging
+                                  ? 'shadow-xl rotate-2 scale-105 z-50'
                                   : canDrag ? 'hover:shadow-md hover:-translate-y-1 shadow-sm' : 'shadow-sm'
-                              } bg-white border border-gray-200 rounded-lg ${
+                              } ${
+                                task.parentId
+                                  ? 'bg-violet-50 border-l-4 border-l-violet-400 border-t border-r border-b border-violet-200'
+                                  : 'bg-white border border-gray-200'
+                              } rounded-lg ${
                                 !canDrag ? 'opacity-90' : ''
                               }`}
                               onClick={(e) => {
@@ -731,11 +736,18 @@ export default function TasksPage() {
                                         <h4 className="font-semibold text-sm leading-tight text-gray-900 truncate mb-1">
                                           {task.title}
                                         </h4>
-                                        {!isTaskCreatedByUser(task) && (
-                                          <Badge variant="outline" className="text-xs">
-                                            Assigned
-                                          </Badge>
-                                        )}
+                                        <div className="flex items-center gap-1 flex-wrap">
+                                          {task.parentId && (
+                                            <Badge className="text-xs bg-violet-100 text-violet-700 border-violet-200">
+                                              Subtask
+                                            </Badge>
+                                          )}
+                                          {!isTaskCreatedByUser(task) && (
+                                            <Badge variant="outline" className="text-xs">
+                                              Assigned
+                                            </Badge>
+                                          )}
+                                        </div>
                                       </div>
                                     </div>
                                   </div>

@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { format } from 'date-fns'
-import { CalendarIcon, Plus, X, Users, User, Handshake, ListTodo, Trash2 } from 'lucide-react'
+import { CalendarIcon, Plus, X, Users, User, Handshake, ListTodo, Trash2, ChevronDown, Settings2 } from 'lucide-react'
 import { DatePicker } from '@/components/ui/date-picker'
 import { TimePicker } from '@/components/ui/time-picker'
 import { SearchableMultiSelect, SelectOption } from '@/components/ui/searchable-multi-select'
@@ -32,6 +32,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 
 // Types
 type TaskType = 'INDIVIDUAL' | 'TEAM' | 'COLLABORATION'
@@ -741,137 +742,146 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
             </CardContent>
           </Card>
 
-          {/* Calendar Integration Section */}
-          <Card className="border-2 bg-gradient-to-br from-blue-50/50 to-indigo-50/50">
-            <CardHeader className="pb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <CalendarIcon className="h-5 w-5 text-blue-600" />
-                </div>
-                <div>
-                  <CardTitle className="text-lg text-blue-900">Calendar Integration</CardTitle>
-                  <CardDescription className="text-blue-700">Additional details for Google Calendar sync</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* All Day Toggle - moved to top */}
-              <div className="flex items-center justify-between p-4 bg-white/80 rounded-lg border-2 border-blue-200/50 shadow-sm">
-                <div className="space-y-1">
-                  <Label htmlFor="allDay" className="text-base font-semibold text-blue-900">All-day Task</Label>
-                  <p className="text-sm text-blue-700">
-                    {form.watch('allDay')
-                      ? 'Task can be done anytime during the selected day(s)'
-                      : 'Task has specific start and end times'}
-                  </p>
-                </div>
-                <Switch
-                  id="allDay"
-                  checked={form.watch('allDay')}
-                  onCheckedChange={(checked) => form.setValue('allDay', checked)}
-                />
-              </div>
+          {/* Advanced Settings - Collapsible */}
+          <Collapsible>
+            <Card className="border-2">
+              <CollapsibleTrigger asChild>
+                <CardHeader className="pb-4 cursor-pointer hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-gray-100 rounded-lg">
+                        <Settings2 className="h-5 w-5 text-gray-600" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">Advanced Settings</CardTitle>
+                        <CardDescription>Calendar integration, location, and recurrence</CardDescription>
+                      </div>
+                    </div>
+                    <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform duration-200 [&[data-state=open]>svg]:rotate-180" />
+                  </div>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="space-y-6 pt-0">
+                  {/* All Day Toggle */}
+                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border">
+                    <div className="space-y-1">
+                      <Label htmlFor="allDay" className="text-base font-semibold">All-day Task</Label>
+                      <p className="text-sm text-muted-foreground">
+                        {form.watch('allDay')
+                          ? 'Task can be done anytime during the selected day(s)'
+                          : 'Task has specific start and end times'}
+                      </p>
+                    </div>
+                    <Switch
+                      id="allDay"
+                      checked={form.watch('allDay')}
+                      onCheckedChange={(checked) => form.setValue('allDay', checked)}
+                    />
+                  </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Location */}
-                <div className="space-y-3">
-                  <Label htmlFor="location" className="text-sm font-medium flex items-center gap-2">
-                    <span className="text-base">📍</span>
-                    Location
-                  </Label>
-                  <Input
-                    id="location"
-                    {...form.register('location')}
-                    placeholder="e.g., Conference Room A, Building 5"
-                    className="h-11 bg-white/80 border-blue-200/50"
-                  />
-                  <p className="text-xs text-blue-600">
-                    Physical location or address
-                  </p>
-                </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Location */}
+                    <div className="space-y-3">
+                      <Label htmlFor="location" className="text-sm font-medium flex items-center gap-2">
+                        <span className="text-base">📍</span>
+                        Location
+                      </Label>
+                      <Input
+                        id="location"
+                        {...form.register('location')}
+                        placeholder="e.g., Conference Room A, Building 5"
+                        className="h-11"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Physical location or address
+                      </p>
+                    </div>
 
-                {/* Meeting Link */}
-                <div className="space-y-3">
-                  <Label htmlFor="meetingLink" className="text-sm font-medium flex items-center gap-2">
-                    <span className="text-base">🔗</span>
-                    Meeting Link
-                  </Label>
-                  <Input
-                    id="meetingLink"
-                    {...form.register('meetingLink')}
-                    placeholder="https://meet.google.com/..."
-                    type="url"
-                    className="h-11 bg-white/80 border-blue-200/50"
-                  />
-                  <p className="text-xs text-blue-600">
-                    Virtual meeting URL (Meet, Zoom, Teams)
-                  </p>
-                  {form.formState.errors.meetingLink && (
-                    <p className="text-xs text-red-500 flex items-center gap-1">
-                      <span>⚠</span> Please enter a valid URL
+                    {/* Meeting Link */}
+                    <div className="space-y-3">
+                      <Label htmlFor="meetingLink" className="text-sm font-medium flex items-center gap-2">
+                        <span className="text-base">🔗</span>
+                        Meeting Link
+                      </Label>
+                      <Input
+                        id="meetingLink"
+                        {...form.register('meetingLink')}
+                        placeholder="https://meet.google.com/..."
+                        type="url"
+                        className="h-11"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Virtual meeting URL (Meet, Zoom, Teams)
+                      </p>
+                      {form.formState.errors.meetingLink && (
+                        <p className="text-xs text-red-500 flex items-center gap-1">
+                          <span>⚠</span> Please enter a valid URL
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Recurrence */}
+                  <div className="space-y-3">
+                    <Label htmlFor="recurrence" className="text-sm font-medium flex items-center gap-2">
+                      <span className="text-base">🔄</span>
+                      Recurrence
+                    </Label>
+                    <Select
+                      value={form.watch('recurrence') || 'NONE'}
+                      onValueChange={(value) => form.setValue('recurrence', value === 'NONE' ? undefined : value)}
+                    >
+                      <SelectTrigger className="h-11">
+                        <SelectValue placeholder="Does not repeat" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="NONE">
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-400">○</span>
+                            Does not repeat
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="RRULE:FREQ=DAILY">
+                          <div className="flex items-center gap-2">
+                            <span className="text-blue-500">●</span>
+                            Daily
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="RRULE:FREQ=WEEKLY">
+                          <div className="flex items-center gap-2">
+                            <span className="text-green-500">●</span>
+                            Weekly
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="RRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR">
+                          <div className="flex items-center gap-2">
+                            <span className="text-orange-500">●</span>
+                            Weekdays (Mon, Wed, Fri)
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="RRULE:FREQ=MONTHLY">
+                          <div className="flex items-center gap-2">
+                            <span className="text-purple-500">●</span>
+                            Monthly
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="RRULE:FREQ=YEARLY">
+                          <div className="flex items-center gap-2">
+                            <span className="text-red-500">●</span>
+                            Annually
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Set if this task repeats on a regular schedule
                     </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Recurrence */}
-              <div className="space-y-3">
-                <Label htmlFor="recurrence" className="text-sm font-medium flex items-center gap-2">
-                  <span className="text-base">🔄</span>
-                  Recurrence
-                </Label>
-                <Select
-                  value={form.watch('recurrence') || 'NONE'}
-                  onValueChange={(value) => form.setValue('recurrence', value === 'NONE' ? undefined : value)}
-                >
-                  <SelectTrigger className="h-11 bg-white/80 border-blue-200/50">
-                    <SelectValue placeholder="Does not repeat" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="NONE">
-                      <div className="flex items-center gap-2">
-                        <span className="text-gray-400">○</span>
-                        Does not repeat
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="RRULE:FREQ=DAILY">
-                      <div className="flex items-center gap-2">
-                        <span className="text-blue-500">●</span>
-                        Daily
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="RRULE:FREQ=WEEKLY">
-                      <div className="flex items-center gap-2">
-                        <span className="text-green-500">●</span>
-                        Weekly
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="RRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR">
-                      <div className="flex items-center gap-2">
-                        <span className="text-orange-500">●</span>
-                        Weekdays (Mon, Wed, Fri)
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="RRULE:FREQ=MONTHLY">
-                      <div className="flex items-center gap-2">
-                        <span className="text-purple-500">●</span>
-                        Monthly
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="RRULE:FREQ=YEARLY">
-                      <div className="flex items-center gap-2">
-                        <span className="text-red-500">●</span>
-                        Annually
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-blue-600">
-                  Set if this task repeats on a regular schedule
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
 
           {/* Task Type Selection */}
           <Card className="border-2">

@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
         }
       }) : 0,
 
-      // Overdue tasks
+      // Overdue tasks (excluding subtasks - they're managed within parent task)
       prisma.task.count({
         where: {
           OR: [
@@ -75,7 +75,8 @@ export async function GET(req: NextRequest) {
             ...(session.user.role === 'LEADER' ? [{ teamId: { in: teamIds } }] : [])
           ],
           dueDate: { lt: new Date() },
-          status: { not: 'COMPLETED' }
+          status: { not: 'COMPLETED' },
+          parentId: null // Only count parent tasks, not subtasks
         }
       }),
 

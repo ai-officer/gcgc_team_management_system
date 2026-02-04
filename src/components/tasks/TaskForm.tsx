@@ -466,46 +466,49 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="priority" className="text-base">Priority Level</Label>
-                <Select
-                  value={form.watch('priority')}
-                  onValueChange={(value) => form.setValue('priority', value as Priority)}
-                >
-                  <SelectTrigger className="h-11">
-                    <SelectValue placeholder="Select priority" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="LOW">
-                      <div className="flex items-center gap-2">
-                        <Badge className="bg-green-100 text-green-800 border-green-300 hover:bg-green-100">Low</Badge>
-                        <span className="text-xs text-muted-foreground">Can wait</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="MEDIUM">
-                      <div className="flex items-center gap-2">
-                        <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-100">Medium</Badge>
-                        <span className="text-xs text-muted-foreground">Normal priority</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="HIGH">
-                      <div className="flex items-center gap-2">
-                        <Badge className="bg-orange-100 text-orange-800 border-orange-300 hover:bg-orange-100">High</Badge>
-                        <span className="text-xs text-muted-foreground">Important</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="URGENT">
-                      <div className="flex items-center gap-2">
-                        <Badge className="bg-red-100 text-red-800 border-red-300 hover:bg-red-100">Urgent</Badge>
-                        <span className="text-xs text-muted-foreground">Critical!</span>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <Badge className={cn("w-fit", getPriorityColor(form.watch('priority')))}>
-                  {form.watch('priority')} Priority
-                </Badge>
-              </div>
+{/* Only show Priority here when editing - for new tasks it's in Status & Schedule section */}
+              {task && (
+                <div className="space-y-2">
+                  <Label htmlFor="priority" className="text-base">Priority Level</Label>
+                  <Select
+                    value={form.watch('priority')}
+                    onValueChange={(value) => form.setValue('priority', value as Priority)}
+                  >
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Select priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="LOW">
+                        <div className="flex items-center gap-2">
+                          <Badge className="bg-green-100 text-green-800 border-green-300 hover:bg-green-100">Low</Badge>
+                          <span className="text-xs text-muted-foreground">Can wait</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="MEDIUM">
+                        <div className="flex items-center gap-2">
+                          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-100">Medium</Badge>
+                          <span className="text-xs text-muted-foreground">Normal priority</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="HIGH">
+                        <div className="flex items-center gap-2">
+                          <Badge className="bg-orange-100 text-orange-800 border-orange-300 hover:bg-orange-100">High</Badge>
+                          <span className="text-xs text-muted-foreground">Important</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="URGENT">
+                        <div className="flex items-center gap-2">
+                          <Badge className="bg-red-100 text-red-800 border-red-300 hover:bg-red-100">Urgent</Badge>
+                          <span className="text-xs text-muted-foreground">Critical!</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Badge className={cn("w-fit", getPriorityColor(form.watch('priority')))}>
+                    {form.watch('priority')} Priority
+                  </Badge>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -559,8 +562,8 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
                   </Badge>
                 </div>
 
-{/* Only show progress when editing an existing task */}
-                {task && (
+{/* Show Priority for new tasks, Progress for editing */}
+                {task ? (
                   <div className="space-y-3">
                     <Label htmlFor="progress" className="text-base">Progress: {progressPercentage}%</Label>
                     <div className="space-y-3">
@@ -580,6 +583,47 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
                         className={`h-3 ${getProgressColor(progressPercentage)}`}
                       />
                     </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <Label htmlFor="priority" className="text-base">Priority Level</Label>
+                    <Select
+                      value={form.watch('priority')}
+                      onValueChange={(value) => form.setValue('priority', value as Priority)}
+                    >
+                      <SelectTrigger className="h-11">
+                        <SelectValue placeholder="Select priority" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="LOW">
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-green-100 text-green-800 border-green-300 hover:bg-green-100">Low</Badge>
+                            <span className="text-xs text-muted-foreground">Can wait</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="MEDIUM">
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-100">Medium</Badge>
+                            <span className="text-xs text-muted-foreground">Normal priority</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="HIGH">
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-orange-100 text-orange-800 border-orange-300 hover:bg-orange-100">High</Badge>
+                            <span className="text-xs text-muted-foreground">Important</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="URGENT">
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-red-100 text-red-800 border-red-300 hover:bg-red-100">Urgent</Badge>
+                            <span className="text-xs text-muted-foreground">Critical!</span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Badge className={cn("w-fit", getPriorityColor(form.watch('priority')))}>
+                      {form.watch('priority')} Priority
+                    </Badge>
                   </div>
                 )}
               </div>

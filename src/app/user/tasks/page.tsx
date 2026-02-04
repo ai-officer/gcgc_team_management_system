@@ -256,13 +256,17 @@ export default function TasksPage() {
       }
 
       // Get the updated task data from the response
-      const updatedTask = await response.json()
-      
+      const responseData = await response.json()
+      const { updatedParentTask, ...updatedTask } = responseData
+
       // Update the task with the server response to ensure consistency
-      setTasks(prev => 
-        prev.map(task => 
-          task.id === draggableId ? updatedTask : task
-        )
+      // Also update parent task if a subtask was moved
+      setTasks(prev =>
+        prev.map(task => {
+          if (task.id === draggableId) return updatedTask
+          if (updatedParentTask && task.id === updatedParentTask.id) return updatedParentTask
+          return task
+        })
       )
 
       toast({

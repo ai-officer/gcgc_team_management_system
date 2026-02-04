@@ -386,6 +386,60 @@ export async function PATCH(
       })
     })
 
+    // If this is a subtask and status changed, recalculate parent's progress
+    let updatedParentTask = null
+    if (existingTask.parentId && updateData.status) {
+      // Get all subtasks of the parent
+      const allSubtasks = await prisma.task.findMany({
+        where: { parentId: existingTask.parentId },
+        select: { status: true }
+      })
+
+      // Calculate progress based on subtask statuses
+      // COMPLETED = 100%, IN_REVIEW = 75%, IN_PROGRESS = 50%, TODO = 0%
+      const statusWeights: Record<string, number> = {
+        'COMPLETED': 100,
+        'IN_REVIEW': 75,
+        'IN_PROGRESS': 50,
+        'TODO': 0
+      }
+
+      const totalProgress = allSubtasks.reduce((sum, st) => sum + (statusWeights[st.status] || 0), 0)
+      const avgProgress = Math.round(totalProgress / allSubtasks.length)
+
+      // Determine parent status based on subtasks
+      let parentStatus: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' | undefined
+      const allCompleted = allSubtasks.every(st => st.status === 'COMPLETED')
+      const anyInProgress = allSubtasks.some(st => st.status === 'IN_PROGRESS' || st.status === 'IN_REVIEW' || st.status === 'COMPLETED')
+
+      if (allCompleted) {
+        parentStatus = 'COMPLETED'
+      } else if (avgProgress >= 75) {
+        parentStatus = 'IN_REVIEW'
+      } else if (anyInProgress) {
+        parentStatus = 'IN_PROGRESS'
+      }
+
+      // Update parent task progress and status
+      updatedParentTask = await prisma.task.update({
+        where: { id: existingTask.parentId },
+        data: {
+          progressPercentage: avgProgress,
+          ...(parentStatus ? { status: parentStatus } : {})
+        },
+        include: {
+          assignee: { select: { id: true, name: true, email: true, image: true } },
+          creator: { select: { id: true, name: true, email: true, image: true } },
+          team: { select: { id: true, name: true } },
+          subtasks: {
+            include: {
+              assignee: { select: { id: true, name: true, email: true, image: true } }
+            }
+          }
+        }
+      })
+    }
+
     // Log activity
     if (updatedTask) {
       await prisma.activity.create({
@@ -403,7 +457,11 @@ export async function PATCH(
       await autoSyncTask(updatedTask.id, session.user.id)
     }
 
-    return NextResponse.json(updatedTask)
+    // Return both the updated task and parent task if applicable
+    return NextResponse.json({
+      ...updatedTask,
+      updatedParentTask
+    })
   } catch (error) {
     console.error('Task update error:', error)
     

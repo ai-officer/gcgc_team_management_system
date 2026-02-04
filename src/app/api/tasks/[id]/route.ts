@@ -244,13 +244,32 @@ export async function PATCH(
       ? new Date(updateData.startDate)
       : (finalDueDate ? new Date(finalDueDate) : (updateData.dueDate !== undefined ? existingTask.startDate : undefined))
 
+    // Check if user is the assignee (only assignee can complete the task)
+    const isAssignee = existingTask.assigneeId === session.user.id
+    const isAdmin = session.user.role === 'ADMIN'
+    const canComplete = isAssignee || isAdmin
+
+    // Prevent non-assignees from setting progress to 100% or status to COMPLETED
+    if (!canComplete) {
+      // Cap progress at 90% for non-assignees (IN_REVIEW state)
+      if (updateData.progressPercentage !== undefined && updateData.progressPercentage > 90) {
+        updateData.progressPercentage = 90
+      }
+      // Prevent non-assignees from marking as COMPLETED
+      if (updateData.status === 'COMPLETED') {
+        return NextResponse.json({
+          error: 'Only the assignee can mark this task as completed. Please move it to "In Review" and the assignee will complete it.'
+        }, { status: 403 })
+      }
+    }
+
     // Auto-set status based on progress percentage
     let autoStatus: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' | undefined
     if (updateData.progressPercentage !== undefined) {
       const progress = updateData.progressPercentage
-      if (progress === 100) {
+      if (progress === 100 && canComplete) {
         autoStatus = 'COMPLETED'
-      } else if (progress > 90) {
+      } else if (progress >= 90) {
         autoStatus = 'IN_REVIEW'
       } else if (progress > 0) {
         autoStatus = 'IN_PROGRESS'

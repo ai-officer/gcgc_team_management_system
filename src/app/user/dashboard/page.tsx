@@ -229,7 +229,7 @@ export default function UserDashboard() {
       </div>
 
       {/* Professional Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 ${isLeader ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}>
         {/* Active Tasks Card */}
         <Card
           className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl hover:-translate-y-1"

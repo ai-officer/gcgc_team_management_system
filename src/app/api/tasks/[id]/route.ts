@@ -396,10 +396,10 @@ export async function PATCH(
       })
 
       // Calculate progress based on subtask statuses
-      // COMPLETED = 100%, IN_REVIEW = 75%, IN_PROGRESS = 50%, TODO = 0%
+      // COMPLETED = 100%, IN_REVIEW = 90%, IN_PROGRESS = 50%, TODO = 0%
       const statusWeights: Record<string, number> = {
         'COMPLETED': 100,
-        'IN_REVIEW': 75,
+        'IN_REVIEW': 90,
         'IN_PROGRESS': 50,
         'TODO': 0
       }

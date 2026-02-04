@@ -559,26 +559,29 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
                   </Badge>
                 </div>
 
-                <div className="space-y-3">
-                  <Label htmlFor="progress" className="text-base">Progress: {progressPercentage}%</Label>
+{/* Only show progress when editing an existing task */}
+                {task && (
                   <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <Input
-                        type="range"
-                        min="0"
-                        max="100"
+                    <Label htmlFor="progress" className="text-base">Progress: {progressPercentage}%</Label>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <Input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={progressPercentage}
+                          onChange={(e) => form.setValue('progressPercentage', Number(e.target.value))}
+                          className="w-full"
+                        />
+                        <span className="text-sm font-semibold min-w-[3rem] text-right">{progressPercentage}%</span>
+                      </div>
+                      <Progress
                         value={progressPercentage}
-                        onChange={(e) => form.setValue('progressPercentage', Number(e.target.value))}
-                        className="w-full"
+                        className={`h-3 ${getProgressColor(progressPercentage)}`}
                       />
-                      <span className="text-sm font-semibold min-w-[3rem] text-right">{progressPercentage}%</span>
                     </div>
-                    <Progress 
-                      value={progressPercentage} 
-                      className={`h-3 ${getProgressColor(progressPercentage)}`}
-                    />
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Date Range */}

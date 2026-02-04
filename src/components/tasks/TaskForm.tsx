@@ -742,146 +742,141 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
             </CardContent>
           </Card>
 
-          {/* Advanced Settings - Collapsible */}
-          <Collapsible>
-            <Card className="border-2">
-              <CollapsibleTrigger asChild>
-                <CardHeader className="pb-4 cursor-pointer hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-gray-100 rounded-lg">
-                        <Settings2 className="h-5 w-5 text-gray-600" />
+          {/* Subtasks Section - Collapsible (only for new tasks) */}
+          {!task && (
+            <Collapsible>
+              <Card className="border-2 border-amber-200 bg-amber-50/50">
+                <CollapsibleTrigger asChild>
+                  <CardHeader className="pb-3 cursor-pointer hover:bg-amber-100/50 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-amber-100 rounded-full">
+                          <ListTodo className="h-5 w-5 text-amber-600" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-base text-amber-900">Subtasks</CardTitle>
+                          <CardDescription className="text-amber-700">
+                            Break this task into smaller pieces and assign them to team members
+                          </CardDescription>
+                        </div>
                       </div>
-                      <div>
-                        <CardTitle className="text-lg">Advanced Settings</CardTitle>
-                        <CardDescription>Calendar integration, location, and recurrence</CardDescription>
+                      <div className="flex items-center gap-2">
+                        {pendingSubtasks.length > 0 && (
+                          <Badge className="bg-amber-500 text-white">
+                            {pendingSubtasks.length}
+                          </Badge>
+                        )}
+                        <ChevronDown className="h-5 w-5 text-amber-600 transition-transform duration-200" />
                       </div>
                     </div>
-                    <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform duration-200 [&[data-state=open]>svg]:rotate-180" />
-                  </div>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <CardContent className="space-y-6 pt-0">
-                  {/* All Day Toggle */}
-                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border">
-                    <div className="space-y-1">
-                      <Label htmlFor="allDay" className="text-base font-semibold">All-day Task</Label>
-                      <p className="text-sm text-muted-foreground">
-                        {form.watch('allDay')
-                          ? 'Task can be done anytime during the selected day(s)'
-                          : 'Task has specific start and end times'}
-                      </p>
-                    </div>
-                    <Switch
-                      id="allDay"
-                      checked={form.watch('allDay')}
-                      onCheckedChange={(checked) => form.setValue('allDay', checked)}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Location */}
+                  </CardHeader>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent className="space-y-4 pt-0">
+                    {/* Add Subtask Form */}
                     <div className="space-y-3">
-                      <Label htmlFor="location" className="text-sm font-medium flex items-center gap-2">
-                        <span className="text-base">📍</span>
-                        Location
-                      </Label>
-                      <Input
-                        id="location"
-                        {...form.register('location')}
-                        placeholder="e.g., Conference Room A, Building 5"
-                        className="h-11"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Physical location or address
-                      </p>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Enter subtask title..."
+                          value={newSubtaskTitle}
+                          onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault()
+                              addSubtask()
+                            }
+                          }}
+                          className="flex-1"
+                        />
+                        <Select
+                          value={newSubtaskAssigneeId}
+                          onValueChange={setNewSubtaskAssigneeId}
+                        >
+                          <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Assign to..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={session?.user?.id || 'self'}>
+                              Myself
+                            </SelectItem>
+                            {users.filter(u => u.id !== session?.user?.id).map((user) => (
+                              <SelectItem key={user.id} value={user.id}>
+                                {user.name || user.email}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          type="date"
+                          value={newSubtaskDeadline}
+                          onChange={(e) => setNewSubtaskDeadline(e.target.value)}
+                          className="w-[150px]"
+                          placeholder="Deadline"
+                        />
+                        <Button
+                          type="button"
+                          size="icon"
+                          onClick={addSubtask}
+                          disabled={!newSubtaskTitle.trim()}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
 
-                    {/* Meeting Link */}
-                    <div className="space-y-3">
-                      <Label htmlFor="meetingLink" className="text-sm font-medium flex items-center gap-2">
-                        <span className="text-base">🔗</span>
-                        Meeting Link
-                      </Label>
-                      <Input
-                        id="meetingLink"
-                        {...form.register('meetingLink')}
-                        placeholder="https://meet.google.com/..."
-                        type="url"
-                        className="h-11"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Virtual meeting URL (Meet, Zoom, Teams)
-                      </p>
-                      {form.formState.errors.meetingLink && (
-                        <p className="text-xs text-red-500 flex items-center gap-1">
-                          <span>⚠</span> Please enter a valid URL
+                    {/* Subtasks List */}
+                    {pendingSubtasks.length > 0 && (
+                      <div className="space-y-2">
+                        <Label className="text-sm text-amber-800">
+                          {pendingSubtasks.length} subtask{pendingSubtasks.length !== 1 ? 's' : ''} to create
+                        </Label>
+                        <div className="space-y-2">
+                          {pendingSubtasks.map((subtask) => (
+                            <div
+                              key={subtask.id}
+                              className="flex items-center justify-between p-3 bg-white rounded-lg border border-amber-200"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="w-2 h-2 rounded-full bg-amber-400" />
+                                <div>
+                                  <p className="text-sm font-medium">{subtask.title}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Assigned to: {subtask.assignee?.name || subtask.assignee?.email || 'You'}
+                                    {subtask.dueDate && (
+                                      <span className="ml-2">• Due: {new Date(subtask.dueDate).toLocaleDateString()}</span>
+                                    )}
+                                  </p>
+                                </div>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => removeSubtask(subtask.id)}
+                                className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {pendingSubtasks.length === 0 && (
+                      <div className="text-center py-4 text-amber-600">
+                        <ListTodo className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">No subtasks added yet</p>
+                        <p className="text-xs text-muted-foreground">
+                          Add subtasks above to break down this task
                         </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Recurrence */}
-                  <div className="space-y-3">
-                    <Label htmlFor="recurrence" className="text-sm font-medium flex items-center gap-2">
-                      <span className="text-base">🔄</span>
-                      Recurrence
-                    </Label>
-                    <Select
-                      value={form.watch('recurrence') || 'NONE'}
-                      onValueChange={(value) => form.setValue('recurrence', value === 'NONE' ? undefined : value)}
-                    >
-                      <SelectTrigger className="h-11">
-                        <SelectValue placeholder="Does not repeat" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="NONE">
-                          <div className="flex items-center gap-2">
-                            <span className="text-gray-400">○</span>
-                            Does not repeat
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="RRULE:FREQ=DAILY">
-                          <div className="flex items-center gap-2">
-                            <span className="text-blue-500">●</span>
-                            Daily
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="RRULE:FREQ=WEEKLY">
-                          <div className="flex items-center gap-2">
-                            <span className="text-green-500">●</span>
-                            Weekly
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="RRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR">
-                          <div className="flex items-center gap-2">
-                            <span className="text-orange-500">●</span>
-                            Weekdays (Mon, Wed, Fri)
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="RRULE:FREQ=MONTHLY">
-                          <div className="flex items-center gap-2">
-                            <span className="text-purple-500">●</span>
-                            Monthly
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="RRULE:FREQ=YEARLY">
-                          <div className="flex items-center gap-2">
-                            <span className="text-red-500">●</span>
-                            Annually
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">
-                      Set if this task repeats on a regular schedule
-                    </p>
-                  </div>
-                </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+                      </div>
+                    )}
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
+          )}
 
           {/* Task Type Selection */}
           <Card className="border-2">
@@ -1022,125 +1017,146 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
             </Card>
           )}
 
-          {/* Subtasks Section */}
-          {!task && (
-            <Card className="border-2 border-amber-200 bg-amber-50/50">
-              <CardHeader className="pb-3">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 bg-amber-100 rounded-full">
-                    <ListTodo className="h-5 w-5 text-amber-600" />
+          {/* Advanced Settings - Collapsible */}
+          <Collapsible>
+            <Card className="border-2">
+              <CollapsibleTrigger asChild>
+                <CardHeader className="pb-4 cursor-pointer hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-gray-100 rounded-lg">
+                        <Settings2 className="h-5 w-5 text-gray-600" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">Advanced Settings</CardTitle>
+                        <CardDescription>Calendar integration, location, and recurrence</CardDescription>
+                      </div>
+                    </div>
+                    <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform duration-200" />
                   </div>
-                  <div>
-                    <CardTitle className="text-base text-amber-900">Subtasks</CardTitle>
-                    <CardDescription className="text-amber-700">
-                      Break this task into smaller pieces and assign them to team members
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Add Subtask Form */}
-                <div className="space-y-3">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Enter subtask title..."
-                      value={newSubtaskTitle}
-                      onChange={(e) => setNewSubtaskTitle(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault()
-                          addSubtask()
-                        }
-                      }}
-                      className="flex-1"
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="space-y-6 pt-0">
+                  {/* All Day Toggle */}
+                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border">
+                    <div className="space-y-1">
+                      <Label htmlFor="allDay" className="text-base font-semibold">All-day Task</Label>
+                      <p className="text-sm text-muted-foreground">
+                        {form.watch('allDay')
+                          ? 'Task can be done anytime during the selected day(s)'
+                          : 'Task has specific start and end times'}
+                      </p>
+                    </div>
+                    <Switch
+                      id="allDay"
+                      checked={form.watch('allDay')}
+                      onCheckedChange={(checked) => form.setValue('allDay', checked)}
                     />
-                    <Select
-                      value={newSubtaskAssigneeId}
-                      onValueChange={setNewSubtaskAssigneeId}
-                    >
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Assign to..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={session?.user?.id || 'self'}>
-                          Myself
-                        </SelectItem>
-                        {users.filter(u => u.id !== session?.user?.id).map((user) => (
-                          <SelectItem key={user.id} value={user.id}>
-                            {user.name || user.email}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      type="date"
-                      value={newSubtaskDeadline}
-                      onChange={(e) => setNewSubtaskDeadline(e.target.value)}
-                      className="w-[150px]"
-                      placeholder="Deadline"
-                    />
-                    <Button
-                      type="button"
-                      size="icon"
-                      onClick={addSubtask}
-                      disabled={!newSubtaskTitle.trim()}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
                   </div>
-                </div>
 
-                {/* Subtasks List */}
-                {pendingSubtasks.length > 0 && (
-                  <div className="space-y-2">
-                    <Label className="text-sm text-amber-800">
-                      {pendingSubtasks.length} subtask{pendingSubtasks.length !== 1 ? 's' : ''} to create
-                    </Label>
-                    <div className="space-y-2">
-                      {pendingSubtasks.map((subtask) => (
-                        <div
-                          key={subtask.id}
-                          className="flex items-center justify-between p-3 bg-white rounded-lg border border-amber-200"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-2 h-2 rounded-full bg-amber-400" />
-                            <div>
-                              <p className="text-sm font-medium">{subtask.title}</p>
-                              <p className="text-xs text-muted-foreground">
-                                Assigned to: {subtask.assignee?.name || subtask.assignee?.email || 'You'}
-                                {subtask.dueDate && (
-                                  <span className="ml-2">• Due: {new Date(subtask.dueDate).toLocaleDateString()}</span>
-                                )}
-                              </p>
-                            </div>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeSubtask(subtask.id)}
-                            className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Location */}
+                    <div className="space-y-3">
+                      <Label htmlFor="location" className="text-sm font-medium flex items-center gap-2">
+                        <span className="text-base">📍</span>
+                        Location
+                      </Label>
+                      <Input
+                        id="location"
+                        {...form.register('location')}
+                        placeholder="e.g., Conference Room A, Building 5"
+                        className="h-11"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Physical location or address
+                      </p>
+                    </div>
+
+                    {/* Meeting Link */}
+                    <div className="space-y-3">
+                      <Label htmlFor="meetingLink" className="text-sm font-medium flex items-center gap-2">
+                        <span className="text-base">🔗</span>
+                        Meeting Link
+                      </Label>
+                      <Input
+                        id="meetingLink"
+                        {...form.register('meetingLink')}
+                        placeholder="https://meet.google.com/..."
+                        type="url"
+                        className="h-11"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Virtual meeting URL (Meet, Zoom, Teams)
+                      </p>
+                      {form.formState.errors.meetingLink && (
+                        <p className="text-xs text-red-500 flex items-center gap-1">
+                          <span>⚠</span> Please enter a valid URL
+                        </p>
+                      )}
                     </div>
                   </div>
-                )}
 
-                {pendingSubtasks.length === 0 && (
-                  <div className="text-center py-4 text-amber-600">
-                    <ListTodo className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No subtasks added yet</p>
+                  {/* Recurrence */}
+                  <div className="space-y-3">
+                    <Label htmlFor="recurrence" className="text-sm font-medium flex items-center gap-2">
+                      <span className="text-base">🔄</span>
+                      Recurrence
+                    </Label>
+                    <Select
+                      value={form.watch('recurrence') || 'NONE'}
+                      onValueChange={(value) => form.setValue('recurrence', value === 'NONE' ? undefined : value)}
+                    >
+                      <SelectTrigger className="h-11">
+                        <SelectValue placeholder="Does not repeat" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="NONE">
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-400">○</span>
+                            Does not repeat
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="RRULE:FREQ=DAILY">
+                          <div className="flex items-center gap-2">
+                            <span className="text-blue-500">●</span>
+                            Daily
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="RRULE:FREQ=WEEKLY">
+                          <div className="flex items-center gap-2">
+                            <span className="text-green-500">●</span>
+                            Weekly
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="RRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR">
+                          <div className="flex items-center gap-2">
+                            <span className="text-orange-500">●</span>
+                            Weekdays (Mon, Wed, Fri)
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="RRULE:FREQ=MONTHLY">
+                          <div className="flex items-center gap-2">
+                            <span className="text-purple-500">●</span>
+                            Monthly
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="RRULE:FREQ=YEARLY">
+                          <div className="flex items-center gap-2">
+                            <span className="text-red-500">●</span>
+                            Annually
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                     <p className="text-xs text-muted-foreground">
-                      Add subtasks above to break down this task
+                      Set if this task repeats on a regular schedule
                     </p>
                   </div>
-                )}
-              </CardContent>
+                </CardContent>
+              </CollapsibleContent>
             </Card>
-          )}
+          </Collapsible>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -135,6 +135,8 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
   const taskType = form.watch('taskType')
   const progressPercentage = form.watch('progressPercentage')
 
+  // Track previous open state to only initialize once per open
+  const prevOpenRef = useRef(false)
 
   // Fetch users when dialog opens
   useEffect(() => {
@@ -143,9 +145,10 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
     }
   }, [open])
 
-  // Initialize form when dialog opens - ONLY ONCE per open
+  // Initialize form when dialog opens - ONLY ONCE per open (when transitioning from closed to open)
   useEffect(() => {
-    if (open) {
+    // Only initialize when dialog transitions from closed to open
+    if (open && !prevOpenRef.current) {
       if (task) {
         // Populate form with existing task data
         const startDateTime = task.startDate ? new Date(task.startDate) : undefined
@@ -217,6 +220,8 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
         setNewSubtaskDeadline('')
       }
     }
+    // Update the ref to track current open state
+    prevOpenRef.current = open
   }, [open, task, form, session, preSelectedMemberId])
 
   // Handle task type changes and set appropriate defaults

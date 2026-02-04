@@ -694,7 +694,7 @@ export default function TasksPage() {
                                   : canDrag ? 'hover:shadow-md hover:-translate-y-1 shadow-sm' : 'shadow-sm'
                               } ${
                                 task.parentId
-                                  ? 'bg-violet-50 border-l-4 border-l-violet-400 border-t border-r border-b border-violet-200'
+                                  ? 'bg-white border-l-4 border-l-violet-500 border-t border-r border-b border-gray-200'
                                   : 'bg-white border border-gray-200'
                               } rounded-lg ${
                                 !canDrag ? 'opacity-90' : ''

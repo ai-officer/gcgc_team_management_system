@@ -8,6 +8,11 @@ const config: Config = {
     "./app/**/*.{ts,tsx}",
     "./src/**/*.{ts,tsx}",
   ],
+  safelist: [
+    // Kanban card border colors for main tasks and subtasks
+    'border-l-teal-500',
+    'border-l-slate-400',
+  ],
   prefix: "",
   theme: {
     container: {

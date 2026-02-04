@@ -692,11 +692,7 @@ export default function TasksPage() {
                                 snapshot.isDragging
                                   ? 'shadow-xl rotate-2 scale-105 z-50'
                                   : canDrag ? 'hover:shadow-md hover:-translate-y-1 shadow-sm' : 'shadow-sm'
-                              } ${
-                                task.parentId
-                                  ? 'bg-white border-l-4 border-l-slate-400 border-t border-r border-b border-gray-200'
-                                  : 'bg-white border-l-4 border-l-teal-500 border-t border-r border-b border-gray-200'
-                              } rounded-lg ${
+                              } bg-white border border-gray-200 rounded-lg ${
                                 !canDrag ? 'opacity-90' : ''
                               }`}
                               onClick={(e) => {
@@ -738,7 +734,7 @@ export default function TasksPage() {
                                         </h4>
                                         <div className="flex items-center gap-1 flex-wrap">
                                           {task.parentId && (
-                                            <Badge className="text-xs bg-slate-100 text-slate-600 border-slate-300">
+                                            <Badge className="text-xs bg-violet-500 text-white border-violet-600">
                                               Subtask
                                             </Badge>
                                           )}
@@ -919,10 +915,11 @@ export default function TasksPage() {
                                 </div>
                               </CardContent>
                             </Card>
-                          )}
-                        }
+                          )
+                        }}
                         </Draggable>
                       ))}
+
                       {provided.placeholder}
                     </div>
                   )}

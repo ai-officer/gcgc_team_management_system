@@ -39,6 +39,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -583,29 +584,14 @@ export default function TasksPage() {
           />
         </div>
         
-        <Select value={selectedUser || "all"} onValueChange={(value) => setSelectedUser(value === "all" ? "" : value)}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Filter by user" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All users</SelectItem>
-            {users.map((user) => (
-              <SelectItem key={user.id} value={user.id}>
-                <div className="flex items-center gap-2">
-                  <UserAvatar
-                    userId={user.id}
-                    image={user.image}
-                    name={user.name}
-                    email={user.email}
-                    className="h-5 w-5"
-                    fallbackClassName="text-xs"
-                  />
-                  <span>{user.name || user.email}</span>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <SearchableSelect
+          options={users}
+          value={selectedUser}
+          onValueChange={setSelectedUser}
+          placeholder="Filter by user"
+          allLabel="All users"
+          maxDisplayed={10}
+        />
 
         <Select value={selectedTaskType || "all"} onValueChange={(value) => setSelectedTaskType(value === "all" ? "" : value)}>
           <SelectTrigger className="w-[200px]">

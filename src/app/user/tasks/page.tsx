@@ -729,7 +729,7 @@ export default function TasksPage() {
                                         {getTaskTypeIcon(task.taskType)}
                                       </div>
                                       <div className="min-w-0 flex-1">
-                                        <h4 className="font-semibold text-sm leading-tight text-gray-900 truncate mb-1">
+                                        <h4 className="font-semibold text-base leading-tight text-gray-900 truncate mb-1">
                                           {task.title}
                                         </h4>
                                         <div className="flex items-center gap-1 flex-wrap">

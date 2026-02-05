@@ -572,9 +572,9 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
                         <Input
                           type="range"
                           min="0"
-                          max="100"
-                          value={progressPercentage}
-                          onChange={(e) => form.setValue('progressPercentage', Number(e.target.value))}
+                          max="99"
+                          value={Math.min(progressPercentage, 99)}
+                          onChange={(e) => form.setValue('progressPercentage', Math.min(Number(e.target.value), 99))}
                           className="w-full"
                         />
                         <span className="text-sm font-semibold min-w-[3rem] text-right">{progressPercentage}%</span>
@@ -583,6 +583,9 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
                         value={progressPercentage}
                         className={`h-3 ${getProgressColor(progressPercentage)}`}
                       />
+                      <p className="text-xs text-amber-600 flex items-center gap-1">
+                        <span>ℹ️</span> Max 99%. Task must be reviewed by Team Leader to reach 100%.
+                      </p>
                     </div>
                   </div>
                 ) : (

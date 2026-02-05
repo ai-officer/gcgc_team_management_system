@@ -182,7 +182,15 @@ export async function PATCH(
 
     const body = await req.json()
     const updateData = updateTaskSchema.parse(body)
-    
+
+    // Prevent non-leaders from setting progress to 100%
+    // Tasks must be reviewed by Team Leader before completion
+    if (updateData.progressPercentage === 100 && session.user.role !== 'LEADER' && session.user.role !== 'ADMIN') {
+      return NextResponse.json({
+        error: 'Progress cannot be set to 100%. Tasks must be reviewed by a Team Leader before completion.'
+      }, { status: 403 })
+    }
+
     // Check if user is team member or collaborator
     const isTeamMember = existingTask.teamMembers?.some(tm => tm.userId === session.user.id) || false
     const isCollaborator = existingTask.collaborators?.some(c => c.userId === session.user.id) || false

@@ -20,7 +20,9 @@ import { EVENT_TYPE_COLORS } from '@/constants'
 import CalendarSyncSettingsModal from '@/components/calendar/CalendarSyncSettingsModal'
 import OSSBWizardForm from '@/components/ossb/OSSBWizardForm'
 import CreateTaskButton from '@/components/tasks/CreateTaskButton'
+import TaskViewModal from '@/components/tasks/TaskViewModal'
 import { useCalendarSync } from '@/hooks/useCalendarSync'
+import { useToast } from '@/hooks/use-toast'
 import '@/styles/react-big-calendar.css'
 
 const localizer = momentLocalizer(moment)
@@ -105,6 +107,10 @@ export default function CalendarPage() {
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false)
   const [isSyncSettingsOpen, setIsSyncSettingsOpen] = useState(false)
   const [isOSSBWizardOpen, setIsOSSBWizardOpen] = useState(false)
+  const [isTaskViewOpen, setIsTaskViewOpen] = useState(false)
+  const [viewingTask, setViewingTask] = useState<any>(null)
+  const [loadingTaskDetails, setLoadingTaskDetails] = useState(false)
+  const { toast } = useToast()
 
   const fetchCalendarData = useCallback(async () => {
     if (!session?.user) return
@@ -265,6 +271,29 @@ export default function CalendarPage() {
   const handleSelectEvent = (event: CalendarEvent) => {
     setSelectedEvent(event)
     setIsEventDialogOpen(true)
+  }
+
+  const handleViewTaskDetails = async (taskId: string) => {
+    try {
+      setLoadingTaskDetails(true)
+      const response = await fetch(`/api/tasks/${taskId}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch task details')
+      }
+      const data = await response.json()
+      setViewingTask(data.task)
+      setIsEventDialogOpen(false)
+      setIsTaskViewOpen(true)
+    } catch (err) {
+      console.error('Error fetching task details:', err)
+      toast({
+        title: 'Error',
+        description: 'Failed to load task details',
+        variant: 'destructive'
+      })
+    } finally {
+      setLoadingTaskDetails(false)
+    }
   }
 
   // Event style getter - CRITICAL for multi-day events
@@ -617,13 +646,17 @@ export default function CalendarPage() {
                   <Button
                     variant="outline"
                     className="w-full"
-                    onClick={() => {
-                      setIsEventDialogOpen(false)
-                      // Navigate to task if needed
-                      window.location.href = `/user/tasks?highlight=${selectedEvent.resource?.task?.id}`
-                    }}
+                    disabled={loadingTaskDetails}
+                    onClick={() => handleViewTaskDetails(selectedEvent.resource!.task!.id)}
                   >
-                    View Task Details
+                    {loadingTaskDetails ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      'View Task Details'
+                    )}
                   </Button>
                 </div>
               )}
@@ -644,6 +677,24 @@ export default function CalendarPage() {
         isOpen={isOSSBWizardOpen}
         onClose={() => setIsOSSBWizardOpen(false)}
         onSuccess={fetchCalendarData}
+      />
+
+      {/* Task View Modal */}
+      <TaskViewModal
+        open={isTaskViewOpen}
+        onOpenChange={(open) => {
+          setIsTaskViewOpen(open)
+          if (!open) {
+            setViewingTask(null)
+            fetchCalendarData()
+          }
+        }}
+        task={viewingTask}
+        onEdit={() => {
+          // Close modal and optionally navigate to tasks page for editing
+          setIsTaskViewOpen(false)
+          window.location.href = `/user/tasks?edit=${viewingTask?.id}`
+        }}
       />
     </div>
   )

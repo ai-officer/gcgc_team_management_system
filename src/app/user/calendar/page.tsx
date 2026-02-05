@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react'
 import { Calendar, momentLocalizer, Views } from 'react-big-calendar'
 import moment from 'moment'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
-import { Calendar as CalendarIcon, AlertCircle, Settings, Wifi, WifiOff, RefreshCw, FileText } from 'lucide-react'
+import { Calendar as CalendarIcon, AlertCircle, Settings, Wifi, WifiOff, RefreshCw, FileText, Clock, Users, User, Tag, CheckCircle2, AlertTriangle, Flag, X } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -425,58 +425,209 @@ export default function CalendarPage() {
         />
       </div>
 
-      {/* Event Details Dialog */}
+      {/* Event Details Dialog - Professional Design */}
       <Dialog open={isEventDialogOpen} onOpenChange={setIsEventDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{selectedEvent?.title}</DialogTitle>
-            <DialogDescription>
-              {selectedEvent?.resource?.description}
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden">
           {selectedEvent && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <CalendarIcon className="h-4 w-4" />
-                <span className="text-sm">
-                  {selectedEvent.start.toLocaleDateString()}
-                  {!selectedEvent.allDay && (
-                    <> at {selectedEvent.start.toLocaleTimeString()}</>
-                  )}
-                  {selectedEvent.start.getTime() !== selectedEvent.end.getTime() && (
-                    <> - {selectedEvent.end.toLocaleDateString()}</>
-                  )}
-                </span>
-              </div>
-
-              {selectedEvent.resource?.team && (
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline">
-                    {selectedEvent.resource.team.name}
-                  </Badge>
-                </div>
-              )}
-
-              {selectedEvent.resource?.task && (
-                <div className="space-y-2">
-                  <h4 className="font-medium">Task Details</h4>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">
-                      {selectedEvent.resource.task.priority} Priority
-                    </Badge>
-                    <Badge variant="secondary">
-                      {selectedEvent.resource.task.status.replace('_', ' ')}
-                    </Badge>
+            <>
+              {/* Header with Color Accent */}
+              <div
+                className="px-6 py-5 border-b"
+                style={{
+                  background: `linear-gradient(135deg, ${selectedEvent.resource?.color || '#3b82f6'}15, ${selectedEvent.resource?.color || '#3b82f6'}08)`,
+                  borderLeft: `4px solid ${selectedEvent.resource?.color || '#3b82f6'}`
+                }}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                        style={{
+                          backgroundColor: `${selectedEvent.resource?.color || '#3b82f6'}20`,
+                          color: selectedEvent.resource?.color || '#3b82f6'
+                        }}
+                      >
+                        {selectedEvent.resource?.type === 'DEADLINE' ? 'Task' :
+                         selectedEvent.resource?.type === 'MEETING' ? 'Meeting' :
+                         selectedEvent.resource?.type === 'PERSONAL' ? 'Holiday' : 'Event'}
+                      </span>
+                      {selectedEvent.allDay && (
+                        <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                          All Day
+                        </span>
+                      )}
+                    </div>
+                    <h2 className="text-lg font-semibold text-foreground leading-tight">
+                      {selectedEvent.title.replace(/^\[(.*?)\]\s*/, '')}
+                    </h2>
+                    {selectedEvent.title.match(/^\[(.*?)\]/) && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {selectedEvent.title.match(/^\[(.*?)\]/)?.[1]}
+                      </p>
+                    )}
                   </div>
                 </div>
-              )}
+              </div>
 
-              {selectedEvent.resource?.creator && (
-                <div className="text-sm text-muted-foreground">
-                  Created by {selectedEvent.resource.creator.name}
+              {/* Content Body */}
+              <div className="px-6 py-5 space-y-5">
+                {/* Date & Time Section */}
+                <div className="flex items-start gap-3">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 text-primary shrink-0">
+                    <CalendarIcon className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1 pt-0.5">
+                    <p className="text-sm font-medium text-foreground">
+                      {selectedEvent.start.toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric'
+                      })}
+                    </p>
+                    {!selectedEvent.allDay && (
+                      <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                        <Clock className="h-3.5 w-3.5" />
+                        {selectedEvent.start.toLocaleTimeString('en-US', {
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true
+                        })}
+                        {selectedEvent.start.getTime() !== selectedEvent.end.getTime() && (
+                          <>
+                            <span className="text-muted-foreground/60">→</span>
+                            {selectedEvent.end.toLocaleTimeString('en-US', {
+                              hour: 'numeric',
+                              minute: '2-digit',
+                              hour12: true
+                            })}
+                          </>
+                        )}
+                      </p>
+                    )}
+                    {selectedEvent.start.toDateString() !== selectedEvent.end.toDateString() && (
+                      <p className="text-sm text-primary font-medium mt-1">
+                        → {selectedEvent.end.toLocaleDateString('en-US', {
+                          weekday: 'short',
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Team Section */}
+                {selectedEvent.resource?.team && (
+                  <div className="flex items-start gap-3">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-500/10 text-blue-600 shrink-0">
+                      <Users className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1 pt-0.5">
+                      <p className="text-sm font-medium text-foreground">
+                        {selectedEvent.resource.team.name}
+                      </p>
+                      <p className="text-sm text-muted-foreground">Team</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Task Details Section */}
+                {selectedEvent.resource?.task && (
+                  <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Tag className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium text-foreground">Task Details</span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {/* Priority Badge */}
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold ${
+                          selectedEvent.resource.task.priority === 'URGENT'
+                            ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                          selectedEvent.resource.task.priority === 'HIGH'
+                            ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
+                          selectedEvent.resource.task.priority === 'MEDIUM'
+                            ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                            'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                        }`}
+                      >
+                        <Flag className="h-3.5 w-3.5" />
+                        {selectedEvent.resource.task.priority}
+                      </span>
+                      {/* Status Badge */}
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold ${
+                          selectedEvent.resource.task.status === 'COMPLETED'
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                          selectedEvent.resource.task.status === 'IN_PROGRESS'
+                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                          selectedEvent.resource.task.status === 'IN_REVIEW'
+                            ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
+                            'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
+                        }`}
+                      >
+                        {selectedEvent.resource.task.status === 'COMPLETED' ? (
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                        ) : selectedEvent.resource.task.status === 'IN_PROGRESS' ? (
+                          <RefreshCw className="h-3.5 w-3.5" />
+                        ) : (
+                          <AlertCircle className="h-3.5 w-3.5" />
+                        )}
+                        {selectedEvent.resource.task.status.replace('_', ' ')}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Description */}
+                {selectedEvent.resource?.description && !selectedEvent.resource?.task && (
+                  <div className="flex items-start gap-3">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-muted text-muted-foreground shrink-0">
+                      <FileText className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1 pt-0.5">
+                      <p className="text-sm text-muted-foreground">
+                        {selectedEvent.resource.description}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Creator Section */}
+                {selectedEvent.resource?.creator && (
+                  <div className="flex items-start gap-3 pt-2 border-t">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-muted text-muted-foreground shrink-0">
+                      <User className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1 pt-0.5">
+                      <p className="text-sm font-medium text-foreground">
+                        {selectedEvent.resource.creator.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Created by</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer Actions */}
+              {selectedEvent.resource?.task && (
+                <div className="px-6 py-4 border-t bg-muted/20">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      setIsEventDialogOpen(false)
+                      // Navigate to task if needed
+                      window.location.href = `/user/tasks?highlight=${selectedEvent.resource?.task?.id}`
+                    }}
+                  >
+                    View Task Details
+                  </Button>
                 </div>
               )}
-            </div>
+            </>
           )}
         </DialogContent>
       </Dialog>

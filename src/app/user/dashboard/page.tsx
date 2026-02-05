@@ -72,6 +72,16 @@ export default function UserDashboard() {
   const [loading, setLoading] = useState(true)
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [currentTime, setCurrentTime] = useState(new Date())
+
+  // Live clock - update every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date())
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [])
 
   useEffect(() => {
     if (!session?.user) return
@@ -122,7 +132,7 @@ export default function UserDashboard() {
   }
 
   const getGreeting = () => {
-    const hour = new Date().getHours()
+    const hour = currentTime.getHours()
     if (hour < 12) return 'Good morning'
     if (hour < 17) return 'Good afternoon'
     return 'Good evening'
@@ -202,12 +212,12 @@ export default function UserDashboard() {
               <div className="flex items-center gap-6 text-sm text-slate-500">
                 <div className="flex items-center gap-2">
                   <CalendarIcon className="h-4 w-4" />
-                  <span className="font-medium">{format(new Date(), 'EEEE, MMMM do')}</span>
+                  <span className="font-medium">{format(currentTime, 'EEEE, MMMM do')}</span>
                 </div>
                 <div className="h-4 w-px bg-slate-300"></div>
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4" />
-                  <span className="font-medium">{format(new Date(), 'h:mm a')}</span>
+                  <span className="font-medium tabular-nums">{format(currentTime, 'h:mm:ss a')}</span>
                 </div>
               </div>
             </div>

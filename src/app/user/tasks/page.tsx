@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import { 
@@ -138,7 +138,6 @@ export default function TasksPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [selectedTeam, setSelectedTeam] = useState<string>('')
   const [selectedUser, setSelectedUser] = useState<string>('')
   const [selectedTaskType, setSelectedTaskType] = useState<string>('')
@@ -149,15 +148,6 @@ export default function TasksPage() {
   const [viewingTask, setViewingTask] = useState<Task | null>(null)
   const [showViewModal, setShowViewModal] = useState(false)
 
-  // Debounce search term - only update after user stops typing for 500ms
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm)
-    }, 500)
-
-    return () => clearTimeout(timer)
-  }, [searchTerm])
-
   const fetchTasks = async () => {
     if (!session?.user) return
 
@@ -165,17 +155,10 @@ export default function TasksPage() {
       setLoading(true)
       setError(null)
       const params = new URLSearchParams()
-      if (debouncedSearchTerm) params.append('search', debouncedSearchTerm)
       if (selectedTeam) params.append('teamId', selectedTeam)
       if (selectedUser) params.append('userId', selectedUser)
       if (selectedTaskType) params.append('taskType', selectedTaskType)
 
-      console.log('Current user session:', {
-        id: session.user.id,
-        email: session.user.email,
-        role: session.user.role,
-        name: session.user.name
-      })
       console.log('Fetching tasks with params:', params.toString())
 
       const response = await fetch(`/api/tasks?${params}`)
@@ -188,7 +171,6 @@ export default function TasksPage() {
 
       const data = await response.json()
       console.log('Tasks fetched:', data.tasks?.length || 0, 'tasks')
-      console.log('First few tasks:', data.tasks?.slice(0, 3))
       setTasks(data.tasks || [])
     } catch (err) {
       console.error('Error fetching tasks:', err)
@@ -200,7 +182,7 @@ export default function TasksPage() {
 
   useEffect(() => {
     fetchTasks()
-  }, [session, debouncedSearchTerm, selectedTeam, selectedUser, selectedTaskType])
+  }, [session, selectedTeam, selectedUser, selectedTaskType])
 
   const fetchUsers = async () => {
     try {
@@ -332,8 +314,24 @@ export default function TasksPage() {
     return 'bg-green-500'
   }
 
-  const getTasksByStatus = (status: Task['status']) => 
-    tasks.filter(task => task.status === status)
+  const getTasksByStatus = (status: Task['status']) => {
+    const query = searchTerm.toLowerCase().trim()
+    return tasks.filter(task => {
+      // Filter by status
+      if (task.status !== status) return false
+
+      // Filter by search term (local filtering)
+      if (query) {
+        const titleMatch = task.title.toLowerCase().includes(query)
+        const descMatch = task.description?.toLowerCase().includes(query)
+        const assigneeMatch = task.assignee?.name?.toLowerCase().includes(query) ||
+                             task.assignee?.email?.toLowerCase().includes(query)
+        return titleMatch || descMatch || assigneeMatch
+      }
+
+      return true
+    })
+  }
 
   const handleCreateTask = async (taskData: any) => {
     try {

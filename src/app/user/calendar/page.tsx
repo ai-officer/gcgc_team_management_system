@@ -419,7 +419,8 @@ export default function CalendarPage() {
           timeslots={2}
           doShowMoreDrillDown={true}
           messages={{
-            showMore: (total: number) => `+${total} more`
+            showMore: (total: number) => `+${total} more`,
+            noEventsInRange: 'No events scheduled for this period. Create a task or sync with Google Calendar to see events here.'
           }}
         />
       </div>

@@ -543,6 +543,8 @@ export default function TasksPage() {
   const closeViewModal = () => {
     setShowViewModal(false)
     setViewingTask(null)
+    // Refresh tasks to reflect any changes made in the modal
+    fetchTasks()
   }
 
   if (loading) {

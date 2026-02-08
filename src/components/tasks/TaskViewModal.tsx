@@ -317,7 +317,7 @@ export default function TaskViewModal({
   }
 
   useEffect(() => {
-    if (open && task) {
+    if (open && task?.id) {
       fetchComments()
       fetchAvailableUsers()
       fetchTaskDetails()
@@ -335,7 +335,9 @@ export default function TaskViewModal({
       // Reset progress state
       setIsEditingProgress(false)
     }
-  }, [open, task])
+    // Use task.id as dependency to prevent re-running when task object reference changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, task?.id])
 
   // Handle progress update
   const handleProgressUpdate = async () => {

@@ -154,7 +154,7 @@ interface TaskViewModalProps {
   onOpenChange: (open: boolean) => void
   task: Task | null
   onEdit?: (task: Task) => void
-  onTaskUpdate?: () => void
+  onTaskUpdate?: () => void | Promise<void>
 }
 
 const REACTION_EMOJIS = ['👍', '❤️', '😄', '😮', '😢', '😡']
@@ -357,7 +357,10 @@ export default function TaskViewModal({
           title: "Progress updated",
           description: `Progress set to ${localProgress}%`,
         })
-        onTaskUpdate?.()
+        // First refresh the task list, then close the modal
+        await onTaskUpdate?.()
+        // Close the modal after successful update
+        onOpenChange(false)
       } else {
         const error = await response.json()
         throw new Error(error.error || 'Failed to update progress')

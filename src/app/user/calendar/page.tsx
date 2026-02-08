@@ -297,14 +297,15 @@ export default function CalendarPage() {
         throw new Error(errorData.error || 'Failed to fetch task details')
       }
 
-      const data = await response.json()
-      console.log('Task data received:', data)
+      // API returns task directly, not wrapped in { task: ... }
+      const task = await response.json()
+      console.log('Task data received:', task)
 
-      if (!data.task) {
-        throw new Error('Task not found in response')
+      if (!task || !task.id) {
+        throw new Error('Invalid task data received')
       }
 
-      setViewingTask(data.task)
+      setViewingTask(task)
       setIsEventDialogOpen(false)
       setIsTaskViewOpen(true)
     } catch (err) {

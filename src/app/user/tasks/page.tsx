@@ -148,11 +148,14 @@ export default function TasksPage() {
   const [viewingTask, setViewingTask] = useState<Task | null>(null)
   const [showViewModal, setShowViewModal] = useState(false)
 
-  const fetchTasks = async () => {
+  const fetchTasks = async (showLoadingSpinner = true) => {
     if (!session?.user) return
 
     try {
-      setLoading(true)
+      // Only show loading spinner on initial load, not background refreshes
+      if (showLoadingSpinner) {
+        setLoading(true)
+      }
       setError(null)
       const params = new URLSearchParams()
       if (selectedTeam) params.append('teamId', selectedTeam)
@@ -176,7 +179,9 @@ export default function TasksPage() {
       console.error('Error fetching tasks:', err)
       setError(err instanceof Error ? err.message : 'Failed to load tasks')
     } finally {
-      setLoading(false)
+      if (showLoadingSpinner) {
+        setLoading(false)
+      }
     }
   }
 
@@ -543,8 +548,8 @@ export default function TasksPage() {
   const closeViewModal = () => {
     setShowViewModal(false)
     setViewingTask(null)
-    // Refresh tasks to reflect any changes made in the modal
-    fetchTasks()
+    // Refresh tasks in background to reflect any changes made in the modal
+    fetchTasks(false)
   }
 
   if (loading) {
@@ -940,7 +945,7 @@ export default function TasksPage() {
         onOpenChange={closeViewModal}
         task={viewingTask}
         onEdit={handleEditFromView}
-        onTaskUpdate={fetchTasks}
+        onTaskUpdate={() => fetchTasks(false)}
       />
 
       {/* Delete Confirmation Dialog */}

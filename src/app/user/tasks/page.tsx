@@ -938,6 +938,7 @@ export default function TasksPage() {
         onOpenChange={closeViewModal}
         task={viewingTask}
         onEdit={handleEditFromView}
+        onTaskUpdate={fetchTasks}
       />
 
       {/* Delete Confirmation Dialog */}

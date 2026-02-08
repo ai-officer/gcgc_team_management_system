@@ -735,6 +735,7 @@ export default function CalendarPage() {
           setIsTaskViewOpen(false)
           window.location.href = `/user/tasks?edit=${viewingTask?.id}`
         }}
+        onTaskUpdate={fetchCalendarData}
       />
     </div>
   )

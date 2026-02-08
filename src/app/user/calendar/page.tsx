@@ -274,13 +274,36 @@ export default function CalendarPage() {
   }
 
   const handleViewTaskDetails = async (taskId: string) => {
+    if (!taskId) {
+      console.error('No task ID provided')
+      toast({
+        title: 'Error',
+        description: 'Task ID not found',
+        variant: 'destructive'
+      })
+      return
+    }
+
     try {
       setLoadingTaskDetails(true)
+      console.log('Fetching task details for:', taskId)
+
       const response = await fetch(`/api/tasks/${taskId}`)
+      console.log('Response status:', response.status)
+
       if (!response.ok) {
-        throw new Error('Failed to fetch task details')
+        const errorData = await response.json().catch(() => ({}))
+        console.error('API error:', errorData)
+        throw new Error(errorData.error || 'Failed to fetch task details')
       }
+
       const data = await response.json()
+      console.log('Task data received:', data)
+
+      if (!data.task) {
+        throw new Error('Task not found in response')
+      }
+
       setViewingTask(data.task)
       setIsEventDialogOpen(false)
       setIsTaskViewOpen(true)
@@ -288,7 +311,7 @@ export default function CalendarPage() {
       console.error('Error fetching task details:', err)
       toast({
         title: 'Error',
-        description: 'Failed to load task details',
+        description: err instanceof Error ? err.message : 'Failed to load task details',
         variant: 'destructive'
       })
     } finally {
@@ -457,6 +480,14 @@ export default function CalendarPage() {
       {/* Event Details Dialog - Professional Design */}
       <Dialog open={isEventDialogOpen} onOpenChange={setIsEventDialogOpen}>
         <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden">
+          {/* Accessibility - Visually Hidden Title & Description */}
+          <DialogHeader className="sr-only">
+            <DialogTitle>{selectedEvent?.title || 'Event Details'}</DialogTitle>
+            <DialogDescription>
+              {selectedEvent?.resource?.description || 'View event details'}
+            </DialogDescription>
+          </DialogHeader>
+
           {selectedEvent && (
             <>
               {/* Header with Color Accent */}
@@ -487,7 +518,7 @@ export default function CalendarPage() {
                         </span>
                       )}
                     </div>
-                    <h2 className="text-lg font-semibold text-foreground leading-tight">
+                    <h2 className="text-lg font-semibold text-foreground leading-tight" aria-hidden="true">
                       {selectedEvent.title.replace(/^\[(.*?)\]\s*/, '')}
                     </h2>
                     {selectedEvent.title.match(/^\[(.*?)\]/) && (
@@ -641,13 +672,21 @@ export default function CalendarPage() {
               </div>
 
               {/* Footer Actions */}
-              {selectedEvent.resource?.task && (
+              {selectedEvent.resource?.task?.id && (
                 <div className="px-6 py-4 border-t bg-muted/20">
                   <Button
                     variant="outline"
                     className="w-full"
                     disabled={loadingTaskDetails}
-                    onClick={() => handleViewTaskDetails(selectedEvent.resource!.task!.id)}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      const taskId = selectedEvent.resource?.task?.id
+                      console.log('Button clicked, task ID:', taskId)
+                      if (taskId) {
+                        handleViewTaskDetails(taskId)
+                      }
+                    }}
                   >
                     {loadingTaskDetails ? (
                       <>

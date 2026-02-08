@@ -1151,12 +1151,12 @@ export default function TaskViewModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         {/* Simple Header */}
-        <DialogHeader className="space-y-4">
-          <div className="flex items-start justify-between">
-            <div className="flex-1 space-y-2">
+        <DialogHeader className="space-y-4 pr-8">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 space-y-2 min-w-0">
               <div className="flex items-center gap-2">
                 {getTaskTypeIcon(task.taskType)}
-                <DialogTitle className="text-xl font-semibold">
+                <DialogTitle className="text-xl font-semibold truncate">
                   {task.title}
                 </DialogTitle>
               </div>
@@ -1167,10 +1167,10 @@ export default function TaskViewModal({
                 )}
               </DialogDescription>
             </div>
-            
-            {/* Simple Edit Button */}
+
+            {/* Simple Edit Button - positioned to avoid X button overlap */}
             {isTaskCreator && (
-              <Button variant="outline" size="sm" onClick={handleEdit}>
+              <Button variant="outline" size="sm" onClick={handleEdit} className="shrink-0">
                 <Edit className="h-4 w-4 mr-2" />
                 Edit
               </Button>

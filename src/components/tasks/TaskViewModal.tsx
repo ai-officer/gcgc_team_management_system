@@ -357,9 +357,7 @@ export default function TaskViewModal({
           title: "Progress updated",
           description: `Progress set to ${localProgress}%`,
         })
-        // First refresh the task list, then close the modal
-        await onTaskUpdate?.()
-        // Close the modal after successful update
+        // Close the modal - the onOpenChange handler will refresh the task list
         onOpenChange(false)
       } else {
         const error = await response.json()

@@ -62,6 +62,7 @@ logs
 temp/
 tmp/
 
-# sensitive files
+# Security - prevent credential leaks
 cookies.txt
+*.credentials
 *.bundle

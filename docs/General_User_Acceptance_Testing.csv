@@ -361,3 +361,91 @@ TC-085,Keyboard Navigation Works,Low,"1. Navigate using Tab key
 TC-086,Focus Indicators Visible,Low,"1. Tab through interface
 2. Observe focus states","- Clear focus indicator visible
 - Easy to see current position",,
+MODULE 16: SUBTASK MANAGEMENT,,,,,,
+TC-087,Create Task with Subtasks,High,"1. Click Create Task button
+2. Fill in parent task details (title, description, priority, due date)
+3. In Subtasks section click Add Subtask
+4. Enter subtask title
+5. Select assignee for subtask
+6. Set subtask due date
+7. Add another subtask (optional)
+8. Click Create Task","- Task created with success message
+- Shows 'Task created with X subtasks'
+- Parent task appears in To Do column
+- Subtasks appear as separate cards
+- Subtasks show [Subtask] badge",,
+TC-088,View Subtasks in Parent Task Modal,High,"1. Navigate to Tasks page (Kanban Board)
+2. Click on a parent task card
+3. Look for Subtasks section in modal","- Task View Modal opens
+- Subtasks section displays all child subtasks
+- Each subtask shows title assignee progress due date
+- Can see subtask status",,
+TC-089,Update Subtask Progress (Assigned User),High,"1. Login as user assigned to a subtask
+2. Navigate to Tasks page
+3. Click on your assigned subtask
+4. Click on progress bar to enable editing
+5. Drag slider to desired percentage (e.g. 50%)
+6. Click checkmark to save","- Progress updates successfully
+- Toast shows 'Progress set to X%'
+- Modal closes after saving
+- Kanban board shows updated progress
+- If 100% subtask moves to Completed",,
+TC-090,Progress Restriction for Non-Leaders,Medium,"1. Login as Member (not Leader)
+2. Navigate to Tasks page
+3. Click on subtask assigned to you
+4. Try to set progress to 100%","- Progress bar restricted to max 99%
+- Cannot set to 100% as Member
+- Only Task Creator or Leader can set 100%
+- Tooltip indicates restriction",,
+TC-091,Subtask Visibility in Calendar,Medium,"1. Ensure subtasks with due dates exist
+2. Navigate to Calendar page
+3. Look for subtasks on their due dates
+4. Click on a subtask event","- Subtasks appear on calendar with [Subtask] label
+- Event detail modal opens on click
+- Shows subtask details and parent task reference
+- View Task Details button opens full modal",,
+TC-092,Edit Subtask,Medium,"1. Login as Leader or Task Creator
+2. Navigate to Tasks page
+3. Click on a subtask to open modal
+4. Click Edit button
+5. Modify subtask title or due date
+6. Save changes","- Edit form opens
+- Can modify subtask details
+- Changes saved successfully
+- Updated information reflects immediately",,
+TC-093,Delete Subtask,Medium,"1. Login as Leader or Task Creator
+2. Navigate to Tasks page
+3. Click on a subtask
+4. Click Edit then Delete option
+5. Confirm deletion","- Confirmation dialog appears
+- Subtask removed on confirm
+- No longer appears on Kanban
+- No longer appears on Calendar
+- Parent task subtask count updates",,
+TC-094,Subtask Assignment Notification,Low,"1. As Leader create task with subtask
+2. Assign subtask to a Member
+3. Login as the assigned Member
+4. Check notifications","- Assigned user receives notification
+- Shows 'New Subtask Assigned'
+- Message includes subtask and parent task title
+- Clicking notification navigates to subtask",,
+TC-095,Subtask Kanban Drag and Drop,High,"1. Navigate to Tasks page (Kanban Board)
+2. Find a subtask in To Do column
+3. Drag subtask card to In Progress column
+4. Release the card","- Subtask moves to new column
+- Status updates automatically
+- Progress updates based on column
+- Success feedback shown",,
+TC-096,Parent Task Progress Calculation,Medium,"1. Create parent task with 3 subtasks
+2. Set Subtask 1 progress to 100%
+3. Set Subtask 2 progress to 50%
+4. Set Subtask 3 progress to 0%
+5. View parent task progress","- Parent task progress reflects average
+- Expected: (100+50+0)/3 = ~50%
+- Parent progress bar shows ~50%
+- Updates when subtask progress changes",,
+TC-097,Subtask Search and Filter,Low,"1. Navigate to Tasks page
+2. Use search bar to search subtask title
+3. Use filters to filter by assignee","- Subtasks appear in search results
+- Filters apply to both tasks and subtasks
+- Matching subtasks displayed correctly",,

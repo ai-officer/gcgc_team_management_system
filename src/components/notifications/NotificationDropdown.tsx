@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { Bell, Check, CheckCheck, Clock, ExternalLink } from 'lucide-react'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -16,15 +18,21 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { useNotifications } from '@/hooks/useNotifications'
 import { formatDistanceToNow } from 'date-fns'
 import { cn } from '@/lib/utils'
-import Link from 'next/link'
 
 interface NotificationDropdownProps {
   isCollapsed?: boolean
 }
 
 export function NotificationDropdown({ isCollapsed = false }: NotificationDropdownProps) {
+  const { data: session } = useSession()
+  const router = useRouter()
   const { notifications, unreadCount, loading, markOneAsRead, markAllAsRead } = useNotifications()
   const [isOpen, setIsOpen] = useState(false)
+
+  const getNotificationHref = (notification: any) => {
+    if (notification.entityType !== 'task' || !notification.entityId) return null
+    return `/user/tasks?taskId=${notification.entityId}`
+  }
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -50,6 +58,10 @@ export function NotificationDropdown({ isCollapsed = false }: NotificationDropdo
       markOneAsRead(notification.id)
     }
     setIsOpen(false)
+    const href = getNotificationHref(notification)
+    if (href) {
+      router.push(href)
+    }
   }
 
   return (
@@ -122,46 +134,38 @@ export function NotificationDropdown({ isCollapsed = false }: NotificationDropdo
                   'flex flex-col items-start p-3 cursor-pointer focus:bg-accent',
                   !notification.isRead && 'bg-blue-50/50 dark:bg-blue-950/20'
                 )}
-                asChild
+                onClick={() => handleNotificationClick(notification)}
               >
-                <Link
-                  href={notification.entityType === 'task' && notification.entityId
-                    ? `/user/tasks?taskId=${notification.entityId}`
-                    : '#'
-                  }
-                  onClick={() => handleNotificationClick(notification)}
-                >
-                  <div className="flex items-start gap-3 w-full">
-                    <div className="mt-1.5">
-                      {getNotificationIcon(notification.type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={cn(
-                        'text-sm leading-tight',
-                        !notification.isRead && 'font-medium'
-                      )}>
-                        {notification.title}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                        {notification.message}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Clock className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
-                        </span>
-                        {!notification.isRead && (
-                          <Badge variant="secondary" className="h-4 text-[10px] px-1">
-                            New
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                    {notification.entityId && (
-                      <ExternalLink className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                    )}
+                <div className="flex items-start gap-3 w-full">
+                  <div className="mt-1.5">
+                    {getNotificationIcon(notification.type)}
                   </div>
-                </Link>
+                  <div className="flex-1 min-w-0">
+                    <p className={cn(
+                      'text-sm leading-tight',
+                      !notification.isRead && 'font-medium'
+                    )}>
+                      {notification.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                      {notification.message}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Clock className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                      </span>
+                      {!notification.isRead && (
+                        <Badge variant="secondary" className="h-4 text-[10px] px-1">
+                          New
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  {notification.entityId && (
+                    <ExternalLink className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                  )}
+                </div>
               </DropdownMenuItem>
             ))}
           </ScrollArea>

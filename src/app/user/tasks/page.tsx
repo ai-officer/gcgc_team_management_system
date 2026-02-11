@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import { 
   Plus, 
@@ -134,6 +135,8 @@ const COLUMN_CONFIG = {
 export default function TasksPage() {
   const { data: session } = useSession()
   const { toast } = useToast()
+  const searchParams = useSearchParams()
+  const router = useRouter()
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -147,6 +150,29 @@ export default function TasksPage() {
   const [deletingTask, setDeletingTask] = useState<Task | null>(null)
   const [viewingTask, setViewingTask] = useState<Task | null>(null)
   const [showViewModal, setShowViewModal] = useState(false)
+
+  // Open task modal from URL query param (e.g., from notification click)
+  const openTaskFromUrl = useCallback(async (taskId: string) => {
+    try {
+      const response = await fetch(`/api/tasks/${taskId}`)
+      if (response.ok) {
+        const task = await response.json()
+        setViewingTask(task)
+        setShowViewModal(true)
+      }
+    } catch (err) {
+      console.error('Error fetching task from URL:', err)
+    }
+    // Clean up the URL param
+    router.replace('/user/tasks', { scroll: false })
+  }, [router])
+
+  useEffect(() => {
+    const taskId = searchParams.get('taskId')
+    if (taskId && session?.user) {
+      openTaskFromUrl(taskId)
+    }
+  }, [searchParams, session, openTaskFromUrl])
 
   const fetchTasks = async (showLoadingSpinner = true) => {
     if (!session?.user) return

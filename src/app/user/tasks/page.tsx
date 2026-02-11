@@ -189,6 +189,29 @@ export default function TasksPage() {
     fetchTasks()
   }, [session, selectedTeam, selectedUser, selectedTaskType])
 
+  // Refetch tasks when page becomes visible (e.g., navigating back from Calendar)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && session?.user) {
+        fetchTasks(false) // Background refresh without loading spinner
+      }
+    }
+
+    const handleFocus = () => {
+      if (session?.user) {
+        fetchTasks(false) // Background refresh without loading spinner
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleFocus)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [session])
+
   const fetchUsers = async () => {
     try {
       const response = await fetch('/api/users')

@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { authOptions } from '@/lib/auth'
 import { canEditTask, canDeleteTask, canChangeTaskStatus } from '@/lib/permissions'
 import { autoSyncTask, deleteSyncedTask } from '@/lib/calendar-sync-helper'
+import { notifyTaskAssigned, notifyTaskUpdated, notifyTaskCompleted } from '@/lib/notifications'
 
 const updateTaskSchema = z.object({
   title: z.string().min(1).max(100).optional(),
@@ -446,6 +447,64 @@ export async function PATCH(
           }
         }
       })
+    }
+
+    // Send notifications for relevant changes
+    if (updatedTask) {
+      try {
+        const assignerName = session.user.name || session.user.email || 'Someone'
+
+        // Notify new assignee if task was reassigned to a different user
+        if (
+          updateData.assigneeId &&
+          updateData.assigneeId !== existingTask.assigneeId &&
+          updateData.assigneeId !== session.user.id
+        ) {
+          await notifyTaskAssigned(
+            updateData.assigneeId,
+            updatedTask.id,
+            updatedTask.title,
+            assignerName
+          )
+        }
+
+        // Notify assignee when task is completed (if completer is not the assignee)
+        if (
+          updateData.status === 'COMPLETED' &&
+          existingTask.status !== 'COMPLETED' &&
+          existingTask.assigneeId &&
+          existingTask.assigneeId !== session.user.id
+        ) {
+          await notifyTaskCompleted(
+            existingTask.assigneeId,
+            updatedTask.id,
+            updatedTask.title,
+            assignerName
+          )
+        }
+
+        // Notify assignee of other updates (status/priority changes) if they didn't make the change
+        if (
+          !updateData.assigneeId &&
+          updateData.status !== 'COMPLETED' &&
+          (updateData.status || updateData.priority) &&
+          existingTask.assigneeId &&
+          existingTask.assigneeId !== session.user.id
+        ) {
+          const changeType = updateData.status
+            ? `changed status to ${updateData.status}`
+            : `changed priority to ${updateData.priority}`
+          await notifyTaskUpdated(
+            existingTask.assigneeId,
+            updatedTask.id,
+            updatedTask.title,
+            assignerName,
+            changeType
+          )
+        }
+      } catch (notificationError) {
+        console.error('Error sending task update notification:', notificationError)
+      }
     }
 
     // Log activity

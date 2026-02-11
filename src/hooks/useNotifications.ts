@@ -79,7 +79,16 @@ export function useNotifications() {
     // Fetch initial notifications
     fetchNotifications()
 
+    // Poll every 30 seconds as fallback for missed WebSocket events
+    const pollInterval = setInterval(fetchNotifications, 30000)
+
+    // Refetch when window regains focus
+    const handleFocus = () => fetchNotifications()
+    window.addEventListener('focus', handleFocus)
+
     return () => {
+      clearInterval(pollInterval)
+      window.removeEventListener('focus', handleFocus)
       if (session?.user?.id) {
         socketInstance.emit('leave-notifications', session.user.id)
       }

@@ -812,6 +812,8 @@ export default function TaskViewModal({
 
   const isTaskCreator = task?.creator?.id === session?.user?.id
   const isTaskAssignee = task?.assignee?.id === session?.user?.id
+  const isTaskAssigner = task?.assignedBy?.id === session?.user?.id
+  const canCompleteTask = isTaskCreator || isTaskAssigner || session?.user?.role === 'ADMIN'
   const isTaskTeamMember = task?.teamMembers?.some(tm => tm.user.id === session?.user?.id)
   const isTaskCollaborator = task?.collaborators?.some(c => c.user.id === session?.user?.id)
 
@@ -1248,7 +1250,7 @@ export default function TaskViewModal({
               <input
                 type="range"
                 min="0"
-                max="100"
+                max={canCompleteTask ? 100 : 90}
                 value={localProgress}
                 onChange={(e) => setLocalProgress(Number(e.target.value))}
                 className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"

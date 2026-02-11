@@ -184,11 +184,15 @@ export async function PATCH(
     const body = await req.json()
     const updateData = updateTaskSchema.parse(body)
 
-    // Prevent non-leaders from setting progress to 100%
-    // Tasks must be reviewed by Team Leader before completion
-    if (updateData.progressPercentage === 100 && session.user.role !== 'LEADER' && session.user.role !== 'ADMIN') {
+    // Only the assigner/creator/admin can set progress to 100% (complete the task)
+    const isAssigner = existingTask.assignedById === session.user.id
+    const isCreator = existingTask.creatorId === session.user.id
+    const isAdmin = session.user.role === 'ADMIN'
+    const canComplete = isAssigner || isCreator || isAdmin
+
+    if (updateData.progressPercentage === 100 && !canComplete) {
       return NextResponse.json({
-        error: 'Progress cannot be set to 100%. Tasks must be reviewed by a Team Leader before completion.'
+        error: 'Only the person who assigned this task can set progress to 100%.'
       }, { status: 403 })
     }
 
@@ -253,21 +257,17 @@ export async function PATCH(
       ? new Date(updateData.startDate)
       : (finalDueDate ? new Date(finalDueDate) : (updateData.dueDate !== undefined ? existingTask.startDate : undefined))
 
-    // Check if user is the assignee (only assignee can complete the task)
-    const isAssignee = existingTask.assigneeId === session.user.id
-    const isAdmin = session.user.role === 'ADMIN'
-    const canComplete = isAssignee || isAdmin
-
-    // Prevent non-assignees from setting progress to 100% or status to COMPLETED
+    // Prevent non-assigner/creator from setting progress to 100% or status to COMPLETED
+    // Only the person who assigned the task (or creator/admin) can complete it
     if (!canComplete) {
-      // Cap progress at 90% for non-assignees (IN_REVIEW state)
+      // Cap progress at 90% (IN_REVIEW state)
       if (updateData.progressPercentage !== undefined && updateData.progressPercentage > 90) {
         updateData.progressPercentage = 90
       }
-      // Prevent non-assignees from marking as COMPLETED
+      // Prevent marking as COMPLETED
       if (updateData.status === 'COMPLETED') {
         return NextResponse.json({
-          error: 'Only the assignee can mark this task as completed. Please move it to "In Review" and the assignee will complete it.'
+          error: 'Only the person who assigned this task can mark it as completed. Please move it to "In Review" instead.'
         }, { status: 403 })
       }
     }

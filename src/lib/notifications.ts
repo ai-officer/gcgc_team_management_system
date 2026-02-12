@@ -13,6 +13,7 @@ interface CreateNotificationParams {
 
 /**
  * Create a notification and emit it via WebSocket for real-time delivery
+ * Includes deduplication to prevent duplicate notifications for same user/task
  */
 export async function createNotification({
   userId,
@@ -23,6 +24,26 @@ export async function createNotification({
   entityType,
 }: CreateNotificationParams) {
   try {
+    // Check for duplicate notification (same user, type, and entity within last 60 seconds)
+    if (entityId && entityType) {
+      const recentDuplicate = await prisma.notification.findFirst({
+        where: {
+          userId,
+          type,
+          entityId,
+          entityType,
+          createdAt: {
+            gte: new Date(Date.now() - 60 * 1000) // Within last 60 seconds
+          }
+        }
+      })
+
+      if (recentDuplicate) {
+        console.log(`Skipping duplicate notification for user-${userId}, entity-${entityId}`)
+        return recentDuplicate
+      }
+    }
+
     const notification = await prisma.notification.create({
       data: {
         userId,

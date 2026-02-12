@@ -619,13 +619,38 @@ export async function POST(req: NextRequest) {
         await autoSyncTask(task.id, session.user.id)
       }
 
-      // Send notification if task is assigned to someone else
+      // Send notifications to all involved users (assignee, team members, collaborators)
+      const assignerName = session.user.name || session.user.email || 'Someone'
+      const usersToNotify = new Set<string>()
+
+      // Add direct assignee
       const taskAssigneeId = task.assigneeId || assigneeId
-      console.log('Task created - checking notification:', { taskAssigneeId, currentUserId: session.user.id, parentId })
-
       if (taskAssigneeId && taskAssigneeId !== session.user.id) {
-        const assignerName = session.user.name || session.user.email || 'Someone'
+        usersToNotify.add(taskAssigneeId)
+      }
 
+      // Add team members (for TEAM tasks)
+      if (task.teamMembers && task.teamMembers.length > 0) {
+        task.teamMembers.forEach((tm: any) => {
+          if (tm.user?.id && tm.user.id !== session.user.id) {
+            usersToNotify.add(tm.user.id)
+          }
+        })
+      }
+
+      // Add collaborators (for COLLABORATION tasks)
+      if (task.collaborators && task.collaborators.length > 0) {
+        task.collaborators.forEach((c: any) => {
+          if (c.user?.id && c.user.id !== session.user.id) {
+            usersToNotify.add(c.user.id)
+          }
+        })
+      }
+
+      console.log('Task created - users to notify:', Array.from(usersToNotify), { parentId })
+
+      // Send notifications to all users
+      for (const userId of usersToNotify) {
         try {
           if (parentId) {
             // Get parent task title for subtask notification
@@ -633,22 +658,22 @@ export async function POST(req: NextRequest) {
               where: { id: parentId },
               select: { title: true }
             })
-            console.log('Sending subtask notification to:', taskAssigneeId)
+            console.log('Sending subtask notification to:', userId)
             await notifySubtaskAssigned(
-              taskAssigneeId,
+              userId,
               task.id,
               title,
               parentTask?.title || 'Parent Task',
               assignerName
             )
-            console.log('Subtask notification sent successfully')
+            console.log('Subtask notification sent successfully to:', userId)
           } else {
-            console.log('Sending task notification to:', taskAssigneeId)
-            await notifyTaskAssigned(taskAssigneeId, task.id, title, assignerName)
-            console.log('Task notification sent successfully')
+            console.log('Sending task notification to:', userId)
+            await notifyTaskAssigned(userId, task.id, title, assignerName)
+            console.log('Task notification sent successfully to:', userId)
           }
         } catch (notificationError) {
-          console.error('Error sending notification:', notificationError)
+          console.error('Error sending notification to', userId, ':', notificationError)
           // Don't fail the task creation if notification fails
         }
       }

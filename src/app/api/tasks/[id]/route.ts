@@ -522,6 +522,53 @@ export async function PATCH(
 
       // Auto-sync to Google Calendar if enabled
       await autoSyncTask(updatedTask.id, session.user.id)
+
+      // Send notifications for newly added users
+      const assignerName = session.user.name || session.user.email || 'Someone'
+      const existingUserIds = new Set<string>()
+
+      // Collect existing users before update
+      if (existingTask.assigneeId) existingUserIds.add(existingTask.assigneeId)
+
+      // Check if assignee changed
+      if (updateData.assigneeId &&
+          updateData.assigneeId !== existingTask.assigneeId &&
+          updateData.assigneeId !== session.user.id) {
+        try {
+          await notifyTaskAssigned(updateData.assigneeId, updatedTask.id, updatedTask.title, assignerName)
+          console.log('Sent reassignment notification to:', updateData.assigneeId)
+        } catch (err) {
+          console.error('Failed to send reassignment notification:', err)
+        }
+      }
+
+      // Notify new team members
+      if (updateData.teamMemberIds && updateData.teamMemberIds.length > 0) {
+        for (const userId of updateData.teamMemberIds) {
+          if (!existingUserIds.has(userId) && userId !== session.user.id) {
+            try {
+              await notifyTaskAssigned(userId, updatedTask.id, updatedTask.title, assignerName)
+              console.log('Sent team member notification to:', userId)
+            } catch (err) {
+              console.error('Failed to send team member notification:', err)
+            }
+          }
+        }
+      }
+
+      // Notify new collaborators
+      if (updateData.collaboratorIds && updateData.collaboratorIds.length > 0) {
+        for (const userId of updateData.collaboratorIds) {
+          if (!existingUserIds.has(userId) && userId !== session.user.id) {
+            try {
+              await notifyTaskAssigned(userId, updatedTask.id, updatedTask.title, assignerName)
+              console.log('Sent collaborator notification to:', userId)
+            } catch (err) {
+              console.error('Failed to send collaborator notification:', err)
+            }
+          }
+        }
+      }
     }
 
     // Return both the updated task and parent task if applicable

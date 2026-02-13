@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Search, Filter, Edit, Trash2, User, Mail, Calendar, Shield, Crown, LayoutList, LayoutGrid } from 'lucide-react'
+import { Plus, Search, Filter, Edit, Trash2, User, Mail, Calendar, Shield, Crown, LayoutList, LayoutGrid, KeyRound, Copy, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -147,6 +147,13 @@ export default function AdminUsersPage() {
     total: 0,
     totalPages: 0
   })
+
+  // Password reset state
+  const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null)
+  const [generatedPassword, setGeneratedPassword] = useState('')
+  const [showPasswordResult, setShowPasswordResult] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [resettingPassword, setResettingPassword] = useState(false)
 
   // Dynamic form state from registration form
   const [leaders, setLeaders] = useState<Leader[]>([])
@@ -556,6 +563,63 @@ export default function AdminUsersPage() {
       }
     } catch (error) {
       console.error('Error deleting user:', error)
+    }
+  }
+
+  const generateRandomPassword = (): string => {
+    const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    const lower = 'abcdefghijklmnopqrstuvwxyz'
+    const digits = '0123456789'
+    const special = '!@#$%&*'
+    const all = upper + lower + digits + special
+
+    // Guarantee at least one of each type
+    let password = ''
+    password += upper[Math.floor(Math.random() * upper.length)]
+    password += lower[Math.floor(Math.random() * lower.length)]
+    password += digits[Math.floor(Math.random() * digits.length)]
+    password += special[Math.floor(Math.random() * special.length)]
+
+    // Fill remaining characters
+    for (let i = 4; i < 12; i++) {
+      password += all[Math.floor(Math.random() * all.length)]
+    }
+
+    // Shuffle the password
+    return password.split('').sort(() => Math.random() - 0.5).join('')
+  }
+
+  const handleResetPassword = async () => {
+    if (!resetPasswordUser) return
+    setResettingPassword(true)
+    try {
+      const newPassword = generateRandomPassword()
+      const response = await fetch(`/api/admin/users/${resetPasswordUser.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: newPassword })
+      })
+
+      if (response.ok) {
+        setGeneratedPassword(newPassword)
+        setResetPasswordUser(null)
+        setShowPasswordResult(true)
+        setCopied(false)
+      }
+    } catch (error) {
+      console.error('Error resetting password:', error)
+    } finally {
+      setResettingPassword(false)
+    }
+  }
+
+  const handleCopyPassword = async () => {
+    try {
+      await navigator.clipboard.writeText(generatedPassword)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (error) {
+      console.error('Failed to copy password:', error)
     }
   }
 
@@ -1174,6 +1238,15 @@ export default function AdminUsersPage() {
                       <Edit className="w-4 h-4 mr-1" />
                       Edit
                     </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-amber-600 hover:text-amber-700"
+                      onClick={() => setResetPasswordUser(user)}
+                      title="Reset Password"
+                    >
+                      <KeyRound className="w-4 h-4" />
+                    </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
@@ -1264,6 +1337,15 @@ export default function AdminUsersPage() {
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-amber-600 hover:text-amber-700"
+                        onClick={() => setResetPasswordUser(user)}
+                        title="Reset Password"
+                      >
+                        <KeyRound className="w-4 h-4" />
+                      </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
@@ -1337,8 +1419,8 @@ export default function AdminUsersPage() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="edit-role">Role</Label>
-                <Select 
-                  value={editingUser.role} 
+                <Select
+                  value={editingUser.role}
                   onValueChange={(value) => setEditingUser({ ...editingUser, role: value as UserRole })}
                 >
                   <SelectTrigger>
@@ -1353,8 +1435,8 @@ export default function AdminUsersPage() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="edit-hierarchy">Hierarchy Level</Label>
-                <Select 
-                  value={editingUser.hierarchyLevel || HierarchyLevel.RF1} 
+                <Select
+                  value={editingUser.hierarchyLevel || HierarchyLevel.RF1}
                   onValueChange={(value) => setEditingUser({ ...editingUser, hierarchyLevel: value as HierarchyLevel })}
                 >
                   <SelectTrigger>
@@ -1388,6 +1470,59 @@ export default function AdminUsersPage() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Reset Password Confirmation Dialog */}
+      <AlertDialog open={!!resetPasswordUser} onOpenChange={(open) => { if (!open) setResetPasswordUser(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset Password</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to reset the password for <span className="font-semibold text-slate-900">{resetPasswordUser?.name}</span>? A new random password will be generated.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={resettingPassword}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleResetPassword}
+              className="bg-amber-600 hover:bg-amber-700"
+              disabled={resettingPassword}
+            >
+              {resettingPassword ? 'Resetting...' : 'Reset Password'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Password Result Dialog */}
+      <Dialog open={showPasswordResult} onOpenChange={setShowPasswordResult}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Password Reset Successful</DialogTitle>
+            <DialogDescription>
+              The new password has been set. Please copy it now — it will not be shown again.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label className="text-sm text-slate-500">New Password</Label>
+            <div className="flex items-center space-x-2 mt-1">
+              <code className="flex-1 bg-slate-100 border border-slate-200 rounded-lg px-4 py-3 text-sm font-mono select-all">
+                {generatedPassword}
+              </code>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCopyPassword}
+                className="shrink-0"
+              >
+                {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+              </Button>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setShowPasswordResult(false)}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

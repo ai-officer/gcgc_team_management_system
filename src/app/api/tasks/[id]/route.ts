@@ -416,25 +416,12 @@ export async function PATCH(
       const totalProgress = allSubtasks.reduce((sum, st) => sum + (statusWeights[st.status] || 0), 0)
       const avgProgress = Math.round(totalProgress / allSubtasks.length)
 
-      // Determine parent status based on subtasks
-      let parentStatus: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' | undefined
-      const allCompleted = allSubtasks.every(st => st.status === 'COMPLETED')
-      const anyInProgress = allSubtasks.some(st => st.status === 'IN_PROGRESS' || st.status === 'IN_REVIEW' || st.status === 'COMPLETED')
-
-      if (allCompleted) {
-        parentStatus = 'COMPLETED'
-      } else if (avgProgress >= 75) {
-        parentStatus = 'IN_REVIEW'
-      } else if (anyInProgress) {
-        parentStatus = 'IN_PROGRESS'
-      }
-
-      // Update parent task progress and status
+      // Only update parent's progress percentage, not its status
+      // Parent task status should only be changed manually by the user
       updatedParentTask = await prisma.task.update({
         where: { id: existingTask.parentId },
         data: {
           progressPercentage: avgProgress,
-          ...(parentStatus ? { status: parentStatus } : {})
         },
         include: {
           assignee: { select: { id: true, name: true, email: true, image: true } },

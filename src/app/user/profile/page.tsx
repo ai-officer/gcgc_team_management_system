@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react'
 import {
   User, Mail, Phone, Building2, Briefcase, Calendar, Shield,
   Edit2, Save, X, CheckCircle, AlertCircle, Camera, MapPin,
-  Clock, Award, TrendingUp, Activity, Settings, Eye, EyeOff
+  Clock, Award, TrendingUp, Activity, Settings, Eye, EyeOff, Lock
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -56,6 +56,17 @@ export default function UserProfilePage() {
   const [uploadingImage, setUploadingImage] = useState(false)
   const [editingField, setEditingField] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Change password state
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  })
+  const [changingPassword, setChangingPassword] = useState(false)
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   useEffect(() => {
     if (!session?.user) return
@@ -194,6 +205,68 @@ export default function UserProfilePage() {
       })
     } finally {
       setUploadingImage(false)
+    }
+  }
+
+  const handleChangePassword = async () => {
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      toast({
+        title: 'Error',
+        description: 'Please fill in all password fields',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast({
+        title: 'Error',
+        description: 'New passwords do not match',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (passwordForm.newPassword.length < 8) {
+      toast({
+        title: 'Error',
+        description: 'New password must be at least 8 characters',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    try {
+      setChangingPassword(true)
+      const response = await fetch('/api/users/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(passwordForm),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to change password')
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Your password has been changed successfully',
+      })
+
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
+      setShowCurrentPassword(false)
+      setShowNewPassword(false)
+      setShowConfirmPassword(false)
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to change password',
+        variant: 'destructive',
+      })
+    } finally {
+      setChangingPassword(false)
     }
   }
 
@@ -615,6 +688,114 @@ export default function UserProfilePage() {
                       </div>
                     </div>
                   </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Change Password Card */}
+          <Card className="border border-slate-200 rounded-xl shadow-sm">
+            <CardHeader className="pb-4 border-b border-slate-100">
+              <CardTitle className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+                <div className="p-2 bg-red-50 rounded-lg">
+                  <Lock className="h-4 w-4 text-red-600" />
+                </div>
+                Change Password
+              </CardTitle>
+              <CardDescription className="text-sm text-slate-600 font-medium mt-1">
+                Update your password to keep your account secure
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="space-y-4 max-w-md">
+                <div className="space-y-2">
+                  <Label htmlFor="currentPassword" className="text-sm font-semibold text-slate-700">Current Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="currentPassword"
+                      type={showCurrentPassword ? 'text' : 'password'}
+                      value={passwordForm.currentPassword}
+                      onChange={(e) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
+                      placeholder="Enter current password"
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="newPassword" className="text-sm font-semibold text-slate-700">New Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="newPassword"
+                      type={showNewPassword ? 'text' : 'password'}
+                      value={passwordForm.newPassword}
+                      onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
+                      placeholder="Enter new password"
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-500">Must be at least 8 characters with uppercase, lowercase, and a number</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword" className="text-sm font-semibold text-slate-700">Confirm New Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={passwordForm.confirmPassword}
+                      onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                      placeholder="Confirm new password"
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  {passwordForm.confirmPassword && passwordForm.newPassword !== passwordForm.confirmPassword && (
+                    <p className="text-xs text-red-500 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      Passwords do not match
+                    </p>
+                  )}
+                </div>
+
+                <div className="pt-2">
+                  <Button
+                    onClick={handleChangePassword}
+                    disabled={changingPassword || !passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    {changingPassword ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                        Changing Password...
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="h-4 w-4 mr-2" />
+                        Change Password
+                      </>
+                    )}
+                  </Button>
                 </div>
               </div>
             </CardContent>

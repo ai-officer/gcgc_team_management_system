@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Upload, User, Crown, ChevronDown } from 'lucide-react'
+import { Upload, User, Crown, ChevronDown, Eye, EyeOff } from 'lucide-react'
 import { UserFormData, OrganizationalUnit } from '@/types'
 
 interface Leader {
@@ -114,6 +114,8 @@ export function RegistrationForm() {
   const [showCustomSectionInput, setShowCustomSectionInput] = useState(false)
   const [showCustomTeamInput, setShowCustomTeamInput] = useState(false)
   const [showSectorHeadInput, setShowSectorHeadInput] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   // Fetch divisions, job levels, and section heads on component mount
   useEffect(() => {
@@ -942,15 +944,25 @@ export function RegistrationForm() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="password">Password <span className="text-destructive">*</span></Label>
-              <Input
-                id="password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => handleInputChange('password', e.target.value)}
-                onBlur={() => handleBlur('password')}
-                placeholder="Enter password"
-                className={touched.password && fieldErrors.password ? 'border-destructive' : ''}
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={formData.password}
+                  onChange={(e) => handleInputChange('password', e.target.value)}
+                  onBlur={() => handleBlur('password')}
+                  placeholder="Enter password"
+                  className={`pr-10 ${touched.password && fieldErrors.password ? 'border-destructive' : ''}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
               {touched.password && <FieldError error={fieldErrors.password} />}
               <p className="text-xs text-muted-foreground">
                 Min 6 characters with uppercase, lowercase, and number
@@ -959,20 +971,30 @@ export function RegistrationForm() {
 
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirm Password <span className="text-destructive">*</span></Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => {
-                  setConfirmPassword(e.target.value)
-                  if (fieldErrors.confirmPassword) {
-                    setFieldErrors(prev => ({ ...prev, confirmPassword: undefined }))
-                  }
-                }}
-                onBlur={() => handleBlur('confirmPassword')}
-                placeholder="Confirm password"
-                className={touched.confirmPassword && fieldErrors.confirmPassword ? 'border-destructive' : ''}
-              />
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value)
+                    if (fieldErrors.confirmPassword) {
+                      setFieldErrors(prev => ({ ...prev, confirmPassword: undefined }))
+                    }
+                  }}
+                  onBlur={() => handleBlur('confirmPassword')}
+                  placeholder="Confirm password"
+                  className={`pr-10 ${touched.confirmPassword && fieldErrors.confirmPassword ? 'border-destructive' : ''}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  tabIndex={-1}
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
               {touched.confirmPassword && <FieldError error={fieldErrors.confirmPassword} />}
             </div>
           </div>

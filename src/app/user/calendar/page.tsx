@@ -363,11 +363,11 @@ export default function CalendarPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Calendar</h1>
-          <div className="flex items-center gap-3">
-            <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Calendar</h1>
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <p className="text-sm sm:text-base text-muted-foreground">
               {isLeader
                 ? "View your schedule and team deadlines"
                 : "View your schedule and task deadlines"
@@ -394,31 +394,37 @@ export default function CalendarPage() {
             </div>
           </div>
         </div>
-        <div className="flex gap-2">
-          <CreateTaskButton onTaskCreated={fetchCalendarData} />
+        <div className="grid grid-cols-3 sm:flex sm:flex-wrap gap-2 w-full sm:w-auto">
+          <CreateTaskButton
+            onTaskCreated={fetchCalendarData}
+            className="text-xs sm:text-sm px-2.5 sm:px-4"
+          />
           <Button
             disabled
             variant="outline"
-            className="opacity-50 cursor-not-allowed"
+            className="opacity-50 cursor-not-allowed text-xs sm:text-sm px-2.5 sm:px-4"
             title="OSSB Request feature is temporarily disabled"
           >
-            <FileText className="h-4 w-4 mr-2" />
-            Create OSSB Request (Disabled)
+            <FileText className="h-4 w-4 shrink-0 sm:mr-2" />
+            <span className="hidden sm:inline">Create OSSB Request (Disabled)</span>
+            <span className="sm:hidden truncate">OSSB</span>
           </Button>
           <Button
             variant="outline"
             onClick={() => setIsSyncSettingsOpen(true)}
+            className="text-xs sm:text-sm px-2.5 sm:px-4"
           >
-            <Settings className="h-4 w-4 mr-2" />
-            Google Calendar Sync
+            <Settings className="h-4 w-4 shrink-0 sm:mr-2" />
+            <span className="hidden sm:inline">Google Calendar Sync</span>
+            <span className="sm:hidden truncate">Sync</span>
           </Button>
         </div>
       </div>
 
       {/* Legend */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Event Types</CardTitle>
+        <CardHeader className="pb-2 sm:pb-6">
+          <CardTitle className="text-base sm:text-lg">Event Types</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-4">
@@ -455,13 +461,13 @@ export default function CalendarPage() {
       </Card>
 
       {/* Calendar */}
-      <div className="w-full">
+      <div className="w-full [&_.rbc-calendar]:h-[500px] sm:[&_.rbc-calendar]:h-[700px] overflow-x-auto">
         <Calendar
           localizer={localizer}
           events={events}
           startAccessor="start"
           endAccessor="end"
-          style={{ height: 700 }}
+          style={{ minHeight: 500 }}
           onSelectEvent={handleSelectEvent}
           eventPropGetter={eventStyleGetter}
           views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}

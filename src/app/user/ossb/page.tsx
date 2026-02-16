@@ -194,32 +194,33 @@ export default function OSSBManagementPage() {
       {/* Professional Glassmorphism Header */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-slate-50 to-purple-50 opacity-60"></div>
-        <div className="relative backdrop-blur-sm bg-white/40 border border-slate-200/60 rounded-xl shadow-sm p-8">
-          <div className="flex items-center justify-between">
+        <div className="relative backdrop-blur-sm bg-white/40 border border-slate-200/60 rounded-xl shadow-sm p-4 sm:p-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <h1 className="text-3xl font-bold text-slate-900 tracking-tight">OSSB Requests</h1>
-              <p className="text-slate-600 text-base font-medium max-w-2xl">
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">OSSB Requests</h1>
+              <p className="text-slate-600 text-sm sm:text-base font-medium max-w-2xl">
                 Manage your Objective/Specific Steps Budget requests
               </p>
             </div>
             <Button
               disabled
-              className="bg-slate-400 cursor-not-allowed text-white shadow-md opacity-60"
+              className="bg-slate-400 cursor-not-allowed text-white shadow-md opacity-60 w-full sm:w-auto text-xs sm:text-sm"
               title="OSSB Request feature is temporarily disabled"
             >
-              <Plus className="mr-2 h-4 w-4" />
-              Create OSSB Request (Disabled)
+              <Plus className="mr-2 h-4 w-4 shrink-0" />
+              <span className="hidden sm:inline">Create OSSB Request (Disabled)</span>
+              <span className="sm:hidden">Create OSSB (Disabled)</span>
             </Button>
           </div>
         </div>
       </div>
 
       {/* Professional Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
         <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 rounded-xl">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-blue-600"></div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Total Requests</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-semibold text-slate-600 uppercase tracking-wide">Total Requests</CardTitle>
             <div className="p-2.5 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
               <FileText className="h-5 w-5 text-blue-600" />
             </div>
@@ -233,7 +234,7 @@ export default function OSSBManagementPage() {
         <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 rounded-xl">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-emerald-600"></div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Approved</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-semibold text-slate-600 uppercase tracking-wide">Approved</CardTitle>
             <div className="p-2.5 bg-emerald-50 rounded-lg group-hover:bg-emerald-100 transition-colors">
               <Calendar className="h-5 w-5 text-emerald-600" />
             </div>
@@ -249,7 +250,7 @@ export default function OSSBManagementPage() {
         <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 rounded-xl">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 to-amber-600"></div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Pending</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-semibold text-slate-600 uppercase tracking-wide">Pending</CardTitle>
             <div className="p-2.5 bg-amber-50 rounded-lg group-hover:bg-amber-100 transition-colors">
               <Calendar className="h-5 w-5 text-amber-600" />
             </div>
@@ -265,7 +266,7 @@ export default function OSSBManagementPage() {
         <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 rounded-xl">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-slate-500 to-slate-600"></div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Draft</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-semibold text-slate-600 uppercase tracking-wide">Draft</CardTitle>
             <div className="p-2.5 bg-slate-50 rounded-lg group-hover:bg-slate-100 transition-colors">
               <Edit className="h-5 w-5 text-slate-600" />
             </div>
@@ -281,9 +282,9 @@ export default function OSSBManagementPage() {
 
       <Card className="border border-slate-200 bg-white shadow-sm rounded-xl">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <CardTitle className="text-xl font-bold text-slate-900">All Requests</CardTitle>
+              <CardTitle className="text-lg sm:text-xl font-bold text-slate-900">All Requests</CardTitle>
               <CardDescription className="text-slate-600">
                 {filteredRequests.length} request{filteredRequests.length !== 1 ? 's' : ''} found
               </CardDescription>
@@ -291,7 +292,7 @@ export default function OSSBManagementPage() {
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-slate-500" />
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[180px] border-slate-200">
+                <SelectTrigger className="w-full sm:w-[180px] border-slate-200">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -320,17 +321,18 @@ export default function OSSBManagementPage() {
               {statusFilter === 'all' && (
                 <Button
                   disabled
-                  className="bg-slate-400 cursor-not-allowed text-white opacity-60"
+                  className="bg-slate-400 cursor-not-allowed text-white opacity-60 text-xs sm:text-sm"
                   title="OSSB Request feature is temporarily disabled"
                 >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create OSSB Request (Disabled)
+                  <Plus className="mr-2 h-4 w-4 shrink-0" />
+                  <span className="hidden sm:inline">Create OSSB Request (Disabled)</span>
+                  <span className="sm:hidden">Create OSSB (Disabled)</span>
                 </Button>
               )}
             </div>
           ) : (
-            <div className="border border-slate-200 rounded-lg overflow-hidden">
-              <Table>
+            <div className="border border-slate-200 rounded-lg overflow-x-auto">
+              <Table className="min-w-[800px]">
                 <TableHeader>
                   <TableRow className="bg-slate-50 hover:bg-slate-50">
                     <TableHead className="font-semibold text-slate-700">Reference No.</TableHead>

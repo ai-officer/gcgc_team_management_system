@@ -250,7 +250,9 @@ export function Sidebar({ className }: SidebarProps) {
       <aside
         className={cn(
           'fixed left-0 top-0 z-40 h-screen bg-background border-r border-border shadow-lg',
-          sidebarWidth,
+          // Always full width on mobile, respect collapse state only on desktop
+          'w-64',
+          isCollapsed ? 'lg:w-16' : 'lg:w-64',
           sidebarTransition,
           // Mobile styles
           'lg:translate-x-0',
@@ -271,14 +273,12 @@ export function Sidebar({ className }: SidebarProps) {
               <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary/80 rounded-lg flex items-center justify-center shadow-sm flex-shrink-0">
                 <div className="w-4 h-4 bg-white rounded-sm"></div>
               </div>
-              {!isCollapsed && (
-                <div className="min-w-0">
-                  <h1 className="text-xl font-bold text-foreground truncate">GCGC</h1>
-                  <span className="text-xs text-muted-foreground font-medium block truncate">
-                    {portalName}
-                  </span>
-                </div>
-              )}
+              <div className={cn('min-w-0', isCollapsed && 'lg:hidden')}>
+                <h1 className="text-xl font-bold text-foreground truncate">GCGC</h1>
+                <span className="text-xs text-muted-foreground font-medium block truncate">
+                  {portalName}
+                </span>
+              </div>
             </Link>
 
             {/* Desktop collapse toggle */}
@@ -325,9 +325,9 @@ export function Sidebar({ className }: SidebarProps) {
                     title={isCollapsed ? item.title : undefined}
                   >
                     <Icon className="h-5 w-5 flex-shrink-0" />
-                    {!isCollapsed && (
-                      <span className="truncate">{item.title}</span>
-                    )}
+                    <span className={cn('truncate', isCollapsed && 'lg:hidden')}>
+                      {item.title}
+                    </span>
                     {isCollapsed && (
                       <span className="absolute left-full ml-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none hidden lg:block">
                         {item.title}
@@ -340,7 +340,7 @@ export function Sidebar({ className }: SidebarProps) {
           </nav>
 
           {/* User section */}
-          <div className="border-t border-border p-4 space-y-4">
+          <div className="border-t border-border p-4 space-y-4 shrink-0">
             {/* Notifications */}
             <NotificationDropdown isCollapsed={isCollapsed} />
 
@@ -370,16 +370,14 @@ export function Sidebar({ className }: SidebarProps) {
                   }
                 </AvatarFallback>
               </Avatar>
-              {!isCollapsed && (
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
-                    {session.user.name || 'User'}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {session.user.email}
-                  </p>
-                </div>
-              )}
+              <div className={cn('min-w-0 flex-1', isCollapsed && 'lg:hidden')}>
+                <p className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
+                  {session.user.name || 'User'}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {session.user.email}
+                </p>
+              </div>
               {isCollapsed && (
                 <span className="absolute left-full ml-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none hidden lg:block whitespace-nowrap">
                   {session.user.name || 'User'} - Profile
@@ -399,7 +397,7 @@ export function Sidebar({ className }: SidebarProps) {
               title={isCollapsed ? 'Sign Out' : undefined}
             >
               <LogOut className="h-4 w-4 flex-shrink-0" />
-              {!isCollapsed && <span className="ml-2">Sign Out</span>}
+              <span className={cn('ml-2', isCollapsed && 'lg:hidden')}>Sign Out</span>
             </Button>
           </div>
         </div>

@@ -235,14 +235,6 @@ function SignInForm() {
                 </div>
               </div>
 
-              <div className="flex justify-end">
-                <Link
-                  href="/auth/forgot-password"
-                  className="text-sm font-medium text-blue-600 hover:text-blue-500"
-                >
-                  Forgot Password?
-                </Link>
-              </div>
 
               <Button
                 type="submit"

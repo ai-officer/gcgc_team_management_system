@@ -194,45 +194,45 @@ export default function UserDashboard() {
       <div className="relative overflow-hidden">
         {/* Subtle background gradient */}
         <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-slate-50 to-purple-50 opacity-60"></div>
-        <div className="relative backdrop-blur-sm bg-white/40 border border-slate-200/60 rounded-xl shadow-sm p-8">
-          <div className="flex items-start justify-between">
+        <div className="relative backdrop-blur-sm bg-white/40 border border-slate-200/60 rounded-xl shadow-sm p-4 sm:p-8">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div className="space-y-3">
               <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+                <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
                   {getGreeting()}, {session?.user?.name?.split(' ')[0] || 'User'}
                 </h1>
                 <span className="text-2xl">👋</span>
               </div>
-              <p className="text-slate-600 text-base font-medium max-w-2xl">
+              <p className="text-slate-600 text-sm sm:text-base font-medium max-w-2xl">
                 {isLeader
                   ? "Monitor your team's progress and stay on top of your tasks."
                   : "Focus on what matters. Here's your productivity snapshot."
                 }
               </p>
-              <div className="flex items-center gap-6 text-sm text-slate-500">
+              <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-sm text-slate-500">
                 <div className="flex items-center gap-2">
                   <CalendarIcon className="h-4 w-4" />
                   <span className="font-medium">{format(currentTime, 'EEEE, MMMM do')}</span>
                 </div>
-                <div className="h-4 w-px bg-slate-300"></div>
+                <div className="h-4 w-px bg-slate-300 hidden sm:block"></div>
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4" />
                   <span className="font-medium tabular-nums">{format(currentTime, 'h:mm:ss a')}</span>
                 </div>
               </div>
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-2 sm:gap-3">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={refreshDashboard}
                 disabled={loading}
-                className="border-slate-300 bg-white hover:bg-slate-50 text-slate-700 shadow-sm transition-all duration-200 hover:shadow-md"
+                className="flex-1 sm:flex-none border-slate-300 bg-white hover:bg-slate-50 text-slate-700 shadow-sm transition-all duration-200 hover:shadow-md"
               >
-                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                Refresh
+                <RefreshCw className={`h-4 w-4 sm:mr-2 ${loading ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">Refresh</span>
               </Button>
-              <CreateTaskButton size="sm" onTaskCreated={refreshDashboard} />
+              <CreateTaskButton size="sm" className="flex-1 sm:flex-none" onTaskCreated={refreshDashboard} />
             </div>
           </div>
         </div>

@@ -12,7 +12,7 @@ const transporter = nodemailer.createTransport({
 
 export async function sendPasswordResetCode(email: string, code: string) {
   await transporter.sendMail({
-    from: `"GCGC Team Management" <${process.env.SMTP_USER}>`,
+    from: `"GCGC Team Management" <${process.env.SMTP_FROM || 'noreply@globalofficium.com'}>`,
     to: email,
     subject: 'Password Reset Code - GCGC TMS',
     html: `

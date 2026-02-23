@@ -155,6 +155,7 @@ interface TaskViewModalProps {
   task: Task | null
   onEdit?: (task: Task) => void
   onTaskUpdate?: () => void | Promise<void>
+  onSubtaskClick?: (subtaskId: string) => void
 }
 
 const REACTION_EMOJIS = ['👍', '❤️', '😄', '😮', '😢', '😡']
@@ -199,7 +200,8 @@ export default function TaskViewModal({
   onOpenChange,
   task,
   onEdit,
-  onTaskUpdate
+  onTaskUpdate,
+  onSubtaskClick
 }: TaskViewModalProps) {
   const { data: session } = useSession()
   const { toast } = useToast()
@@ -429,6 +431,45 @@ export default function TaskViewModal({
       })
     } finally {
       setAddingSubtask(false)
+    }
+  }
+
+  // Toggle subtask completion: COMPLETED (100%) <-> TODO (0%)
+  const handleToggleSubtaskCompletion = async (subtask: NonNullable<Task['subtasks']>[number]) => {
+    const isCompleted = subtask.status === 'COMPLETED'
+    const newStatus = isCompleted ? 'TODO' : 'COMPLETED'
+    const newProgress = isCompleted ? 0 : 100
+
+    // Optimistic update
+    setLocalSubtasks(prev =>
+      (prev || []).map(s =>
+        s.id === subtask.id ? { ...s, status: newStatus as typeof s.status, progressPercentage: newProgress } : s
+      )
+    )
+
+    try {
+      const response = await fetch(`/api/tasks/${subtask.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus, progressPercentage: newProgress }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update subtask')
+      }
+      onTaskUpdate?.()
+    } catch (error) {
+      // Revert optimistic update on failure
+      setLocalSubtasks(prev =>
+        (prev || []).map(s =>
+          s.id === subtask.id ? { ...s, status: subtask.status, progressPercentage: subtask.progressPercentage } : s
+        )
+      )
+      toast({
+        title: 'Error',
+        description: 'Failed to update subtask. Please try again.',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -1498,9 +1539,20 @@ export default function TaskViewModal({
                     return (
                       <div
                         key={subtask.id}
-                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                        className={`flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors ${onSubtaskClick ? 'cursor-pointer' : ''}`}
+                        onClick={() => onSubtaskClick?.(subtask.id)}
                       >
-                        {getSubtaskStatusIcon()}
+                        {/* Checkable status icon */}
+                        <button
+                          className="flex-shrink-0 focus:outline-none hover:scale-110 transition-transform"
+                          title={subtask.status === 'COMPLETED' ? 'Mark as incomplete' : 'Mark as complete'}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleToggleSubtaskCompletion(subtask)
+                          }}
+                        >
+                          {getSubtaskStatusIcon()}
+                        </button>
                         <div className="flex-1 min-w-0">
                           <p className={`text-sm font-medium truncate ${
                             subtask.status === 'COMPLETED' ? 'text-gray-500 line-through' : 'text-gray-900'
@@ -1536,7 +1588,7 @@ export default function TaskViewModal({
                             fallbackClassName="text-xs"
                           />
                         )}
-                        <ChevronRight className="h-4 w-4 text-gray-400" />
+                        <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
                       </div>
                     )
                   })}

@@ -594,6 +594,19 @@ export default function TasksPage() {
     setViewingTask(task)
     setShowViewModal(true)
   }
+
+  // Navigate to a subtask's detail by fetching and swapping the modal content
+  const handleSubtaskClick = async (subtaskId: string) => {
+    try {
+      const response = await fetch(`/api/tasks/${subtaskId}`)
+      if (response.ok) {
+        const subtask = await response.json()
+        setViewingTask(subtask)
+      }
+    } catch (err) {
+      console.error('Error fetching subtask:', err)
+    }
+  }
   
   // Helper function to open edit modal (called from view modal)
   const handleEditFromView = (task: Task) => {
@@ -1013,6 +1026,7 @@ export default function TasksPage() {
         task={viewingTask}
         onEdit={handleEditFromView}
         onTaskUpdate={() => fetchTasks(false)}
+        onSubtaskClick={handleSubtaskClick}
       />
 
       {/* Delete Confirmation Dialog */}

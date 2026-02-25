@@ -49,12 +49,9 @@ export async function POST(req: NextRequest) {
     // Upload to OSS
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
-    const { url: signedUrl } = await uploadToOSS(buffer, objectKey, file.type)
+    const { url: imageUrl } = await uploadToOSS(buffer, objectKey, file.type)
 
-    // Signed URL already has query params, so use & for cache-busting
-    const imageUrl = `${signedUrl}&v=${timestamp}`
-
-    // Update user's profile image in database with cache-busted URL
+    // Update user's profile image in database
     await prisma.user.update({
       where: { id: session.user.id },
       data: { image: imageUrl }

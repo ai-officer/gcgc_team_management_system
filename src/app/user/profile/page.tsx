@@ -176,21 +176,17 @@ export default function UserProfilePage() {
 
       const data = await response.json()
 
-      // Add client-side cache-busting to ensure browser reloads the image
-      // Server URL already has ?v=timestamp, we add &t=timestamp for extra cache-busting
-      const newImageUrl = `${data.imageUrl}&t=${Date.now()}`
-
-      setProfile(prev => prev ? { ...prev, image: newImageUrl } : null)
+      setProfile(prev => prev ? { ...prev, image: data.imageUrl } : null)
 
       // Update the session with new image - this will trigger JWT callback with trigger='update'
       await updateSession({
         user: {
-          image: newImageUrl
+          image: data.imageUrl
         }
       })
 
       // Emit event to sync avatar across all components (sidebar, etc.)
-      avatarEvents.emit(newImageUrl)
+      avatarEvents.emit(data.imageUrl)
 
       toast({
         title: 'Success',
@@ -205,6 +201,8 @@ export default function UserProfilePage() {
       })
     } finally {
       setUploadingImage(false)
+      // Reset file input so the same file can be re-selected if needed
+      if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
 

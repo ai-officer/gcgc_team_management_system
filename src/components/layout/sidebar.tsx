@@ -249,7 +249,7 @@ export function Sidebar({ className }: SidebarProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed left-0 top-0 z-40 h-screen bg-background border-r border-border shadow-lg',
+          'fixed left-0 top-0 z-40 h-dvh bg-background border-r border-border shadow-lg',
           // Always full width on mobile, respect collapse state only on desktop
           'w-64',
           isCollapsed ? 'lg:w-16' : 'lg:w-64',

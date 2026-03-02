@@ -90,7 +90,9 @@ export async function GET(req: NextRequest) {
         },
         _count: {
           select: {
-            assignedTasks: true,
+            assignedTasks: {
+              where: { isRecurring: { not: true } }
+            },
             createdTasks: true,
             subordinates: true
           }

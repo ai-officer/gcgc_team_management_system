@@ -1,6 +1,6 @@
 'use client'
 
-import { Search, Bell, User, LogOut, Settings, Shield, LayoutDashboard } from 'lucide-react'
+import { Search, User, LogOut, Settings, Shield, LayoutDashboard } from 'lucide-react'
 import Link from 'next/link'
 import { useAdminSession } from '@/hooks/use-admin-session'
 import { useRouter } from 'next/navigation'
@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { AdminNotificationDropdown } from '@/components/notifications/AdminNotificationDropdown'
 
 export function AdminHeader() {
   const { data: session } = useAdminSession()
@@ -68,14 +69,7 @@ export function AdminHeader() {
           </Button>
 
           {/* Notifications */}
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="relative h-9 w-9 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <Bell className="w-4 h-4 text-gray-600" />
-            <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-          </Button>
+          <AdminNotificationDropdown />
 
           {/* Admin Badge */}
           <div className="hidden md:flex items-center space-x-2 px-3 py-1.5 bg-blue-50 rounded-lg border border-blue-200">

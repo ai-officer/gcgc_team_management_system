@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Search, Filter, Edit, Trash2, User, Mail, Calendar, Shield, Crown, LayoutList, LayoutGrid, KeyRound, Copy, Check } from 'lucide-react'
+import { Plus, Search, Filter, Edit, Trash2, User, Mail, Calendar, Shield, Crown, LayoutList, LayoutGrid, KeyRound, Copy, Check, Clock, CheckSquare, X, Users, Handshake } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
+import { Progress } from '@/components/ui/progress'
+import { format } from 'date-fns'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -131,6 +133,26 @@ interface UpdateUserData {
   password?: string
 }
 
+interface UserTask {
+  id: string
+  title: string
+  description?: string
+  status: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' | 'CANCELLED'
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+  taskType: 'INDIVIDUAL' | 'TEAM' | 'COLLABORATION'
+  progressPercentage: number
+  dueDate?: string
+  team?: { id: string; name: string }
+}
+
+const TASK_STATUS_CONFIG = {
+  TODO:        { label: 'To Do',       dot: 'bg-gray-400',   badge: 'bg-gray-100 text-gray-700' },
+  IN_PROGRESS: { label: 'In Progress', dot: 'bg-blue-500',   badge: 'bg-blue-100 text-blue-700' },
+  IN_REVIEW:   { label: 'In Review',   dot: 'bg-yellow-500', badge: 'bg-yellow-100 text-yellow-700' },
+  COMPLETED:   { label: 'Completed',   dot: 'bg-green-500',  badge: 'bg-green-100 text-green-700' },
+  CANCELLED:   { label: 'Cancelled',   dot: 'bg-red-500',    badge: 'bg-red-100 text-red-700' },
+} as const
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
@@ -147,6 +169,12 @@ export default function AdminUsersPage() {
     total: 0,
     totalPages: 0
   })
+
+  // User task modal state
+  const [selectedUserForTasks, setSelectedUserForTasks] = useState<User | null>(null)
+  const [userTasks, setUserTasks] = useState<UserTask[]>([])
+  const [userTasksLoading, setUserTasksLoading] = useState(false)
+  const [activeTaskStatus, setActiveTaskStatus] = useState<string>('')
 
   // Password reset state
   const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null)
@@ -241,6 +269,28 @@ export default function AdminUsersPage() {
   useEffect(() => {
     fetchUsers()
   }, [pagination.page, debouncedSearchTerm, roleFilter, hierarchyFilter])
+
+  const fetchUserTasks = async (userId: string) => {
+    setUserTasksLoading(true)
+    setUserTasks([])
+    try {
+      const response = await fetch(`/api/tasks?userId=${userId}&limit=200`)
+      if (response.ok) {
+        const data = await response.json()
+        setUserTasks(data.tasks || [])
+      }
+    } catch (error) {
+      console.error('Error fetching user tasks:', error)
+    } finally {
+      setUserTasksLoading(false)
+    }
+  }
+
+  const openUserTasksModal = (user: User) => {
+    setSelectedUserForTasks(user)
+    setActiveTaskStatus('')
+    fetchUserTasks(user.id)
+  }
 
   // Fetch organizational data on component mount (copied from registration form)
   useEffect(() => {
@@ -1178,53 +1228,59 @@ export default function AdminUsersPage() {
               {viewMode === 'grid' ? (
                 // Grid View - Compact vertical card
                 <div className="flex flex-col h-full">
-                  <div className="flex items-start justify-between mb-3">
-                    <Avatar className="h-14 w-14 rounded-lg ring-2 ring-slate-200">
-                      <AvatarFallback className="rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 text-blue-700 font-semibold text-lg">
-                        {user.name ? user.name.split(' ').map(n => n[0]).join('') : <User className="w-6 h-6" />}
-                      </AvatarFallback>
-                    </Avatar>
-                    <Badge variant={user.isActive ? "default" : "secondary"} className="rounded-md px-2 py-0.5 text-xs font-medium">
-                      {user.isActive ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </div>
-
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-slate-900 truncate">{user.name}</h3>
-                    <div className="flex items-center space-x-1 text-xs font-medium text-slate-500 mt-1">
-                      <Mail className="w-3 h-3" />
-                      <span className="truncate">{user.email}</span>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-1 mt-2">
-                      <Badge className={`${getRoleColor(user.role)} rounded-md px-2 py-0.5 text-xs font-medium`}>
-                        <Shield className="w-3 h-3 mr-1" />
-                        {user.role}
+                  {/* Clickable info area */}
+                  <div
+                    className="flex-1 cursor-pointer"
+                    onClick={() => openUserTasksModal(user)}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <Avatar className="h-14 w-14 rounded-lg ring-2 ring-slate-200">
+                        <AvatarFallback className="rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 text-blue-700 font-semibold text-lg">
+                          {user.name ? user.name.split(' ').map(n => n[0]).join('') : <User className="w-6 h-6" />}
+                        </AvatarFallback>
+                      </Avatar>
+                      <Badge variant={user.isActive ? "default" : "secondary"} className="rounded-md px-2 py-0.5 text-xs font-medium">
+                        {user.isActive ? 'Active' : 'Inactive'}
                       </Badge>
-                      {user.hierarchyLevel ? (
-                        <Badge className={`${getHierarchyColor(user.hierarchyLevel)} rounded-md px-2 py-0.5 text-xs font-medium`}>
-                          {user.hierarchyLevel}
-                        </Badge>
-                      ) : user.role === UserRole.ADMIN ? (
-                        <Badge className="bg-purple-50 text-purple-700 border border-purple-200 rounded-md px-2 py-0.5 text-xs font-medium">
-                          System
-                        </Badge>
-                      ) : null}
                     </div>
-                  </div>
 
-                  <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-slate-100 text-center text-xs">
                     <div>
-                      <div className="font-semibold text-slate-900">{user._count.assignedTasks}</div>
-                      <div className="text-slate-500">Tasks</div>
+                      <h3 className="font-semibold text-slate-900 truncate">{user.name}</h3>
+                      <div className="flex items-center space-x-1 text-xs font-medium text-slate-500 mt-1">
+                        <Mail className="w-3 h-3" />
+                        <span className="truncate">{user.email}</span>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-1 mt-2">
+                        <Badge className={`${getRoleColor(user.role)} rounded-md px-2 py-0.5 text-xs font-medium`}>
+                          <Shield className="w-3 h-3 mr-1" />
+                          {user.role}
+                        </Badge>
+                        {user.hierarchyLevel ? (
+                          <Badge className={`${getHierarchyColor(user.hierarchyLevel)} rounded-md px-2 py-0.5 text-xs font-medium`}>
+                            {user.hierarchyLevel}
+                          </Badge>
+                        ) : user.role === UserRole.ADMIN ? (
+                          <Badge className="bg-purple-50 text-purple-700 border border-purple-200 rounded-md px-2 py-0.5 text-xs font-medium">
+                            System
+                          </Badge>
+                        ) : null}
+                      </div>
                     </div>
-                    <div>
-                      <div className="font-semibold text-slate-900">{user.teamMembers.length}</div>
-                      <div className="text-slate-500">Teams</div>
-                    </div>
-                    <div>
-                      <div className="font-semibold text-slate-900">{new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
-                      <div className="text-slate-500">Joined</div>
+
+                    <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-slate-100 text-center text-xs">
+                      <div>
+                        <div className="font-semibold text-slate-900">{user._count.assignedTasks}</div>
+                        <div className="text-slate-500">Tasks</div>
+                      </div>
+                      <div>
+                        <div className="font-semibold text-slate-900">{user.teamMembers.length}</div>
+                        <div className="text-slate-500">Teams</div>
+                      </div>
+                      <div>
+                        <div className="font-semibold text-slate-900">{new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
+                        <div className="text-slate-500">Joined</div>
+                      </div>
                     </div>
                   </div>
 
@@ -1276,7 +1332,10 @@ export default function AdminUsersPage() {
               ) : (
                 // Column View - Horizontal card (original layout)
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
+                  <div
+                    className="flex items-center space-x-4 flex-1 cursor-pointer"
+                    onClick={() => openUserTasksModal(user)}
+                  >
                     <Avatar className="h-12 w-12 rounded-lg ring-2 ring-slate-200">
                       <AvatarFallback className="rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 text-blue-700 font-semibold">
                         {user.name ? user.name.split(' ').map(n => n[0]).join('') : <User className="w-6 h-6" />}
@@ -1328,8 +1387,9 @@ export default function AdminUsersPage() {
                       </div>
                       <div>Joined</div>
                     </div>
+                  </div>
 
-                    <div className="flex space-x-2">
+                  <div className="flex space-x-2">
                       <Button
                         variant="outline"
                         size="sm"
@@ -1371,7 +1431,6 @@ export default function AdminUsersPage() {
                         </AlertDialogContent>
                       </AlertDialog>
                     </div>
-                  </div>
                 </div>
               )}
             </Card>
@@ -1397,6 +1456,140 @@ export default function AdminUsersPage() {
           </div>
         </div>
       )}
+
+      {/* User Tasks Modal */}
+      <Dialog
+        open={!!selectedUserForTasks}
+        onOpenChange={(open) => { if (!open) { setSelectedUserForTasks(null); setUserTasks([]) } }}
+      >
+        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0">
+          {/* Header */}
+          <div className="px-6 pt-6 pb-4 border-b">
+            <div className="flex items-center gap-3">
+              <Avatar className="h-12 w-12 rounded-xl ring-2 ring-slate-200">
+                <AvatarFallback className="rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 text-blue-700 font-bold text-lg">
+                  {selectedUserForTasks?.name?.split(' ').map(n => n[0]).join('') ?? <User className="w-5 h-5" />}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <DialogTitle className="text-lg font-semibold text-slate-900 truncate">
+                  {selectedUserForTasks?.name}
+                </DialogTitle>
+                <DialogDescription className="text-sm text-slate-500 truncate">
+                  {selectedUserForTasks?.email} · {userTasks.length} task{userTasks.length !== 1 ? 's' : ''} total
+                </DialogDescription>
+              </div>
+            </div>
+
+            {/* Status tabs */}
+            <div className="flex gap-2 mt-4 overflow-x-auto pb-1">
+              <button
+                onClick={() => setActiveTaskStatus('')}
+                className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                  activeTaskStatus === ''
+                    ? 'bg-slate-900 text-white border-slate-900'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
+                }`}
+              >
+                All ({userTasks.length})
+              </button>
+              {(Object.keys(TASK_STATUS_CONFIG) as Array<keyof typeof TASK_STATUS_CONFIG>).map((s) => {
+                const count = userTasks.filter(t => t.status === s).length
+                if (count === 0) return null
+                const cfg = TASK_STATUS_CONFIG[s]
+                return (
+                  <button
+                    key={s}
+                    onClick={() => setActiveTaskStatus(s)}
+                    className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                      activeTaskStatus === s
+                        ? `${cfg.badge} border-current`
+                        : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
+                    }`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+                    {cfg.label} ({count})
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Task list */}
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            {userTasksLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+              </div>
+            ) : (() => {
+              const filtered = activeTaskStatus
+                ? userTasks.filter(t => t.status === activeTaskStatus)
+                : userTasks
+              if (filtered.length === 0) return (
+                <div className="text-center py-12 text-slate-400">
+                  <CheckSquare className="h-10 w-10 mx-auto mb-3 opacity-40" />
+                  <p className="text-sm">No tasks found</p>
+                </div>
+              )
+              return (
+                <div className="space-y-2">
+                  {filtered.map((task) => {
+                    const cfg = TASK_STATUS_CONFIG[task.status] ?? TASK_STATUS_CONFIG.TODO
+                    const priorityDot: Record<string, string> = {
+                      URGENT: 'bg-red-500', HIGH: 'bg-orange-500',
+                      MEDIUM: 'bg-yellow-400', LOW: 'bg-green-500',
+                    }
+                    const typeIcon = task.taskType === 'TEAM'
+                      ? <Users className="h-3.5 w-3.5 text-slate-400" />
+                      : task.taskType === 'COLLABORATION'
+                      ? <Handshake className="h-3.5 w-3.5 text-slate-400" />
+                      : <User className="h-3.5 w-3.5 text-slate-400" />
+                    return (
+                      <div key={task.id} className="flex items-start gap-3 p-3 rounded-xl border border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm transition-all">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            {typeIcon}
+                            <p className="text-sm font-medium text-slate-800 truncate">{task.title}</p>
+                          </div>
+                          {task.description && (
+                            <p className="text-xs text-slate-400 line-clamp-1 mb-2">{task.description}</p>
+                          )}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${cfg.badge}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+                              {cfg.label}
+                            </span>
+                            <span className="flex items-center gap-1 text-xs text-slate-400">
+                              <span className={`w-1.5 h-1.5 rounded-full ${priorityDot[task.priority] ?? 'bg-gray-400'}`} />
+                              {task.priority.charAt(0) + task.priority.slice(1).toLowerCase()}
+                            </span>
+                            {task.team && (
+                              <span className="text-xs text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
+                                {task.team.name}
+                              </span>
+                            )}
+                            {task.dueDate && (
+                              <span className="flex items-center gap-1 text-xs text-slate-400 ml-auto">
+                                <Clock className="h-3 w-3" />
+                                {format(new Date(task.dueDate), 'MMM d')}
+                              </span>
+                            )}
+                          </div>
+                          {task.progressPercentage > 0 && (
+                            <div className="mt-2">
+                              <Progress value={task.progressPercentage} className="h-1" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            })()}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit User Dialog */}
       {editingUser && (

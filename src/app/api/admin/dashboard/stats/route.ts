@@ -6,7 +6,7 @@ import { UserRole } from '@prisma/client'
 export async function GET(req: NextRequest) {
   try {
     const session = await getAdminSession(req)
-    
+
     if (!session?.isAdmin) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
     const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), 1)
 
-    // Basic user counts
+    // Basic user counts + task counts
     const [
       totalUsers,
       newUsersThisMonth,
@@ -32,18 +32,23 @@ export async function GET(req: NextRequest) {
       leaderCount,
       memberCount,
       totalTeams,
-      totalSections
+      totalSections,
+      totalTasks,
+      completedTasks,
+      inProgressTasks,
+      todoTasks,
+      overdueTasks
     ] = await Promise.all([
       prisma.user.count(),
       prisma.user.count({
         where: { createdAt: { gte: startOfMonth } }
       }),
       prisma.user.count({
-        where: { 
-          createdAt: { 
+        where: {
+          createdAt: {
             gte: startOfLastMonth,
-            lt: startOfMonth 
-          } 
+            lt: startOfMonth
+          }
         }
       }),
       prisma.user.count({
@@ -60,6 +65,17 @@ export async function GET(req: NextRequest) {
       }),
       prisma.section.count({
         where: { isActive: true }
+      }),
+      prisma.task.count({ where: { isRecurring: { not: true } } }),
+      prisma.task.count({ where: { isRecurring: { not: true }, status: 'COMPLETED' } }),
+      prisma.task.count({ where: { isRecurring: { not: true }, status: 'IN_PROGRESS' } }),
+      prisma.task.count({ where: { isRecurring: { not: true }, status: 'TODO' } }),
+      prisma.task.count({
+        where: {
+          isRecurring: { not: true },
+          status: { notIn: ['COMPLETED', 'CANCELLED'] },
+          dueDate: { lt: new Date() }
+        }
       })
     ])
 
@@ -85,7 +101,7 @@ export async function GET(req: NextRequest) {
     for (let i = 11; i >= 0; i--) {
       const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1)
       const nextMonth = new Date(now.getFullYear(), now.getMonth() - i + 1, 1)
-      
+
       const usersInMonth = await prisma.user.count({
         where: {
           createdAt: {
@@ -129,7 +145,7 @@ export async function GET(req: NextRequest) {
     ])
 
     // Calculate growth rate (avoiding division by zero)
-    const growthRate = newUsersLastMonth > 0 
+    const growthRate = newUsersLastMonth > 0
       ? ((newUsersThisMonth - newUsersLastMonth) / newUsersLastMonth) * 100
       : newUsersThisMonth > 0 ? 100 : 0
 
@@ -143,6 +159,11 @@ export async function GET(req: NextRequest) {
       totalTeams,
       totalSections,
       growthRate,
+      totalTasks,
+      completedTasks,
+      inProgressTasks,
+      todoTasks,
+      overdueTasks,
       hierarchyDistribution,
       userGrowth,
       recentUsers: {

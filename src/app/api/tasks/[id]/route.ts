@@ -160,7 +160,7 @@ export async function PATCH(
       include: {
         team: true,
         teamMembers: true,
-        collaborators: true
+        collaborators: true,
       }
     })
 
@@ -304,11 +304,30 @@ export async function PATCH(
       delete taskUpdateData.teamMemberIds
       delete taskUpdateData.collaboratorIds
 
-      // Update the task
-      const task = await tx.task.update({
-        where: { id: params.id },
-        data: taskUpdateData,
-      })
+      // If this is a recurring instance, update ALL instances in the series
+      if (existingTask.recurringParentId) {
+        // Exclude per-instance date fields from the bulk update
+        const bulkUpdateData: any = { ...taskUpdateData }
+        delete bulkUpdateData.dueDate
+        delete bulkUpdateData.startDate
+
+        await tx.task.updateMany({
+          where: { recurringParentId: existingTask.recurringParentId },
+          data: bulkUpdateData,
+        })
+
+        // Return the current instance after its own date-preserving update
+        await tx.task.update({
+          where: { id: params.id },
+          data: { dueDate: finalDueDate, startDate: finalStartDate },
+        })
+      } else {
+        // Update the task
+        await tx.task.update({
+          where: { id: params.id },
+          data: taskUpdateData,
+        })
+      }
 
       // Update team members if taskType is TEAM and teamMemberIds provided
       if (updateData.taskType === 'TEAM' && updateData.teamMemberIds) {
@@ -604,6 +623,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Check for series deletion scope
+    const { searchParams } = new URL(req.url)
+    const scope = searchParams.get('scope')
+
     // Get existing task
     const existingTask = await prisma.task.findUnique({
       where: { id: params.id },
@@ -612,6 +635,7 @@ export async function DELETE(
         title: true,
         creatorId: true,
         teamId: true,
+        recurringParentId: true,
       }
     })
 
@@ -644,6 +668,28 @@ export async function DELETE(
       teamMember?.role
     )) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    // Handle series deletion
+    if (scope === 'series' && existingTask.recurringParentId) {
+      const parentId = existingTask.recurringParentId
+      // Delete all instances (cascade handles comments/relations)
+      await prisma.task.deleteMany({
+        where: { recurringParentId: parentId }
+      })
+      // Delete the template task
+      await prisma.task.delete({ where: { id: parentId } })
+
+      await prisma.activity.create({
+        data: {
+          type: 'TASK_UPDATED',
+          description: `Deleted recurring series: ${existingTask.title}`,
+          userId: session.user.id,
+          entityId: parentId,
+          entityType: 'task',
+        }
+      })
+      return NextResponse.json({ message: 'Recurring series deleted successfully' })
     }
 
     // Get task details before deletion to find associated Event records

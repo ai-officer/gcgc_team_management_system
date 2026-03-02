@@ -4,13 +4,13 @@ import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  Calendar, 
-  Clock, 
-  User, 
+import {
+  Plus,
+  Search,
+  Filter,
+  Calendar,
+  Clock,
+  User,
   Users,
   Handshake,
   AlertCircle,
@@ -18,7 +18,8 @@ import {
   MoreHorizontal,
   Edit,
   Eye,
-  Trash2
+  Trash2,
+  RefreshCw
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -73,6 +74,8 @@ interface Task {
   allDay?: boolean
   recurrence?: string
   reminders?: any
+  // Recurring task
+  recurringParentId?: string | null
   assignee?: {
     id: string
     name: string
@@ -148,6 +151,7 @@ export default function TasksPage() {
   const [showTaskForm, setShowTaskForm] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [deletingTask, setDeletingTask] = useState<Task | null>(null)
+  const [deleteScope, setDeleteScope] = useState<'single' | 'series'>('single')
   const [viewingTask, setViewingTask] = useState<Task | null>(null)
   const [showViewModal, setShowViewModal] = useState(false)
 
@@ -500,10 +504,12 @@ export default function TasksPage() {
 
     try {
       console.log('Deleting task:', deletingTask.id, deletingTask.title)
-      
-      const response = await fetch(`/api/tasks/${deletingTask.id}`, {
-        method: 'DELETE'
-      })
+
+      const url = deleteScope === 'series' && deletingTask.recurringParentId
+        ? `/api/tasks/${deletingTask.id}?scope=series`
+        : `/api/tasks/${deletingTask.id}`
+
+      const response = await fetch(url, { method: 'DELETE' })
 
       if (!response.ok) {
         const errorData = await response.json()
@@ -512,14 +518,15 @@ export default function TasksPage() {
       }
 
       console.log('Task deleted successfully')
-      
+
       // Refresh tasks to ensure we have the latest data
       await fetchTasks()
-      
+
       setDeletingTask(null)
+      setDeleteScope('single')
       toast({
         title: 'Success',
-        description: 'Task deleted successfully'
+        description: deleteScope === 'series' ? 'Recurring series deleted' : 'Task deleted successfully'
       })
     } catch (error) {
       console.error('Error deleting task:', error)
@@ -810,9 +817,14 @@ export default function TasksPage() {
                                         {getTaskTypeIcon(task.taskType)}
                                       </div>
                                       <div className="min-w-0 flex-1">
-                                        <h4 className="font-semibold text-base leading-tight text-gray-900 truncate mb-1">
-                                          {task.title}
-                                        </h4>
+                                        <div className="flex items-center gap-1 mb-1">
+                                          <h4 className="font-semibold text-base leading-tight text-gray-900 truncate">
+                                            {task.title}
+                                          </h4>
+                                          {task.recurringParentId && (
+                                            <RefreshCw className="h-3 w-3 text-blue-500 flex-shrink-0" />
+                                          )}
+                                        </div>
                                         <div className="flex items-center gap-1 flex-wrap">
                                           {task.parentId && (
                                             <Badge className="text-xs bg-violet-500 text-white border-violet-600">
@@ -1030,21 +1042,36 @@ export default function TasksPage() {
       />
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!deletingTask} onOpenChange={() => setDeletingTask(null)}>
+      <AlertDialog open={!!deletingTask} onOpenChange={(open) => { if (!open) { setDeletingTask(null); setDeleteScope('single') } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Task</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{deletingTask?.title}"? This action cannot be undone.
+              Are you sure you want to delete &quot;{deletingTask?.title}&quot;? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {deletingTask?.recurringParentId && (
+            <div className="px-1 space-y-2">
+              <p className="text-sm font-medium text-gray-700">This is a recurring task. What would you like to delete?</p>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="deleteScope" value="single" checked={deleteScope === 'single'} onChange={() => setDeleteScope('single')} />
+                  <span className="text-sm">This task only</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="deleteScope" value="series" checked={deleteScope === 'series'} onChange={() => setDeleteScope('series')} />
+                  <span className="text-sm">Entire recurring series (all instances)</span>
+                </label>
+              </div>
+            </div>
+          )}
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleDeleteTask}
               className="bg-red-600 hover:bg-red-700"
             >
-              Delete
+              {deleteScope === 'series' ? 'Delete Series' : 'Delete Task'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

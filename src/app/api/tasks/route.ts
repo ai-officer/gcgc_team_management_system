@@ -7,6 +7,7 @@ import { hasPermission } from '@/lib/permissions'
 import { PERMISSIONS } from '@/constants'
 import { autoSyncTask } from '@/lib/calendar-sync-helper'
 import { notifyTaskAssigned, notifySubtaskAssigned } from '@/lib/notifications'
+import { generateOccurrenceDates, buildRRuleString } from '@/lib/recurring'
 
 const createTaskSchema = z.object({
   title: z.string().min(1).max(100),
@@ -28,6 +29,12 @@ const createTaskSchema = z.object({
   meetingLink: z.string().url().optional().or(z.literal('')),
   allDay: z.boolean().optional(),
   recurrence: z.string().optional(),
+  // Recurring task fields
+  isRecurring: z.boolean().optional().default(false),
+  recurringFrequency: z.enum(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY']).optional(),
+  recurringInterval: z.number().int().min(1).max(30).optional(),
+  recurringDaysOfWeek: z.array(z.number().int().min(0).max(6)).optional(),
+  recurringEndDate: z.string().datetime().optional(),
 })
 
 const querySchema = z.object({
@@ -80,7 +87,10 @@ export async function GET(req: NextRequest) {
     const skip = (pageNum - 1) * limitNum
 
     // Build where clause based on user role
-    let where: any = {}
+    let where: any = {
+      // Always hide template (parent) recurring tasks from the board
+      isRecurring: false,
+    }
 
     // Handle subtask filtering
     // Note: We handle this differently for non-admins below to include assigned subtasks
@@ -429,6 +439,12 @@ export async function POST(req: NextRequest) {
       meetingLink,
       allDay,
       recurrence,
+      // Recurring task fields
+      isRecurring,
+      recurringFrequency,
+      recurringInterval,
+      recurringDaysOfWeek,
+      recurringEndDate,
     } = createTaskSchema.parse(body)
 
     // No team membership verification needed since we're selecting from all users
@@ -463,6 +479,114 @@ export async function POST(req: NextRequest) {
       } else if (progressPercentage > 0) {
         finalStatus = 'IN_PROGRESS'
       }
+    }
+
+    // Handle recurring task creation
+    if (isRecurring && recurringFrequency && recurringEndDate && finalStartDate) {
+      const endDate = new Date(recurringEndDate)
+      const rruleString = buildRRuleString(
+        recurringFrequency,
+        recurringInterval || 1,
+        recurringDaysOfWeek || [],
+        endDate
+      )
+      const occurrences = generateOccurrenceDates(
+        finalStartDate,
+        endDate,
+        recurringFrequency,
+        recurringInterval || 1,
+        recurringDaysOfWeek || []
+      )
+
+      const { template, instanceCount } = await prisma.$transaction(async (tx) => {
+        // Create the hidden template task
+        const templateTask = await tx.task.create({
+          data: {
+            title,
+            description,
+            priority,
+            status: 'TODO',
+            progressPercentage: 0,
+            taskType,
+            dueDate: finalDueDate,
+            startDate: finalStartDate,
+            assigneeId: assigneeId || session.user.id,
+            creatorId: session.user.id,
+            teamId: null,
+            assignedById: assignedById || session.user.id,
+            location: location || null,
+            meetingLink: meetingLink || null,
+            allDay: allDay !== undefined ? allDay : false,
+            recurrence: rruleString,
+            isRecurring: true,
+            recurringFrequency,
+            recurringInterval: recurringInterval || 1,
+            recurringDaysOfWeek: recurringDaysOfWeek || [],
+            recurringEndDate: endDate,
+          },
+        })
+
+        // Build instance data array
+        const instancesData = occurrences.map((date) => ({
+          title,
+          description,
+          priority,
+          status: 'TODO' as const,
+          progressPercentage: 0,
+          taskType,
+          dueDate: date,
+          startDate: date,
+          assigneeId: assigneeId || session.user.id,
+          creatorId: session.user.id,
+          teamId: null as string | null,
+          assignedById: assignedById || session.user.id,
+          location: location || null,
+          meetingLink: meetingLink || null,
+          allDay: allDay !== undefined ? allDay : false,
+          recurrence: rruleString,
+          isRecurring: false,
+          recurringParentId: templateTask.id,
+        }))
+
+        await tx.task.createMany({ data: instancesData })
+
+        // Add team members / collaborators to all instances if needed
+        if (taskType === 'TEAM' && teamMemberIds.length > 0) {
+          const createdInstances = await tx.task.findMany({
+            where: { recurringParentId: templateTask.id },
+            select: { id: true }
+          })
+          const memberData = createdInstances.flatMap(inst =>
+            teamMemberIds.map(userId => ({ taskId: inst.id, userId, role: 'MEMBER' as const }))
+          )
+          await tx.taskTeamMember.createMany({ data: memberData })
+        }
+
+        if (taskType === 'COLLABORATION' && collaboratorIds.length > 0) {
+          const createdInstances = await tx.task.findMany({
+            where: { recurringParentId: templateTask.id },
+            select: { id: true }
+          })
+          const collabData = createdInstances.flatMap(inst =>
+            collaboratorIds.map(userId => ({ taskId: inst.id, userId }))
+          )
+          await tx.taskCollaborator.createMany({ data: collabData })
+        }
+
+        return { template: templateTask, instanceCount: occurrences.length }
+      })
+
+      await prisma.activity.create({
+        data: {
+          type: 'TASK_CREATED',
+          description: `Created recurring task: ${title} (${instanceCount} instances)`,
+          userId: session.user.id,
+          entityId: template.id,
+          entityType: 'task',
+        }
+      })
+
+      return NextResponse.json({ template, instanceCount }, { status: 201 })
     }
 
     // Create task with transaction for related data

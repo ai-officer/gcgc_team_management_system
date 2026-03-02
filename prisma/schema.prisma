@@ -189,9 +189,18 @@ model Task {
   reminders             Json?              // Notification reminders in JSON format
   // Subtask support
   parentId              String?            // Parent task ID for subtasks
+  // Recurring task support
+  isRecurring           Boolean            @default(false)
+  recurringFrequency    RecurringFrequency?
+  recurringInterval     Int?               // Every N days/weeks/months/years (default 1)
+  recurringDaysOfWeek   Int[]              @default([]) // 0=Sun..6=Sat (weekly only)
+  recurringEndDate      DateTime?          // Series end date
+  recurringParentId     String?            // Set on instances; null on template
   // Relations
   parent                Task?              @relation("TaskSubtasks", fields: [parentId], references: [id], onDelete: Cascade)
   subtasks              Task[]             @relation("TaskSubtasks")
+  recurringParent       Task?              @relation("RecurringInstances", fields: [recurringParentId], references: [id], onDelete: Cascade)
+  recurringInstances    Task[]             @relation("RecurringInstances")
   comments              Comment[]
   events                Event[]
   collaborators         TaskCollaborator[]
@@ -513,6 +522,13 @@ enum TaskType {
   INDIVIDUAL
   TEAM
   COLLABORATION
+}
+
+enum RecurringFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
 }
 
 enum TaskMemberRole {

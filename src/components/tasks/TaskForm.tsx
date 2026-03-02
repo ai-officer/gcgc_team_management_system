@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { format } from 'date-fns'
-import { CalendarIcon, Plus, X, Users, User, Handshake, ListTodo, Trash2, ChevronDown, Settings2 } from 'lucide-react'
+import { CalendarIcon, Plus, X, Users, User, Handshake, ListTodo, Trash2, ChevronDown, Settings2, RefreshCw } from 'lucide-react'
 import { DatePicker } from '@/components/ui/date-picker'
 import { TimePicker } from '@/components/ui/time-picker'
 import { SearchableMultiSelect, SelectOption } from '@/components/ui/searchable-multi-select'
@@ -33,6 +33,7 @@ import {
 } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { generateOccurrenceDates } from '@/lib/recurring'
 
 // Types
 type TaskType = 'INDIVIDUAL' | 'TEAM' | 'COLLABORATION'
@@ -56,6 +57,8 @@ interface PendingSubtask {
 }
 
 
+
+const recurringFrequencyEnum = z.enum(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'])
 
 const taskFormSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100, 'Title too long'),
@@ -84,6 +87,12 @@ const taskFormSchema = z.object({
     assigneeId: z.string(),
     dueDate: z.string().optional(),
   })).optional(),
+  // Recurring task fields
+  isRecurring: z.boolean().default(false),
+  recurringFrequency: recurringFrequencyEnum.optional(),
+  recurringInterval: z.number().int().min(1).max(30).optional(),
+  recurringDaysOfWeek: z.array(z.number().int().min(0).max(6)).optional(),
+  recurringEndDate: z.date().optional().nullable(),
 })
 
 type TaskFormData = z.infer<typeof taskFormSchema>
@@ -130,6 +139,12 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
       startDate: undefined,
       startTime: '',
       endTime: '',
+      // Recurring task fields
+      isRecurring: false,
+      recurringFrequency: undefined,
+      recurringInterval: 1,
+      recurringDaysOfWeek: [],
+      recurringEndDate: null,
     },
   })
 
@@ -176,6 +191,12 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
           // Extract time from DateTime if not all-day
           startTime: startDateTime && !task.allDay ? startDateTime.toTimeString().slice(0, 5) : '',
           endTime: dueDateTime && !task.allDay ? dueDateTime.toTimeString().slice(0, 5) : '',
+          // Recurring task fields (not editable from edit form)
+          isRecurring: false,
+          recurringFrequency: undefined,
+          recurringInterval: 1,
+          recurringDaysOfWeek: [],
+          recurringEndDate: null,
         })
 
         // Set selected members and collaborators for display
@@ -209,6 +230,12 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
           startDate: undefined,
           startTime: '',
           endTime: '',
+          // Recurring task fields
+          isRecurring: false,
+          recurringFrequency: undefined,
+          recurringInterval: 1,
+          recurringDaysOfWeek: [],
+          recurringEndDate: null,
         })
 
         // Clear selected arrays
@@ -401,6 +428,20 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
     if (percentage < 50) return 'bg-orange-500'
     if (percentage < 75) return 'bg-yellow-500'
     return 'bg-green-500'
+  }
+
+  const computeEstimatedCount = () => {
+    const startDate = form.watch('startDate') ?? form.watch('dueDate')
+    const endDate = form.watch('recurringEndDate')
+    const frequency = form.watch('recurringFrequency')
+    const interval = form.watch('recurringInterval') || 1
+    const days = form.watch('recurringDaysOfWeek') || []
+    if (!startDate || !endDate || !frequency) return 0
+    try {
+      return generateOccurrenceDates(startDate as Date, endDate as Date, frequency, interval, days).length
+    } catch {
+      return 0
+    }
   }
 
   const getPriorityColor = (priority: Priority) => {
@@ -744,6 +785,186 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
               </div>
             </CardContent>
           </Card>
+
+          {/* Recurring Task Section (only for new tasks) */}
+          {!task && (
+            <Collapsible>
+              <Card className="border-2 border-blue-200 bg-blue-50/50">
+                <CollapsibleTrigger asChild>
+                  <CardHeader className="pb-3 cursor-pointer hover:bg-blue-100/50 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-100 rounded-full">
+                          <RefreshCw className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-base text-blue-900">Recurring Schedule</CardTitle>
+                          <CardDescription className="text-blue-700">
+                            Create multiple task instances on a repeating schedule
+                          </CardDescription>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {form.watch('isRecurring') && (
+                          <Badge className="bg-blue-500 text-white">On</Badge>
+                        )}
+                        <ChevronDown className="h-5 w-5 text-blue-600 transition-transform duration-200" />
+                      </div>
+                    </div>
+                  </CardHeader>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent className="space-y-4 pt-0">
+                    {/* Toggle */}
+                    <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-200">
+                      <div>
+                        <p className="text-sm font-semibold text-blue-900">Make this a recurring task</p>
+                        <p className="text-xs text-blue-600">Creates separate task cards for each occurrence</p>
+                      </div>
+                      <Switch
+                        checked={form.watch('isRecurring') || false}
+                        onCheckedChange={(checked) => {
+                          form.setValue('isRecurring', checked)
+                          if (!checked) {
+                            form.setValue('recurringFrequency', undefined)
+                            form.setValue('recurringEndDate', null)
+                          }
+                        }}
+                      />
+                    </div>
+
+                    {form.watch('isRecurring') && (
+                      <div className="space-y-4">
+                        {/* Frequency */}
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Frequency</Label>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                            {(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'] as const).map((freq) => (
+                              <button
+                                key={freq}
+                                type="button"
+                                onClick={() => {
+                                  form.setValue('recurringFrequency', freq)
+                                  if (freq !== 'WEEKLY') form.setValue('recurringDaysOfWeek', [])
+                                }}
+                                className={cn(
+                                  'px-3 py-2 rounded-lg border text-sm font-medium transition-colors',
+                                  form.watch('recurringFrequency') === freq
+                                    ? 'bg-blue-600 text-white border-blue-600'
+                                    : 'bg-white text-gray-700 border-gray-200 hover:border-blue-300'
+                                )}
+                              >
+                                {freq.charAt(0) + freq.slice(1).toLowerCase()}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Interval */}
+                        <div className="flex items-center gap-3">
+                          <Label className="text-sm font-medium whitespace-nowrap">Repeat every</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={30}
+                            className="w-20 h-9"
+                            value={form.watch('recurringInterval') || 1}
+                            onChange={(e) => form.setValue('recurringInterval', parseInt(e.target.value) || 1)}
+                          />
+                          <span className="text-sm text-muted-foreground">
+                            {form.watch('recurringFrequency')
+                              ? `${form.watch('recurringFrequency')!.toLowerCase()}(s)`
+                              : 'period(s)'}
+                          </span>
+                        </div>
+
+                        {/* Days of Week (weekly only) */}
+                        {form.watch('recurringFrequency') === 'WEEKLY' && (
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium">Repeat on</Label>
+                            <div className="flex gap-2 flex-wrap">
+                              {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day, i) => {
+                                const days = form.watch('recurringDaysOfWeek') || []
+                                const selected = days.includes(i)
+                                return (
+                                  <button
+                                    key={day}
+                                    type="button"
+                                    onClick={() => {
+                                      const current = form.watch('recurringDaysOfWeek') || []
+                                      form.setValue(
+                                        'recurringDaysOfWeek',
+                                        selected ? current.filter(d => d !== i) : [...current, i]
+                                      )
+                                    }}
+                                    className={cn(
+                                      'w-9 h-9 rounded-full text-xs font-medium border transition-colors',
+                                      selected
+                                        ? 'bg-blue-600 text-white border-blue-600'
+                                        : 'bg-white text-gray-700 border-gray-200 hover:border-blue-300'
+                                    )}
+                                  >
+                                    {day}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* End Date */}
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">
+                            End date <span className="text-xs text-red-500 font-semibold">*Required</span>
+                          </Label>
+                          <DatePicker
+                            date={form.watch('recurringEndDate') || undefined}
+                            onSelect={(date) => form.setValue('recurringEndDate', date || null)}
+                            placeholder="Select series end date"
+                            disabled={(date) => {
+                              const start = form.watch('startDate') || form.watch('dueDate')
+                              return start ? date <= start : date < new Date(new Date().setHours(0, 0, 0, 0))
+                            }}
+                          />
+                        </div>
+
+                        {/* Preview count */}
+                        {(() => {
+                          const count = computeEstimatedCount()
+                          if (count === 0) return null
+                          return (
+                            <div className={cn(
+                              'flex items-center gap-2 p-3 rounded-lg border text-sm',
+                              count > 100
+                                ? 'bg-amber-50 border-amber-200 text-amber-700'
+                                : 'bg-green-50 border-green-200 text-green-700'
+                            )}>
+                              <RefreshCw className="h-4 w-4 flex-shrink-0" />
+                              <span>
+                                This will create <strong>{count}</strong> task{count !== 1 ? 's' : ''}
+                                {count > 100 ? ' (large series — consider a shorter range)' : ''}
+                              </span>
+                            </div>
+                          )
+                        })()}
+                      </div>
+                    )}
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
+          )}
+
+          {/* Editing recurring instance notice */}
+          {task && task.recurringParentId && (
+            <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <RefreshCw className="h-5 w-5 text-blue-600 flex-shrink-0" />
+              <div className="text-sm text-blue-800">
+                <p className="font-semibold">Recurring task</p>
+                <p>Saving changes will update <strong>all instances</strong> in this series (each keeps its own date).</p>
+              </div>
+            </div>
+          )}
 
           {/* Subtasks Section - Collapsible (only for new tasks) */}
           {!task && (

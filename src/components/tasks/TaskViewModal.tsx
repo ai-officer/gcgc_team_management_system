@@ -33,7 +33,7 @@ import {
   User, Users, Handshake, Clock, MessageSquare, Send, Edit,
   Heart, ThumbsUp, Smile, Reply, Image, Paperclip, MoreHorizontal,
   AtSign, Trash2, Pencil, X, Check, FileText, Download, File,
-  Plus, ListTodo, ChevronRight, CheckCircle2, Circle, AlertCircle
+  Plus, ListTodo, ChevronRight, CheckCircle2, Circle, AlertCircle, RefreshCw
 } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { Progress } from '@/components/ui/progress'
@@ -97,6 +97,8 @@ interface Task {
     id: string
     title: string
   }
+  // Recurring task support
+  recurringParentId?: string | null
   subtasks?: Array<{
     id: string
     title: string
@@ -1637,6 +1639,18 @@ export default function TaskViewModal({
                 <ChevronRight className="h-4 w-4 rotate-180" />
                 <span>Subtask of:</span>
                 <span className="font-medium text-gray-900">{task.parent.title}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Recurring Task Info */}
+          {task.recurringParentId && (
+            <div className="border-t pt-4">
+              <div className="flex items-center gap-2 text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+                <RefreshCw className="h-4 w-4 flex-shrink-0" />
+                <span className="font-medium">Recurring task</span>
+                <span className="text-blue-500">·</span>
+                <span>Part of a recurring series</span>
               </div>
             </div>
           )}

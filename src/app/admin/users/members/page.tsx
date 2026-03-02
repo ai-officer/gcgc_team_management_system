@@ -7,15 +7,24 @@ import { Card } from '@/components/ui/card'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { Pagination, PaginationInfo } from '@/components/ui/pagination'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
+  DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { useRouter } from 'next/navigation'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { UserRole, HierarchyLevel } from '@prisma/client'
 import { format } from 'date-fns'
 
@@ -61,7 +70,6 @@ const TASK_STATUS_CONFIG = {
 } as const
 
 export default function AdminMembersPage() {
-  const router = useRouter()
   const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -73,6 +81,9 @@ export default function AdminMembersPage() {
     total: 0,
     totalPages: 0
   })
+
+  // Edit modal state
+  const [editingMember, setEditingMember] = useState<Member | null>(null)
 
   // Task modal state
   const [selectedMember, setSelectedMember] = useState<Member | null>(null)
@@ -135,6 +146,28 @@ export default function AdminMembersPage() {
     setSelectedMember(member)
     setActiveTaskStatus('')
     fetchUserTasks(member.id)
+  }
+
+  const handleUpdateMember = async () => {
+    if (!editingMember) return
+    try {
+      const response = await fetch(`/api/admin/users/${editingMember.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editingMember.name,
+          role: editingMember.role,
+          hierarchyLevel: editingMember.hierarchyLevel || undefined,
+          isActive: editingMember.isActive,
+        })
+      })
+      if (response.ok) {
+        setEditingMember(null)
+        fetchMembers()
+      }
+    } catch (error) {
+      console.error('Error updating member:', error)
+    }
   }
 
   const getHierarchyColor = (level: HierarchyLevel | null) => {
@@ -345,7 +378,7 @@ export default function AdminMembersPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={(e) => { e.stopPropagation(); router.push(`/admin/users?editUser=${member.id}`) }}
+                  onClick={(e) => { e.stopPropagation(); setEditingMember(member) }}
                   className="w-full"
                 >
                   <Edit className="w-4 h-4 mr-1" />
@@ -428,7 +461,7 @@ export default function AdminMembersPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={(e) => { e.stopPropagation(); router.push(`/admin/users?editUser=${member.id}`) }}
+                        onClick={(e) => { e.stopPropagation(); setEditingMember(member) }}
                       >
                         <Edit className="w-4 h-4 mr-1" />
                         Edit
@@ -484,6 +517,66 @@ export default function AdminMembersPage() {
           </p>
         </div>
       )}
+
+      {/* Edit Member Dialog */}
+      <Dialog open={!!editingMember} onOpenChange={(open) => { if (!open) setEditingMember(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Member: {editingMember?.name}</DialogTitle>
+            <DialogDescription>Update member information, role, and hierarchy level.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="edit-name">Full Name</Label>
+              <Input
+                id="edit-name"
+                value={editingMember?.name ?? ''}
+                onChange={(e) => editingMember && setEditingMember({ ...editingMember, name: e.target.value })}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-role">Role</Label>
+              <Select
+                value={editingMember?.role}
+                onValueChange={(value) => editingMember && setEditingMember({ ...editingMember, role: value as UserRole })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={UserRole.MEMBER}>Member</SelectItem>
+                  <SelectItem value={UserRole.LEADER}>Leader</SelectItem>
+                  <SelectItem value={UserRole.ADMIN}>Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-hierarchy">Hierarchy Level</Label>
+              <Select
+                value={editingMember?.hierarchyLevel ?? HierarchyLevel.RF1}
+                onValueChange={(value) => editingMember && setEditingMember({ ...editingMember, hierarchyLevel: value as HierarchyLevel })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={HierarchyLevel.RF1}>RF1 (Entry Level)</SelectItem>
+                  <SelectItem value={HierarchyLevel.RF2}>RF2</SelectItem>
+                  <SelectItem value={HierarchyLevel.RF3}>RF3</SelectItem>
+                  <SelectItem value={HierarchyLevel.OF1}>OF1</SelectItem>
+                  <SelectItem value={HierarchyLevel.OF2}>OF2</SelectItem>
+                  <SelectItem value={HierarchyLevel.M1}>M1</SelectItem>
+                  <SelectItem value={HierarchyLevel.M2}>M2 (Senior Level)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingMember(null)}>Cancel</Button>
+            <Button onClick={handleUpdateMember}>Update Member</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Task Modal */}
       <Dialog

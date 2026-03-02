@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { Crown, Shield, Users, Mail, Calendar, Search, Edit, LayoutList, LayoutGrid, User, Clock, CheckSquare, Handshake } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
@@ -14,8 +14,17 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
+  DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { UserRole, HierarchyLevel } from '@prisma/client'
 import { format } from 'date-fns'
 
@@ -61,7 +70,6 @@ const TASK_STATUS_CONFIG = {
 } as const
 
 export default function AdminLeadersPage() {
-  const router = useRouter()
   const [leaders, setLeaders] = useState<Leader[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -73,6 +81,9 @@ export default function AdminLeadersPage() {
     total: 0,
     totalPages: 0
   })
+
+  // Edit modal state
+  const [editingLeader, setEditingLeader] = useState<Leader | null>(null)
 
   // Task modal state
   const [selectedLeader, setSelectedLeader] = useState<Leader | null>(null)
@@ -135,6 +146,28 @@ export default function AdminLeadersPage() {
     setSelectedLeader(leader)
     setActiveTaskStatus('')
     fetchUserTasks(leader.id)
+  }
+
+  const handleUpdateLeader = async () => {
+    if (!editingLeader) return
+    try {
+      const response = await fetch(`/api/admin/users/${editingLeader.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editingLeader.name,
+          role: editingLeader.role,
+          hierarchyLevel: editingLeader.hierarchyLevel || undefined,
+          isActive: editingLeader.isActive,
+        })
+      })
+      if (response.ok) {
+        setEditingLeader(null)
+        fetchLeaders()
+      }
+    } catch (error) {
+      console.error('Error updating leader:', error)
+    }
   }
 
   const getHierarchyColor = (level: HierarchyLevel | null) => {
@@ -316,7 +349,7 @@ export default function AdminLeadersPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={(e) => { e.stopPropagation(); router.push(`/admin/users?editUser=${leader.id}`) }}
+                  onClick={(e) => { e.stopPropagation(); setEditingLeader(leader) }}
                   className="w-full"
                 >
                   <Edit className="w-4 h-4 mr-1" />
@@ -399,7 +432,7 @@ export default function AdminLeadersPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={(e) => { e.stopPropagation(); router.push(`/admin/users?editUser=${leader.id}`) }}
+                        onClick={(e) => { e.stopPropagation(); setEditingLeader(leader) }}
                       >
                         <Edit className="w-4 h-4 mr-1" />
                         Edit
@@ -455,6 +488,66 @@ export default function AdminLeadersPage() {
           </p>
         </div>
       )}
+
+      {/* Edit Leader Dialog */}
+      <Dialog open={!!editingLeader} onOpenChange={(open) => { if (!open) setEditingLeader(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Leader: {editingLeader?.name}</DialogTitle>
+            <DialogDescription>Update leader information, role, and hierarchy level.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="edit-name">Full Name</Label>
+              <Input
+                id="edit-name"
+                value={editingLeader?.name ?? ''}
+                onChange={(e) => editingLeader && setEditingLeader({ ...editingLeader, name: e.target.value })}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-role">Role</Label>
+              <Select
+                value={editingLeader?.role}
+                onValueChange={(value) => editingLeader && setEditingLeader({ ...editingLeader, role: value as UserRole })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={UserRole.MEMBER}>Member</SelectItem>
+                  <SelectItem value={UserRole.LEADER}>Leader</SelectItem>
+                  <SelectItem value={UserRole.ADMIN}>Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-hierarchy">Hierarchy Level</Label>
+              <Select
+                value={editingLeader?.hierarchyLevel ?? HierarchyLevel.RF1}
+                onValueChange={(value) => editingLeader && setEditingLeader({ ...editingLeader, hierarchyLevel: value as HierarchyLevel })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={HierarchyLevel.RF1}>RF1 (Entry Level)</SelectItem>
+                  <SelectItem value={HierarchyLevel.RF2}>RF2</SelectItem>
+                  <SelectItem value={HierarchyLevel.RF3}>RF3</SelectItem>
+                  <SelectItem value={HierarchyLevel.OF1}>OF1</SelectItem>
+                  <SelectItem value={HierarchyLevel.OF2}>OF2</SelectItem>
+                  <SelectItem value={HierarchyLevel.M1}>M1</SelectItem>
+                  <SelectItem value={HierarchyLevel.M2}>M2 (Senior Level)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingLeader(null)}>Cancel</Button>
+            <Button onClick={handleUpdateLeader}>Update Leader</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Task Modal */}
       <Dialog

@@ -141,6 +141,7 @@ export default function AdminTasksPage() {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [selectedUser, setSelectedUser] = useState<string>('')
   const [users, setUsers] = useState<User[]>([])
+  const [statusFilter, setStatusFilter] = useState<string>('')
   const [showTaskForm, setShowTaskForm] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [deletingTask, setDeletingTask] = useState<Task | null>(null)
@@ -163,6 +164,7 @@ export default function AdminTasksPage() {
       const params = new URLSearchParams()
       if (debouncedSearchTerm) params.append('search', debouncedSearchTerm)
       if (selectedUser) params.append('userId', selectedUser)
+      if (statusFilter) params.append('status', statusFilter)
       
       console.log('Fetching admin tasks with params:', params.toString())
       
@@ -187,7 +189,7 @@ export default function AdminTasksPage() {
 
   useEffect(() => {
     fetchTasks()
-  }, [session, debouncedSearchTerm, selectedUser])
+  }, [session, debouncedSearchTerm, selectedUser, statusFilter])
 
   const fetchUsers = async () => {
     try {
@@ -508,13 +510,14 @@ export default function AdminTasksPage() {
           </SelectContent>
         </Select>
 
-        {(selectedUser || searchTerm) && (
-          <Button 
-            variant="outline" 
-            size="sm" 
+        {(selectedUser || searchTerm || statusFilter) && (
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => {
               setSelectedUser('')
               setSearchTerm('')
+              setStatusFilter('')
             }}
           >
             Clear Filters
@@ -522,27 +525,155 @@ export default function AdminTasksPage() {
         )}
       </div>
 
-      {/* Task Statistics */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      {/* Status Tabs */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {Object.entries(COLUMN_CONFIG).map(([status, config]) => {
-          const count = getTasksByStatus(status as Task['status']).length
+          const count = tasks.filter(t => t.status === status).length
+          const isActive = statusFilter === status
+          const dotColor = {
+            TODO: 'bg-gray-400',
+            IN_PROGRESS: 'bg-blue-500',
+            IN_REVIEW: 'bg-yellow-500',
+            COMPLETED: 'bg-green-500',
+            CANCELLED: 'bg-red-500',
+          }[status]
           return (
-            <Card key={status}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">{config.title}</p>
-                    <p className="text-2xl font-bold">{count}</p>
-                  </div>
-                  <div className={`w-3 h-3 rounded-full ${config.color.replace('bg-', 'bg-').replace('-100', '-500')}`} />
-                </div>
-              </CardContent>
-            </Card>
+            <button
+              key={status}
+              onClick={() => setStatusFilter(isActive ? '' : status)}
+              className={`text-left p-4 rounded-xl border-2 transition-all ${
+                isActive
+                  ? 'border-primary bg-primary/5 shadow-sm'
+                  : 'border-border bg-card hover:border-primary/40 hover:shadow-sm'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-medium text-muted-foreground">{config.title}</span>
+                <div className={`w-2 h-2 rounded-full ${dotColor}`} />
+              </div>
+              <p className={`text-2xl font-bold ${isActive ? 'text-primary' : 'text-foreground'}`}>{count}</p>
+              {isActive && (
+                <p className="text-xs text-primary mt-1">Click to clear</p>
+              )}
+            </button>
           )
         })}
       </div>
 
-      {/* Kanban Board */}
+      {/* List View (when a status is selected) */}
+      {statusFilter && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-foreground">
+              {COLUMN_CONFIG[statusFilter as Task['status']].title}
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                {tasks.length} task{tasks.length !== 1 ? 's' : ''}
+              </span>
+            </h2>
+            <Button variant="outline" size="sm" onClick={() => setStatusFilter('')}>
+              Show All
+            </Button>
+          </div>
+
+          {tasks.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center text-muted-foreground">
+                No {COLUMN_CONFIG[statusFilter as Task['status']].title.toLowerCase()} tasks found.
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {tasks.map((task) => (
+                <Card
+                  key={task.id}
+                  className="hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => openEditForm(task)}
+                >
+                  <CardContent className="p-4 space-y-3">
+                    {/* Title row */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                        {getTaskTypeIcon(task.taskType)}
+                        <h4 className="font-medium text-sm leading-snug truncate">{task.title}</h4>
+                        {task.recurringParentId && (
+                          <RefreshCw className="h-3 w-3 text-blue-500 flex-shrink-0" />
+                        )}
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 flex-shrink-0"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEditForm(task) }}>
+                            <Edit className="h-4 w-4 mr-2" /> Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-red-600"
+                            onClick={(e) => { e.stopPropagation(); setDeletingTask(task) }}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" /> Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+
+                    {task.description && (
+                      <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>
+                    )}
+
+                    {/* Progress */}
+                    <div>
+                      <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                        <span>Progress</span>
+                        <span>{task.progressPercentage || 0}%</span>
+                      </div>
+                      <Progress value={task.progressPercentage || 0} className="h-1" />
+                    </div>
+
+                    {/* Meta row */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className={`w-2 h-2 rounded-full ${getPriorityColor(task.priority)}`} />
+                      <Badge variant="outline" className="text-xs capitalize">{task.taskType.toLowerCase()}</Badge>
+                      {task.team && <Badge variant="secondary" className="text-xs">{task.team.name}</Badge>}
+                      {task.dueDate && (
+                        <span className="text-xs text-muted-foreground flex items-center gap-1 ml-auto">
+                          <Clock className="h-3 w-3" />
+                          {format(new Date(task.dueDate), 'MMM dd')}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Assignee */}
+                    {task.assignee && (
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-5 w-5">
+                          <AvatarImage src={task.assignee.image || undefined} />
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
+                            {task.assignee.name?.split(' ').map(n => n[0]).join('') ?? task.assignee.email[0].toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-xs text-muted-foreground truncate">
+                          {task.assignee.name || task.assignee.email}
+                        </span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Kanban Board (shown when no status filter active) */}
+      {!statusFilter && (
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 min-h-[600px]">
           {Object.entries(COLUMN_CONFIG).map(([status, config]) => {
@@ -750,6 +881,7 @@ export default function AdminTasksPage() {
           })}
         </div>
       </DragDropContext>
+      )}
 
       {/* Task Form Dialog */}
       <TaskForm

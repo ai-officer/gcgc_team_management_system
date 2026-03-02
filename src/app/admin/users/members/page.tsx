@@ -1,15 +1,23 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { User, Users, Mail, Calendar, Edit, Search, LayoutList, LayoutGrid } from 'lucide-react'
+import { User, Users, Mail, Calendar, Edit, Search, LayoutList, LayoutGrid, Clock, CheckSquare, Handshake } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { Progress } from '@/components/ui/progress'
 import { Pagination, PaginationInfo } from '@/components/ui/pagination'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { useRouter } from 'next/navigation'
 import { UserRole, HierarchyLevel } from '@prisma/client'
+import { format } from 'date-fns'
 
 interface Member {
   id: string
@@ -32,6 +40,26 @@ interface Member {
   }
 }
 
+interface UserTask {
+  id: string
+  title: string
+  description?: string
+  status: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' | 'CANCELLED'
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+  taskType: 'INDIVIDUAL' | 'TEAM' | 'COLLABORATION'
+  progressPercentage: number
+  dueDate?: string
+  team?: { id: string; name: string }
+}
+
+const TASK_STATUS_CONFIG = {
+  TODO:        { label: 'To Do',       dot: 'bg-gray-400',   badge: 'bg-gray-100 text-gray-700' },
+  IN_PROGRESS: { label: 'In Progress', dot: 'bg-blue-500',   badge: 'bg-blue-100 text-blue-700' },
+  IN_REVIEW:   { label: 'In Review',   dot: 'bg-yellow-500', badge: 'bg-yellow-100 text-yellow-700' },
+  COMPLETED:   { label: 'Completed',   dot: 'bg-green-500',  badge: 'bg-green-100 text-green-700' },
+  CANCELLED:   { label: 'Cancelled',   dot: 'bg-red-500',    badge: 'bg-red-100 text-red-700' },
+} as const
+
 export default function AdminMembersPage() {
   const router = useRouter()
   const [members, setMembers] = useState<Member[]>([])
@@ -46,12 +74,17 @@ export default function AdminMembersPage() {
     totalPages: 0
   })
 
-  // Debounce search term to avoid refetching on every keystroke
+  // Task modal state
+  const [selectedMember, setSelectedMember] = useState<Member | null>(null)
+  const [userTasks, setUserTasks] = useState<UserTask[]>([])
+  const [userTasksLoading, setUserTasksLoading] = useState(false)
+  const [activeTaskStatus, setActiveTaskStatus] = useState<string>('')
+
+  // Debounce search term
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm)
-    }, 500) // Wait 500ms after user stops typing
-
+    }, 500)
     return () => clearTimeout(timer)
   }, [searchTerm])
 
@@ -81,6 +114,28 @@ export default function AdminMembersPage() {
   useEffect(() => {
     fetchMembers()
   }, [pagination.page, debouncedSearchTerm])
+
+  const fetchUserTasks = async (userId: string) => {
+    setUserTasksLoading(true)
+    setUserTasks([])
+    try {
+      const response = await fetch(`/api/admin/users/tasks?assigneeId=${userId}&limit=500`)
+      if (response.ok) {
+        const data = await response.json()
+        setUserTasks(data.tasks || [])
+      }
+    } catch (error) {
+      console.error('Error fetching user tasks:', error)
+    } finally {
+      setUserTasksLoading(false)
+    }
+  }
+
+  const openTaskModal = (member: Member) => {
+    setSelectedMember(member)
+    setActiveTaskStatus('')
+    fetchUserTasks(member.id)
+  }
 
   const getHierarchyColor = (level: HierarchyLevel | null) => {
     if (!level) return 'bg-gray-100 text-gray-700 border-gray-200'
@@ -241,7 +296,11 @@ export default function AdminMembersPage() {
       {/* Members List */}
       <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'grid gap-4'}>
         {members.map((member) => (
-          <Card key={member.id} className="p-6 hover:shadow-md transition-shadow">
+          <Card
+            key={member.id}
+            className="p-6 hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => openTaskModal(member)}
+          >
             {viewMode === 'grid' ? (
               // Grid View - Compact vertical layout
               <div className="flex flex-col items-center text-center">
@@ -286,7 +345,7 @@ export default function AdminMembersPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => router.push(`/admin/users?editUser=${member.id}`)}
+                  onClick={(e) => { e.stopPropagation(); router.push(`/admin/users?editUser=${member.id}`) }}
                   className="w-full"
                 >
                   <Edit className="w-4 h-4 mr-1" />
@@ -369,7 +428,7 @@ export default function AdminMembersPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => router.push(`/admin/users?editUser=${member.id}`)}
+                        onClick={(e) => { e.stopPropagation(); router.push(`/admin/users?editUser=${member.id}`) }}
                       >
                         <Edit className="w-4 h-4 mr-1" />
                         Edit
@@ -425,6 +484,140 @@ export default function AdminMembersPage() {
           </p>
         </div>
       )}
+
+      {/* Task Modal */}
+      <Dialog
+        open={!!selectedMember}
+        onOpenChange={(open) => { if (!open) { setSelectedMember(null); setUserTasks([]) } }}
+      >
+        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0">
+          {/* Header */}
+          <div className="px-6 pt-6 pb-4 border-b">
+            <div className="flex items-center gap-3">
+              <Avatar className="h-12 w-12 rounded-xl ring-2 ring-slate-200">
+                <AvatarFallback className="rounded-xl bg-gradient-to-br from-green-50 to-green-100 text-green-700 font-bold text-lg">
+                  {selectedMember?.name?.split(' ').map(n => n[0]).join('') ?? 'M'}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <DialogTitle className="text-lg font-semibold text-slate-900 truncate">
+                  {selectedMember?.name}
+                </DialogTitle>
+                <DialogDescription className="text-sm text-slate-500 truncate">
+                  {selectedMember?.email} · {userTasks.length} task{userTasks.length !== 1 ? 's' : ''} total
+                </DialogDescription>
+              </div>
+            </div>
+
+            {/* Status tabs */}
+            <div className="flex gap-2 mt-4 overflow-x-auto pb-1">
+              <button
+                onClick={() => setActiveTaskStatus('')}
+                className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                  activeTaskStatus === ''
+                    ? 'bg-slate-900 text-white border-slate-900'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
+                }`}
+              >
+                All ({userTasks.length})
+              </button>
+              {(Object.keys(TASK_STATUS_CONFIG) as Array<keyof typeof TASK_STATUS_CONFIG>).map((s) => {
+                const count = userTasks.filter(t => t.status === s).length
+                if (count === 0) return null
+                const cfg = TASK_STATUS_CONFIG[s]
+                return (
+                  <button
+                    key={s}
+                    onClick={() => setActiveTaskStatus(s)}
+                    className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                      activeTaskStatus === s
+                        ? `${cfg.badge} border-current`
+                        : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
+                    }`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+                    {cfg.label} ({count})
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Task list */}
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            {userTasksLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+              </div>
+            ) : (() => {
+              const filtered = activeTaskStatus
+                ? userTasks.filter(t => t.status === activeTaskStatus)
+                : userTasks
+              if (filtered.length === 0) return (
+                <div className="text-center py-12 text-slate-400">
+                  <CheckSquare className="h-10 w-10 mx-auto mb-3 opacity-40" />
+                  <p className="text-sm">No tasks found</p>
+                </div>
+              )
+              return (
+                <div className="space-y-2">
+                  {filtered.map((task) => {
+                    const cfg = TASK_STATUS_CONFIG[task.status] ?? TASK_STATUS_CONFIG.TODO
+                    const priorityDot: Record<string, string> = {
+                      URGENT: 'bg-red-500', HIGH: 'bg-orange-500',
+                      MEDIUM: 'bg-yellow-400', LOW: 'bg-green-500',
+                    }
+                    const typeIcon = task.taskType === 'TEAM'
+                      ? <Users className="h-3.5 w-3.5 text-slate-400" />
+                      : task.taskType === 'COLLABORATION'
+                      ? <Handshake className="h-3.5 w-3.5 text-slate-400" />
+                      : <User className="h-3.5 w-3.5 text-slate-400" />
+                    return (
+                      <div key={task.id} className="flex items-start gap-3 p-3 rounded-xl border border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm transition-all">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            {typeIcon}
+                            <p className="text-sm font-medium text-slate-800 truncate">{task.title}</p>
+                          </div>
+                          {task.description && (
+                            <p className="text-xs text-slate-400 line-clamp-1 mb-2">{task.description}</p>
+                          )}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${cfg.badge}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+                              {cfg.label}
+                            </span>
+                            <span className="flex items-center gap-1 text-xs text-slate-400">
+                              <span className={`w-1.5 h-1.5 rounded-full ${priorityDot[task.priority] ?? 'bg-gray-400'}`} />
+                              {task.priority.charAt(0) + task.priority.slice(1).toLowerCase()}
+                            </span>
+                            {task.team && (
+                              <span className="text-xs text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
+                                {task.team.name}
+                              </span>
+                            )}
+                            {task.dueDate && (
+                              <span className="flex items-center gap-1 text-xs text-slate-400 ml-auto">
+                                <Clock className="h-3 w-3" />
+                                {format(new Date(task.dueDate), 'MMM d')}
+                              </span>
+                            )}
+                          </div>
+                          {task.progressPercentage > 0 && (
+                            <div className="mt-2">
+                              <Progress value={task.progressPercentage} className="h-1" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            })()}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -274,7 +274,7 @@ export default function AdminUsersPage() {
     setUserTasksLoading(true)
     setUserTasks([])
     try {
-      const response = await fetch(`/api/tasks?userId=${userId}&limit=200`)
+      const response = await fetch(`/api/tasks?userId=${userId}&includeSubtasks=true`)
       if (response.ok) {
         const data = await response.json()
         setUserTasks(data.tasks || [])

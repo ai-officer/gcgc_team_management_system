@@ -165,7 +165,7 @@ export default function AdminUsersPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 8,
+    limit: 9,
     total: 0,
     totalPages: 0
   })

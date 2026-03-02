@@ -52,6 +52,7 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { format } from 'date-fns'
 import TaskForm from '@/components/tasks/TaskForm'
+import TaskViewModal from '@/components/tasks/TaskViewModal'
 
 interface Task {
   id: string
@@ -142,6 +143,7 @@ export default function AdminTasksPage() {
   const [selectedUser, setSelectedUser] = useState<string>('')
   const [users, setUsers] = useState<User[]>([])
   const [statusFilter, setStatusFilter] = useState<string>('')
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [showTaskForm, setShowTaskForm] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [deletingTask, setDeletingTask] = useState<Task | null>(null)
@@ -587,7 +589,7 @@ export default function AdminTasksPage() {
                 <Card
                   key={task.id}
                   className="hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() => openEditForm(task)}
+                  onClick={() => setSelectedTask(task)}
                 >
                   <CardContent className="p-4 space-y-3">
                     {/* Title row */}
@@ -711,7 +713,7 @@ export default function AdminTasksPage() {
                               }`}
                               onClick={(e) => {
                                 if (!snapshot.isDragging) {
-                                  openEditForm(task)
+                                  setSelectedTask(task)
                                 }
                               }}
                             >
@@ -882,6 +884,18 @@ export default function AdminTasksPage() {
         </div>
       </DragDropContext>
       )}
+
+      {/* Task View Modal */}
+      <TaskViewModal
+        open={!!selectedTask}
+        onOpenChange={(open) => { if (!open) setSelectedTask(null) }}
+        task={selectedTask as any}
+        onEdit={(task) => {
+          setSelectedTask(null)
+          openEditForm(task as any)
+        }}
+        onTaskUpdate={fetchTasks}
+      />
 
       {/* Task Form Dialog */}
       <TaskForm

@@ -820,18 +820,15 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
                     {/* Repeat frequency selector */}
                     <div className="space-y-2">
                       <Label className="text-sm font-medium text-gray-700">Repeat</Label>
-                      <div className="grid grid-cols-4 gap-2">
-                        {([null, 'DAILY', 'WEEKLY', 'MONTHLY'] as const).map((freq) => {
-                          const isSelected = freq === null
-                            ? !form.watch('isRecurring')
-                            : form.watch('isRecurring') && form.watch('recurringFrequency') === freq
-                          const label = freq === null ? 'None' : freq.charAt(0) + freq.slice(1).toLowerCase()
+                      <div className="grid grid-cols-3 gap-2">
+                        {(['DAILY', 'WEEKLY', 'MONTHLY'] as const).map((freq) => {
+                          const isSelected = form.watch('isRecurring') && form.watch('recurringFrequency') === freq
                           return (
                             <button
-                              key={freq ?? 'none'}
+                              key={freq}
                               type="button"
                               onClick={() => {
-                                if (freq === null) {
+                                if (isSelected) {
                                   form.setValue('isRecurring', false)
                                   form.setValue('recurringFrequency', undefined)
                                   form.setValue('recurringEndDate', null)
@@ -844,14 +841,12 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
                               }}
                               className={cn(
                                 'py-2 rounded-lg border text-sm font-medium transition-all',
-                                isSelected && freq === null
-                                  ? 'bg-gray-100 text-gray-700 border-gray-300'
-                                  : isSelected
+                                isSelected
                                   ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
                                   : 'bg-white text-gray-500 border-gray-200 hover:border-blue-300 hover:text-blue-700'
                               )}
                             >
-                              {label}
+                              {freq.charAt(0) + freq.slice(1).toLowerCase()}
                             </button>
                           )
                         })}

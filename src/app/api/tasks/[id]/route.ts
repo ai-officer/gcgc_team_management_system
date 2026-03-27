@@ -757,10 +757,18 @@ export async function DELETE(
     // Handle series deletion
     if (scope === 'series' && existingTask.recurringParentId) {
       const parentId = existingTask.recurringParentId
-      // Delete all instances (cascade handles comments/relations)
-      await prisma.task.deleteMany({
-        where: { recurringParentId: parentId }
+      // Find all instances in the series
+      const seriesInstances = await prisma.task.findMany({
+        where: { recurringParentId: parentId },
+        select: { id: true }
       })
+      const instanceIds = seriesInstances.map(t => t.id)
+      // Delete subtasks of all instances first
+      if (instanceIds.length > 0) {
+        await prisma.task.deleteMany({ where: { parentId: { in: instanceIds } } })
+      }
+      // Delete all instances
+      await prisma.task.deleteMany({ where: { recurringParentId: parentId } })
       // Delete the template task
       await prisma.task.delete({ where: { id: parentId } })
 
@@ -801,6 +809,10 @@ export async function DELETE(
       })
       console.log(`Deleted Event records for task ${params.id}`)
     }
+
+    // Explicitly delete subtasks before deleting the parent
+    // (self-referential cascade on the same table can be unreliable)
+    await prisma.task.deleteMany({ where: { parentId: params.id } })
 
     // Delete task (cascade will handle comments and task-specific relations)
     await prisma.task.delete({

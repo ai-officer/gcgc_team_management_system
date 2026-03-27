@@ -474,7 +474,7 @@ export async function POST(req: NextRequest) {
         recurringDaysOfWeek || []
       )
 
-      const { template, instanceCount } = await prisma.$transaction(async (tx) => {
+      const { template, firstInstance, totalOccurrences } = await prisma.$transaction(async (tx) => {
         // Create the hidden template task
         const templateTask = await tx.task.create({
           data: {

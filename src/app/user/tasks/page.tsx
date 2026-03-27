@@ -937,49 +937,13 @@ export default function TasksPage() {
                                   />
                                 </div>
 
-                                {/* Subtask Checklist */}
+                                {/* Subtask count badge — click the card to view/manage subtasks in the detail modal */}
                                 {task.subtasks && task.subtasks.length > 0 && (
-                                  <div className="mb-3 space-y-1">
-                                    <div className="flex items-center justify-between mb-1">
-                                      <span className="text-xs font-medium text-gray-600 flex items-center gap-1">
-                                        <ListTodo className="h-3 w-3" />
-                                        Subtasks
-                                      </span>
-                                      <span className="text-xs font-semibold text-gray-700">
-                                        {task.subtasks.filter(s => s.status === 'COMPLETED').length}/{task.subtasks.length}
-                                      </span>
-                                    </div>
-                                    <Progress
-                                      value={(task.subtasks.filter(s => s.status === 'COMPLETED').length / task.subtasks.length) * 100}
-                                      className="h-1 bg-gray-200 mb-2"
-                                    />
-                                    {task.subtasks.map(subtask => (
-                                      <button
-                                        key={subtask.id}
-                                        type="button"
-                                        onClick={(e) => handleToggleSubtask(e, subtask.id, subtask.status)}
-                                        className="w-full flex items-center gap-2 text-left group"
-                                      >
-                                        <div className={`flex-shrink-0 w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors ${
-                                          subtask.status === 'COMPLETED'
-                                            ? 'bg-green-500 border-green-500'
-                                            : 'border-gray-300 group-hover:border-blue-400'
-                                        }`}>
-                                          {subtask.status === 'COMPLETED' && (
-                                            <svg className="w-2 h-2 text-white" fill="none" viewBox="0 0 8 8">
-                                              <path d="M1 4l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                                            </svg>
-                                          )}
-                                        </div>
-                                        <span className={`text-xs truncate ${
-                                          subtask.status === 'COMPLETED'
-                                            ? 'line-through text-gray-400'
-                                            : 'text-gray-700 group-hover:text-gray-900'
-                                        }`}>
-                                          {subtask.title}
-                                        </span>
-                                      </button>
-                                    ))}
+                                  <div className="mb-3">
+                                    <span className="inline-flex items-center gap-1 text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                                      <ListTodo className="h-3 w-3" />
+                                      {task.subtasks.filter(s => s.status === 'COMPLETED').length}/{task.subtasks.length} subtasks
+                                    </span>
                                   </div>
                                 )}
 

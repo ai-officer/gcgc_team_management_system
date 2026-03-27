@@ -276,6 +276,20 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
     // For EDITING tasks: preserve the original assignee - do NOT override
   }, [taskType, session?.user?.id, task, form, open])
 
+  // When recurring is on, auto-populate dueDate from startDate so the
+  // user doesn't have to fill in a redundant "Deadline" field.
+  const isRecurring = form.watch('isRecurring')
+  const watchedStartDate = form.watch('startDate')
+  useEffect(() => {
+    if (isRecurring) {
+      const sd = form.getValues('startDate')
+      if (sd) {
+        form.setValue('dueDate', sd)
+        form.clearErrors('dueDate')
+      }
+    }
+  }, [isRecurring, watchedStartDate])
+
   // Ensure pre-selected member is set after users are loaded - ONLY ONCE
   useEffect(() => {
     if (open && !task && preSelectedMemberId && users.length > 0 && selectedTeamMembers.length === 0) {
@@ -699,16 +713,24 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
                   <div className="space-y-3">
                     <Label htmlFor="startDate" className="text-sm font-medium flex items-center gap-2">
                       <CalendarIcon className="h-3.5 w-3.5" />
-                      Start Date
-                      <span className="text-xs text-muted-foreground font-normal">
-                        (Optional)
-                      </span>
+                      {form.watch('isRecurring') ? 'Series Start Date' : 'Start Date'}
+                      {form.watch('isRecurring') ? (
+                        <span className="text-xs text-orange-600 font-semibold">*Required</span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground font-normal">(Optional)</span>
+                      )}
                     </Label>
                     <div className="space-y-2">
                       <DatePicker
                         date={form.watch('startDate')}
-                        onSelect={(date) => form.setValue('startDate', date)}
-                        placeholder="Select start date"
+                        onSelect={(date) => {
+                          form.setValue('startDate', date)
+                          if (form.watch('isRecurring') && date) {
+                            form.setValue('dueDate', date)
+                            form.clearErrors('dueDate')
+                          }
+                        }}
+                        placeholder={form.watch('isRecurring') ? 'When does the series begin?' : 'Select start date'}
                         disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                       />
                       {!form.watch('allDay') && (
@@ -721,44 +743,59 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
                     </div>
                   </div>
 
-                  {/* Due Date */}
-                  <div className="space-y-3">
-                    <Label htmlFor="dueDate" className="text-sm font-medium flex items-center gap-2">
-                      <CalendarIcon className="h-3.5 w-3.5 text-orange-600" />
-                      Deadline
-                      <span className="text-xs text-orange-600 font-semibold">
-                        *Required
-                      </span>
-                    </Label>
-                    <div className="space-y-2">
-                      <DatePicker
-                        date={form.watch('dueDate')}
-                        onSelect={(date) => {
-                          form.setValue('dueDate', date)
-                          form.clearErrors('dueDate')
-                        }}
-                        placeholder="Select deadline"
-                        disabled={(date) => {
-                          const today = new Date(new Date().setHours(0, 0, 0, 0))
-                          const startDate = form.watch('startDate')
-                          const minDate = startDate && startDate > today ? startDate : today
-                          return date < minDate
-                        }}
-                      />
-                      {form.formState.errors.dueDate && (
-                        <p className="text-sm text-red-500 font-medium">
-                          {form.formState.errors.dueDate.message}
-                        </p>
-                      )}
-                      {!form.watch('allDay') && (
-                        <TimePicker
-                          value={form.watch('endTime') || undefined}
-                          onChange={(time) => form.setValue('endTime', time || '')}
-                          placeholder="Select end time"
-                        />
-                      )}
+                  {/* Due Date — hidden for recurring tasks (auto-set from start date) */}
+                  {form.watch('isRecurring') ? (
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+                        <CalendarIcon className="h-3.5 w-3.5" />
+                        First Task Deadline
+                      </Label>
+                      <div className="h-11 px-3 flex items-center rounded-md border bg-muted/40 text-sm text-muted-foreground">
+                        {form.watch('startDate')
+                          ? form.watch('startDate')!.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                          : 'Auto-set from Series Start Date'}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        The first task is due on the series start date.
+                      </p>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <Label htmlFor="dueDate" className="text-sm font-medium flex items-center gap-2">
+                        <CalendarIcon className="h-3.5 w-3.5 text-orange-600" />
+                        Deadline
+                        <span className="text-xs text-orange-600 font-semibold">*Required</span>
+                      </Label>
+                      <div className="space-y-2">
+                        <DatePicker
+                          date={form.watch('dueDate')}
+                          onSelect={(date) => {
+                            form.setValue('dueDate', date)
+                            form.clearErrors('dueDate')
+                          }}
+                          placeholder="Select deadline"
+                          disabled={(date) => {
+                            const today = new Date(new Date().setHours(0, 0, 0, 0))
+                            const startDate = form.watch('startDate')
+                            const minDate = startDate && startDate > today ? startDate : today
+                            return date < minDate
+                          }}
+                        />
+                        {form.formState.errors.dueDate && (
+                          <p className="text-sm text-red-500 font-medium">
+                            {form.formState.errors.dueDate.message}
+                          </p>
+                        )}
+                        {!form.watch('allDay') && (
+                          <TimePicker
+                            value={form.watch('endTime') || undefined}
+                            onChange={(time) => form.setValue('endTime', time || '')}
+                            placeholder="Select end time"
+                          />
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Date Helper Messages */}

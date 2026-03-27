@@ -837,62 +837,65 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
 
           {/* Recurring Task Section (only for new tasks) */}
           {!task && (
-            <Collapsible>
-              <Card className="border-2 border-blue-200 bg-blue-50/50">
-                <CollapsibleTrigger asChild>
-                  <CardHeader className="pb-3 cursor-pointer hover:bg-blue-100/50 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-100 rounded-full">
-                          <RefreshCw className="h-5 w-5 text-blue-600" />
-                        </div>
-                        <div>
-                          <CardTitle className="text-base text-blue-900">Recurring Schedule</CardTitle>
-                          <CardDescription className="text-blue-700">
-                            Repeat this task on a daily, weekly, or monthly schedule
-                          </CardDescription>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {form.watch('isRecurring') && form.watch('recurringFrequency') && (
-                          <Badge className="bg-blue-500 text-white capitalize">
-                            {form.watch('recurringFrequency')!.charAt(0) + form.watch('recurringFrequency')!.slice(1).toLowerCase()}
-                          </Badge>
-                        )}
-                        <ChevronDown className="h-5 w-5 text-blue-600 transition-transform duration-200" />
-                      </div>
+            <Card className={cn('border-2 transition-colors duration-200', form.watch('isRecurring') ? 'border-blue-300 bg-blue-50/40' : 'border-border')}>
+              {/* Toggle row — always visible */}
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={cn('p-2 rounded-full transition-colors', form.watch('isRecurring') ? 'bg-blue-100' : 'bg-muted')}>
+                      <RefreshCw className={cn('h-5 w-5 transition-colors', form.watch('isRecurring') ? 'text-blue-600' : 'text-muted-foreground')} />
                     </div>
-                  </CardHeader>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <CardContent className="space-y-4 pt-0">
-                    {/* Repeat frequency selector */}
+                    <div>
+                      <CardTitle className={cn('text-base transition-colors', form.watch('isRecurring') ? 'text-blue-900' : '')}>
+                        Recurring Schedule
+                      </CardTitle>
+                      <CardDescription className={form.watch('isRecurring') ? 'text-blue-700' : ''}>
+                        {form.watch('isRecurring')
+                          ? 'Task repeats automatically on a set schedule'
+                          : 'Enable to repeat this task on a schedule'}
+                      </CardDescription>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={form.watch('isRecurring')}
+                    onCheckedChange={(checked) => {
+                      form.setValue('isRecurring', checked)
+                      if (!checked) {
+                        form.setValue('recurringFrequency', undefined)
+                        form.setValue('recurringEndDate', null)
+                        form.setValue('recurringDaysOfWeek', [])
+                        form.setValue('recurringInterval', 1)
+                      }
+                    }}
+                  />
+                </div>
+              </CardHeader>
+
+              {/* Expanded fields — only when isRecurring is true */}
+              {form.watch('isRecurring') && (
+                <CardContent className="space-y-5 pt-0 border-t border-blue-200">
+                  <div className="pt-4 space-y-5">
+                    {/* Step 1: Frequency */}
                     <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-700">Repeat</Label>
+                      <Label className="text-sm font-medium text-gray-700">Repeat frequency</Label>
                       <div className="grid grid-cols-3 gap-2">
                         {(['DAILY', 'WEEKLY', 'MONTHLY'] as const).map((freq) => {
-                          const isSelected = form.watch('isRecurring') && form.watch('recurringFrequency') === freq
+                          const isSelected = form.watch('recurringFrequency') === freq
                           return (
                             <button
                               key={freq}
                               type="button"
                               onClick={() => {
-                                if (isSelected) {
-                                  form.setValue('isRecurring', false)
-                                  form.setValue('recurringFrequency', undefined)
-                                  form.setValue('recurringEndDate', null)
-                                } else {
-                                  form.setValue('isRecurring', true)
-                                  form.setValue('recurringFrequency', freq)
+                                form.setValue('recurringFrequency', freq)
+                                if (freq !== 'WEEKLY') {
                                   form.setValue('recurringDaysOfWeek', [])
-                                  form.setValue('recurringInterval', 1)
                                 }
                               }}
                               className={cn(
-                                'py-2 rounded-lg border text-sm font-medium transition-all',
+                                'py-2.5 rounded-lg border text-sm font-medium transition-all',
                                 isSelected
                                   ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                                  : 'bg-white text-gray-500 border-gray-200 hover:border-blue-300 hover:text-blue-700'
+                                  : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300 hover:text-blue-700'
                               )}
                             >
                               {freq.charAt(0) + freq.slice(1).toLowerCase()}
@@ -902,41 +905,112 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
                       </div>
                     </div>
 
-                    {/* End date — shown only when recurring */}
-                    {form.watch('isRecurring') && (
-                      <>
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium text-gray-700">
-                            End date{' '}
-                            <span className="text-xs text-red-500 font-semibold">*Required</span>
-                          </Label>
-                          <DatePicker
-                            date={form.watch('recurringEndDate') || undefined}
-                            onSelect={(date) => form.setValue('recurringEndDate', date || null)}
-                            placeholder="Select series end date"
-                            disabled={(date) => {
-                              const start = form.watch('startDate') || form.watch('dueDate')
-                              return start ? date <= start : date < new Date(new Date().setHours(0, 0, 0, 0))
-                            }}
-                          />
-                        </div>
-
-                        {/* Recurring behavior info */}
-                        {form.watch('recurringFrequency') && form.watch('recurringEndDate') && (
-                          <div className="flex items-center gap-2 p-3 rounded-lg border text-sm bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-300">
-                            <RefreshCw className="h-3.5 w-3.5 flex-shrink-0" />
-                            <span>
-                              Only the first task is created now. The next task is automatically
-                              created each time the current one is completed.
+                    {/* Step 2: Interval — shown after frequency is picked */}
+                    {form.watch('recurringFrequency') && (
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-gray-700">Repeat every</Label>
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg p-1">
+                            <button
+                              type="button"
+                              onClick={() => form.setValue('recurringInterval', Math.max(1, (form.watch('recurringInterval') || 1) - 1))}
+                              className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-600 text-lg font-bold leading-none"
+                            >
+                              −
+                            </button>
+                            <span className="w-8 text-center text-sm font-semibold">
+                              {form.watch('recurringInterval') || 1}
                             </span>
+                            <button
+                              type="button"
+                              onClick={() => form.setValue('recurringInterval', Math.min(30, (form.watch('recurringInterval') || 1) + 1))}
+                              className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-600 text-lg font-bold leading-none"
+                            >
+                              +
+                            </button>
                           </div>
-                        )}
-                      </>
+                          <span className="text-sm text-gray-600">
+                            {form.watch('recurringFrequency') === 'DAILY' && ((form.watch('recurringInterval') || 1) === 1 ? 'day' : 'days')}
+                            {form.watch('recurringFrequency') === 'WEEKLY' && ((form.watch('recurringInterval') || 1) === 1 ? 'week' : 'weeks')}
+                            {form.watch('recurringFrequency') === 'MONTHLY' && ((form.watch('recurringInterval') || 1) === 1 ? 'month' : 'months')}
+                          </span>
+                        </div>
+                      </div>
                     )}
-                  </CardContent>
-                </CollapsibleContent>
-              </Card>
-            </Collapsible>
+
+                    {/* Step 3: Days of week — only for WEEKLY */}
+                    {form.watch('recurringFrequency') === 'WEEKLY' && (
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-gray-700">On these days</Label>
+                        <div className="flex gap-1.5 flex-wrap">
+                          {[
+                            { label: 'Mon', value: 1 },
+                            { label: 'Tue', value: 2 },
+                            { label: 'Wed', value: 3 },
+                            { label: 'Thu', value: 4 },
+                            { label: 'Fri', value: 5 },
+                            { label: 'Sat', value: 6 },
+                            { label: 'Sun', value: 0 },
+                          ].map(({ label, value }) => {
+                            const days = form.watch('recurringDaysOfWeek') || []
+                            const isOn = days.includes(value)
+                            return (
+                              <button
+                                key={value}
+                                type="button"
+                                onClick={() => {
+                                  const current = form.watch('recurringDaysOfWeek') || []
+                                  form.setValue(
+                                    'recurringDaysOfWeek',
+                                    isOn ? current.filter(d => d !== value) : [...current, value]
+                                  )
+                                }}
+                                className={cn(
+                                  'w-10 h-10 rounded-full text-xs font-semibold border transition-all',
+                                  isOn
+                                    ? 'bg-blue-600 text-white border-blue-600'
+                                    : 'bg-white text-gray-500 border-gray-200 hover:border-blue-300 hover:text-blue-700'
+                                )}
+                              >
+                                {label}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Step 4: End date — shown after frequency is picked */}
+                    {form.watch('recurringFrequency') && (
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-gray-700">
+                          Series end date <span className="text-xs text-red-500 font-semibold">*Required</span>
+                        </Label>
+                        <DatePicker
+                          date={form.watch('recurringEndDate') || undefined}
+                          onSelect={(date) => form.setValue('recurringEndDate', date || null)}
+                          placeholder="Select when the series ends"
+                          disabled={(date) => {
+                            const start = form.watch('startDate') || form.watch('dueDate')
+                            return start ? date <= start : date < new Date(new Date().setHours(0, 0, 0, 0))
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    {/* Info banner — shown when fully configured */}
+                    {form.watch('recurringFrequency') && form.watch('recurringEndDate') && (
+                      <div className="flex items-center gap-2 p-3 rounded-lg border text-sm bg-blue-50 border-blue-200 text-blue-700">
+                        <RefreshCw className="h-3.5 w-3.5 flex-shrink-0" />
+                        <span>
+                          Only the first task is created now. The next task is automatically created each time the current one is completed.
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              )}
+            </Card>
           )}
 
           {/* Editing recurring instance notice */}

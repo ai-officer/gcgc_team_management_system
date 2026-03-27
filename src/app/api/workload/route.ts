@@ -18,47 +18,72 @@ export async function GET() {
 
     const now = new Date()
 
-    // Find teams where the current user is a LEADER
-    const leaderTeams = await prisma.teamMember.findMany({
-      where: {
-        userId: session.user.id,
-        role: 'LEADER',
-      },
-      select: { teamId: true },
-    })
+    let uniqueUsers: Array<{
+      id: string
+      name: string | null
+      email: string
+      image: string | null
+      role: string
+      positionTitle: string | null
+      isActive: boolean
+    }>
 
-    const teamIds = leaderTeams.map(t => t.teamId)
+    if (role === 'ADMIN') {
+      // Admins see all active users except themselves
+      uniqueUsers = await prisma.user.findMany({
+        where: {
+          isActive: true,
+          id: { not: session.user.id },
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+          role: true,
+          positionTitle: true,
+          isActive: true,
+        },
+      })
+    } else {
+      // Leaders: find all teams they belong to (TeamMember.role may be MEMBER even if User.role is LEADER)
+      const leaderTeams = await prisma.teamMember.findMany({
+        where: { userId: session.user.id },
+        select: { teamId: true },
+      })
 
-    if (teamIds.length === 0) {
-      return NextResponse.json({ workload: [] })
-    }
+      const teamIds = leaderTeams.map(t => t.teamId)
 
-    // Get all MEMBER users in those teams (exclude the leader themselves)
-    const teamMembers = await prisma.teamMember.findMany({
-      where: {
-        teamId: { in: teamIds },
-        userId: { not: session.user.id },
-      },
-      select: {
-        userId: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
-            role: true,
-            positionTitle: true,
-            isActive: true,
+      if (teamIds.length === 0) {
+        return NextResponse.json({ workload: [] })
+      }
+
+      // Get all other members in those teams
+      const teamMembers = await prisma.teamMember.findMany({
+        where: {
+          teamId: { in: teamIds },
+          userId: { not: session.user.id },
+        },
+        select: {
+          userId: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+              role: true,
+              positionTitle: true,
+              isActive: true,
+            },
           },
         },
-      },
-    })
+      })
 
-    // Deduplicate users (a member could be in multiple of the leader's teams)
-    const uniqueUsers = Array.from(
-      new Map(teamMembers.map(tm => [tm.userId, tm.user])).values()
-    ).filter(u => u.isActive)
+      uniqueUsers = Array.from(
+        new Map(teamMembers.map(tm => [tm.userId, tm.user])).values()
+      ).filter(u => u.isActive)
+    }
 
     if (uniqueUsers.length === 0) {
       return NextResponse.json({ workload: [] })

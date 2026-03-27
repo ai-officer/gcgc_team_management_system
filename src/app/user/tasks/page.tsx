@@ -433,15 +433,18 @@ export default function TasksPage() {
       const newTask = await response.json()
       console.log('Task created successfully:', newTask)
 
+      // Recurring tasks return { template, firstInstance }; regular tasks return the task directly
+      const parentTaskId = newTask.id ?? newTask.firstInstance?.id
+
       // Create subtasks if any
-      if (subtasks && subtasks.length > 0) {
+      if (subtasks && subtasks.length > 0 && parentTaskId) {
         const subtaskPromises = subtasks.map((subtask: { title: string; assigneeId: string }) =>
           fetch('/api/tasks', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               title: subtask.title,
-              parentId: newTask.id,
+              parentId: parentTaskId,
               priority: mainTaskData.priority,
               taskType: 'INDIVIDUAL',
               assigneeId: subtask.assigneeId,

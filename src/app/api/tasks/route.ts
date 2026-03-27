@@ -116,54 +116,30 @@ export async function GET(req: NextRequest) {
       
       // For non-admins, show:
       // 1. Top-level tasks they're involved in (parentId = null)
-      // 2. Subtasks directly assigned to them (even if parentId is set)
+      // 2. Parent tasks that have a subtask assigned to this user
+      //    (subtasks are shown inline on the parent card, never as standalone cards)
       where.OR = [
-        // Subtasks assigned directly to the user (always show these)
-        {
-          AND: [
-            { assigneeId: session.user.id },
-            { parentId: { not: null } }
-          ]
-        },
         // Top-level tasks where user is involved
         {
           AND: [
-            // Only top-level tasks (unless includeSubtasks is true)
             ...(includeSubtasks !== 'true' ? [{ parentId: null }] : []),
             {
               OR: [
-                // Team tasks where user is a team member (only if user has teams)
-                ...(teamIds.length > 0 ? [{
-                  teamId: {
-                    in: teamIds
-                  }
-                }] : []),
-                // Tasks assigned to the user
-                {
-                  assigneeId: session.user.id
-                },
-                // Tasks created by the user
-                {
-                  creatorId: session.user.id
-                },
-                // Tasks where user is a team member (for TEAM type tasks)
-                {
-                  teamMembers: {
-                    some: {
-                      userId: session.user.id
-                    }
-                  }
-                },
-                // Tasks where user is a collaborator (for COLLABORATION type tasks)
-                {
-                  collaborators: {
-                    some: {
-                      userId: session.user.id
-                    }
-                  }
-                }
+                ...(teamIds.length > 0 ? [{ teamId: { in: teamIds } }] : []),
+                { assigneeId: session.user.id },
+                { creatorId: session.user.id },
+                { teamMembers: { some: { userId: session.user.id } } },
+                { collaborators: { some: { userId: session.user.id } } },
               ]
             }
+          ]
+        },
+        // Parent tasks where a subtask is assigned to this user
+        // (ensures the user can see and act on their subtask via the parent card)
+        {
+          AND: [
+            { parentId: null },
+            { subtasks: { some: { assigneeId: session.user.id } } }
           ]
         }
       ]

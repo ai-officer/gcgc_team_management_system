@@ -88,11 +88,6 @@ const userNavItems = [
     icon: FileText,
   },
   {
-    title: 'Workload',
-    href: '/user/workload',
-    icon: BarChart2,
-  },
-  {
     title: 'TMS Chat',
     href: process.env.NEXT_PUBLIC_TMS_CHAT_URL || 'https://tms-chat-staging.hotelsogo-ai.com',
     icon: MessageSquare,

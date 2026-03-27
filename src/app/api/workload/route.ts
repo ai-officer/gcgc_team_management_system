@@ -10,39 +10,79 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Only leaders (and admins) can view workload
+    const role = session.user.role
+    if (role !== 'LEADER' && role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const now = new Date()
 
-    // Get all active users
-    const users = await prisma.user.findMany({
-      where: { isActive: true },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        image: true,
-        role: true,
-        positionTitle: true,
+    // Find teams where the current user is a LEADER
+    const leaderTeams = await prisma.teamMember.findMany({
+      where: {
+        userId: session.user.id,
+        role: 'LEADER',
       },
-      orderBy: { name: 'asc' },
+      select: { teamId: true },
     })
 
-    // Get task counts grouped by assignee and status
+    const teamIds = leaderTeams.map(t => t.teamId)
+
+    if (teamIds.length === 0) {
+      return NextResponse.json({ workload: [] })
+    }
+
+    // Get all MEMBER users in those teams (exclude the leader themselves)
+    const teamMembers = await prisma.teamMember.findMany({
+      where: {
+        teamId: { in: teamIds },
+        userId: { not: session.user.id },
+      },
+      select: {
+        userId: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+            role: true,
+            positionTitle: true,
+            isActive: true,
+          },
+        },
+      },
+    })
+
+    // Deduplicate users (a member could be in multiple of the leader's teams)
+    const uniqueUsers = Array.from(
+      new Map(teamMembers.map(tm => [tm.userId, tm.user])).values()
+    ).filter(u => u.isActive)
+
+    if (uniqueUsers.length === 0) {
+      return NextResponse.json({ workload: [] })
+    }
+
+    const memberIds = uniqueUsers.map(u => u.id)
+
+    // Get task counts grouped by assignee and status for these members only
     const taskGroups = await prisma.task.groupBy({
       by: ['assigneeId', 'status'],
       where: {
         isRecurring: false,
-        assigneeId: { not: null },
+        assigneeId: { in: memberIds },
         status: { notIn: ['CANCELLED'] },
       },
       _count: { id: true },
     })
 
-    // Get overdue task counts per user
+    // Get overdue task counts for these members
     const overdueCounts = await prisma.task.groupBy({
       by: ['assigneeId'],
       where: {
         isRecurring: false,
-        assigneeId: { not: null },
+        assigneeId: { in: memberIds },
         status: { notIn: ['COMPLETED', 'CANCELLED'] },
         dueDate: { lt: now },
       },
@@ -54,7 +94,7 @@ export async function GET() {
     )
 
     // Build per-user stats
-    const workload = users.map(user => {
+    const workload = uniqueUsers.map(user => {
       const userGroups = taskGroups.filter(g => g.assigneeId === user.id)
       const byStatus: Record<string, number> = {}
       let total = 0
@@ -75,7 +115,7 @@ export async function GET() {
       }
     })
 
-    // Sort: users with overdue tasks first, then by active task count
+    // Sort: overdue first, then by active task count
     workload.sort((a, b) => {
       if (b.tasks.overdue !== a.tasks.overdue) return b.tasks.overdue - a.tasks.overdue
       const aActive = a.tasks.todo + a.tasks.inProgress + a.tasks.inReview

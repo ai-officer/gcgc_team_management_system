@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
@@ -27,8 +29,17 @@ interface UserWorkload {
 }
 
 export default function WorkloadPage() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
   const [workload, setWorkload] = useState<UserWorkload[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Redirect non-leaders away
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.role !== 'LEADER' && session?.user?.role !== 'ADMIN') {
+      router.replace('/user/dashboard')
+    }
+  }, [status, session, router])
 
   const fetchWorkload = async () => {
     setLoading(true)

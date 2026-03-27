@@ -54,35 +54,50 @@ export async function GET() {
 
       const teamIds = leaderTeams.map(t => t.teamId)
 
-      if (teamIds.length === 0) {
-        return NextResponse.json({ workload: [] })
-      }
-
-      // Get all other members in those teams
-      const teamMembers = await prisma.teamMember.findMany({
-        where: {
-          teamId: { in: teamIds },
-          userId: { not: session.user.id },
-        },
-        select: {
-          userId: true,
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              image: true,
-              role: true,
-              positionTitle: true,
-              isActive: true,
+      if (teamIds.length > 0) {
+        // Show all other members in their team(s)
+        const teamMembers = await prisma.teamMember.findMany({
+          where: {
+            teamId: { in: teamIds },
+            userId: { not: session.user.id },
+          },
+          select: {
+            userId: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                image: true,
+                role: true,
+                positionTitle: true,
+                isActive: true,
+              },
             },
           },
-        },
-      })
-
-      uniqueUsers = Array.from(
-        new Map(teamMembers.map(tm => [tm.userId, tm.user])).values()
-      ).filter(u => u.isActive)
+        })
+        uniqueUsers = Array.from(
+          new Map(teamMembers.map(tm => [tm.userId, tm.user])).values()
+        ).filter(u => u.isActive)
+      } else {
+        // Fallback: leader has no TeamMember records — show all active MEMBER-role users
+        uniqueUsers = await prisma.user.findMany({
+          where: {
+            isActive: true,
+            role: 'MEMBER',
+            id: { not: session.user.id },
+          },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+            role: true,
+            positionTitle: true,
+            isActive: true,
+          },
+        })
+      }
     }
 
     if (uniqueUsers.length === 0) {

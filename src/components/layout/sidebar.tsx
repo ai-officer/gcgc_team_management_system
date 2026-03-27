@@ -19,6 +19,7 @@ import {
   ChevronRight,
   MessageSquare,
   FileText,
+  BarChart2,
 } from 'lucide-react'
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown'
 import { Button } from '@/components/ui/button'
@@ -87,6 +88,11 @@ const userNavItems = [
     icon: FileText,
   },
   {
+    title: 'Workload',
+    href: '/user/workload',
+    icon: BarChart2,
+  },
+  {
     title: 'TMS Chat',
     href: process.env.NEXT_PUBLIC_TMS_CHAT_URL || 'https://tms-chat-staging.hotelsogo-ai.com',
     icon: MessageSquare,
@@ -129,6 +135,11 @@ const leaderNavItems = [
     title: 'Member Management',
     href: '/user/member-management',
     icon: UserCheck,
+  },
+  {
+    title: 'Workload',
+    href: '/user/workload',
+    icon: BarChart2,
   },
   {
     title: 'TMS Chat',

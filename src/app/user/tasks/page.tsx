@@ -19,7 +19,8 @@ import {
   Edit,
   Eye,
   Trash2,
-  RefreshCw
+  RefreshCw,
+  ListTodo,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -117,6 +118,16 @@ interface Task {
       image?: string
     }
   }>
+  subtasks?: Array<{
+    id: string
+    title: string
+    status: string
+    progressPercentage: number
+  }>
+  _count?: {
+    subtasks: number
+    comments: number
+  }
   createdAt: string
   updatedAt: string
 }
@@ -904,29 +915,58 @@ export default function TasksPage() {
                                     <span className="text-xs font-medium text-gray-700">Progress</span>
                                     <span className="text-xs font-semibold text-gray-900">{task.progressPercentage || 0}%</span>
                                   </div>
-                                  <Progress 
-                                    value={task.progressPercentage || 0} 
+                                  <Progress
+                                    value={task.progressPercentage || 0}
                                     className="h-2 bg-gray-200"
                                   />
                                 </div>
 
-                                {/* Badges and Due Date */}
-                                <div className="flex items-center justify-between mb-3">
-                                  <div className="flex items-center gap-2">
-                                    <div className={`w-2 h-2 rounded-full ${getPriorityColor(task.priority)}`} />
-                                    <span className="text-xs font-medium text-gray-700 capitalize">
-                                      {task.priority.toLowerCase()}
-                                    </span>
-                                  </div>
-                                  {task.dueDate && (
-                                    <div className="flex items-center gap-1 text-xs text-gray-600">
-                                      <Clock className="h-3 w-3" />
-                                      <span className="font-medium">
-                                        {format(new Date(task.dueDate), 'MMM dd')}
+                                {/* Subtask Progress */}
+                                {task.subtasks && task.subtasks.length > 0 && (
+                                  <div className="mb-3">
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-xs text-gray-500 flex items-center gap-1">
+                                        <ListTodo className="h-3 w-3" />
+                                        Subtasks
+                                      </span>
+                                      <span className="text-xs font-semibold text-gray-700">
+                                        {task.subtasks.filter(s => s.status === 'COMPLETED').length}/{task.subtasks.length}
                                       </span>
                                     </div>
-                                  )}
-                                </div>
+                                    <Progress
+                                      value={(task.subtasks.filter(s => s.status === 'COMPLETED').length / task.subtasks.length) * 100}
+                                      className="h-1 bg-gray-200"
+                                    />
+                                  </div>
+                                )}
+
+                                {/* Badges and Due Date */}
+                                {(() => {
+                                  const overdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'COMPLETED'
+                                  return (
+                                    <div className="flex items-center justify-between mb-3">
+                                      <div className="flex items-center gap-2">
+                                        <div className={`w-2 h-2 rounded-full ${getPriorityColor(task.priority)}`} />
+                                        <span className="text-xs font-medium text-gray-700 capitalize">
+                                          {task.priority.toLowerCase()}
+                                        </span>
+                                      </div>
+                                      {task.dueDate && (
+                                        <div className={`flex items-center gap-1 text-xs ${overdue ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
+                                          <Clock className="h-3 w-3" />
+                                          <span className="font-medium">
+                                            {format(new Date(task.dueDate), 'MMM dd')}
+                                          </span>
+                                          {overdue && (
+                                            <Badge className="text-xs px-1 py-0 h-4 bg-red-500 text-white ml-1">
+                                              OVERDUE
+                                            </Badge>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )
+                                })()}
 
                                 {/* Task Type and Team Badge */}
                                 <div className="flex items-center gap-1.5 mb-3">

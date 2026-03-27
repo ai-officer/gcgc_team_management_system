@@ -150,6 +150,25 @@ export async function notifyTaskCompleted(
 }
 
 /**
+ * Notify assignee and their leader that a task is overdue
+ */
+export async function notifyTaskOverdue(
+  assigneeId: string,
+  taskId: string,
+  taskTitle: string,
+  daysOverdue: number
+) {
+  return createNotification({
+    userId: assigneeId,
+    type: 'DEADLINE_REMINDER',
+    title: 'Task Overdue',
+    message: `Your task "${taskTitle}" is ${daysOverdue} day${daysOverdue !== 1 ? 's' : ''} overdue. Please update its status.`,
+    entityId: taskId,
+    entityType: 'task',
+  })
+}
+
+/**
  * Create a comment notification
  */
 export async function notifyCommentAdded(

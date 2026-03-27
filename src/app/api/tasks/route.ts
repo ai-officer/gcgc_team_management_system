@@ -34,7 +34,7 @@ const createTaskSchema = z.object({
   recurringFrequency: z.enum(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY']).optional(),
   recurringInterval: z.number().int().min(1).max(30).optional(),
   recurringDaysOfWeek: z.array(z.number().int().min(0).max(6)).optional(),
-  recurringEndDate: z.string().datetime().optional(),
+  recurringEndDate: z.string().datetime().optional().nullable(),
 })
 
 const querySchema = z.object({
@@ -526,67 +526,57 @@ export async function POST(req: NextRequest) {
           },
         })
 
-        // Build instance data array
-        const instancesData = occurrences.map((date) => ({
-          title,
-          description,
-          priority,
-          status: 'TODO' as const,
-          progressPercentage: 0,
-          taskType,
-          dueDate: date,
-          startDate: date,
-          assigneeId: assigneeId || session.user.id,
-          creatorId: session.user.id,
-          teamId: null as string | null,
-          assignedById: assignedById || session.user.id,
-          location: location || null,
-          meetingLink: meetingLink || null,
-          allDay: allDay !== undefined ? allDay : false,
-          recurrence: rruleString,
-          isRecurring: false,
-          recurringParentId: templateTask.id,
-        }))
+        // Only create the first instance; subsequent instances are created
+        // automatically when the current one is marked COMPLETED.
+        const firstInstance = await tx.task.create({
+          data: {
+            title,
+            description,
+            priority,
+            status: 'TODO' as const,
+            progressPercentage: 0,
+            taskType,
+            dueDate: occurrences[0],
+            startDate: occurrences[0],
+            assigneeId: assigneeId || session.user.id,
+            creatorId: session.user.id,
+            teamId: null as string | null,
+            assignedById: assignedById || session.user.id,
+            location: location || null,
+            meetingLink: meetingLink || null,
+            allDay: allDay !== undefined ? allDay : false,
+            recurrence: rruleString,
+            isRecurring: false,
+            recurringParentId: templateTask.id,
+          }
+        })
 
-        await tx.task.createMany({ data: instancesData })
-
-        // Add team members / collaborators to all instances if needed
         if (taskType === 'TEAM' && teamMemberIds.length > 0) {
-          const createdInstances = await tx.task.findMany({
-            where: { recurringParentId: templateTask.id },
-            select: { id: true }
+          await tx.taskTeamMember.createMany({
+            data: teamMemberIds.map(userId => ({ taskId: firstInstance.id, userId, role: 'MEMBER' as const }))
           })
-          const memberData = createdInstances.flatMap(inst =>
-            teamMemberIds.map(userId => ({ taskId: inst.id, userId, role: 'MEMBER' as const }))
-          )
-          await tx.taskTeamMember.createMany({ data: memberData })
         }
 
         if (taskType === 'COLLABORATION' && collaboratorIds.length > 0) {
-          const createdInstances = await tx.task.findMany({
-            where: { recurringParentId: templateTask.id },
-            select: { id: true }
+          await tx.taskCollaborator.createMany({
+            data: collaboratorIds.map(userId => ({ taskId: firstInstance.id, userId }))
           })
-          const collabData = createdInstances.flatMap(inst =>
-            collaboratorIds.map(userId => ({ taskId: inst.id, userId }))
-          )
-          await tx.taskCollaborator.createMany({ data: collabData })
         }
 
-        return { template: templateTask, instanceCount: occurrences.length }
+        return { template: templateTask, firstInstance, totalOccurrences: occurrences.length }
       })
 
       await prisma.activity.create({
         data: {
           type: 'TASK_CREATED',
-          description: `Created recurring task: ${title} (${instanceCount} instances)`,
+          description: `Created recurring task: ${title} (first of ${totalOccurrences} instances)`,
           userId: session.user.id,
           entityId: template.id,
           entityType: 'task',
         }
       })
 
-      return NextResponse.json({ template, instanceCount }, { status: 201 })
+      return NextResponse.json({ template, firstInstance, totalOccurrences }, { status: 201 })
     }
 
     // Create task with transaction for related data

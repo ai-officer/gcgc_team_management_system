@@ -59,6 +59,28 @@ export function generateOccurrenceDates(
 }
 
 /**
+ * Returns the next occurrence date after `referenceDate`, or null if none
+ * exists within the series. Reuses generateOccurrenceDates for consistency.
+ */
+export function getNextOccurrenceDate(
+  seriesStartDate: Date,
+  recurringEndDate: Date,
+  frequency: RecurringFrequency,
+  interval: number = 1,
+  daysOfWeek: number[] = [],
+  referenceDate: Date
+): Date | null {
+  const allDates = generateOccurrenceDates(
+    seriesStartDate, recurringEndDate, frequency, interval, daysOfWeek
+  )
+  const ref = new Date(referenceDate)
+  ref.setHours(0, 0, 0, 0)
+  const currentIndex = allDates.findIndex(d => d.getTime() === ref.getTime())
+  if (currentIndex === -1 || currentIndex === allDates.length - 1) return null
+  return allDates[currentIndex + 1]
+}
+
+/**
  * Build an RRULE string for Google Calendar compatibility.
  */
 export function buildRRuleString(

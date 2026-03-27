@@ -350,6 +350,18 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
         assigneeId: s.assigneeId,
       }))
 
+      // Strip null/undefined recurring fields when not recurring so they
+      // never reach the API validation (recurringEndDate: null fails datetime check)
+      if (!submissionData.isRecurring) {
+        delete (submissionData as any).recurringFrequency
+        delete (submissionData as any).recurringInterval
+        delete (submissionData as any).recurringDaysOfWeek
+        delete (submissionData as any).recurringEndDate
+        delete (submissionData as any).isRecurring
+      } else if (submissionData.recurringEndDate === null) {
+        delete (submissionData as any).recurringEndDate
+      }
+
       await onSubmit(submissionData)
       onOpenChange(false)
       form.reset()
@@ -872,25 +884,16 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
                           />
                         </div>
 
-                        {/* Instance count preview */}
-                        {(() => {
-                          const count = computeEstimatedCount()
-                          if (count === 0) return null
-                          return (
-                            <div className={cn(
-                              'flex items-center gap-2 p-3 rounded-lg border text-sm',
-                              count > 100
-                                ? 'bg-amber-50 border-amber-200 text-amber-700'
-                                : 'bg-blue-50 border-blue-200 text-blue-700'
-                            )}>
-                              <RefreshCw className="h-3.5 w-3.5 flex-shrink-0" />
-                              <span>
-                                Creates <strong>{count}</strong> task{count !== 1 ? 's' : ''}
-                                {count > 100 ? ' — consider a shorter date range' : ''}
-                              </span>
-                            </div>
-                          )
-                        })()}
+                        {/* Recurring behavior info */}
+                        {form.watch('recurringFrequency') && form.watch('recurringEndDate') && (
+                          <div className="flex items-center gap-2 p-3 rounded-lg border text-sm bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-300">
+                            <RefreshCw className="h-3.5 w-3.5 flex-shrink-0" />
+                            <span>
+                              Only the first task is created now. The next task is automatically
+                              created each time the current one is completed.
+                            </span>
+                          </div>
+                        )}
                       </>
                     )}
                   </CardContent>
@@ -905,7 +908,7 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
               <RefreshCw className="h-5 w-5 text-blue-600 flex-shrink-0" />
               <div className="text-sm text-blue-800">
                 <p className="font-semibold">Recurring task</p>
-                <p>Saving changes will update <strong>all instances</strong> in this series (each keeps its own date).</p>
+                <p>Saving changes will update only this task instance. Future instances will be created fresh from the original series settings.</p>
               </div>
             </div>
           )}
@@ -1197,7 +1200,7 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
                       </div>
                       <div>
                         <CardTitle className="text-lg">Advanced Settings</CardTitle>
-                        <CardDescription>Calendar integration, location, and recurrence</CardDescription>
+                        <CardDescription>Calendar integration and location</CardDescription>
                       </div>
                     </div>
                     <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform duration-200" />
@@ -1265,62 +1268,6 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
                     </div>
                   </div>
 
-                  {/* Recurrence */}
-                  <div className="space-y-3">
-                    <Label htmlFor="recurrence" className="text-sm font-medium flex items-center gap-2">
-                      <span className="text-base">🔄</span>
-                      Recurrence
-                    </Label>
-                    <Select
-                      value={form.watch('recurrence') || 'NONE'}
-                      onValueChange={(value) => form.setValue('recurrence', value === 'NONE' ? undefined : value)}
-                    >
-                      <SelectTrigger className="h-11">
-                        <SelectValue placeholder="Does not repeat" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="NONE">
-                          <div className="flex items-center gap-2">
-                            <span className="text-gray-400">○</span>
-                            Does not repeat
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="RRULE:FREQ=DAILY">
-                          <div className="flex items-center gap-2">
-                            <span className="text-blue-500">●</span>
-                            Daily
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="RRULE:FREQ=WEEKLY">
-                          <div className="flex items-center gap-2">
-                            <span className="text-green-500">●</span>
-                            Weekly
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="RRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR">
-                          <div className="flex items-center gap-2">
-                            <span className="text-orange-500">●</span>
-                            Weekdays (Mon, Wed, Fri)
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="RRULE:FREQ=MONTHLY">
-                          <div className="flex items-center gap-2">
-                            <span className="text-purple-500">●</span>
-                            Monthly
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="RRULE:FREQ=YEARLY">
-                          <div className="flex items-center gap-2">
-                            <span className="text-red-500">●</span>
-                            Annually
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">
-                      Set if this task repeats on a regular schedule
-                    </p>
-                  </div>
                 </CardContent>
               </CollapsibleContent>
             </Card>

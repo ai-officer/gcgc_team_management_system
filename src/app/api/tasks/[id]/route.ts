@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { authOptions } from '@/lib/auth'
 import { canEditTask, canDeleteTask, canChangeTaskStatus } from '@/lib/permissions'
 import { autoSyncTask, deleteSyncedTask } from '@/lib/calendar-sync-helper'
+import { getNextOccurrenceDate } from '@/lib/recurring'
 import { notifyTaskAssigned, notifyTaskUpdated, notifyTaskCompleted } from '@/lib/notifications'
 
 const updateTaskSchema = z.object({
@@ -304,30 +305,11 @@ export async function PATCH(
       delete taskUpdateData.teamMemberIds
       delete taskUpdateData.collaboratorIds
 
-      // If this is a recurring instance, update ALL instances in the series
-      if (existingTask.recurringParentId) {
-        // Exclude per-instance date fields from the bulk update
-        const bulkUpdateData: any = { ...taskUpdateData }
-        delete bulkUpdateData.dueDate
-        delete bulkUpdateData.startDate
-
-        await tx.task.updateMany({
-          where: { recurringParentId: existingTask.recurringParentId },
-          data: bulkUpdateData,
-        })
-
-        // Return the current instance after its own date-preserving update
-        await tx.task.update({
-          where: { id: params.id },
-          data: { dueDate: finalDueDate, startDate: finalStartDate },
-        })
-      } else {
-        // Update the task
-        await tx.task.update({
-          where: { id: params.id },
-          data: taskUpdateData,
-        })
-      }
+      // Update only this instance (next instances are spawned lazily on completion)
+      await tx.task.update({
+        where: { id: params.id },
+        data: taskUpdateData,
+      })
 
       // Update team members if taskType is TEAM and teamMemberIds provided
       if (updateData.taskType === 'TEAM' && updateData.teamMemberIds) {
@@ -591,10 +573,112 @@ export async function PATCH(
       }
     }
 
+    // --- Recurring chain: spawn next instance when this one is COMPLETED ---
+    let nextRecurringInstance = null
+
+    const isNowCompleted =
+      updateData.status === 'COMPLETED' &&
+      existingTask.status !== 'COMPLETED' &&
+      existingTask.recurringParentId !== null
+
+    if (isNowCompleted && updatedTask) {
+      try {
+        const template = await prisma.task.findUnique({
+          where: { id: existingTask.recurringParentId! },
+          include: { teamMembers: true, collaborators: true }
+        })
+
+        if (
+          template?.recurringFrequency &&
+          template?.recurringEndDate &&
+          template?.startDate &&
+          existingTask.dueDate
+        ) {
+          const nextDate = getNextOccurrenceDate(
+            template.startDate,
+            template.recurringEndDate,
+            template.recurringFrequency,
+            template.recurringInterval ?? 1,
+            template.recurringDaysOfWeek ?? [],
+            existingTask.dueDate
+          )
+
+          if (nextDate && nextDate <= template.recurringEndDate) {
+            // Idempotency guard: skip if this occurrence already exists
+            const nextMidnight = new Date(nextDate)
+            nextMidnight.setHours(0, 0, 0, 0)
+            const alreadyExists = await prisma.task.findFirst({
+              where: {
+                recurringParentId: template.id,
+                dueDate: {
+                  gte: nextMidnight,
+                  lt: new Date(nextMidnight.getTime() + 24 * 60 * 60 * 1000),
+                }
+              }
+            })
+
+            if (!alreadyExists) {
+              nextRecurringInstance = await prisma.$transaction(async (tx2) => {
+                const newInst = await tx2.task.create({
+                  data: {
+                    title: template.title,
+                    description: template.description,
+                    priority: template.priority,
+                    status: 'TODO',
+                    progressPercentage: 0,
+                    taskType: template.taskType,
+                    dueDate: nextDate,
+                    startDate: nextDate,
+                    assigneeId: template.assigneeId,
+                    creatorId: template.creatorId,
+                    teamId: null,
+                    assignedById: template.assignedById,
+                    location: template.location,
+                    meetingLink: template.meetingLink,
+                    allDay: template.allDay,
+                    recurrence: template.recurrence,
+                    isRecurring: false,
+                    recurringParentId: template.id,
+                  }
+                })
+                if (template.taskType === 'TEAM' && template.teamMembers.length > 0) {
+                  await tx2.taskTeamMember.createMany({
+                    data: template.teamMembers.map(tm => ({ taskId: newInst.id, userId: tm.userId, role: 'MEMBER' as const }))
+                  })
+                }
+                if (template.taskType === 'COLLABORATION' && template.collaborators.length > 0) {
+                  await tx2.taskCollaborator.createMany({
+                    data: template.collaborators.map(c => ({ taskId: newInst.id, userId: c.userId }))
+                  })
+                }
+                return newInst
+              })
+
+              // Notify assignee about the new instance
+              if (nextRecurringInstance.assigneeId && nextRecurringInstance.assigneeId !== session.user.id) {
+                const assignerName = session.user.name || session.user.email || 'System'
+                await notifyTaskAssigned(
+                  nextRecurringInstance.assigneeId,
+                  nextRecurringInstance.id,
+                  nextRecurringInstance.title,
+                  assignerName
+                )
+              }
+            }
+          }
+        }
+      } catch (chainError) {
+        console.error('Error spawning next recurring instance:', chainError)
+        // Non-fatal: COMPLETED status on current task is already saved
+      }
+    }
+    // --- End recurring chain ---
+
     // Return both the updated task and parent task if applicable
     return NextResponse.json({
       ...updatedTask,
-      updatedParentTask
+      updatedParentTask,
+      nextRecurringInstance
     })
   } catch (error) {
     console.error('Task update error:', error)

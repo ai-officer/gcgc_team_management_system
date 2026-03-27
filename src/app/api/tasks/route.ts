@@ -114,6 +114,11 @@ export async function GET(req: NextRequest) {
       // 4. Team member or collaborator
       const teamIds = userTeams.map(tm => tm.teamId)
       
+      // Enforce top-level only at the where level to prevent subtasks from leaking through OR
+      if (includeSubtasks !== 'true' && !parentId) {
+        where.parentId = null
+      }
+
       // For non-admins, show:
       // 1. Top-level tasks they're involved in (parentId = null)
       // 2. Parent tasks that have a subtask assigned to this user
@@ -121,17 +126,12 @@ export async function GET(req: NextRequest) {
       where.OR = [
         // Top-level tasks where user is involved
         {
-          AND: [
-            ...(includeSubtasks !== 'true' ? [{ parentId: null }] : []),
-            {
-              OR: [
-                ...(teamIds.length > 0 ? [{ teamId: { in: teamIds } }] : []),
-                { assigneeId: session.user.id },
-                { creatorId: session.user.id },
-                { teamMembers: { some: { userId: session.user.id } } },
-                { collaborators: { some: { userId: session.user.id } } },
-              ]
-            }
+          OR: [
+            ...(teamIds.length > 0 ? [{ teamId: { in: teamIds } }] : []),
+            { assigneeId: session.user.id },
+            { creatorId: session.user.id },
+            { teamMembers: { some: { userId: session.user.id } } },
+            { collaborators: { some: { userId: session.user.id } } },
           ]
         },
         // Parent tasks where a subtask is assigned to this user

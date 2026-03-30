@@ -93,6 +93,7 @@ export default async function middleware(req: NextRequest) {
   // Allow public API routes needed for registration without authentication
   const publicApiRoutes = [
     '/api/auth',
+    '/api/cron', // Cron jobs — protected by CRON_SECRET query param, not session
     '/api/v1/auth/login', // Server-to-server authentication for TMS
     '/api/organizational-units',
     '/api/job-levels',

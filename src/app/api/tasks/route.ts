@@ -350,6 +350,9 @@ export async function GET(req: NextRequest) {
               priority: true,
               progressPercentage: true,
               dueDate: true,
+              assignee: {
+                select: { id: true, name: true, email: true }
+              }
             },
             orderBy: { createdAt: 'asc' }
           }

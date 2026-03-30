@@ -52,6 +52,12 @@ interface CalendarEvent {
       priority: string
       status: string
     }
+    subtasks?: Array<{
+      id: string
+      title: string
+      status: string
+      assignee?: { id: string; name: string; email: string } | null
+    }>
   }
 }
 
@@ -120,7 +126,7 @@ export default function CalendarPage() {
 
       const [eventsResponse, tasksResponse, syncSettingsResponse, holidaysResponse] = await Promise.all([
         fetch('/api/events'),
-        fetch('/api/tasks?status=TODO,IN_PROGRESS,IN_REVIEW&includeSubtasks=true'),
+        fetch('/api/tasks?status=TODO,IN_PROGRESS,IN_REVIEW'),
         fetch('/api/calendar/sync-settings'),
         fetch('/api/calendar/holidays')
       ])
@@ -176,9 +182,11 @@ export default function CalendarPage() {
         })
       }
 
-      // Add task deadlines - show ALL tasks related to the user
+      // Add task deadlines - parent tasks only; subtasks are shown inside the popup
       if (tasksData.tasks) {
         tasksData.tasks.forEach((task: any) => {
+          // Skip subtasks — they appear inside the parent task's popup
+          if (task.parentId) return
           if (task.dueDate && task.status !== 'COMPLETED') {
             // Check if user is involved in this task in any way:
             // 1. User is the assignee
@@ -245,7 +253,8 @@ export default function CalendarPage() {
                     title: task.title,
                     priority: task.priority,
                     status: task.status
-                  }
+                  },
+                  subtasks: task.subtasks || []
                 }
               })
             }
@@ -674,6 +683,58 @@ export default function CalendarPage() {
                       </p>
                       <p className="text-xs text-muted-foreground">Created by</p>
                     </div>
+                  </div>
+                )}
+
+                {/* Subtasks Section */}
+                {selectedEvent.resource?.task && (
+                  <div className="pt-2 border-t space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                        <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                        Subtasks
+                        <span className="text-xs text-muted-foreground font-normal">
+                          ({(selectedEvent.resource.subtasks || []).length})
+                        </span>
+                      </p>
+                      {(selectedEvent.resource.subtasks || []).length > 0 && (
+                        <span className="text-xs text-muted-foreground">
+                          {(selectedEvent.resource.subtasks || []).filter(s => s.status === 'COMPLETED').length}/
+                          {(selectedEvent.resource.subtasks || []).length} done
+                        </span>
+                      )}
+                    </div>
+                    {(selectedEvent.resource.subtasks || []).length === 0 ? (
+                      <p className="text-xs text-muted-foreground pl-5">No subtasks</p>
+                    ) : (
+                      <div className="space-y-1.5 pl-1">
+                        {(selectedEvent.resource.subtasks || []).map((subtask) => (
+                          <div key={subtask.id} className="flex items-center gap-2">
+                            <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center flex-shrink-0 ${
+                              subtask.status === 'COMPLETED'
+                                ? 'bg-green-500 border-green-500'
+                                : subtask.status === 'IN_PROGRESS'
+                                ? 'border-blue-400'
+                                : 'border-gray-300'
+                            }`}>
+                              {subtask.status === 'COMPLETED' && (
+                                <svg className="w-2 h-2 text-white" fill="none" viewBox="0 0 8 8">
+                                  <path d="M1 4l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                              )}
+                            </div>
+                            <span className={`text-xs flex-1 truncate ${subtask.status === 'COMPLETED' ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                              {subtask.title}
+                            </span>
+                            {subtask.assignee && (
+                              <span className="text-xs text-muted-foreground truncate max-w-[80px]">
+                                {subtask.assignee.name}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

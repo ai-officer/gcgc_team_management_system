@@ -1320,7 +1320,7 @@ export default function TaskViewModal({
               <Clock className="h-4 w-4 text-gray-500" />
               <span className="text-gray-600">Due:</span>
               <span className="font-medium">{format(new Date(task.dueDate), 'EEEE, MMM dd, yyyy')}</span>
-              {new Date(task.dueDate) < new Date() && (
+              {(() => { const sot = new Date(); sot.setHours(0,0,0,0); return new Date(task.dueDate) < sot })() && task.status !== 'COMPLETED' && (
                 <Badge variant="destructive" className="ml-2">Overdue</Badge>
               )}
             </div>

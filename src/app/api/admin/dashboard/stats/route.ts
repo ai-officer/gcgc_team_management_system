@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
         where: {
           isRecurring: { not: true },
           status: { notIn: ['COMPLETED', 'CANCELLED'] },
-          dueDate: { lt: new Date() }
+          dueDate: { lt: (() => { const d = new Date(); d.setHours(0,0,0,0); return d })() }
         }
       })
     ])

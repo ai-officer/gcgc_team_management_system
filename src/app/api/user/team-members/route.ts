@@ -84,7 +84,7 @@ export async function GET(req: NextRequest) {
       prisma.task.count({
         where: {
           assigneeId: { in: memberIds },
-          dueDate: { lt: new Date() },
+          dueDate: { lt: (() => { const d = new Date(); d.setHours(0,0,0,0); return d })() },
           status: { not: 'COMPLETED' }
         }
       })

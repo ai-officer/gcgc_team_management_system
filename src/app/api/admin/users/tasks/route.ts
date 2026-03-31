@@ -220,8 +220,9 @@ export async function GET(req: NextRequest) {
       })
 
       // Check if task is overdue
-      const isOverdue = task.dueDate && 
-        new Date(task.dueDate) < new Date() && 
+      const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0)
+      const isOverdue = task.dueDate &&
+        new Date(task.dueDate) < startOfToday &&
         task.status !== 'COMPLETED'
 
       // Determine task type based on relationships

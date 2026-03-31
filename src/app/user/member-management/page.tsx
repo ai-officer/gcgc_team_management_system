@@ -541,7 +541,7 @@ export default function MemberManagementPage() {
     inReviewTasks: filteredTasks.filter(t => t.status === 'IN_REVIEW').length,
     completedTasks: filteredTasks.filter(t => t.status === 'COMPLETED').length,
     urgentTasks: filteredTasks.filter(t => t.priority === 'URGENT').length,
-    overdueTasks: filteredTasks.filter(t => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'COMPLETED').length
+    overdueTasks: filteredTasks.filter(t => { const sot = new Date(); sot.setHours(0,0,0,0); return t.dueDate && new Date(t.dueDate) < sot && t.status !== 'COMPLETED' }).length
   }
 
   // Kanban board columns

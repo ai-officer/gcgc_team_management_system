@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
             { assigneeId: userId },
             ...(session.user.role === 'LEADER' ? [{ teamId: { in: teamIds } }] : [])
           ],
-          dueDate: { lt: new Date() },
+          dueDate: { lt: (() => { const d = new Date(); d.setHours(0,0,0,0); return d })() },
           status: { not: 'COMPLETED' },
           parentId: null // Only count parent tasks, not subtasks
         }

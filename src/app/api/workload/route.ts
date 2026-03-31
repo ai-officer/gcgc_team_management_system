@@ -16,7 +16,8 @@ export async function GET() {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const now = new Date()
+    const startOfToday = new Date()
+    startOfToday.setHours(0, 0, 0, 0)
 
     let uniqueUsers: Array<{
       id: string
@@ -124,7 +125,7 @@ export async function GET() {
         isRecurring: false,
         assigneeId: { in: memberIds },
         status: { notIn: ['COMPLETED', 'CANCELLED'] },
-        dueDate: { lt: now },
+        dueDate: { lt: startOfToday },
       },
       _count: { id: true },
     })

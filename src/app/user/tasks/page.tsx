@@ -952,7 +952,8 @@ export default function TasksPage() {
 
                                 {/* Badges and Due Date */}
                                 {(() => {
-                                  const overdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'COMPLETED'
+                                  const _sot = new Date(); _sot.setHours(0, 0, 0, 0)
+                                  const overdue = task.dueDate && new Date(task.dueDate) < _sot && task.status !== 'COMPLETED'
                                   return (
                                     <div className="flex items-center justify-between mb-3">
                                       <div className="flex items-center gap-2">

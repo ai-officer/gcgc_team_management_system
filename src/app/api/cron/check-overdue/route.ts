@@ -15,13 +15,18 @@ export async function GET(req: NextRequest) {
 
   try {
     const now = new Date()
+    // A task is only overdue if its due date is strictly before today (not just before now).
+    // Recurring instances are stored at midnight local time, so comparing with "now"
+    // during the same day would incorrectly flag them as overdue.
+    const startOfToday = new Date()
+    startOfToday.setHours(0, 0, 0, 0)
 
-    // Find all non-completed tasks with a due date in the past
+    // Find all non-completed tasks with a due date before today
     const overdueTasks = await prisma.task.findMany({
       where: {
         isRecurring: false, // skip template tasks
         status: { notIn: ['COMPLETED', 'CANCELLED'] },
-        dueDate: { lt: now },
+        dueDate: { lt: startOfToday },
         assigneeId: { not: null },
       },
       select: {

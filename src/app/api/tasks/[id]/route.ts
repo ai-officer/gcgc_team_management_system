@@ -417,26 +417,15 @@ export async function PATCH(
       const totalProgress = allSubtasks.reduce((sum, st) => sum + (statusWeights[st.status] || 0), 0)
       const avgProgress = Math.round(totalProgress / allSubtasks.length)
 
-      // Auto-update parent status when ALL subtasks are completed:
-      // - Parent was created by current user → COMPLETED
-      // - Parent was created by someone else  → IN_REVIEW
-      let autoParentStatus: 'COMPLETED' | 'IN_REVIEW' | undefined
+      // When ALL subtasks are completed, push parent to IN_REVIEW at 90%
+      // so a leader can verify before marking it fully complete.
       const allCompleted = allSubtasks.length > 0 && allSubtasks.every(st => st.status === 'COMPLETED')
-      if (allCompleted) {
-        const parentTask = await prisma.task.findUnique({
-          where: { id: existingTask.parentId },
-          select: { creatorId: true }
-        })
-        if (parentTask) {
-          autoParentStatus = parentTask.creatorId === session.user.id ? 'COMPLETED' : 'IN_REVIEW'
-        }
-      }
 
       updatedParentTask = await prisma.task.update({
         where: { id: existingTask.parentId },
         data: {
-          progressPercentage: avgProgress,
-          ...(autoParentStatus ? { status: autoParentStatus } : {}),
+          progressPercentage: allCompleted ? 90 : avgProgress,
+          ...(allCompleted ? { status: 'IN_REVIEW' } : {}),
         },
         include: {
           assignee: { select: { id: true, name: true, email: true, image: true } },

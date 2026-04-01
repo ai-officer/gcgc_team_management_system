@@ -30,7 +30,7 @@ import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
 import { format, formatDistanceToNow } from 'date-fns'
 import {
-  User, Users, Handshake, Clock, MessageSquare, Send, Edit,
+  User, Users, Handshake, Clock, MessageSquare, Send, Edit, Copy,
   Heart, ThumbsUp, Smile, Reply, Image, Paperclip, MoreHorizontal,
   AtSign, Trash2, Pencil, X, Check, FileText, Download, File,
   Plus, ListTodo, ChevronRight, CheckCircle2, Circle, AlertCircle, RefreshCw
@@ -156,6 +156,7 @@ interface TaskViewModalProps {
   onOpenChange: (open: boolean) => void
   task: Task | null
   onEdit?: (task: Task) => void
+  onDuplicate?: (task: Task) => void
   onTaskUpdate?: () => void | Promise<void>
   onSubtaskClick?: (subtaskId: string) => void
 }
@@ -202,6 +203,7 @@ export default function TaskViewModal({
   onOpenChange,
   task,
   onEdit,
+  onDuplicate,
   onTaskUpdate,
   onSubtaskClick
 }: TaskViewModalProps) {
@@ -1216,13 +1218,21 @@ export default function TaskViewModal({
               </DialogDescription>
             </div>
 
-            {/* Simple Edit Button - positioned to avoid X button overlap */}
-            {isTaskCreator && (
-              <Button variant="outline" size="sm" onClick={handleEdit} className="shrink-0">
-                <Edit className="h-4 w-4 mr-2" />
-                Edit
-              </Button>
-            )}
+            {/* Action buttons - positioned to avoid X button overlap */}
+            <div className="flex items-center gap-2 shrink-0">
+              {onDuplicate && (
+                <Button variant="outline" size="sm" onClick={() => { onDuplicate(task); onOpenChange(false) }}>
+                  <Copy className="h-4 w-4 mr-2" />
+                  Duplicate
+                </Button>
+              )}
+              {isTaskCreator && (
+                <Button variant="outline" size="sm" onClick={handleEdit}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Status and Priority Badges */}

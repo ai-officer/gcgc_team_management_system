@@ -101,11 +101,12 @@ interface TaskFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   task?: any // Existing task for editing
+  duplicateFrom?: any // Source task to duplicate (creates a new task pre-filled from this)
   onSubmit: (data: TaskFormData) => Promise<void>
   preSelectedMemberId?: string // Pre-selected team member for assignment
 }
 
-export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelectedMemberId }: TaskFormProps) {
+export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSubmit, preSelectedMemberId }: TaskFormProps) {
   const { data: session } = useSession()
   const [loading, setLoading] = useState(false)
   const [users, setUsers] = useState<User[]>([])
@@ -206,6 +207,48 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
         if (task.collaborators) {
           setSelectedCollaborators(task.collaborators.map((c: any) => c.user))
         }
+      } else if (duplicateFrom) {
+        // Duplicate mode: pre-fill from source task, reset status/progress, allow recurring
+        const srcDue = duplicateFrom.dueDate ? new Date(duplicateFrom.dueDate) : undefined
+        const srcStart = duplicateFrom.startDate ? new Date(duplicateFrom.startDate) : undefined
+
+        form.reset({
+          title: `Copy of ${duplicateFrom.title}`,
+          description: duplicateFrom.description || '',
+          dueDate: srcDue,
+          startDate: srcStart,
+          status: 'TODO',
+          priority: duplicateFrom.priority,
+          progressPercentage: 0,
+          taskType: duplicateFrom.taskType,
+          assigneeId: duplicateFrom.assigneeId || session?.user?.id,
+          teamMemberIds: duplicateFrom.teamMembers?.map((tm: any) => tm.userId ?? tm.id) || [],
+          collaboratorIds: duplicateFrom.collaborators?.map((c: any) => c.userId ?? c.id) || [],
+          assignedById: session?.user?.id,
+          location: duplicateFrom.location || '',
+          meetingLink: duplicateFrom.meetingLink || '',
+          allDay: duplicateFrom.allDay !== undefined ? duplicateFrom.allDay : true,
+          recurrence: '',
+          startTime: srcStart && !duplicateFrom.allDay ? srcStart.toTimeString().slice(0, 5) : '',
+          endTime: srcDue && !duplicateFrom.allDay ? srcDue.toTimeString().slice(0, 5) : '',
+          // Recurring fields start fresh — user can set a new schedule
+          isRecurring: false,
+          recurringFrequency: undefined,
+          recurringInterval: 1,
+          recurringDaysOfWeek: [],
+          recurringEndDate: null,
+        })
+
+        if (duplicateFrom.teamMembers) {
+          setSelectedTeamMembers(duplicateFrom.teamMembers.map((tm: any) => tm.user ?? tm))
+        }
+        if (duplicateFrom.collaborators) {
+          setSelectedCollaborators(duplicateFrom.collaborators.map((c: any) => c.user ?? c))
+        }
+        setPendingSubtasks([])
+        setNewSubtaskTitle('')
+        setNewSubtaskAssigneeId('')
+        setNewSubtaskDeadline('')
       } else {
         // Set defaults for new task based on current user
         const initialTaskType = preSelectedMemberId ? 'TEAM' : 'INDIVIDUAL'
@@ -250,11 +293,11 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
     }
     // Update the ref to track current open state
     prevOpenRef.current = open
-  }, [open, task, form, session, preSelectedMemberId])
+  }, [open, task, duplicateFrom, form, session, preSelectedMemberId])
 
   // Handle task type changes and set appropriate defaults
   useEffect(() => {
-    if (!task && session?.user?.id && open) { // Only for new tasks when dialog is open
+    if (!task && !duplicateFrom && session?.user?.id && open) { // Only for brand-new tasks
       // For NEW tasks only: Always assign to current user regardless of task type
       form.setValue('assigneeId', session.user.id)
 
@@ -494,9 +537,9 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto z-[100]">
         <DialogHeader>
-          <DialogTitle>{task ? 'Edit Task' : 'Create New Task'}</DialogTitle>
+          <DialogTitle>{task ? 'Edit Task' : duplicateFrom ? 'Duplicate Task' : 'Create New Task'}</DialogTitle>
           <DialogDescription>
-            {task ? 'Update the task details below.' : 'Fill in the details to create a new task.'}
+            {task ? 'Update the task details below.' : duplicateFrom ? 'Review and adjust the duplicated task before saving.' : 'Fill in the details to create a new task.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -1363,7 +1406,7 @@ export default function TaskForm({ open, onOpenChange, task, onSubmit, preSelect
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Saving...' : task ? 'Update Task' : 'Create Task'}
+              {loading ? 'Saving...' : task ? 'Update Task' : duplicateFrom ? 'Duplicate Task' : 'Create Task'}
             </Button>
           </DialogFooter>
         </form>

@@ -21,6 +21,7 @@ import {
   Trash2,
   RefreshCw,
   ListTodo,
+  Copy,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -161,6 +162,7 @@ export default function TasksPage() {
   const [users, setUsers] = useState<User[]>([])
   const [showTaskForm, setShowTaskForm] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [duplicatingTask, setDuplicatingTask] = useState<Task | null>(null)
   const [deletingTask, setDeletingTask] = useState<Task | null>(null)
   const [deleteScope, setDeleteScope] = useState<'single' | 'series'>('single')
   const [viewingTask, setViewingTask] = useState<Task | null>(null)
@@ -657,9 +659,16 @@ export default function TasksPage() {
     setShowTaskForm(true)
   }
 
+  const openDuplicateForm = (task: Task) => {
+    setDuplicatingTask(task)
+    setEditingTask(null)
+    setShowTaskForm(true)
+  }
+
   const closeTaskForm = () => {
     setShowTaskForm(false)
     setEditingTask(null)
+    setDuplicatingTask(null)
   }
 
   const closeViewModal = () => {
@@ -901,7 +910,16 @@ export default function TasksPage() {
                                           Edit
                                         </DropdownMenuItem>
                                       )}
-                                      
+
+                                      {/* Duplicate option - available to all */}
+                                      <DropdownMenuItem onClick={(e) => {
+                                        e.stopPropagation()
+                                        openDuplicateForm(task)
+                                      }}>
+                                        <Copy className="h-4 w-4 mr-2" />
+                                        Duplicate
+                                      </DropdownMenuItem>
+
                                       {/* Delete option - shown if user can delete */}
                                       {canDeleteTask(task) && (
                                         <DropdownMenuItem 
@@ -1079,6 +1097,7 @@ export default function TasksPage() {
         open={showTaskForm}
         onOpenChange={closeTaskForm}
         task={editingTask}
+        duplicateFrom={duplicatingTask}
         onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
       />
 
@@ -1088,6 +1107,7 @@ export default function TasksPage() {
         onOpenChange={closeViewModal}
         task={viewingTask}
         onEdit={handleEditFromView}
+        onDuplicate={(task) => { setShowViewModal(false); openDuplicateForm(task as Task) }}
         onTaskUpdate={() => fetchTasks(false)}
         onSubtaskClick={handleSubtaskClick}
       />

@@ -640,6 +640,33 @@ export async function PATCH(
                     data: template.collaborators.map(c => ({ taskId: newInst.id, userId: c.userId }))
                   })
                 }
+                // Copy subtasks from the completing instance so they recur too
+                const sourceSubtasks = await tx2.task.findMany({
+                  where: { parentId: existingTask.id },
+                  select: {
+                    title: true, description: true, priority: true, taskType: true,
+                    assigneeId: true, creatorId: true, assignedById: true,
+                  }
+                })
+                if (sourceSubtasks.length > 0) {
+                  await tx2.task.createMany({
+                    data: sourceSubtasks.map(st => ({
+                      title: st.title,
+                      description: st.description ?? null,
+                      priority: st.priority,
+                      status: 'TODO' as const,
+                      progressPercentage: 0,
+                      taskType: st.taskType,
+                      assigneeId: st.assigneeId,
+                      creatorId: st.creatorId,
+                      assignedById: st.assignedById,
+                      dueDate: nextDate,
+                      startDate: nextDate,
+                      parentId: newInst.id,
+                      isRecurring: false,
+                    }))
+                  })
+                }
                 return newInst
               })
 

@@ -139,6 +139,34 @@ export async function GET(req: NextRequest) {
                   })
                 }
 
+                // Copy subtasks from the overdue instance so they recur too
+                const sourceSubtasks = await prisma.task.findMany({
+                  where: { parentId: task.id },
+                  select: {
+                    title: true, description: true, priority: true, taskType: true,
+                    assigneeId: true, creatorId: true, assignedById: true,
+                  },
+                })
+                if (sourceSubtasks.length > 0) {
+                  await prisma.task.createMany({
+                    data: sourceSubtasks.map(st => ({
+                      title: st.title,
+                      description: st.description ?? null,
+                      priority: st.priority,
+                      status: 'TODO' as const,
+                      progressPercentage: 0,
+                      taskType: st.taskType,
+                      assigneeId: st.assigneeId,
+                      creatorId: st.creatorId,
+                      assignedById: st.assignedById,
+                      dueDate: nextDate,
+                      startDate: nextDate,
+                      parentId: newInst.id,
+                      isRecurring: false,
+                    })),
+                  })
+                }
+
                 // Notify assignee about the new instance
                 if (newInst.assigneeId) {
                   try {

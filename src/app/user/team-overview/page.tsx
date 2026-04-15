@@ -465,7 +465,7 @@ export default function TeamOverviewPage() {
   }
 
   const isContactInfoValid = () => {
-    return newUserData.email && newUserData.email.includes('@') // Email is required
+    return newUserData.email && newUserData.email.includes('@') && newUserData.username.trim().length >= 3
   }
 
   const handleDialogOpenChange = (open: boolean) => {
@@ -524,10 +524,14 @@ export default function TeamOverviewPage() {
     try {
       setIsCreatingUser(true)
 
+      // Auto-generate username from email if not provided
+      const finalUsername = newUserData.username.trim() || newUserData.email.split('@')[0]
+
       // Prepare user data payload
       const userPayload: any = {
         ...newUserData,
         name: finalName,
+        username: finalUsername,
         role: 'MEMBER',
         reportsToId: session?.user?.id
       }
@@ -536,6 +540,14 @@ export default function TeamOverviewPage() {
       if (!userPayload.password || userPayload.password.trim() === '') {
         delete userPayload.password
       }
+
+      // Remove empty jobLevel so API default ('RF1') kicks in
+      if (!userPayload.jobLevel || userPayload.jobLevel.trim() === '') {
+        delete userPayload.jobLevel
+      }
+
+      // Remove fields not in the API schema
+      delete userPayload.sectorHeadInitials
 
 
       // Create new user
@@ -1307,9 +1319,12 @@ export default function TeamOverviewPage() {
                         id="username"
                         value={newUserData.username}
                         onChange={(e) => setNewUserData(prev => ({ ...prev, username: e.target.value }))}
-                        placeholder="Enter username"
+                        placeholder="Enter username (min. 3 characters)"
                         required
                       />
+                      {newUserData.username.trim().length > 0 && newUserData.username.trim().length < 3 && (
+                        <p className="text-xs text-destructive">Username must be at least 3 characters</p>
+                      )}
                     </div>
                   </div>
                   )}

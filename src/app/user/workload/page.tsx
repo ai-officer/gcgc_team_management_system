@@ -156,27 +156,16 @@ export default function WorkloadPage() {
                 Live overview of active tasks and capacity across the team.
               </p>
             </div>
-            <div className="flex items-center gap-3 shrink-0">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                <Input
-                  placeholder="Search members..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 w-52 border-slate-300 bg-white rounded-lg text-sm h-9 shadow-sm"
-                />
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={fetchWorkload}
-                disabled={loading}
-                className="shrink-0 border-slate-300 bg-white hover:bg-slate-50 text-slate-700 shadow-sm"
-              >
-                <RefreshCw className={cn('h-4 w-4 mr-2', loading && 'animate-spin')} />
-                Refresh
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchWorkload}
+              disabled={loading}
+              className="shrink-0 border-slate-300 bg-white hover:bg-slate-50 text-slate-700 shadow-sm"
+            >
+              <RefreshCw className={cn('h-4 w-4 mr-2', loading && 'animate-spin')} />
+              Refresh
+            </Button>
           </div>
         </div>
       </div>
@@ -266,6 +255,32 @@ export default function WorkloadPage() {
           </CardContent>
         </Card>
 
+      </div>
+
+      {/* ── Search & Filter Bar ── */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-6 py-4 flex items-center gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" />
+          <Input
+            placeholder="Search by name, email, or position..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-11 h-11 border-slate-200 bg-slate-50 focus:bg-white rounded-lg text-sm transition-colors"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-2 text-sm text-slate-500 shrink-0">
+          <span className="font-medium text-slate-900">{filtered.length}</span>
+          <span>of {workload.length} members</span>
+          {searchTerm && <span className="text-blue-600 font-medium">· filtered</span>}
+        </div>
       </div>
 
       {/* ── Workload Member Cards ── */}

@@ -485,99 +485,60 @@ export default function MemberManagementPage() {
             {/* Scrollable member cards */}
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
 
-              {/* All Members card */}
+              {/* All Members row */}
               <button
                 className={cn(
-                  "w-full text-left rounded-xl border transition-all duration-150 p-3.5",
-                  !selectedMember
-                    ? 'bg-blue-50 border-blue-300 shadow-sm'
-                    : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                  "w-full text-left rounded-lg border transition-all px-3 py-2.5 flex items-center gap-3",
+                  !selectedMember ? 'bg-blue-50 border-blue-200' : 'bg-white border-transparent hover:bg-gray-50'
                 )}
                 onClick={() => setSelectedMember('')}
               >
-                <div className="flex items-center gap-3">
-                  <div className={cn(
-                    "h-12 w-12 rounded-full flex items-center justify-center shrink-0",
-                    !selectedMember ? 'bg-blue-200' : 'bg-gray-100'
-                  )}>
-                    <Users className={cn("h-5 w-5", !selectedMember ? 'text-blue-700' : 'text-gray-500')} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={cn("text-base font-semibold", !selectedMember ? 'text-blue-900' : 'text-gray-800')}>
-                      All Members
-                    </p>
-                    <p className="text-sm text-gray-500 truncate">{teamStats.totalTasks} total tasks</p>
-                  </div>
-                  {!selectedMember && (
-                    <div className="h-2 w-2 rounded-full bg-blue-500 shrink-0" />
-                  )}
+                <div className={cn("h-8 w-8 rounded-full flex items-center justify-center shrink-0", !selectedMember ? 'bg-blue-100' : 'bg-gray-100')}>
+                  <Users className={cn("h-4 w-4", !selectedMember ? 'text-blue-600' : 'text-gray-500')} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={cn("text-sm font-semibold", !selectedMember ? 'text-blue-900' : 'text-gray-700')}>All Members</p>
+                  <p className="text-xs text-gray-400">{teamStats.totalTasks} tasks</p>
                 </div>
               </button>
 
               {filteredMembers.length === 0 ? (
-                <p className="text-center text-gray-400 py-8 text-sm">
-                  {searchTerm ? 'No members match your search' : 'No members found'}
+                <p className="text-center text-gray-400 py-6 text-sm">
+                  {searchTerm ? 'No members match' : 'No members found'}
                 </p>
               ) : (
                 filteredMembers.map((member) => {
                   const stats = memberSuggestions.find(s => s.id === member.id)
                   const workload = stats?.workloadPercentage ?? 0
-                  const activeTasks = stats?.taskCounts?.inProgress ?? 0
                   const totalTasks = stats?.taskCounts?.total ?? member._count?.assignedTasks ?? 0
                   const isSelected = selectedMember === member.id
                   return (
                     <button
                       key={member.id}
                       className={cn(
-                        "w-full text-left rounded-xl border transition-all duration-150 p-3.5",
-                        isSelected
-                          ? 'bg-blue-50 border-blue-300 shadow-sm'
-                          : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                        "w-full text-left rounded-lg border transition-all px-3 py-2.5 flex items-center gap-3",
+                        isSelected ? 'bg-blue-50 border-blue-200' : 'bg-white border-transparent hover:bg-gray-50'
                       )}
                       onClick={() => setSelectedMember(isSelected ? '' : member.id)}
                     >
-                      <div className="flex items-start gap-3">
-                        <Avatar className="h-12 w-12 shrink-0">
-                          <AvatarImage src={member.image} />
-                          <AvatarFallback className={cn(
-                            "text-sm font-bold",
-                            isSelected ? "bg-blue-200 text-blue-800" : "bg-gray-100 text-gray-600"
-                          )}>
-                            {member.name ? member.name.split(' ').map(n => n[0]).join('') : member.email[0].toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-1 mb-0.5">
-                            <p className={cn("text-base font-semibold truncate", isSelected ? "text-blue-900" : "text-gray-900")}>
-                              {member.name || 'Unnamed User'}
-                            </p>
-                            <span className={cn(
-                              "text-xs font-semibold shrink-0 px-1.5 py-0.5 rounded-full",
-                              activeTasks > 0
-                                ? "bg-blue-100 text-blue-700"
-                                : "bg-gray-100 text-gray-500"
-                            )}>
-                              {totalTasks}
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-500 truncate mb-2">{member.email}</p>
-                          <div className="space-y-1">
-                            <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden">
-                              <div
-                                className={cn(
-                                  "h-full rounded-full transition-all duration-300",
-                                  workload >= 80 ? "bg-red-400" : workload >= 50 ? "bg-amber-400" : "bg-green-400"
-                                )}
-                                style={{ width: `${Math.min(workload, 100)}%` }}
-                              />
-                            </div>
-                            <p className={cn(
-                              "text-xs font-medium",
-                              workload >= 80 ? "text-red-500" : workload >= 50 ? "text-amber-500" : "text-green-600"
-                            )}>
-                              {workload}% workload
-                            </p>
-                          </div>
+                      <Avatar className="h-8 w-8 shrink-0">
+                        <AvatarImage src={member.image} />
+                        <AvatarFallback className={cn("text-xs font-bold", isSelected ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-600")}>
+                          {member.name ? member.name.split(' ').map(n => n[0]).join('') : member.email[0].toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1">
+                          <p className={cn("text-sm font-semibold truncate", isSelected ? "text-blue-900" : "text-gray-800")}>
+                            {member.name || 'Unnamed User'}
+                          </p>
+                          <span className="text-xs text-gray-400 shrink-0">{totalTasks}t</span>
+                        </div>
+                        <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden mt-1">
+                          <div
+                            className={cn("h-full rounded-full", workload >= 80 ? "bg-red-400" : workload >= 50 ? "bg-amber-400" : "bg-green-400")}
+                            style={{ width: `${Math.min(workload, 100)}%` }}
+                          />
                         </div>
                       </div>
                     </button>
@@ -599,50 +560,27 @@ export default function MemberManagementPage() {
             const profileActive = profileStats?.taskCounts?.inProgress ?? 0
             if (!profileMember) return null
             return (
-              <Card className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden shrink-0">
-                <CardContent className="p-5">
-                  <div className="flex items-center gap-5">
-                    <Avatar className="h-14 w-14 shrink-0">
-                      <AvatarImage src={profileMember.image} />
-                      <AvatarFallback className="bg-blue-100 text-blue-700 text-lg font-bold">
-                        {profileMember.name ? profileMember.name.split(' ').map(n => n[0]).join('') : profileMember.email[0].toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <h2 className="text-xl font-bold text-gray-900 leading-tight">{profileMember.name || 'Unnamed User'}</h2>
-                      <p className="text-sm text-gray-500 truncate">{profileMember.email}</p>
-                      <div className="flex items-center gap-2 mt-2 flex-wrap">
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-xs font-semibold text-blue-700">
-                          <Activity className="h-3 w-3" />
-                          {profileActive} Active Task{profileActive !== 1 ? 's' : ''}
-                        </span>
-                        <span className={cn(
-                          "inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-semibold",
-                          profileWorkload >= 80
-                            ? "bg-red-50 border-red-200 text-red-700"
-                            : profileWorkload >= 50
-                            ? "bg-amber-50 border-amber-200 text-amber-700"
-                            : "bg-green-50 border-green-200 text-green-700"
-                        )}>
-                          <BarChart3 className="h-3 w-3" />
-                          {profileWorkload}% Workload
-                        </span>
-                        <span className={cn(
-                          "inline-flex items-center h-2 w-2 rounded-full shrink-0",
-                          profileWorkload >= 80 ? "bg-red-400" : profileWorkload >= 50 ? "bg-amber-400" : "bg-green-400"
-                        )} />
-                      </div>
-                    </div>
-                    <Button
-                      className="shrink-0"
-                      onClick={() => setIsCreateTaskDialogOpen(true)}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Assign Task to {profileMember.name?.split(' ')[0] || 'Member'}
-                    </Button>
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-5 py-3 flex items-center gap-4 shrink-0">
+                <Avatar className="h-10 w-10 shrink-0">
+                  <AvatarImage src={profileMember.image} />
+                  <AvatarFallback className="bg-blue-100 text-blue-700 text-sm font-bold">
+                    {profileMember.name ? profileMember.name.split(' ').map(n => n[0]).join('') : profileMember.email[0].toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="text-base font-bold text-gray-900 truncate">{profileMember.name || 'Unnamed User'}</p>
+                  <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
+                    <span className="flex items-center gap-1"><Activity className="h-3 w-3" />{profileActive} active</span>
+                    <span className={cn("flex items-center gap-1 font-semibold", profileWorkload >= 80 ? "text-red-500" : profileWorkload >= 50 ? "text-amber-500" : "text-green-600")}>
+                      <BarChart3 className="h-3 w-3" />{profileWorkload}% workload
+                    </span>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+                <Button size="sm" onClick={() => setIsCreateTaskDialogOpen(true)}>
+                  <Plus className="h-3.5 w-3.5 mr-1.5" />
+                  Assign Task
+                </Button>
+              </div>
             )
           })()}
 
@@ -735,13 +673,13 @@ export default function MemberManagementPage() {
                         )}
                         onClick={() => setViewingTask(task)}
                       >
-                        <div className="p-5">
+                        <div className="p-4">
                           {/* Row 1: Title + menu */}
                           <div className="flex items-start justify-between gap-3 mb-2">
                             <div className="flex-1 min-w-0">
-                              <h4 className="text-base font-semibold text-gray-900 leading-snug">{task.title}</h4>
+                              <h4 className="text-sm font-semibold text-gray-900 leading-snug">{task.title}</h4>
                               {task.description && (
-                                <p className="text-sm text-gray-500 mt-1 line-clamp-2">{task.description}</p>
+                                <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{task.description}</p>
                               )}
                             </div>
                             <DropdownMenu>
@@ -773,77 +711,52 @@ export default function MemberManagementPage() {
                             </DropdownMenu>
                           </div>
 
-                          {/* Row 2: Badges */}
-                          <div className="flex items-center gap-2 flex-wrap mb-3">
-                            <Badge className={cn("text-xs border font-medium", getPriorityColor(task.priority))}>
-                              {task.priority}
-                            </Badge>
-                            <Badge className={cn("text-xs border font-medium", getStatusColor(task.status))}>
-                              {task.status.replace(/_/g, ' ')}
-                            </Badge>
-                            {task.taskType && (
-                              <Badge variant="outline" className="text-xs text-gray-600 border-gray-200">
-                                {task.taskType === 'INDIVIDUAL' ? 'Individual' : task.taskType === 'TEAM' ? 'Team' : 'Collaboration'}
+                          {/* Badges + meta row */}
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <Badge className={cn("text-[10px] px-1.5 h-5 border", getPriorityColor(task.priority))}>
+                                {task.priority}
                               </Badge>
-                            )}
-                            {task.team && (
-                              <Badge variant="outline" className="text-xs text-gray-600 border-gray-200">
-                                <Users className="h-3 w-3 mr-1" />{task.team.name}
+                              <Badge className={cn("text-[10px] px-1.5 h-5 border", getStatusColor(task.status))}>
+                                {task.status.replace(/_/g, ' ')}
                               </Badge>
-                            )}
-                            {isOverdue && (
-                              <Badge className="text-xs bg-red-50 text-red-600 border border-red-200">
-                                <AlertTriangle className="h-3 w-3 mr-1" /> Overdue
-                              </Badge>
-                            )}
-                          </div>
-
-                          {/* Row 3: Progress bar */}
-                          {progress > 0 && (
-                            <div className="mb-3">
-                              <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-                                <span>Progress</span>
-                                <span className="font-medium">{progress}%</span>
-                              </div>
-                              <div className="h-2 w-full rounded-full bg-gray-100 overflow-hidden">
-                                <div
-                                  className={cn("h-full rounded-full transition-all", progress >= 75 ? "bg-green-500" : progress >= 40 ? "bg-blue-500" : "bg-amber-500")}
-                                  style={{ width: `${progress}%` }}
-                                />
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Row 4: Due date + assignee */}
-                          <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                            <div className="flex items-center gap-3 text-sm text-gray-500">
-                              {task.dueDate ? (
-                                <span className={cn("flex items-center gap-1", isOverdue ? "text-red-500 font-medium" : "")}>
-                                  <Clock className="h-3.5 w-3.5" />
-                                  Due {format(new Date(task.dueDate), 'MMM d, yyyy')}
-                                </span>
-                              ) : (
-                                <span className="flex items-center gap-1 text-gray-400 text-xs">
-                                  <Clock className="h-3.5 w-3.5" /> No due date
+                              {isOverdue && (
+                                <Badge className="text-[10px] px-1.5 h-5 bg-red-50 text-red-600 border border-red-200">
+                                  Overdue
+                                </Badge>
+                              )}
+                              {task.dueDate && (
+                                <span className={cn("text-xs flex items-center gap-1", isOverdue ? "text-red-500 font-medium" : "text-gray-400")}>
+                                  <Clock className="h-3 w-3" />
+                                  {format(new Date(task.dueDate), 'MMM d, yyyy')}
                                 </span>
                               )}
                             </div>
                             {task.assignee && (
-                              <div className="flex items-center gap-2">
-                                <Avatar className="h-7 w-7">
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <Avatar className="h-6 w-6">
                                   <AvatarImage src={task.assignee.image || undefined} />
-                                  <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-bold">
-                                    {task.assignee.name
-                                      ? task.assignee.name.split(' ').map(n => n[0]).join('')
-                                      : task.assignee.email[0].toUpperCase()}
+                                  <AvatarFallback className="bg-blue-100 text-blue-700 text-[10px] font-bold">
+                                    {task.assignee.name ? task.assignee.name.split(' ').map(n => n[0]).join('') : task.assignee.email[0].toUpperCase()}
                                   </AvatarFallback>
                                 </Avatar>
-                                <span className="text-sm text-gray-600 font-medium truncate max-w-[140px]">
+                                <span className="text-xs text-gray-500 truncate max-w-[120px]">
                                   {task.assignee.name || task.assignee.email}
                                 </span>
                               </div>
                             )}
                           </div>
+                          {/* Progress bar */}
+                          {progress > 0 && (
+                            <div className="mt-2">
+                              <div className="flex items-center justify-between text-[10px] text-gray-400 mb-0.5">
+                                <span>Progress</span><span>{progress}%</span>
+                              </div>
+                              <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden">
+                                <div className={cn("h-full rounded-full", progress >= 75 ? "bg-green-500" : progress >= 40 ? "bg-blue-500" : "bg-amber-500")} style={{ width: `${progress}%` }} />
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )

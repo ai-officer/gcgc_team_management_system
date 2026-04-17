@@ -450,94 +450,134 @@ export default function MemberManagementPage() {
         </Card>
       </div>
 
-      {/* Main Content — equal-height flex row */}
-      <div className="flex gap-4 items-stretch min-h-[600px]">
+      {/* Main Content — fixed left column + flex right panel */}
+      <div className="flex gap-5 items-stretch min-h-[600px]">
 
         {/* ── Team Members Sidebar ── */}
-        <div className="w-72 shrink-0 flex flex-col">
+        <div className="w-[320px] shrink-0 flex flex-col">
           <Card className="flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            {/* Header */}
-            <div className="px-5 py-4 border-b border-gray-100">
+            {/* Column Header */}
+            <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/60">
               <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2.5">
                   <div className="p-2 bg-blue-50 rounded-lg">
                     <UserCheck className="h-4 w-4 text-blue-600" />
                   </div>
                   <div>
-                    <h2 className="text-base font-semibold text-gray-900">Team Members</h2>
-                    <p className="text-xs text-gray-400">{teamMembers.length} member{teamMembers.length !== 1 ? 's' : ''}</p>
+                    <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Team</h2>
                   </div>
                 </div>
+                <span className="inline-flex items-center justify-center h-6 min-w-[24px] px-2 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">
+                  {teamMembers.length}
+                </span>
               </div>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
                 <Input
                   placeholder="Search members..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 border-gray-200 rounded-lg bg-gray-50 focus:bg-white text-sm"
+                  className="pl-9 border-gray-200 rounded-lg bg-white focus:bg-white text-sm h-9"
                 />
               </div>
             </div>
 
-            {/* Scrollable list */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-1">
-              {/* All Members */}
+            {/* Scrollable member cards */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+
+              {/* All Members card */}
               <button
                 className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors",
-                  !selectedMember ? 'bg-blue-50 border border-blue-200' : 'hover:bg-gray-50 border border-transparent'
+                  "w-full text-left rounded-xl border transition-all duration-150 p-3.5",
+                  !selectedMember
+                    ? 'bg-blue-50 border-blue-300 shadow-sm'
+                    : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm'
                 )}
                 onClick={() => setSelectedMember('')}
               >
-                <div className={cn("p-2 rounded-lg shrink-0", !selectedMember ? 'bg-blue-100' : 'bg-gray-100')}>
-                  <Users className={cn("h-4 w-4", !selectedMember ? 'text-blue-600' : 'text-gray-500')} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className={cn("text-sm font-semibold", !selectedMember ? 'text-blue-900' : 'text-gray-700')}>All Members</p>
-                  <p className="text-xs text-gray-400">{teamStats.totalTasks} total tasks</p>
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "h-12 w-12 rounded-full flex items-center justify-center shrink-0",
+                    !selectedMember ? 'bg-blue-200' : 'bg-gray-100'
+                  )}>
+                    <Users className={cn("h-5 w-5", !selectedMember ? 'text-blue-700' : 'text-gray-500')} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={cn("text-base font-semibold", !selectedMember ? 'text-blue-900' : 'text-gray-800')}>
+                      All Members
+                    </p>
+                    <p className="text-sm text-gray-500 truncate">{teamStats.totalTasks} total tasks</p>
+                  </div>
+                  {!selectedMember && (
+                    <div className="h-2 w-2 rounded-full bg-blue-500 shrink-0" />
+                  )}
                 </div>
               </button>
 
               {filteredMembers.length === 0 ? (
-                <p className="text-center text-gray-400 py-6 text-sm">
+                <p className="text-center text-gray-400 py-8 text-sm">
                   {searchTerm ? 'No members match your search' : 'No members found'}
                 </p>
               ) : (
                 filteredMembers.map((member) => {
                   const stats = memberSuggestions.find(s => s.id === member.id)
                   const workload = stats?.workloadPercentage ?? 0
-                  const total = stats?.taskCounts?.total ?? member._count?.assignedTasks ?? 0
+                  const activeTasks = stats?.taskCounts?.inProgress ?? 0
+                  const totalTasks = stats?.taskCounts?.total ?? member._count?.assignedTasks ?? 0
                   const isSelected = selectedMember === member.id
                   return (
                     <button
                       key={member.id}
                       className={cn(
-                        "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors border",
-                        isSelected ? 'bg-blue-50 border-blue-200' : 'border-transparent hover:bg-gray-50 hover:border-gray-200'
+                        "w-full text-left rounded-xl border transition-all duration-150 p-3.5",
+                        isSelected
+                          ? 'bg-blue-50 border-blue-300 shadow-sm'
+                          : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm'
                       )}
                       onClick={() => setSelectedMember(isSelected ? '' : member.id)}
                     >
-                      <Avatar className="h-9 w-9 shrink-0">
-                        <AvatarImage src={member.image} />
-                        <AvatarFallback className={cn("text-xs font-bold", isSelected ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-600")}>
-                          {member.name ? member.name.split(' ').map(n => n[0]).join('') : member.email[0].toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className={cn("text-sm font-semibold truncate", isSelected ? "text-blue-900" : "text-gray-800")}>
-                          {member.name || 'Unnamed User'}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <div className="h-1.5 flex-1 rounded-full bg-gray-100 overflow-hidden">
-                            <div
-                              className={cn("h-full rounded-full transition-all", workload >= 80 ? "bg-red-400" : workload >= 50 ? "bg-amber-400" : "bg-green-400")}
-                              style={{ width: `${Math.min(workload, 100)}%` }}
-                            />
+                      <div className="flex items-start gap-3">
+                        <Avatar className="h-12 w-12 shrink-0">
+                          <AvatarImage src={member.image} />
+                          <AvatarFallback className={cn(
+                            "text-sm font-bold",
+                            isSelected ? "bg-blue-200 text-blue-800" : "bg-gray-100 text-gray-600"
+                          )}>
+                            {member.name ? member.name.split(' ').map(n => n[0]).join('') : member.email[0].toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1 mb-0.5">
+                            <p className={cn("text-base font-semibold truncate", isSelected ? "text-blue-900" : "text-gray-900")}>
+                              {member.name || 'Unnamed User'}
+                            </p>
+                            <span className={cn(
+                              "text-xs font-semibold shrink-0 px-1.5 py-0.5 rounded-full",
+                              activeTasks > 0
+                                ? "bg-blue-100 text-blue-700"
+                                : "bg-gray-100 text-gray-500"
+                            )}>
+                              {totalTasks}
+                            </span>
                           </div>
-                          <span className={cn("text-xs font-medium shrink-0", workload >= 80 ? "text-red-500" : workload >= 50 ? "text-amber-500" : "text-green-600")}>
-                            {total} task{total !== 1 ? 's' : ''}
-                          </span>
+                          <p className="text-sm text-gray-500 truncate mb-2">{member.email}</p>
+                          <div className="space-y-1">
+                            <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden">
+                              <div
+                                className={cn(
+                                  "h-full rounded-full transition-all duration-300",
+                                  workload >= 80 ? "bg-red-400" : workload >= 50 ? "bg-amber-400" : "bg-green-400"
+                                )}
+                                style={{ width: `${Math.min(workload, 100)}%` }}
+                              />
+                            </div>
+                            <p className={cn(
+                              "text-xs font-medium",
+                              workload >= 80 ? "text-red-500" : workload >= 50 ? "text-amber-500" : "text-green-600"
+                            )}>
+                              {workload}% workload
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </button>
@@ -548,27 +588,79 @@ export default function MemberManagementPage() {
           </Card>
         </div>
 
-        {/* ── Task Panel ── */}
-        <div className="flex-1 min-w-0 flex flex-col">
+        {/* ── Right Panel ── */}
+        <div className="flex-1 min-w-0 flex flex-col gap-4">
+
+          {/* Selected Member Profile Strip */}
+          {selectedMember && (() => {
+            const profileMember = teamMembers.find(m => m.id === selectedMember)
+            const profileStats = memberSuggestions.find(s => s.id === selectedMember)
+            const profileWorkload = profileStats?.workloadPercentage ?? 0
+            const profileActive = profileStats?.taskCounts?.inProgress ?? 0
+            if (!profileMember) return null
+            return (
+              <Card className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden shrink-0">
+                <CardContent className="p-5">
+                  <div className="flex items-center gap-5">
+                    <Avatar className="h-14 w-14 shrink-0">
+                      <AvatarImage src={profileMember.image} />
+                      <AvatarFallback className="bg-blue-100 text-blue-700 text-lg font-bold">
+                        {profileMember.name ? profileMember.name.split(' ').map(n => n[0]).join('') : profileMember.email[0].toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <h2 className="text-xl font-bold text-gray-900 leading-tight">{profileMember.name || 'Unnamed User'}</h2>
+                      <p className="text-sm text-gray-500 truncate">{profileMember.email}</p>
+                      <div className="flex items-center gap-2 mt-2 flex-wrap">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-xs font-semibold text-blue-700">
+                          <Activity className="h-3 w-3" />
+                          {profileActive} Active Task{profileActive !== 1 ? 's' : ''}
+                        </span>
+                        <span className={cn(
+                          "inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-semibold",
+                          profileWorkload >= 80
+                            ? "bg-red-50 border-red-200 text-red-700"
+                            : profileWorkload >= 50
+                            ? "bg-amber-50 border-amber-200 text-amber-700"
+                            : "bg-green-50 border-green-200 text-green-700"
+                        )}>
+                          <BarChart3 className="h-3 w-3" />
+                          {profileWorkload}% Workload
+                        </span>
+                        <span className={cn(
+                          "inline-flex items-center h-2 w-2 rounded-full shrink-0",
+                          profileWorkload >= 80 ? "bg-red-400" : profileWorkload >= 50 ? "bg-amber-400" : "bg-green-400"
+                        )} />
+                      </div>
+                    </div>
+                    <Button
+                      className="shrink-0"
+                      onClick={() => setIsCreateTaskDialogOpen(true)}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Assign Task to {profileMember.name?.split(' ')[0] || 'Member'}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })()}
+
+          {/* Task Panel */}
           <Card className="flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            {/* Header */}
+            {/* Task area header */}
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-50 rounded-lg">
-                  <Target className="h-4 w-4 text-blue-600" />
-                </div>
-                <div>
-                  <h2 className="text-base font-semibold text-gray-900">
-                    {selectedMember
-                      ? `${teamMembers.find(m => m.id === selectedMember)?.name || 'Member'}'s Tasks`
-                      : 'All Team Tasks'
-                    }
-                  </h2>
-                  <p className="text-xs text-gray-400">
-                    {filteredTasks.length} task{filteredTasks.length !== 1 ? 's' : ''}
-                    {statusFilter !== 'all' ? ` · filtered by ${statusFilter.replace('_', ' ')}` : ' · all statuses'}
-                  </p>
-                </div>
+              <div>
+                <h2 className="text-base font-semibold text-gray-900">
+                  {selectedMember
+                    ? `${teamMembers.find(m => m.id === selectedMember)?.name || 'Member'}'s Tasks`
+                    : 'All Team Tasks'
+                  }
+                </h2>
+                <p className="text-xs text-gray-400">
+                  {filteredTasks.length} task{filteredTasks.length !== 1 ? 's' : ''}
+                  {statusFilter !== 'all' ? ` · filtered by ${statusFilter.replace('_', ' ')}` : ' · all statuses'}
+                </p>
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
@@ -635,17 +727,14 @@ export default function MemberManagementPage() {
                     return (
                       <div
                         key={task.id}
-                        className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all group cursor-pointer"
+                        className={cn(
+                          "bg-white rounded-xl border border-gray-200 border-l-4 shadow-sm hover:shadow-md transition-all group cursor-pointer",
+                          task.status === 'COMPLETED' ? "border-l-green-400" :
+                          task.status === 'IN_PROGRESS' ? "border-l-blue-400" :
+                          task.status === 'IN_REVIEW' ? "border-l-amber-400" : "border-l-gray-300"
+                        )}
                         onClick={() => setViewingTask(task)}
                       >
-                        {/* Status accent bar */}
-                        <div className={cn(
-                          "h-1 rounded-t-xl",
-                          task.status === 'COMPLETED' ? "bg-green-400" :
-                          task.status === 'IN_PROGRESS' ? "bg-blue-400" :
-                          task.status === 'IN_REVIEW' ? "bg-amber-400" : "bg-gray-200"
-                        )} />
-
                         <div className="p-5">
                           {/* Row 1: Title + menu */}
                           <div className="flex items-start justify-between gap-3 mb-2">
@@ -694,7 +783,7 @@ export default function MemberManagementPage() {
                             </Badge>
                             {task.taskType && (
                               <Badge variant="outline" className="text-xs text-gray-600 border-gray-200">
-                                {task.taskType === 'INDIVIDUAL' ? '👤 Individual' : task.taskType === 'TEAM' ? '👥 Team' : '🤝 Collaboration'}
+                                {task.taskType === 'INDIVIDUAL' ? 'Individual' : task.taskType === 'TEAM' ? 'Team' : 'Collaboration'}
                               </Badge>
                             )}
                             {task.team && (

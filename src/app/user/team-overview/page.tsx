@@ -16,7 +16,6 @@ import {
   Eye,
   Filter,
   Activity,
-  Target,
   Award
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -754,20 +753,17 @@ export default function TeamOverviewPage() {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Professional Header */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-slate-50 to-purple-50 opacity-60"></div>
-        <div className="relative backdrop-blur-sm bg-white/40 border border-slate-200/60 rounded-xl shadow-sm p-8">
-          <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-start">
-            <div className="space-y-3">
-              <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Team Overview</h1>
-              <p className="text-slate-600 text-base font-medium max-w-2xl">
-                Manage your team members, track performance, and collaborate effectively
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <CreateTaskButton size="sm" onTaskCreated={fetchTeamData} />
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Team Overview</h1>
+          <p className="text-sm text-gray-600 mt-1">
+            {session?.user?.name ? `${session.user.name}'s Team` : 'Your Team'}
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <CreateTaskButton size="sm" onTaskCreated={fetchTeamData} />
           <Dialog open={isAddMemberDialogOpen} onOpenChange={handleDialogOpenChange}>
             <DialogTrigger asChild>
               <Button className="shadow-sm">
@@ -1978,255 +1974,191 @@ export default function TeamOverviewPage() {
               </div>
             </DialogContent>
           </Dialog>
+        </div>
+      </div>
+
+      {/* Team Stats */}
+      {teamStats && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm text-gray-600 font-medium">Total Members</p>
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <Users className="h-4 w-4 text-blue-600" />
+              </div>
             </div>
+            <p className="text-3xl font-bold text-gray-900">{teamStats.totalMembers}</p>
+            <p className="text-xs text-gray-500 mt-1">Active in team</p>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm text-gray-600 font-medium">Active Tasks</p>
+              <div className="p-2 bg-purple-50 rounded-lg">
+                <Activity className="h-4 w-4 text-purple-600" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900">{teamStats.activeTasks}</p>
+            <p className="text-xs text-gray-500 mt-1">In progress</p>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm text-gray-600 font-medium">Completed</p>
+              <div className="p-2 bg-emerald-50 rounded-lg">
+                <Award className="h-4 w-4 text-emerald-600" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900">{teamStats.completedTasks}</p>
+            <p className="text-xs text-gray-500 mt-1">Tasks finished</p>
+          </div>
+
+          <div className={cn(
+            "bg-white rounded-xl shadow-sm border p-5",
+            teamStats.overdueTasks > 0 ? "border-red-200 bg-red-50" : "border-gray-100"
+          )}>
+            <div className="flex items-center justify-between mb-3">
+              <p className={cn("text-sm font-medium", teamStats.overdueTasks > 0 ? "text-red-700" : "text-gray-600")}>
+                Overdue
+              </p>
+              <div className={cn("p-2 rounded-lg", teamStats.overdueTasks > 0 ? "bg-red-100" : "bg-gray-50")}>
+                <AlertCircle className={cn("h-4 w-4", teamStats.overdueTasks > 0 ? "text-red-600" : "text-gray-400")} />
+              </div>
+            </div>
+            <p className={cn("text-3xl font-bold", teamStats.overdueTasks > 0 ? "text-red-600" : "text-gray-400")}>
+              {teamStats.overdueTasks}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              {teamStats.overdueTasks > 0 ? 'Need attention' : 'All clear'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Filter / Search Bar */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Search by name, email, or position..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 border-gray-200 focus:border-blue-500"
+            />
+          </div>
+
+          <div className="flex gap-2">
+            <Select value={filterStatus} onValueChange={(value: FilterStatus) => setFilterStatus(value)}>
+              <SelectTrigger className="w-[160px] border-gray-200">
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-gray-400" />
+                  <SelectValue placeholder="Filter" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Members</SelectItem>
+                <SelectItem value="active">Active Only</SelectItem>
+                <SelectItem value="inactive">Inactive Only</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="border-gray-200">
+                  <Users className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>View Mode</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setViewMode('grid')} className="cursor-pointer">
+                  Grid View
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setViewMode('list')} className="cursor-pointer">
+                  List View
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
 
-      {/* Professional Team Stats */}
-      {teamStats && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl hover:-translate-y-1">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-blue-600"></div>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Team Members</CardTitle>
-              <div className="p-2.5 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
-                <Users className="h-5 w-5 text-blue-600" />
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-baseline gap-2">
-                <div className="text-4xl font-bold text-slate-900">{teamStats.totalMembers}</div>
-                <span className="text-sm text-slate-500 font-medium">members</span>
-              </div>
-              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                <span className="text-xs text-slate-500">Active in team</span>
-                <Users className="h-4 w-4 text-blue-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl hover:-translate-y-1">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-purple-600"></div>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Active Tasks</CardTitle>
-              <div className="p-2.5 bg-purple-50 rounded-lg group-hover:bg-purple-100 transition-colors">
-                <Activity className="h-5 w-5 text-purple-600" />
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-baseline gap-2">
-                <div className="text-4xl font-bold text-slate-900">{teamStats.activeTasks}</div>
-                <span className="text-sm text-slate-500 font-medium">tasks</span>
-              </div>
-              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                <span className="text-xs text-slate-500">In progress</span>
-                <Activity className="h-4 w-4 text-purple-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl hover:-translate-y-1">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-emerald-600"></div>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Completed</CardTitle>
-              <div className="p-2.5 bg-emerald-50 rounded-lg group-hover:bg-emerald-100 transition-colors">
-                <Award className="h-5 w-5 text-emerald-600" />
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-baseline gap-2">
-                <div className="text-4xl font-bold text-slate-900">{teamStats.completedTasks}</div>
-                <span className="text-sm text-slate-500 font-medium">done</span>
-              </div>
-              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                <span className="text-xs text-slate-500">Tasks finished</span>
-                <Award className="h-4 w-4 text-emerald-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className={`group relative overflow-hidden border transition-all duration-300 rounded-xl ${
-            teamStats.overdueTasks > 0
-              ? 'border-red-200 bg-red-50 hover:shadow-lg cursor-pointer hover:-translate-y-1'
-              : 'border-slate-200 bg-white hover:shadow-md'
-          }`}>
-            <div className={`absolute top-0 left-0 w-full h-1 ${
-              teamStats.overdueTasks > 0
-                ? 'bg-gradient-to-r from-red-500 to-red-600'
-                : 'bg-gradient-to-r from-slate-300 to-slate-400'
-            }`}></div>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className={`text-sm font-semibold uppercase tracking-wide ${
-                teamStats.overdueTasks > 0 ? 'text-red-700' : 'text-slate-600'
-              }`}>
-                Overdue
-              </CardTitle>
-              <div className={`p-2.5 rounded-lg group-hover:scale-110 transition-transform ${
-                teamStats.overdueTasks > 0 ? 'bg-red-100' : 'bg-slate-100'
-              }`}>
-                <AlertCircle className={`h-5 w-5 ${teamStats.overdueTasks > 0 ? 'text-red-600' : 'text-slate-500'}`} />
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-baseline gap-2">
-                <div className={`text-4xl font-bold ${
-                  teamStats.overdueTasks > 0 ? 'text-red-600' : 'text-slate-400'
-                }`}>
-                  {teamStats.overdueTasks}
-                </div>
-                <span className="text-sm text-slate-500 font-medium">tasks</span>
-              </div>
-              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                <span className="text-xs text-slate-500">
-                  {teamStats.overdueTasks > 0 ? 'Need attention' : 'All clear'}
-                </span>
-                {teamStats.overdueTasks === 0 && (
-                  <span className="text-lg">✓</span>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Professional Filters & Search */}
-      <Card className="border border-slate-200 bg-white shadow-sm rounded-xl">
-        <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input
-                placeholder="Search by name, email, or position..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 border-slate-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg"
-              />
-            </div>
-
-            <div className="flex gap-3">
-              <Select value={filterStatus} onValueChange={(value: FilterStatus) => setFilterStatus(value)}>
-                <SelectTrigger className="w-[180px] border-slate-200 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4" />
-                    <SelectValue placeholder="Filter status" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent className="rounded-lg">
-                  <SelectItem value="all">All Members</SelectItem>
-                  <SelectItem value="active">Active Only</SelectItem>
-                  <SelectItem value="inactive">Inactive Only</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" className="border-slate-200 rounded-lg hover:bg-slate-50">
-                    <Users className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="rounded-lg">
-                  <DropdownMenuLabel className="font-semibold">View Mode</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setViewMode('grid')} className="cursor-pointer">
-                    Grid View
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setViewMode('list')} className="cursor-pointer">
-                    List View
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Professional Team Members Grid/List */}
+      {/* Team Members */}
       {filteredMembers.length === 0 ? (
-        <Card className="border border-slate-200 bg-white shadow-sm rounded-xl">
-          <CardContent className="py-12">
-            <div className="text-center">
-              <Users className="h-16 w-16 text-slate-400 mx-auto mb-4 opacity-50" />
-              <h3 className="text-lg font-semibold mb-2 text-slate-900">
-                {searchTerm || filterStatus !== 'all' ? 'No members match your filters' : 'No team members yet'}
-              </h3>
-              <p className="text-slate-600 mb-6">
-                {searchTerm || filterStatus !== 'all'
-                  ? 'Try adjusting your search or filters'
-                  : 'Start building your team by adding members'}
-              </p>
-              {!searchTerm && filterStatus === 'all' && (
-                <Button onClick={() => setIsAddMemberDialogOpen(true)} className="rounded-lg bg-blue-600 hover:bg-blue-700">
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Add First Member
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 py-12">
+          <div className="text-center">
+            <Users className="h-14 w-14 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+              {searchTerm || filterStatus !== 'all' ? 'No members match your filters' : 'No team members yet'}
+            </h3>
+            <p className="text-sm text-gray-600 mb-5">
+              {searchTerm || filterStatus !== 'all'
+                ? 'Try adjusting your search or filters'
+                : 'Start building your team by adding members'}
+            </p>
+            {!searchTerm && filterStatus === 'all' && (
+              <Button onClick={() => setIsAddMemberDialogOpen(true)}>
+                <UserPlus className="h-4 w-4 mr-2" />
+                Add First Member
+              </Button>
+            )}
+          </div>
+        </div>
       ) : (
         <div className={cn(
           viewMode === 'grid'
-            ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-            : "space-y-4"
+            ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+            : "space-y-3"
         )}>
           {filteredMembers.map((member) => (
-            <Card
+            <div
               key={member.id}
               className={cn(
-                "border border-slate-200 bg-white hover:shadow-md hover:border-slate-300 transition-all duration-200 group rounded-xl",
-                viewMode === 'grid' && "hover:-translate-y-1"
+                "bg-white rounded-xl shadow-sm border border-gray-100 group",
+                viewMode === 'list' && "flex items-center gap-4 px-5 py-4"
               )}
             >
-              <CardContent className={cn(
-                "p-6 relative",
-                viewMode === 'list' && "flex items-center justify-between"
-              )}>
-                {/* Dropdown Menu - Positioned at top-right */}
-                <div className="absolute top-4 right-4 z-10">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-slate-100 rounded-lg"
-                      >
-                        <MoreHorizontal className="h-4 w-4 text-slate-600" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="border border-slate-200 rounded-lg shadow-lg z-50">
-                    <DropdownMenuItem onClick={() => handleViewProfile(member.id)} className="rounded-md cursor-pointer">
-                      <Eye className="h-4 w-4 mr-2 text-slate-600" />
-                      View Profile
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleAssignTask(member.id)} className="rounded-md cursor-pointer">
-                      <CheckSquare className="h-4 w-4 mr-2 text-slate-600" />
-                      Assign Task
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      className="text-red-600 focus:text-red-600 rounded-md cursor-pointer"
-                      onClick={() => handleRemoveMember(member.id)}
-                    >
-                      <Users className="h-4 w-4 mr-2" />
-                      Remove from Team
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                </div>
+              {viewMode === 'grid' ? (
+                /* Grid card */
+                <div className="p-5 relative">
+                  {/* Actions menu */}
+                  <div className="absolute top-3 right-3">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <MoreHorizontal className="h-4 w-4 text-gray-500" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleViewProfile(member.id)} className="cursor-pointer">
+                          <Eye className="h-4 w-4 mr-2" />
+                          View Profile
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleAssignTask(member.id)} className="cursor-pointer">
+                          <CheckSquare className="h-4 w-4 mr-2" />
+                          Assign Task
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-red-600 focus:text-red-600 cursor-pointer"
+                          onClick={() => handleRemoveMember(member.id)}
+                        >
+                          Remove from Team
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
 
-                {/* Member Details */}
-                <div className={cn(
-                  "flex items-center gap-4",
-                  viewMode === 'grid' ? "flex-col text-center" : "flex-row"
-                )}>
-                  <div className="relative">
-                    <Avatar className={cn(
-                      "ring-2 ring-slate-200 group-hover:ring-blue-400 transition-all rounded-lg",
-                      viewMode === 'grid' ? "h-20 w-20" : "h-12 w-12"
-                    )}>
+                  {/* Avatar */}
+                  <div className="relative inline-block">
+                    <Avatar className="h-14 w-14">
                       <AvatarImage src={member.image || undefined} />
-                      <AvatarFallback className="bg-blue-100 text-blue-700 font-bold rounded-lg">
+                      <AvatarFallback className="bg-blue-100 text-blue-700 font-semibold text-lg">
                         {member.name
                           ? member.name.split(' ').map(n => n[0]).join('').slice(0, 2)
                           : member.email?.[0]?.toUpperCase()
@@ -2234,68 +2166,118 @@ export default function TeamOverviewPage() {
                       </AvatarFallback>
                     </Avatar>
                     <div className={cn(
-                      "absolute rounded-full border-2 border-white",
-                      member.isActive ? "bg-emerald-500" : "bg-slate-400",
-                      viewMode === 'grid' ? "w-5 h-5 -bottom-1 -right-1" : "w-3 h-3 -bottom-0.5 -right-0.5"
+                      "absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white",
+                      member.isActive ? "bg-green-500" : "bg-gray-400"
                     )} />
                   </div>
 
-                  <div className={cn(
-                    "space-y-1 min-w-0",
-                    viewMode === 'grid' && "flex-1 w-full"
-                  )}>
-                    <div className={cn(
-                      "flex items-center gap-2",
-                      viewMode === 'grid' && "justify-center"
+                  {/* Name & Role */}
+                  <h4 className="font-semibold text-gray-900 mt-3 truncate">{member.name || 'Unnamed User'}</h4>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <span className={cn(
+                      "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium",
+                      member.role === 'LEADER'
+                        ? "bg-purple-50 text-purple-700"
+                        : member.role === 'ADMIN'
+                        ? "bg-red-50 text-red-700"
+                        : "bg-blue-50 text-blue-700"
                     )}>
-                      <h4 className={cn(
-                        "font-semibold text-slate-900 truncate",
-                        viewMode === 'grid' ? "text-lg" : "text-base"
-                      )}>
-                        {member.name || 'Unnamed User'}
-                      </h4>
-                      <Badge
-                        variant="secondary"
-                        className={cn(
-                          "text-xs rounded-md font-medium",
-                          member.isActive
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                            : "bg-slate-100 text-slate-600 border-slate-200"
-                        )}
-                      >
-                        {member.isActive ? 'Active' : 'Inactive'}
-                      </Badge>
-                    </div>
-
-                    <div className={cn(
-                      "flex items-center gap-3 text-xs text-slate-600 font-medium",
-                      viewMode === 'grid' ? "flex-col" : "flex-row"
-                    )}>
-                      <div className="flex items-center gap-1">
-                        <Mail className="h-3 w-3 text-slate-400" />
-                        <span className="truncate">{member.email}</span>
-                      </div>
-                      {member.positionTitle && (
-                        <div className="flex items-center gap-1">
-                          <Target className="h-3 w-3 text-slate-400" />
-                          <span>{member.positionTitle}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {member._count && (
-                      <div className={cn(
-                        "flex items-center gap-1 text-xs text-slate-600 font-medium",
-                        viewMode === 'grid' && "justify-center"
-                      )}>
-                        <CheckSquare className="h-3 w-3 text-slate-400" />
-                        <span>{member._count.assignedTasks} tasks assigned</span>
-                      </div>
-                    )}
+                      {member.role}
+                    </span>
                   </div>
+                  <p className="text-sm text-gray-500 mt-1.5 truncate">{member.email}</p>
+
+                  {/* Footer */}
+                  {member._count !== undefined && (
+                    <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between">
+                      <span className="text-xs text-gray-500">{member._count.assignedTasks} tasks assigned</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2"
+                        onClick={() => handleViewProfile(member.id)}
+                      >
+                        View Profile
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
+              ) : (
+                /* List row */
+                <>
+                  <div className="relative flex-shrink-0">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={member.image || undefined} />
+                      <AvatarFallback className="bg-blue-100 text-blue-700 font-semibold">
+                        {member.name
+                          ? member.name.split(' ').map(n => n[0]).join('').slice(0, 2)
+                          : member.email?.[0]?.toUpperCase()
+                        }
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className={cn(
+                      "absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white",
+                      member.isActive ? "bg-green-500" : "bg-gray-400"
+                    )} />
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-gray-900 truncate">{member.name || 'Unnamed User'}</p>
+                    <p className="text-sm text-gray-500 truncate">{member.email}</p>
+                  </div>
+
+                  <span className={cn(
+                    "hidden sm:inline-flex items-center px-2 py-0.5 rounded text-xs font-medium flex-shrink-0",
+                    member.role === 'LEADER'
+                      ? "bg-purple-50 text-purple-700"
+                      : member.role === 'ADMIN'
+                      ? "bg-red-50 text-red-700"
+                      : "bg-blue-50 text-blue-700"
+                  )}>
+                    {member.role}
+                  </span>
+
+                  {member._count !== undefined && (
+                    <span className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-blue-50 text-blue-700 flex-shrink-0">
+                      <CheckSquare className="h-3 w-3" />
+                      {member._count.assignedTasks}
+                    </span>
+                  )}
+
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 text-xs"
+                      onClick={() => handleViewProfile(member.id)}
+                    >
+                      <Eye className="h-3.5 w-3.5 mr-1" />
+                      Profile
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleAssignTask(member.id)} className="cursor-pointer">
+                          <CheckSquare className="h-4 w-4 mr-2" />
+                          Assign Task
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-red-600 focus:text-red-600 cursor-pointer"
+                          onClick={() => handleRemoveMember(member.id)}
+                        >
+                          Remove from Team
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </>
+              )}
+            </div>
           ))}
         </div>
       )}

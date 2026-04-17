@@ -1569,6 +1569,7 @@ export default function TeamOverviewPage() {
                           </Card>
                         )}
                     </div>
+                  </div>
 
                   {/* Step Navigation */}
                   <div className="flex justify-between items-center pt-4 border-t">

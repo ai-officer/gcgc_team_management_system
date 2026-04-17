@@ -213,52 +213,54 @@ export default function AdminMembersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Members Management</h1>
-          <p className="text-gray-600">Manage all team members and their assignments</p>
+          <h1 className="text-2xl font-bold text-gray-900">Members Management</h1>
+          <p className="text-sm text-gray-600">Manage all team members and their assignments</p>
         </div>
         <div className="flex items-center space-x-2">
-          <Badge className="bg-green-100 text-green-700">
+          <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-green-50 text-green-700">
             {pagination.total} Members
-          </Badge>
+          </span>
         </div>
       </div>
 
       {/* Search and View Toggle */}
-      <div className="flex items-center justify-between">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <Input
-            placeholder="Search members..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <div className="flex items-center border border-slate-200 rounded-lg p-1">
-          <Button
-            variant={viewMode === 'column' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setViewMode('column')}
-            className="h-8 w-8 p-0"
-          >
-            <LayoutList className="w-4 h-4" />
-          </Button>
-          <Button
-            variant={viewMode === 'grid' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setViewMode('grid')}
-            className="h-8 w-8 p-0"
-          >
-            <LayoutGrid className="w-4 h-4" />
-          </Button>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              placeholder="Search members..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <div className="flex items-center border border-gray-200 rounded-lg p-1">
+            <Button
+              variant={viewMode === 'column' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('column')}
+              className="h-8 w-8 p-0"
+            >
+              <LayoutList className="w-4 h-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'grid' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('grid')}
+              className="h-8 w-8 p-0"
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="p-6">
+        <Card className="p-6 bg-white border border-gray-100 rounded-xl shadow-sm">
           <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded-lg">
+            <div className="p-2 bg-green-50 rounded-lg">
               <Users className="h-6 w-6 text-green-600" />
             </div>
             <div className="ml-4">
@@ -268,9 +270,9 @@ export default function AdminMembersPage() {
           </div>
         </Card>
 
-        <Card className="p-6">
+        <Card className="p-6 bg-white border border-gray-100 rounded-xl shadow-sm">
           <div className="flex items-center">
-            <div className="p-2 bg-blue-100 rounded-lg">
+            <div className="p-2 bg-blue-50 rounded-lg">
               <User className="h-6 w-6 text-blue-600" />
             </div>
             <div className="ml-4">
@@ -282,9 +284,9 @@ export default function AdminMembersPage() {
           </div>
         </Card>
 
-        <Card className="p-6">
+        <Card className="p-6 bg-white border border-gray-100 rounded-xl shadow-sm">
           <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded-lg">
+            <div className="p-2 bg-purple-50 rounded-lg">
               <Calendar className="h-6 w-6 text-purple-600" />
             </div>
             <div className="ml-4">
@@ -296,9 +298,9 @@ export default function AdminMembersPage() {
           </div>
         </Card>
 
-        <Card className="p-6">
+        <Card className="p-6 bg-white border border-gray-100 rounded-xl shadow-sm">
           <div className="flex items-center">
-            <div className="p-2 bg-orange-100 rounded-lg">
+            <div className="p-2 bg-orange-50 rounded-lg">
               <Calendar className="h-6 w-6 text-orange-600" />
             </div>
             <div className="ml-4">
@@ -312,7 +314,7 @@ export default function AdminMembersPage() {
       </div>
 
       {/* Hierarchy Distribution */}
-      <Card className="p-6">
+      <Card className="p-6 bg-white border border-gray-100 rounded-xl shadow-sm">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Hierarchy Distribution</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
           {Object.entries(hierarchyStats).map(([level, count]) => (
@@ -331,13 +333,13 @@ export default function AdminMembersPage() {
         {members.map((member) => (
           <Card
             key={member.id}
-            className="p-6 hover:shadow-md transition-shadow cursor-pointer"
+            className="p-5 bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition-shadow cursor-pointer"
             onClick={() => openTaskModal(member)}
           >
             {viewMode === 'grid' ? (
               // Grid View - Compact vertical layout
               <div className="flex flex-col items-center text-center">
-                <Avatar className="h-16 w-16 rounded-lg ring-2 ring-slate-200 mb-3">
+                <Avatar className="h-16 w-16 rounded-lg ring-2 ring-gray-100 mb-3">
                   <AvatarFallback className="rounded-lg bg-gradient-to-br from-green-50 to-green-100 text-green-700 font-semibold text-lg">
                     {member.name ? member.name.split(' ').map(n => n[0]).join('') : 'M'}
                   </AvatarFallback>
@@ -372,9 +374,9 @@ export default function AdminMembersPage() {
                     <div className="text-xs">Tasks</div>
                   </div>
                 </div>
-                <Badge variant={member.isActive ? "default" : "secondary"} className="text-xs mb-3">
+                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium mb-3 ${member.isActive ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
                   {member.isActive ? 'Active' : 'Inactive'}
-                </Badge>
+                </span>
                 <Button
                   variant="outline"
                   size="sm"
@@ -434,9 +436,9 @@ export default function AdminMembersPage() {
                             No Hierarchy
                           </Badge>
                         )}
-                        <Badge variant={member.isActive ? "default" : "secondary"}>
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${member.isActive ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
                           {member.isActive ? 'Active' : 'Inactive'}
-                        </Badge>
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -491,20 +493,18 @@ export default function AdminMembersPage() {
 
       {/* Pagination */}
       {pagination.total > 0 && (
-        <div className="mt-6">
-          <div className="flex items-center justify-between">
-            <PaginationInfo
-              currentPage={pagination.page}
-              pageSize={pagination.limit}
-              totalItems={pagination.total}
-            />
-            <Pagination
-              currentPage={pagination.page}
-              totalPages={pagination.totalPages}
-              onPageChange={(page) => setPagination({ ...pagination, page })}
-              disabled={loading}
-            />
-          </div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-4 py-3 flex items-center justify-between">
+          <PaginationInfo
+            currentPage={pagination.page}
+            pageSize={pagination.limit}
+            totalItems={pagination.total}
+          />
+          <Pagination
+            currentPage={pagination.page}
+            totalPages={pagination.totalPages}
+            onPageChange={(page) => setPagination({ ...pagination, page })}
+            disabled={loading}
+          />
         </div>
       )}
 
@@ -587,7 +587,7 @@ export default function AdminMembersPage() {
           {/* Header */}
           <div className="px-6 pt-6 pb-4 border-b">
             <div className="flex items-center gap-3">
-              <Avatar className="h-12 w-12 rounded-xl ring-2 ring-slate-200">
+              <Avatar className="h-12 w-12 rounded-xl ring-2 ring-gray-100">
                 <AvatarFallback className="rounded-xl bg-gradient-to-br from-green-50 to-green-100 text-green-700 font-bold text-lg">
                   {selectedMember?.name?.split(' ').map(n => n[0]).join('') ?? 'M'}
                 </AvatarFallback>

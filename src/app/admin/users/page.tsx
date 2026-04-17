@@ -702,8 +702,8 @@ export default function AdminUsersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">User Management</h1>
-          <p className="text-sm font-medium text-slate-600">Manage system users, roles, and hierarchy levels</p>
+          <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
+          <p className="text-sm text-gray-600">Manage system users, roles, and hierarchy levels</p>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
@@ -1158,61 +1158,63 @@ export default function AdminUsersPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center space-x-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-          <Input
-            placeholder="Search users..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
-          />
-        </div>
-        <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as UserRole | 'all')}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Filter by role" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Roles</SelectItem>
-            <SelectItem value={UserRole.ADMIN}>Admin</SelectItem>
-            <SelectItem value={UserRole.LEADER}>Leader</SelectItem>
-            <SelectItem value={UserRole.MEMBER}>Member</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={hierarchyFilter} onValueChange={(value) => setHierarchyFilter(value as HierarchyLevel | 'all')}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Filter by level" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Levels</SelectItem>
-            <SelectItem value={HierarchyLevel.RF1}>RF1</SelectItem>
-            <SelectItem value={HierarchyLevel.RF2}>RF2</SelectItem>
-            <SelectItem value={HierarchyLevel.RF3}>RF3</SelectItem>
-            <SelectItem value={HierarchyLevel.OF1}>OF1</SelectItem>
-            <SelectItem value={HierarchyLevel.OF2}>OF2</SelectItem>
-            <SelectItem value={HierarchyLevel.M1}>M1</SelectItem>
-            <SelectItem value={HierarchyLevel.M2}>M2</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              placeholder="Search users..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as UserRole | 'all')}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Filter by role" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Roles</SelectItem>
+              <SelectItem value={UserRole.ADMIN}>Admin</SelectItem>
+              <SelectItem value={UserRole.LEADER}>Leader</SelectItem>
+              <SelectItem value={UserRole.MEMBER}>Member</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={hierarchyFilter} onValueChange={(value) => setHierarchyFilter(value as HierarchyLevel | 'all')}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Filter by level" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Levels</SelectItem>
+              <SelectItem value={HierarchyLevel.RF1}>RF1</SelectItem>
+              <SelectItem value={HierarchyLevel.RF2}>RF2</SelectItem>
+              <SelectItem value={HierarchyLevel.RF3}>RF3</SelectItem>
+              <SelectItem value={HierarchyLevel.OF1}>OF1</SelectItem>
+              <SelectItem value={HierarchyLevel.OF2}>OF2</SelectItem>
+              <SelectItem value={HierarchyLevel.M1}>M1</SelectItem>
+              <SelectItem value={HierarchyLevel.M2}>M2</SelectItem>
+            </SelectContent>
+          </Select>
 
-        {/* View Toggle */}
-        <div className="flex items-center border border-slate-200 rounded-lg p-1">
-          <Button
-            variant={viewMode === 'column' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setViewMode('column')}
-            className={`px-3 ${viewMode === 'column' ? 'bg-blue-600 hover:bg-blue-700' : 'hover:bg-slate-100'}`}
-          >
-            <LayoutList className="w-4 h-4" />
-          </Button>
-          <Button
-            variant={viewMode === 'grid' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setViewMode('grid')}
-            className={`px-3 ${viewMode === 'grid' ? 'bg-blue-600 hover:bg-blue-700' : 'hover:bg-slate-100'}`}
-          >
-            <LayoutGrid className="w-4 h-4" />
-          </Button>
+          {/* View Toggle */}
+          <div className="flex items-center border border-gray-200 rounded-lg p-1">
+            <Button
+              variant={viewMode === 'column' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('column')}
+              className={`px-3 ${viewMode === 'column' ? 'bg-blue-600 hover:bg-blue-700' : 'hover:bg-gray-100'}`}
+            >
+              <LayoutList className="w-4 h-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'grid' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('grid')}
+              className={`px-3 ${viewMode === 'grid' ? 'bg-blue-600 hover:bg-blue-700' : 'hover:bg-gray-100'}`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -1224,7 +1226,7 @@ export default function AdminUsersPage() {
       ) : (
         <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'grid gap-4'}>
           {users.map((user) => (
-            <Card key={user.id} className={`bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow ${viewMode === 'grid' ? 'p-4' : 'p-6'}`}>
+            <Card key={user.id} className={`bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition-shadow ${viewMode === 'grid' ? 'p-4' : 'p-6'}`}>
               {viewMode === 'grid' ? (
                 // Grid View - Compact vertical card
                 <div className="flex flex-col h-full">
@@ -1234,14 +1236,14 @@ export default function AdminUsersPage() {
                     onClick={() => openUserTasksModal(user)}
                   >
                     <div className="flex items-start justify-between mb-3">
-                      <Avatar className="h-14 w-14 rounded-lg ring-2 ring-slate-200">
+                      <Avatar className="h-14 w-14 rounded-lg ring-2 ring-gray-100">
                         <AvatarFallback className="rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 text-blue-700 font-semibold text-lg">
                           {user.name ? user.name.split(' ').map(n => n[0]).join('') : <User className="w-6 h-6" />}
                         </AvatarFallback>
                       </Avatar>
-                      <Badge variant={user.isActive ? "default" : "secondary"} className="rounded-md px-2 py-0.5 text-xs font-medium">
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${user.isActive ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
                         {user.isActive ? 'Active' : 'Inactive'}
-                      </Badge>
+                      </span>
                     </div>
 
                     <div>
@@ -1336,9 +1338,9 @@ export default function AdminUsersPage() {
                     className="flex items-center space-x-4 flex-1 cursor-pointer"
                     onClick={() => openUserTasksModal(user)}
                   >
-                    <Avatar className="h-12 w-12 rounded-lg ring-2 ring-slate-200">
+                    <Avatar className="h-9 w-9 rounded-lg ring-2 ring-gray-100">
                       <AvatarFallback className="rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 text-blue-700 font-semibold">
-                        {user.name ? user.name.split(' ').map(n => n[0]).join('') : <User className="w-6 h-6" />}
+                        {user.name ? user.name.split(' ').map(n => n[0]).join('') : <User className="w-4 h-4" />}
                       </AvatarFallback>
                     </Avatar>
                     <div>
@@ -1365,9 +1367,9 @@ export default function AdminUsersPage() {
                             No Hierarchy
                           </Badge>
                         )}
-                        <Badge variant={user.isActive ? "default" : "secondary"} className="rounded-md px-2.5 py-0.5 text-xs font-medium">
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${user.isActive ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
                           {user.isActive ? 'Active' : 'Inactive'}
-                        </Badge>
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -1440,20 +1442,18 @@ export default function AdminUsersPage() {
 
       {/* Pagination */}
       {pagination.totalPages > 1 && (
-        <div className="mt-6">
-          <div className="flex items-center justify-between">
-            <PaginationInfo
-              currentPage={pagination.page}
-              pageSize={pagination.limit}
-              totalItems={pagination.total}
-            />
-            <Pagination
-              currentPage={pagination.page}
-              totalPages={pagination.totalPages}
-              onPageChange={(page) => setPagination({ ...pagination, page })}
-              disabled={loading}
-            />
-          </div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-4 py-3 flex items-center justify-between">
+          <PaginationInfo
+            currentPage={pagination.page}
+            pageSize={pagination.limit}
+            totalItems={pagination.total}
+          />
+          <Pagination
+            currentPage={pagination.page}
+            totalPages={pagination.totalPages}
+            onPageChange={(page) => setPagination({ ...pagination, page })}
+            disabled={loading}
+          />
         </div>
       )}
 

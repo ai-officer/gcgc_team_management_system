@@ -256,10 +256,10 @@ export default function AdminsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Administrator Management</h1>
-          <p className="text-sm font-medium text-slate-600 mt-1">
+          <h1 className="text-2xl font-bold text-gray-900">Administrator Management</h1>
+          <p className="text-sm text-gray-600 mt-1">
             Manage administrator accounts with secure access control
           </p>
         </div>
@@ -363,32 +363,34 @@ export default function AdminsPage() {
       </div>
 
       {/* Search and Filters */}
-      <div className="flex items-center space-x-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            placeholder="Search administrators..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="include-inactive"
-            checked={includeInactive}
-            onCheckedChange={setIncludeInactive}
-          />
-          <Label htmlFor="include-inactive" className="text-sm">
-            Include inactive
-          </Label>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder="Search administrators..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="include-inactive"
+              checked={includeInactive}
+              onCheckedChange={setIncludeInactive}
+            />
+            <Label htmlFor="include-inactive" className="text-sm text-gray-600">
+              Include inactive
+            </Label>
+          </div>
         </div>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-white border border-slate-200 rounded-xl shadow-sm">
+        <Card className="bg-white border border-gray-100 rounded-xl shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-900">Total Administrators</CardTitle>
             <Shield className="h-4 w-4 text-slate-500" />
@@ -401,7 +403,7 @@ export default function AdminsPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white border border-slate-200 rounded-xl shadow-sm">
+        <Card className="bg-white border border-gray-100 rounded-xl shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-900">Active Administrators</CardTitle>
             <ShieldCheck className="h-4 w-4 text-slate-500" />
@@ -416,7 +418,7 @@ export default function AdminsPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white border border-slate-200 rounded-xl shadow-sm">
+        <Card className="bg-white border border-gray-100 rounded-xl shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-900">Inactive Administrators</CardTitle>
             <ShieldX className="h-4 w-4 text-slate-500" />
@@ -433,7 +435,7 @@ export default function AdminsPage() {
       </div>
 
       {/* Administrators List */}
-      <Card className="bg-white border border-slate-200 rounded-xl shadow-sm">
+      <Card className="bg-white border border-gray-100 rounded-xl shadow-sm">
         <CardHeader className="border-b border-slate-100">
           <CardTitle className="text-lg font-semibold text-slate-900">Administrator Accounts</CardTitle>
           <CardDescription className="text-sm font-medium text-slate-600">
@@ -446,10 +448,10 @@ export default function AdminsPage() {
               {admins.map((admin) => (
                 <div
                   key={admin.id}
-                  className="flex items-center justify-between p-4 border border-slate-200 rounded-xl hover:border-slate-300 hover:shadow-sm transition-all"
+                  className="flex items-center justify-between p-4 border border-gray-100 rounded-xl hover:border-gray-200 hover:shadow-sm transition-all"
                 >
                   <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center ring-2 ring-slate-200">
+                    <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center ring-2 ring-gray-100">
                       <Users2 className="h-5 w-5 text-blue-600" />
                     </div>
 
@@ -473,9 +475,9 @@ export default function AdminsPage() {
                       />
                     </div>
                     
-                    <Badge variant={admin.isActive ? "default" : "secondary"} className="rounded-md px-2.5 py-0.5 text-xs font-medium">
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${admin.isActive ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
                       {admin.isActive ? "Active" : "Inactive"}
-                    </Badge>
+                    </span>
                     
                     <div className="flex items-center space-x-2">
                       <Button
@@ -563,20 +565,18 @@ export default function AdminsPage() {
 
       {/* Pagination */}
       {pagination.totalPages > 1 && (
-        <div className="mt-6">
-          <div className="flex items-center justify-between">
-            <PaginationInfo
-              currentPage={pagination.page}
-              pageSize={pagination.limit}
-              totalItems={pagination.total}
-            />
-            <Pagination
-              currentPage={pagination.page}
-              totalPages={pagination.totalPages}
-              onPageChange={(page) => setPagination({ ...pagination, page })}
-              disabled={loading}
-            />
-          </div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-4 py-3 flex items-center justify-between">
+          <PaginationInfo
+            currentPage={pagination.page}
+            pageSize={pagination.limit}
+            totalItems={pagination.total}
+          />
+          <Pagination
+            currentPage={pagination.page}
+            totalPages={pagination.totalPages}
+            onPageChange={(page) => setPagination({ ...pagination, page })}
+            disabled={loading}
+          />
         </div>
       )}
 

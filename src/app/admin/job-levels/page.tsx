@@ -4,10 +4,8 @@ import { useState, useEffect } from 'react'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { Plus, Edit, Trash2, GripVertical, Crown, TrendingUp, Users, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -219,23 +217,23 @@ export default function JobLevelsPage() {
 
   const getHierarchyColor = (order: number) => {
     const colors = [
-      'bg-slate-50 text-slate-800 border border-slate-200',      // RF1 - Lowest
-      'bg-amber-50 text-amber-800 border border-amber-200', // RF2
-      'bg-orange-50 text-orange-800 border border-orange-200', // RF3
-      'bg-emerald-50 text-emerald-800 border border-emerald-200',   // OF1
-      'bg-blue-50 text-blue-800 border border-blue-200',     // OF2
-      'bg-purple-50 text-purple-800 border border-purple-200', // M1
-      'bg-pink-50 text-pink-800 border border-pink-200',     // M2 - Highest
+      'bg-slate-50 text-slate-800 border border-slate-200',
+      'bg-amber-50 text-amber-800 border border-amber-200',
+      'bg-orange-50 text-orange-800 border border-orange-200',
+      'bg-emerald-50 text-emerald-800 border border-emerald-200',
+      'bg-blue-50 text-blue-800 border border-blue-200',
+      'bg-purple-50 text-purple-800 border border-purple-200',
+      'bg-pink-50 text-pink-800 border border-pink-200',
     ]
     return colors[order - 1] || 'bg-slate-50 text-slate-800 border border-slate-200'
   }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="bg-gray-50 p-6 flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading job levels...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-sm text-gray-500">Loading job levels...</p>
         </div>
       </div>
     )
@@ -250,33 +248,33 @@ export default function JobLevelsPage() {
       )
 
   return (
-    <div className="space-y-6">
+    <div className="bg-gray-50 p-6 space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Job Level Management</h1>
-          <p className="text-sm font-medium text-slate-600 mt-1">
-            Manage organizational hierarchy levels - drag and drop to reorder
+          <h1 className="text-2xl font-bold text-gray-900">Job Levels</h1>
+          <p className="text-sm text-gray-500 mt-0.5">
+            Manage organizational hierarchy levels — drag and drop to reorder
           </p>
         </div>
-        
+
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="bg-blue-600 hover:bg-blue-700">
               <Plus className="h-4 w-4 mr-2" />
-              Add Job Level
+              New Job Level
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>Create New Job Level</DialogTitle>
               <DialogDescription>
                 Add a new job level to the organizational hierarchy
               </DialogDescription>
             </DialogHeader>
-            
-            <div className="space-y-4">
-              <div>
+
+            <div className="space-y-4 py-2">
+              <div className="space-y-1.5">
                 <Label htmlFor="name">Job Level Name *</Label>
                 <Input
                   id="name"
@@ -285,8 +283,8 @@ export default function JobLevelsPage() {
                   placeholder="e.g., RF4, OF3, M3"
                 />
               </div>
-              
-              <div>
+
+              <div className="space-y-1.5">
                 <Label htmlFor="description">Description</Label>
                 <Textarea
                   id="description"
@@ -295,20 +293,20 @@ export default function JobLevelsPage() {
                   placeholder="Enter job level description"
                 />
               </div>
-              
+
               {error && (
                 <div className="text-red-600 text-sm bg-red-50 p-2 rounded">
                   {error}
                 </div>
               )}
             </div>
-            
+
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button 
-                onClick={handleCreateJobLevel} 
+              <Button
+                onClick={handleCreateJobLevel}
                 disabled={!newJobLevel.name.trim() || saving}
               >
                 {saving ? 'Creating...' : 'Create Job Level'}
@@ -318,10 +316,53 @@ export default function JobLevelsPage() {
         </Dialog>
       </div>
 
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Crown className="h-5 w-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Total Job Levels</p>
+              <p className="text-2xl font-bold text-gray-900">{jobLevels.length}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <TrendingUp className="h-5 w-5 text-purple-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Hierarchy Range</p>
+              <p className="text-lg font-bold text-gray-900">
+                {jobLevels.length > 0 ? `${jobLevels[0]?.name} – ${jobLevels[jobLevels.length - 1]?.name}` : 'None'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <Users className="h-5 w-5 text-green-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Active Levels</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {jobLevels.filter(j => j.isActive).length}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Search */}
-      <div className="flex items-center space-x-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+      <div className="flex items-center">
+        <div className="relative max-w-md w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
             placeholder="Search job levels..."
             value={searchTerm}
@@ -331,68 +372,20 @@ export default function JobLevelsPage() {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-white border border-slate-200 rounded-xl shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-900">Total Job Levels</CardTitle>
-            <Crown className="h-4 w-4 text-slate-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold text-slate-900">{jobLevels.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Hierarchy levels defined
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white border border-slate-200 rounded-xl shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-900">Hierarchy Range</CardTitle>
-            <TrendingUp className="h-4 w-4 text-slate-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold text-slate-900">
-              {jobLevels.length > 0 ? `${jobLevels[0]?.name} - ${jobLevels[jobLevels.length - 1]?.name}` : 'None'}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              From lowest to highest
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white border border-slate-200 rounded-xl shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-900">Active Levels</CardTitle>
-            <Users className="h-4 w-4 text-slate-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold text-slate-900">
-              {jobLevels.filter(j => j.isActive).length}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Currently active
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Job Levels List */}
-      <Card className="bg-white border border-slate-200 rounded-xl shadow-sm">
-        <CardHeader className="border-b border-slate-100">
-          <CardTitle className="text-lg font-semibold text-slate-900">Organizational Hierarchy</CardTitle>
-          <CardDescription className="text-sm font-medium text-slate-600">
-            Drag and drop to reorder hierarchy levels. Lower position = lower rank.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+      {/* Drag-and-drop List */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100">
+          <h2 className="text-lg font-semibold text-gray-900">Organizational Hierarchy</h2>
+          <p className="text-sm text-gray-500 mt-0.5">Drag and drop to reorder hierarchy levels. Lower position = lower rank.</p>
+        </div>
+        <div className="p-4">
           <DragDropContext onDragEnd={handleDragEnd}>
             <Droppable droppableId="job-levels">
               {(provided) => (
                 <div
                   {...provided.droppableProps}
                   ref={provided.innerRef}
-                  className="space-y-3"
+                  className="space-y-2"
                 >
                   {filteredJobLevels.map((jobLevel, index) => (
                     <Draggable key={jobLevel.id} draggableId={jobLevel.id} index={index}>
@@ -400,37 +393,39 @@ export default function JobLevelsPage() {
                         <div
                           ref={provided.innerRef}
                           {...provided.draggableProps}
-                          className={`flex items-center space-x-4 p-4 border rounded-xl transition-all ${
+                          className={`flex items-center gap-3 px-4 py-3 border rounded-lg transition-all ${
                             snapshot.isDragging
                               ? 'shadow-lg border-blue-300 bg-blue-50'
-                              : 'border-slate-200 hover:border-slate-300'
+                              : 'border-gray-100 bg-white hover:bg-gray-50'
                           }`}
                         >
                           <div
                             {...provided.dragHandleProps}
-                            className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600"
+                            className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500"
                           >
                             <GripVertical className="h-5 w-5" />
                           </div>
-                          
-                          <div className="flex items-center space-x-3 flex-1">
-                            <Badge className={`text-xs rounded-md px-2.5 py-0.5 font-medium ${getHierarchyColor(jobLevel.order)}`}>
-                              #{jobLevel.order}
-                            </Badge>
 
-                            <div className="flex-1">
-                              <h3 className="font-semibold text-slate-900">{jobLevel.name}</h3>
-                              {jobLevel.description && (
-                                <p className="text-sm font-medium text-slate-600">{jobLevel.description}</p>
-                              )}
-                            </div>
+                          <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${getHierarchyColor(jobLevel.order)}`}>
+                            #{jobLevel.order}
+                          </span>
 
-                            <Badge variant={jobLevel.isActive ? "default" : "secondary"} className="rounded-md px-2.5 py-0.5 text-xs font-medium">
-                              {jobLevel.isActive ? "Active" : "Inactive"}
-                            </Badge>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900">{jobLevel.name}</p>
+                            {jobLevel.description && (
+                              <p className="text-sm text-gray-500 truncate">{jobLevel.description}</p>
+                            )}
                           </div>
-                          
-                          <div className="flex items-center space-x-2">
+
+                          <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                            jobLevel.isActive
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-red-100 text-red-700'
+                          }`}>
+                            {jobLevel.isActive ? 'Active' : 'Inactive'}
+                          </span>
+
+                          <div className="flex items-center gap-2">
                             <Button
                               variant="outline"
                               size="sm"
@@ -438,7 +433,7 @@ export default function JobLevelsPage() {
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
-                            
+
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
@@ -449,7 +444,7 @@ export default function JobLevelsPage() {
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Delete Job Level</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    Are you sure you want to delete "{jobLevel.name}"? This action cannot be undone
+                                    Are you sure you want to delete &quot;{jobLevel.name}&quot;? This action cannot be undone
                                     and may affect users assigned to this job level.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
@@ -477,41 +472,39 @@ export default function JobLevelsPage() {
 
           {filteredJobLevels.length === 0 && (
             <div className="text-center py-12">
-              <Crown className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No job levels found</h3>
-              <p className="text-gray-600 mb-4">
+              <Crown className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-600 font-medium">No job levels found</p>
+              <p className="text-gray-400 text-sm mt-1">
                 Get started by creating your organizational hierarchy levels.
               </p>
-              <Button onClick={() => setIsCreateDialogOpen(true)}>
+              <Button className="mt-4" onClick={() => setIsCreateDialogOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add First Job Level
               </Button>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Default Hierarchy Guide */}
-      <Card className="border border-blue-200 bg-blue-50 rounded-xl shadow-sm">
-        <CardHeader className="border-b border-blue-100">
-          <CardTitle className="text-lg font-semibold text-blue-900">Default Hierarchy Guide</CardTitle>
-          <CardDescription className="text-sm font-medium text-blue-700">
-            Recommended organizational hierarchy structure
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+      {/* Hierarchy Guide */}
+      <div className="bg-blue-50 border border-blue-100 rounded-xl shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-blue-100">
+          <h2 className="text-lg font-semibold text-blue-900">Default Hierarchy Guide</h2>
+          <p className="text-sm text-blue-600 mt-0.5">Recommended organizational hierarchy structure</p>
+        </div>
+        <div className="p-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <h4 className="font-semibold text-blue-900 mb-2">Rank and File Levels</h4>
+              <h4 className="text-sm font-semibold text-blue-900 mb-2">Rank and File Levels</h4>
               <ul className="text-sm text-blue-800 space-y-1">
                 <li>• <strong>RF1:</strong> Entry level positions</li>
                 <li>• <strong>RF2:</strong> Junior level with experience</li>
                 <li>• <strong>RF3:</strong> Senior rank and file</li>
               </ul>
             </div>
-            
+
             <div>
-              <h4 className="font-semibold text-blue-900 mb-2">Management Levels</h4>
+              <h4 className="text-sm font-semibold text-blue-900 mb-2">Management Levels</h4>
               <ul className="text-sm text-blue-800 space-y-1">
                 <li>• <strong>OF1:</strong> Junior officer/supervisor</li>
                 <li>• <strong>OF2:</strong> Senior officer</li>
@@ -520,21 +513,21 @@ export default function JobLevelsPage() {
               </ul>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Edit Job Level</DialogTitle>
             <DialogDescription>
               Update job level information
             </DialogDescription>
           </DialogHeader>
-          
-          <div className="space-y-4">
-            <div>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
               <Label htmlFor="edit-name">Job Level Name *</Label>
               <Input
                 id="edit-name"
@@ -543,8 +536,8 @@ export default function JobLevelsPage() {
                 placeholder="e.g., RF4, OF3, M3"
               />
             </div>
-            
-            <div>
+
+            <div className="space-y-1.5">
               <Label htmlFor="edit-description">Description</Label>
               <Textarea
                 id="edit-description"
@@ -553,11 +546,11 @@ export default function JobLevelsPage() {
                 placeholder="Enter job level description"
               />
             </div>
-            
+
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 <Label htmlFor="edit-job-level-status">Status</Label>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-500">
                   Set whether this job level is active or inactive
                 </p>
               </div>
@@ -572,20 +565,20 @@ export default function JobLevelsPage() {
                 />
               </div>
             </div>
-            
+
             {error && (
               <div className="text-red-600 text-sm bg-red-50 p-2 rounded">
                 {error}
               </div>
             )}
           </div>
-          
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Cancel
             </Button>
-            <Button 
-              onClick={handleEditJobLevel} 
+            <Button
+              onClick={handleEditJobLevel}
               disabled={!newJobLevel.name.trim() || saving}
             >
               {saving ? 'Updating...' : 'Update Job Level'}
@@ -597,19 +590,17 @@ export default function JobLevelsPage() {
       {/* Error Display */}
       {error && (
         <div className="fixed bottom-4 right-4 max-w-sm">
-          <Card className="border-red-200 bg-red-50">
-            <CardContent className="pt-6">
-              <div className="text-red-800 text-sm">{error}</div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-2"
-                onClick={() => setError('')}
-              >
-                Dismiss
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="bg-white border border-red-200 rounded-xl shadow-sm p-4">
+            <div className="text-red-800 text-sm">{error}</div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-2"
+              onClick={() => setError('')}
+            >
+              Dismiss
+            </Button>
+          </div>
         </div>
       )}
     </div>

@@ -2,11 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { Plus, GitBranch, Edit, Trash2, Search, Building2, Users } from 'lucide-react'
-import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import {
   Dialog,
@@ -96,7 +93,7 @@ export default function DivisionsPage() {
         limit: pagination.limit.toString(),
         ...(debouncedSearchTerm && { search: debouncedSearchTerm })
       })
-      
+
       const response = await fetch(`/api/admin/divisions?${params}`)
       if (response.ok) {
         const data = await response.json()
@@ -200,60 +197,45 @@ export default function DivisionsPage() {
     setIsEditDialogOpen(true)
   }
 
-  const getDivisionTypeInfo = (division: Division) => {
-    const flowTypes: Record<string, { label: string; color: string; description: string }> = {
-      'RP': { label: 'Dd3 → Sections', color: 'bg-blue-100 text-blue-800', description: 'Real Property flow to departments then sections' },
-      'HO': { label: 'Dd4 → Teams', color: 'bg-green-100 text-green-800', description: 'Hotel Operations with sector head & codes' },
-      'HF': { label: 'Future', color: 'bg-gray-100 text-gray-800', description: 'Hotel Franchising (for later)' },
-      'SSGOLI': { label: 'Dd5 → Inputs', color: 'bg-purple-100 text-purple-800', description: 'Shared Services with section/team inputs' },
-      'CSO': { label: 'Dd6 → Labels', color: 'bg-orange-100 text-orange-800', description: 'CSO with section/team labels' },
-      'OTHER': { label: 'Custom Input', color: 'bg-yellow-100 text-yellow-800', description: 'Custom label input' }
-    }
-    return flowTypes[division.code || ''] || flowTypes['OTHER']
-  }
-
-
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="bg-gray-50 p-6 flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading divisions...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-sm text-gray-500">Loading divisions...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
+    <div className="bg-gray-50 p-6 space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Division Management</h1>
-          <p className="text-gray-600 mt-1">
-            Manage organizational divisions and their hierarchical dropdown flows
+          <h1 className="text-2xl font-bold text-gray-900">Divisions</h1>
+          <p className="text-sm text-gray-500 mt-0.5">
+            Manage organizational divisions and their hierarchical structures
           </p>
         </div>
-        
-        <div className="flex items-center space-x-3">
-          
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Division
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
+
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="h-4 w-4 mr-2" />
+              New Division
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>Create New Division</DialogTitle>
               <DialogDescription>
                 Add a new division to the organizational structure
               </DialogDescription>
             </DialogHeader>
-            
-            <div className="space-y-4">
-              <div>
+
+            <div className="space-y-4 py-2">
+              <div className="space-y-1.5">
                 <Label htmlFor="name">Division Name *</Label>
                 <Input
                   id="name"
@@ -262,8 +244,8 @@ export default function DivisionsPage() {
                   placeholder="Enter division name"
                 />
               </div>
-              
-              <div>
+
+              <div className="space-y-1.5">
                 <Label htmlFor="code">Division Code</Label>
                 <Input
                   id="code"
@@ -272,8 +254,8 @@ export default function DivisionsPage() {
                   placeholder="Enter division code (optional)"
                 />
               </div>
-              
-              <div>
+
+              <div className="space-y-1.5">
                 <Label htmlFor="description">Description</Label>
                 <Textarea
                   id="description"
@@ -282,14 +264,14 @@ export default function DivisionsPage() {
                   placeholder="Enter division description (optional)"
                 />
               </div>
-              
+
               {error && (
                 <div className="text-red-600 text-sm bg-red-50 p-2 rounded">
                   {error}
                 </div>
               )}
             </div>
-            
+
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                 Cancel
@@ -299,14 +281,56 @@ export default function DivisionsPage() {
               </Button>
             </DialogFooter>
           </DialogContent>
-          </Dialog>
+        </Dialog>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <GitBranch className="h-5 w-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Total Divisions</p>
+              <p className="text-2xl font-bold text-gray-900">{pagination.total}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <Building2 className="h-5 w-5 text-green-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Total Departments</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {divisions.reduce((sum, div) => sum + div._count.departments, 0)}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <Users className="h-5 w-5 text-purple-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Active Divisions</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {divisions.filter(d => d.isActive).length}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Search */}
-      <div className="flex items-center space-x-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+      <div className="flex items-center">
+        <div className="relative max-w-md w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
             placeholder="Search divisions..."
             value={searchTerm}
@@ -316,134 +340,93 @@ export default function DivisionsPage() {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Divisions</CardTitle>
-            <GitBranch className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{pagination.total}</div>
-            <p className="text-xs text-muted-foreground">
-              Organizational divisions
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Departments</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {divisions.reduce((sum, div) => sum + div._count.departments, 0)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Across all divisions
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Divisions</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {divisions.filter(d => d.isActive).length}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Currently active
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Table */}
+      {divisions.length === 0 ? (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+          <GitBranch className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+          <p className="text-gray-600 font-medium">No divisions found</p>
+          <p className="text-gray-400 text-sm mt-1">
+            {searchTerm ? 'No divisions match your search criteria.' : 'Get started by creating your first division.'}
+          </p>
+          {!searchTerm && (
+            <Button className="mt-4" onClick={() => setIsCreateDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create your first Division
+            </Button>
+          )}
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gray-50">
+                <th className="text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 text-left">Division</th>
+                <th className="text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 text-left">Code</th>
+                <th className="text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 text-left">Description</th>
+                <th className="text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 text-left">Departments</th>
+                <th className="text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 text-left">Status</th>
+                <th className="text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {divisions.map((division) => (
+                <tr key={division.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{division.name}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600">{division.code || '—'}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate">{division.description || '—'}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600">{division._count.departments}</td>
+                  <td className="px-4 py-3">
+                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                      division.isActive
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-red-100 text-red-700'
+                    }`}>
+                      {division.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openEditDialog(division)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
 
-      {/* Divisions Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {divisions.map((division) => {
-          const typeInfo = getDivisionTypeInfo(division)
-          
-          return (
-            <Card key={division.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <CardTitle className="text-lg">{division.name}</CardTitle>
-                    {division.code && (
-                      <Badge variant="outline" className="text-xs">
-                        {division.code}
-                      </Badge>
-                    )}
-                  </div>
-                  <Badge className={`text-xs ${typeInfo.color}`}>
-                    {typeInfo.label}
-                  </Badge>
-                </div>
-              </CardHeader>
-              
-              <CardContent className="space-y-4">
-                {division.description && (
-                  <p className="text-sm text-gray-600">{division.description}</p>
-                )}
-                
-                <div className="text-sm text-gray-500">
-                  <strong>{division._count.departments}</strong> departments
-                </div>
-                
-                <div className="text-xs text-gray-400">
-                  {typeInfo.description}
-                </div>
-                
-                <div className="flex items-center justify-between pt-2">
-                  <Badge variant={division.isActive ? "default" : "secondary"}>
-                    {division.isActive ? "Active" : "Inactive"}
-                  </Badge>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openEditDialog(division)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Division</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete "{division.name}"? This action cannot be undone
-                            and will affect all associated departments and data.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleDeleteDivision(division.id)}
-                            className="bg-red-600 hover:bg-red-700"
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Division</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete &quot;{division.name}&quot;? This action cannot be undone
+                              and will affect all associated departments and data.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeleteDivision(division.id)}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Pagination */}
       {pagination.totalPages > 1 && (
@@ -464,28 +447,18 @@ export default function DivisionsPage() {
         </div>
       )}
 
-      {divisions.length === 0 && !loading && (
-        <div className="text-center py-12">
-          <GitBranch className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No divisions found</h3>
-          <p className="text-gray-600">
-            {searchTerm ? 'No divisions match your search criteria.' : 'Get started by creating your first division.'}
-          </p>
-        </div>
-      )}
-
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Edit Division</DialogTitle>
             <DialogDescription>
               Update division information
             </DialogDescription>
           </DialogHeader>
-          
-          <div className="space-y-4">
-            <div>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
               <Label htmlFor="edit-name">Division Name *</Label>
               <Input
                 id="edit-name"
@@ -494,8 +467,8 @@ export default function DivisionsPage() {
                 placeholder="Enter division name"
               />
             </div>
-            
-            <div>
+
+            <div className="space-y-1.5">
               <Label htmlFor="edit-code">Division Code</Label>
               <Input
                 id="edit-code"
@@ -504,8 +477,8 @@ export default function DivisionsPage() {
                 placeholder="Enter division code (optional)"
               />
             </div>
-            
-            <div>
+
+            <div className="space-y-1.5">
               <Label htmlFor="edit-description">Description</Label>
               <Textarea
                 id="edit-description"
@@ -514,11 +487,11 @@ export default function DivisionsPage() {
                 placeholder="Enter division description (optional)"
               />
             </div>
-            
+
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 <Label htmlFor="edit-status">Status</Label>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-500">
                   Set whether this division is active or inactive
                 </p>
               </div>
@@ -533,14 +506,14 @@ export default function DivisionsPage() {
                 />
               </div>
             </div>
-            
+
             {error && (
               <div className="text-red-600 text-sm bg-red-50 p-2 rounded">
                 {error}
               </div>
             )}
           </div>
-          
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Cancel

@@ -3,9 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Plus, Users, Edit, Trash2, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import {
   Select,
@@ -117,7 +115,7 @@ export default function AdminSectorHeadsPage() {
 
       const response = await fetch(`/api/admin/sector-heads?${params}`)
       if (!response.ok) throw new Error('Failed to fetch sector heads')
-      
+
       const data = await response.json()
       setSectorHeads(data.sectorHeads || [])
       setPagination(prev => ({
@@ -286,7 +284,7 @@ export default function AdminSectorHeadsPage() {
 
   const handleEditSubmit = () => {
     if (!editingSectorHead) return
-    
+
     if (!editingSectorHead.initials.trim() || !editingSectorHead.fullName.trim()) {
       toast({
         title: 'Error',
@@ -306,11 +304,12 @@ export default function AdminSectorHeadsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="bg-gray-50 p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Sector Heads</h1>
-          <p className="text-sm font-medium text-slate-600">
+          <h1 className="text-2xl font-bold text-gray-900">Sector Heads</h1>
+          <p className="text-sm text-gray-500 mt-0.5">
             Manage sector heads for hotel operations
           </p>
         </div>
@@ -323,20 +322,20 @@ export default function AdminSectorHeadsPage() {
           }
         }}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="bg-blue-600 hover:bg-blue-700">
               <Plus className="mr-2 h-4 w-4" />
-              Add Sector Head
+              New Sector Head
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>Create New Sector Head</DialogTitle>
               <DialogDescription>
                 Add a new sector head for hotel operations
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
-              <div>
+            <div className="space-y-4 py-2">
+              <div className="space-y-1.5">
                 <Label htmlFor="user-select">Select User *</Label>
                 <div className="relative mt-1">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4 z-10" />
@@ -349,14 +348,14 @@ export default function AdminSectorHeadsPage() {
                 </div>
                 <div className="border rounded-md max-h-48 overflow-y-auto">
                   {filteredUsers.length === 0 ? (
-                    <div className="p-4 text-center text-sm text-muted-foreground">
+                    <div className="p-4 text-center text-sm text-gray-400">
                       No users found
                     </div>
                   ) : (
                     filteredUsers.map((user) => (
                       <div
                         key={user.id}
-                        className={`flex items-center gap-3 p-3 cursor-pointer hover:bg-slate-50 border-b last:border-b-0 ${
+                        className={`flex items-center gap-3 p-3 cursor-pointer hover:bg-gray-50 border-b last:border-b-0 ${
                           selectedUserId === user.id ? 'bg-blue-50 border-blue-200' : ''
                         }`}
                         onClick={() => handleUserSelect(user.id)}
@@ -369,10 +368,10 @@ export default function AdminSectorHeadsPage() {
                         </Avatar>
                         <div className="flex flex-col flex-1 min-w-0">
                           <span className="text-sm font-medium truncate">{user.name}</span>
-                          <span className="text-xs text-muted-foreground truncate">{user.email}</span>
+                          <span className="text-xs text-gray-500 truncate">{user.email}</span>
                         </div>
                         {selectedUserId === user.id && (
-                          <Badge variant="default" className="text-xs">Selected</Badge>
+                          <span className="rounded-full px-2.5 py-0.5 text-xs font-medium bg-blue-100 text-blue-700">Selected</span>
                         )}
                       </div>
                     ))
@@ -381,7 +380,7 @@ export default function AdminSectorHeadsPage() {
               </div>
               {selectedUserId && (
                 <>
-                  <div>
+                  <div className="space-y-1.5">
                     <Label htmlFor="initials">Initials (Auto-generated)</Label>
                     <Input
                       id="initials"
@@ -390,18 +389,18 @@ export default function AdminSectorHeadsPage() {
                       placeholder="e.g., JD, ABC"
                     />
                   </div>
-                  <div>
+                  <div className="space-y-1.5">
                     <Label htmlFor="fullName">Full Name (From User)</Label>
                     <Input
                       id="fullName"
                       value={newSectorHead.fullName}
                       disabled
-                      className="bg-muted"
+                      className="bg-gray-50"
                     />
                   </div>
                 </>
               )}
-              <div>
+              <div className="space-y-1.5">
                 <Label htmlFor="description">Description</Label>
                 <Textarea
                   id="description"
@@ -426,194 +425,260 @@ export default function AdminSectorHeadsPage() {
         </Dialog>
       </div>
 
-      <div>
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
+      {/* Search */}
+      <div className="flex items-center">
+        <div className="relative max-w-md w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
             placeholder="Search sector heads by initials, name, or description..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+            className="pl-10"
           />
         </div>
       </div>
 
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Users className="h-5 w-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Total Sector Heads</p>
+              <p className="text-2xl font-bold text-gray-900">{pagination.total}</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <Users className="h-5 w-5 text-green-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Active</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {sectorHeads.filter(s => s.isActive).length}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-red-100 rounded-lg">
+              <Users className="h-5 w-5 text-red-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Inactive</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {sectorHeads.filter(s => !s.isActive).length}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Table */}
       {loading ? (
-        <div className="text-center py-8">Loading sector heads...</div>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      ) : sectorHeads.length === 0 ? (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+          <Users className="mx-auto h-10 w-10 text-gray-300 mb-3" />
+          <p className="text-gray-600 font-medium">No sector heads found</p>
+          <p className="text-gray-400 text-sm mt-1">
+            {searchTerm ? 'Try adjusting your search terms.' : 'Get started by creating a new sector head.'}
+          </p>
+          {!searchTerm && (
+            <Button className="mt-4" onClick={() => setIsCreateDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create your first Sector Head
+            </Button>
+          )}
+        </div>
       ) : (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {sectorHeads.map((sectorHead) => (
-              <Card key={sectorHead.id} className="relative bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow">
-                <CardHeader className="pb-3 border-b border-slate-100">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg font-semibold text-slate-900 flex items-center">
-                      <div className="p-2 bg-blue-50 rounded-lg mr-2">
-                        <Users className="h-4 w-4 text-blue-600" />
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gray-50">
+                <th className="text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 text-left">Initials</th>
+                <th className="text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 text-left">Full Name</th>
+                <th className="text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 text-left">Description</th>
+                <th className="text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 text-left">Status</th>
+                <th className="text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 text-left">Created</th>
+                <th className="text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {sectorHeads.map((sectorHead) => (
+                <tr key={sectorHead.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+                        <span className="text-xs font-semibold text-blue-700">{sectorHead.initials}</span>
                       </div>
-                      {sectorHead.initials}
-                    </CardTitle>
-                    <Badge variant={sectorHead.isActive ? 'default' : 'secondary'} className="rounded-md px-2.5 py-0.5 text-xs font-medium">
+                      <span className="text-sm font-medium text-gray-900">{sectorHead.initials}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{sectorHead.fullName}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate">{sectorHead.description || '—'}</td>
+                  <td className="px-4 py-3">
+                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                      sectorHead.isActive
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-red-100 text-red-700'
+                    }`}>
                       {sectorHead.isActive ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </div>
-                  <CardDescription className="text-sm font-medium text-slate-600 mt-1">{sectorHead.fullName}</CardDescription>
-                </CardHeader>
-                <CardContent className="pt-4">
-                  {sectorHead.description && (
-                    <p className="text-sm font-medium text-slate-600 mb-4">
-                      {sectorHead.description}
-                    </p>
-                  )}
-                  <div className="flex justify-end space-x-2">
-                    <Dialog 
-                      open={editingSectorHead?.id === sectorHead.id} 
-                      onOpenChange={(open) => !open && setEditingSectorHead(null)}
-                    >
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setEditingSectorHead(sectorHead)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Edit Sector Head</DialogTitle>
-                          <DialogDescription>
-                            Update sector head information
-                          </DialogDescription>
-                        </DialogHeader>
-                        {editingSectorHead && (
-                          <div className="space-y-4">
-                            <div>
-                              <Label htmlFor="edit-initials">Initials *</Label>
-                              <Input
-                                id="edit-initials"
-                                value={editingSectorHead.initials}
-                                onChange={(e) => setEditingSectorHead(prev => 
-                                  prev ? { ...prev, initials: e.target.value } : null
-                                )}
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="edit-fullName">Full Name *</Label>
-                              <Input
-                                id="edit-fullName"
-                                value={editingSectorHead.fullName}
-                                onChange={(e) => setEditingSectorHead(prev => 
-                                  prev ? { ...prev, fullName: e.target.value } : null
-                                )}
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="edit-description">Description</Label>
-                              <Textarea
-                                id="edit-description"
-                                value={editingSectorHead.description || ''}
-                                onChange={(e) => setEditingSectorHead(prev => 
-                                  prev ? { ...prev, description: e.target.value } : null
-                                )}
-                              />
-                            </div>
-                            
-                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                              <div className="space-y-1">
-                                <Label htmlFor="edit-sector-head-status">Status</Label>
-                                <p className="text-sm text-gray-600">
-                                  Set whether this sector head is active or inactive
-                                </p>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <span className="text-sm text-gray-600">
-                                  {editingSectorHead.isActive ? "Active" : "Inactive"}
-                                </span>
-                                <Switch
-                                  id="edit-sector-head-status"
-                                  checked={editingSectorHead.isActive}
-                                  onCheckedChange={(checked) => setEditingSectorHead(prev => 
-                                    prev ? { ...prev, isActive: checked } : null
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-600">
+                    {new Date(sectorHead.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Dialog
+                        open={editingSectorHead?.id === sectorHead.id}
+                        onOpenChange={(open) => !open && setEditingSectorHead(null)}
+                      >
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setEditingSectorHead(sectorHead)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-lg">
+                          <DialogHeader>
+                            <DialogTitle>Edit Sector Head</DialogTitle>
+                            <DialogDescription>
+                              Update sector head information
+                            </DialogDescription>
+                          </DialogHeader>
+                          {editingSectorHead && (
+                            <div className="space-y-4 py-2">
+                              <div className="space-y-1.5">
+                                <Label htmlFor="edit-initials">Initials *</Label>
+                                <Input
+                                  id="edit-initials"
+                                  value={editingSectorHead.initials}
+                                  onChange={(e) => setEditingSectorHead(prev =>
+                                    prev ? { ...prev, initials: e.target.value } : null
                                   )}
                                 />
                               </div>
+                              <div className="space-y-1.5">
+                                <Label htmlFor="edit-fullName">Full Name *</Label>
+                                <Input
+                                  id="edit-fullName"
+                                  value={editingSectorHead.fullName}
+                                  onChange={(e) => setEditingSectorHead(prev =>
+                                    prev ? { ...prev, fullName: e.target.value } : null
+                                  )}
+                                />
+                              </div>
+                              <div className="space-y-1.5">
+                                <Label htmlFor="edit-description">Description</Label>
+                                <Textarea
+                                  id="edit-description"
+                                  value={editingSectorHead.description || ''}
+                                  onChange={(e) => setEditingSectorHead(prev =>
+                                    prev ? { ...prev, description: e.target.value } : null
+                                  )}
+                                />
+                              </div>
+
+                              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                <div className="space-y-0.5">
+                                  <Label htmlFor="edit-sector-head-status">Status</Label>
+                                  <p className="text-sm text-gray-500">
+                                    Set whether this sector head is active or inactive
+                                  </p>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-sm text-gray-600">
+                                    {editingSectorHead.isActive ? "Active" : "Inactive"}
+                                  </span>
+                                  <Switch
+                                    id="edit-sector-head-status"
+                                    checked={editingSectorHead.isActive}
+                                    onCheckedChange={(checked) => setEditingSectorHead(prev =>
+                                      prev ? { ...prev, isActive: checked } : null
+                                    )}
+                                  />
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        )}
-                        <DialogFooter>
-                          <Button variant="outline" onClick={() => setEditingSectorHead(null)}>
-                            Cancel
+                          )}
+                          <DialogFooter>
+                            <Button variant="outline" onClick={() => setEditingSectorHead(null)}>
+                              Cancel
+                            </Button>
+                            <Button onClick={handleEditSubmit}>Update Sector Head</Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                            <Trash2 className="h-4 w-4" />
                           </Button>
-                          <Button onClick={handleEditSubmit}>Update Sector Head</Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Sector Head</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to permanently delete &quot;{sectorHead.initials} - {sectorHead.fullName}&quot;?
+                              This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeleteSectorHead(sectorHead.id)}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Sector Head</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to permanently delete &quot;{sectorHead.initials} - {sectorHead.fullName}&quot;?
-                            This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDeleteSectorHead(sectorHead.id)}>
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+      {pagination.totalPages > 1 && (
+        <div className="flex justify-between items-center">
+          <p className="text-sm text-gray-500">
+            Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} sector heads
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              disabled={pagination.page <= 1}
+              onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              disabled={pagination.page >= pagination.totalPages}
+              onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+            >
+              Next
+            </Button>
           </div>
-
-          {sectorHeads.length === 0 && !loading && (
-            <div className="text-center py-8">
-              <Users className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="mt-2 text-sm font-semibold text-muted-foreground">No sector heads found</h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {searchTerm ? 'Try adjusting your search terms.' : 'Get started by creating a new sector head.'}
-              </p>
-            </div>
-          )}
-
-          {pagination.totalPages > 1 && (
-            <div className="flex justify-between items-center mt-6">
-              <p className="text-sm text-muted-foreground">
-                Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} sector heads
-              </p>
-              <div className="flex space-x-2">
-                <Button
-                  variant="outline"
-                  disabled={pagination.page <= 1}
-                  onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  disabled={pagination.page >= pagination.totalPages}
-                  onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
-        </>
+        </div>
       )}
     </div>
   )
 }
-

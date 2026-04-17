@@ -1,9 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { TrendingUp, TrendingDown, Users, ArrowUpRight, ArrowDownRight, Crown, Shield, Star } from 'lucide-react'
+import { Users, ArrowUpRight, ArrowDownRight, Crown, Shield, Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -89,8 +88,8 @@ export default function AdminHierarchyPage() {
   }
 
   const toggleUserSelection = (userId: string) => {
-    setSelectedUsers(prev => 
-      prev.includes(userId) 
+    setSelectedUsers(prev =>
+      prev.includes(userId)
         ? prev.filter(id => id !== userId)
         : [...prev, userId]
     )
@@ -99,7 +98,7 @@ export default function AdminHierarchyPage() {
   const getHierarchyIcon = (level: HierarchyLevel) => {
     const hierarchyOrder = [HierarchyLevel.RF1, HierarchyLevel.RF2, HierarchyLevel.RF3, HierarchyLevel.OF1, HierarchyLevel.OF2, HierarchyLevel.M1, HierarchyLevel.M2]
     const index = hierarchyOrder.indexOf(level)
-    
+
     if (index >= 5) return <Crown className="w-4 h-4" />
     if (index >= 3) return <Shield className="w-4 h-4" />
     return <Star className="w-4 h-4" />
@@ -135,219 +134,207 @@ export default function AdminHierarchyPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="bg-gray-50 p-6 flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     )
   }
 
   if (!hierarchyData) {
-    return <div className="text-center py-8">Error loading hierarchy data</div>
+    return <div className="bg-gray-50 p-6 text-center py-8 text-sm text-gray-500">Error loading hierarchy data</div>
   }
 
   return (
-    <div className="space-y-6">
+    <div className="bg-gray-50 p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Hierarchy Management</h1>
-          <p className="text-sm font-medium text-slate-600">Manage organizational hierarchy and user promotions</p>
+          <h1 className="text-2xl font-bold text-gray-900">Hierarchy Management</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Manage organizational hierarchy and user promotions</p>
         </div>
       </div>
 
       {/* Bulk Actions */}
       {selectedUsers.length > 0 && (
-        <Card className="bg-blue-50 border border-blue-200 rounded-xl shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <span className="text-sm font-medium text-blue-900">
-                  {selectedUsers.length} users selected
-                </span>
-                <Select value={action} onValueChange={(value) => setAction(value as typeof action)}>
-                  <SelectTrigger className="w-32">
+        <div className="bg-blue-50 border border-blue-200 rounded-xl shadow-sm p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <span className="text-sm font-medium text-blue-900">
+                {selectedUsers.length} users selected
+              </span>
+              <Select value={action} onValueChange={(value) => setAction(value as typeof action)}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="promote">
+                    <div className="flex items-center">
+                      <ArrowUpRight className="w-4 h-4 mr-2" />
+                      Promote
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="demote">
+                    <div className="flex items-center">
+                      <ArrowDownRight className="w-4 h-4 mr-2" />
+                      Demote
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="assign">
+                    <div className="flex items-center">
+                      <Shield className="w-4 h-4 mr-2" />
+                      Assign Level
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              {(action === 'promote' || action === 'assign') && (
+                <Select value={targetLevel} onValueChange={(value) => setTargetLevel(value as HierarchyLevel)}>
+                  <SelectTrigger className="w-40">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="promote">
-                      <div className="flex items-center">
-                        <ArrowUpRight className="w-4 h-4 mr-2" />
-                        Promote
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="demote">
-                      <div className="flex items-center">
-                        <ArrowDownRight className="w-4 h-4 mr-2" />
-                        Demote
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="assign">
-                      <div className="flex items-center">
-                        <Shield className="w-4 h-4 mr-2" />
-                        Assign Level
-                      </div>
-                    </SelectItem>
+                    <SelectItem value={HierarchyLevel.RF1}>RF1</SelectItem>
+                    <SelectItem value={HierarchyLevel.RF2}>RF2</SelectItem>
+                    <SelectItem value={HierarchyLevel.RF3}>RF3</SelectItem>
+                    <SelectItem value={HierarchyLevel.OF1}>OF1</SelectItem>
+                    <SelectItem value={HierarchyLevel.OF2}>OF2</SelectItem>
+                    <SelectItem value={HierarchyLevel.M1}>M1</SelectItem>
+                    <SelectItem value={HierarchyLevel.M2}>M2</SelectItem>
                   </SelectContent>
                 </Select>
-                {(action === 'promote' || action === 'assign') && (
-                  <Select value={targetLevel} onValueChange={(value) => setTargetLevel(value as HierarchyLevel)}>
-                    <SelectTrigger className="w-40">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={HierarchyLevel.RF1}>RF1</SelectItem>
-                      <SelectItem value={HierarchyLevel.RF2}>RF2</SelectItem>
-                      <SelectItem value={HierarchyLevel.RF3}>RF3</SelectItem>
-                      <SelectItem value={HierarchyLevel.OF1}>OF1</SelectItem>
-                      <SelectItem value={HierarchyLevel.OF2}>OF2</SelectItem>
-                      <SelectItem value={HierarchyLevel.M1}>M1</SelectItem>
-                      <SelectItem value={HierarchyLevel.M2}>M2</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
-              <div className="flex space-x-2">
-                <Button variant="outline" onClick={() => setSelectedUsers([])}>
-                  Cancel
-                </Button>
-                <Button onClick={handleBulkAction} className="bg-blue-600 hover:bg-blue-700">
-                  Apply Changes
-                </Button>
-              </div>
+              )}
             </div>
-          </CardContent>
-        </Card>
+            <div className="flex space-x-2">
+              <Button variant="outline" onClick={() => setSelectedUsers([])}>
+                Cancel
+              </Button>
+              <Button onClick={handleBulkAction} className="bg-blue-600 hover:bg-blue-700">
+                Apply Changes
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
 
-      {/* Hierarchy Overview */}
+      {/* Hierarchy Level Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {hierarchyData.hierarchyLevels.map((levelData) => (
-          <Card key={levelData.level} className="relative overflow-hidden bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow">
-            <CardHeader className="pb-3 border-b border-slate-100">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  {getHierarchyIcon(levelData.level)}
-                  <CardTitle className="text-lg">{levelData.level}</CardTitle>
+          <div key={levelData.level} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                {getHierarchyIcon(levelData.level)}
+                <span className="text-lg font-semibold text-gray-900">{levelData.level}</span>
+              </div>
+              <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${getHierarchyColor(levelData.level)}`}>
+                {levelData.count} users
+              </span>
+            </div>
+            <p className="text-xs text-gray-500 mb-3">{getHierarchyDescription(levelData.level)}</p>
+
+            <div className="space-y-2">
+              {levelData.users.slice(0, 3).map((user) => (
+                <div key={user.id} className="flex items-center gap-2">
+                  <Checkbox
+                    checked={selectedUsers.includes(user.id)}
+                    onCheckedChange={() => toggleUserSelection(user.id)}
+                  />
+                  <Avatar className="h-7 w-7 rounded-lg ring-1 ring-gray-200 flex-shrink-0">
+                    <AvatarImage src={user.image || undefined} />
+                    <AvatarFallback className="rounded-lg bg-blue-50 text-blue-700 text-xs font-medium">
+                      {user.name
+                        ? user.name.split(' ').map(n => n[0]).join('')
+                        : user.email?.[0]?.toUpperCase() || '?'
+                      }
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">{user.name}</p>
+                    <p className="text-xs text-gray-500 truncate">
+                      {user.teamMembers.length > 0
+                        ? user.teamMembers.map(tm => tm.team.name).join(', ')
+                        : 'No team assigned'
+                      }
+                    </p>
+                  </div>
                 </div>
-                <Badge className={`${getHierarchyColor(levelData.level)} rounded-md px-2.5 py-0.5 text-xs font-medium`}>
-                  {levelData.count} users
-                </Badge>
-              </div>
-              <CardDescription className="text-xs">
-                {getHierarchyDescription(levelData.level)}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {levelData.users.slice(0, 3).map((user) => (
-                  <div key={user.id} className="flex items-center space-x-3">
-                    <Checkbox
-                      checked={selectedUsers.includes(user.id)}
-                      onCheckedChange={() => toggleUserSelection(user.id)}
-                    />
-                    <Avatar className="h-8 w-8 rounded-lg ring-2 ring-slate-200">
-                      <AvatarImage src={user.image || undefined} />
-                      <AvatarFallback className="rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 text-blue-700 font-medium text-xs">
-                        {user.name
-                          ? user.name.split(' ').map(n => n[0]).join('')
-                          : user.email?.[0]?.toUpperCase() || '?'
-                        }
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-900 truncate">
-                        {user.name}
-                      </p>
-                      <p className="text-xs font-medium text-slate-500 truncate">
-                        {user.teamMembers.length > 0
-                          ? user.teamMembers.map(tm => tm.team.name).join(', ')
-                          : 'No team assigned'
-                        }
-                      </p>
-                    </div>
-                  </div>
-                ))}
-                {levelData.users.length > 3 && (
-                  <div className="text-xs text-gray-500 text-center pt-2 border-t">
-                    +{levelData.users.length - 3} more users
-                  </div>
-                )}
-                {levelData.users.length === 0 && (
-                  <div className="text-center text-gray-500 text-sm py-4">
-                    No users at this level
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+              ))}
+              {levelData.users.length > 3 && (
+                <p className="text-xs text-gray-400 text-center pt-1 border-t border-gray-100">
+                  +{levelData.users.length - 3} more users
+                </p>
+              )}
+              {levelData.users.length === 0 && (
+                <p className="text-center text-xs text-gray-400 py-3">No users at this level</p>
+              )}
+            </div>
+          </div>
         ))}
       </div>
 
       {/* Detailed User List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>All Users by Hierarchy</CardTitle>
-          <CardDescription>Complete list of users organized by hierarchy level</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            {hierarchyData.hierarchyLevels.map((levelData) => (
-              <div key={levelData.level}>
-                <div className="flex items-center space-x-2 mb-3">
-                  {getHierarchyIcon(levelData.level)}
-                  <h3 className="text-lg font-semibold text-gray-900">{levelData.level}</h3>
-                  <Badge className={getHierarchyColor(levelData.level)}>
-                    {levelData.count}
-                  </Badge>
-                </div>
-                {levelData.users.length > 0 ? (
-                  <div className="grid gap-3">
-                    {levelData.users.map((user) => (
-                      <div key={user.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                        <div className="flex items-center space-x-4">
-                          <Checkbox
-                            checked={selectedUsers.includes(user.id)}
-                            onCheckedChange={() => toggleUserSelection(user.id)}
-                          />
-                          <Avatar className="h-10 w-10">
-                            <AvatarFallback>
-                              {user.name ? user.name.split(' ').map(n => n[0]).join('') : '?'}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium text-gray-900">{user.name}</p>
-                            <p className="text-sm text-gray-600">{user.email}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          {user.teamMembers.length > 0 && (
-                            <div className="flex flex-wrap gap-1">
-                              {user.teamMembers.slice(0, 2).map((tm, index) => (
-                                <Badge key={index} variant="outline" className="text-xs">
-                                  {tm.team.name}
-                                </Badge>
-                              ))}
-                              {user.teamMembers.length > 2 && (
-                                <Badge variant="outline" className="text-xs">
-                                  +{user.teamMembers.length - 2}
-                                </Badge>
-                              )}
-                            </div>
-                          )}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100">
+          <h2 className="text-lg font-semibold text-gray-900">All Users by Hierarchy</h2>
+          <p className="text-sm text-gray-500 mt-0.5">Complete list of users organized by hierarchy level</p>
+        </div>
+        <div className="p-5 space-y-6">
+          {hierarchyData.hierarchyLevels.map((levelData) => (
+            <div key={levelData.level}>
+              <div className="flex items-center gap-2 mb-3">
+                {getHierarchyIcon(levelData.level)}
+                <h3 className="text-sm font-semibold text-gray-900">{levelData.level}</h3>
+                <Badge className={`${getHierarchyColor(levelData.level)} rounded-full px-2.5 py-0.5 text-xs font-medium`}>
+                  {levelData.count}
+                </Badge>
+              </div>
+              {levelData.users.length > 0 ? (
+                <div className="space-y-2">
+                  {levelData.users.map((user) => (
+                    <div key={user.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          checked={selectedUsers.includes(user.id)}
+                          onCheckedChange={() => toggleUserSelection(user.id)}
+                        />
+                        <Avatar className="h-9 w-9">
+                          <AvatarImage src={user.image || undefined} />
+                          <AvatarFallback className="bg-blue-50 text-blue-700 text-sm font-medium">
+                            {user.name ? user.name.split(' ').map(n => n[0]).join('') : '?'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                          <p className="text-xs text-gray-500">{user.email}</p>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center text-gray-500 py-8">
-                    No users at {levelData.level} level
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+                      <div className="flex items-center gap-1">
+                        {user.teamMembers.length > 0 && (
+                          <>
+                            {user.teamMembers.slice(0, 2).map((tm, index) => (
+                              <span key={index} className="rounded-full px-2.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-600">
+                                {tm.team.name}
+                              </span>
+                            ))}
+                            {user.teamMembers.length > 2 && (
+                              <span className="rounded-full px-2.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-600">
+                                +{user.teamMembers.length - 2}
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-gray-400 text-sm">
+                  No users at {levelData.level} level
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

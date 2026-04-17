@@ -18,8 +18,10 @@ import {
   Activity,
   TrendingUp,
   ArrowRight,
+  Search,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import MemberProfileModal from '@/components/shared/MemberProfileModal'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
@@ -49,6 +51,7 @@ export default function WorkloadPage() {
   const [workload, setWorkload] = useState<UserWorkload[]>([])
   const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
+  const [searchTerm, setSearchTerm] = useState('')
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
 
@@ -78,6 +81,7 @@ export default function WorkloadPage() {
   }
 
   useEffect(() => { fetchWorkload() }, [])
+  useEffect(() => { setCurrentPage(1) }, [searchTerm])
 
   const getActivityLevel = (tasks: UserWorkload['tasks']) => {
     const active = tasks.todo + tasks.inProgress + tasks.inReview
@@ -127,8 +131,16 @@ export default function WorkloadPage() {
   const totalMembers  = workload.length
   const available     = workload.filter(u => u.tasks.todo + u.tasks.inProgress + u.tasks.inReview === 0 && u.tasks.overdue === 0).length
 
-  const totalPages    = Math.max(1, Math.ceil(workload.length / ITEMS_PER_PAGE))
-  const paginated     = workload.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+  const filtered      = searchTerm.trim()
+    ? workload.filter(u =>
+        u.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        u.positionTitle?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : workload
+
+  const totalPages    = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE))
+  const paginated     = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
 
   return (
     <div className="space-y-8">
@@ -144,16 +156,27 @@ export default function WorkloadPage() {
                 Live overview of active tasks and capacity across the team.
               </p>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={fetchWorkload}
-              disabled={loading}
-              className="shrink-0 border-slate-300 bg-white hover:bg-slate-50 text-slate-700 shadow-sm"
-            >
-              <RefreshCw className={cn('h-4 w-4 mr-2', loading && 'animate-spin')} />
-              Refresh
-            </Button>
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                <Input
+                  placeholder="Search members..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 w-52 border-slate-300 bg-white rounded-lg text-sm h-9 shadow-sm"
+                />
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchWorkload}
+                disabled={loading}
+                className="shrink-0 border-slate-300 bg-white hover:bg-slate-50 text-slate-700 shadow-sm"
+              >
+                <RefreshCw className={cn('h-4 w-4 mr-2', loading && 'animate-spin')} />
+                Refresh
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -253,13 +276,22 @@ export default function WorkloadPage() {
             <p className="text-sm text-slate-500">Loading workload data...</p>
           </div>
         </div>
-      ) : workload.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <div className="p-4 bg-slate-100 rounded-full mb-4">
             <Users className="h-10 w-10 text-slate-300" />
           </div>
-          <h3 className="text-base font-semibold text-slate-600 mb-1">No team members found</h3>
-          <p className="text-sm text-slate-400">Add members to your team to see workload data.</p>
+          <h3 className="text-base font-semibold text-slate-600 mb-1">
+            {searchTerm ? 'No members match your search' : 'No team members found'}
+          </h3>
+          <p className="text-sm text-slate-400">
+            {searchTerm ? `Try a different name, email, or position` : 'Add members to your team to see workload data.'}
+          </p>
+          {searchTerm && (
+            <Button variant="outline" size="sm" className="mt-4 border-slate-200" onClick={() => setSearchTerm('')}>
+              Clear search
+            </Button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -384,14 +416,15 @@ export default function WorkloadPage() {
       )}
 
       {/* ── Pagination ── */}
-      {!loading && workload.length > ITEMS_PER_PAGE && (
+      {!loading && filtered.length > ITEMS_PER_PAGE && (
         <div className="flex items-center justify-between px-1">
           <p className="text-sm text-slate-500">
             Showing{' '}
             <span className="font-semibold text-slate-700">
-              {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, workload.length)}
+              {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)}
             </span>{' '}
-            of <span className="font-semibold text-slate-700">{workload.length}</span> members
+            of <span className="font-semibold text-slate-700">{filtered.length}</span> members
+            {searchTerm && <span className="text-slate-400"> matching "{searchTerm}"</span>}
           </p>
           <div className="flex items-center gap-2">
             <Button

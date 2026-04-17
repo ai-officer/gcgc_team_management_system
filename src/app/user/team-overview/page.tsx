@@ -478,21 +478,12 @@ export default function TeamOverviewPage() {
 
   // Validation functions for each step
   const isGroupSetupValid = () => {
-    // Must have division selected
+    // Must have division selected (or typed in for 'Other')
     if (!newUserData.division) return false
-
-    // For Hotel Operations, need sector head and hotel selection
-    if (newUserData.division === 'Hotel Operations') {
-      return selectedSectorHead && newUserData.department
-    }
-
-    // For custom divisions, just need division name
-    if (showOtherInputs.division) {
-      return true
-    }
-
-    // For other divisions, need department selection
-    return newUserData.department && newUserData.jobLevel
+    // For Hotel Operations, sector head must be picked
+    if (selectedDivision?.requiresSectorHead && !selectedSectorHead) return false
+    // Department, section, job level are all optional — API has safe defaults
+    return true
   }
 
   const isPersonalInfoValid = () => {
@@ -600,16 +591,30 @@ export default function TeamOverviewPage() {
 
       const newUser = await createResponse.json()
 
-      // Show success message with login credentials
-      toast({
-        title: "Account Created Successfully!",
-        description: `User ${newUser.name} has been created. Login credentials will be shown below.`,
-        variant: "default"
+      // Immediately add the created user to the team
+      const teamResponse = await fetch('/api/user/team-members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: newUser.id })
       })
 
-      // Set up for preview with credentials
-      setSelectedUserForPreview(newUser)
-      setShowPreview(true)
+      if (teamResponse.ok) {
+        handleDialogOpenChange(false)
+        fetchTeamData()
+        toast({
+          title: "Member Added",
+          description: `${newUser.name} has been created and added to your team.`,
+        })
+      } else {
+        // User was created but team-add failed — show warning, don't block
+        const teamError = await teamResponse.json().catch(() => ({}))
+        toast({
+          title: "Account Created",
+          description: `Account created but could not add to team: ${teamError.error || 'unknown error'}. Find them via "Select Existing User".`,
+          variant: "destructive"
+        })
+        handleDialogOpenChange(false)
+      }
 
     } catch (err: any) {
       toast({
@@ -1485,107 +1490,82 @@ export default function TeamOverviewPage() {
                         </div>
                       </div>
 
-                        {showLivePreview && selectedUserForPreview && (
-                          <Card className="border-2 border-primary/20 bg-primary/5">
-                            <CardContent className="p-3">
+                        {showLivePreview && (
+                          <Card className="border border-slate-200 bg-white shadow-sm rounded-xl overflow-hidden">
+                            {/* Card header label */}
+                            <div className="px-4 pt-3 pb-2 bg-slate-50 border-b border-slate-100 flex items-center gap-1.5">
+                              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                              <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Member Preview</span>
+                            </div>
+                            <CardContent className="p-4">
                               <div className="space-y-3">
-                                {/* Avatar and Basic Info */}
+                                {/* Avatar + name + status — mirrors actual card */}
                                 <div className="flex items-center gap-3">
-                                  <Avatar className="h-10 w-10">
-                                    <AvatarImage src={selectedUserForPreview.image || undefined} />
-                                    <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium text-sm">
-                                      {selectedUserForPreview.name
-                                        ? selectedUserForPreview.name.split(' ').map(n => n[0]).join('')
-                                        : selectedUserForPreview.email?.[0]?.toUpperCase()
-                                      }
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <div className="min-w-0 flex-1">
-                                    <h3 className="font-semibold text-foreground text-sm truncate">
-                                      {selectedUserForPreview.name || 'Enter name...'}
-                                    </h3>
-                                    <p className="text-xs text-muted-foreground truncate">
-                                      {selectedUserForPreview.email || 'Enter email...'}
-                                    </p>
+                                  <div className="relative shrink-0">
+                                    <Avatar className="h-12 w-12 ring-2 ring-slate-200 rounded-lg">
+                                      <AvatarImage src={selectedUserForPreview?.image || undefined} />
+                                      <AvatarFallback className="bg-blue-100 text-blue-700 font-bold rounded-lg text-sm">
+                                        {selectedUserForPreview?.name
+                                          ? selectedUserForPreview.name.split(' ').map(n => n[0]).join('').slice(0, 2)
+                                          : (newUserData.firstName?.[0] || newUserData.email?.[0] || '?').toUpperCase()
+                                        }
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <div className="absolute w-3 h-3 rounded-full bg-emerald-500 border-2 border-white -bottom-0.5 -right-0.5" />
                                   </div>
-                                </div>
-
-                                {/* Organizational Path */}
-                                <div className="space-y-2 text-xs">
-                                  {/* Build organizational path */}
-                                  {((selectedUserForPreview as any).division ||
-                                    (selectedUserForPreview as any).department ||
-                                    (selectedUserForPreview as any).section) && (
-                                    <div className="p-2 bg-gray-50 rounded border">
-                                      <span className="font-medium text-gray-700 text-xs">Path:</span>
-                                      <div className="text-xs text-gray-600 mt-1 break-words">
-                                        {[
-                                          (selectedUserForPreview as any).division,
-                                          (selectedUserForPreview as any).department,
-                                          (selectedUserForPreview as any).section,
-                                          (selectedUserForPreview as any).team
-                                        ].filter(Boolean).join(' → ') || 'Not set'}
-                                      </div>
+                                  <div className="min-w-0 flex-1 space-y-1">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className="font-semibold text-slate-900 text-sm truncate">
+                                        {selectedUserForPreview?.name || (
+                                          <span className="text-slate-400 italic">Enter name...</span>
+                                        )}
+                                      </span>
+                                      <Badge className="text-xs rounded-md bg-emerald-50 text-emerald-700 border-emerald-200 font-medium">
+                                        Active
+                                      </Badge>
                                     </div>
-                                  )}
-
-                                  <div className="space-y-1">
-                                    {/* Personal Information */}
-                                    {((selectedUserForPreview as any).firstName || (selectedUserForPreview as any).lastName) && (
-                                      <div className="text-xs bg-blue-50 p-2 rounded border">
-                                        <span className="font-medium text-blue-700">Personal Details:</span>
-                                        <div className="mt-1 text-blue-600">
-                                          {(selectedUserForPreview as any).firstName && (
-                                            <div>First: {(selectedUserForPreview as any).firstName}</div>
-                                          )}
-                                          {(selectedUserForPreview as any).lastName && (
-                                            <div>Last: {(selectedUserForPreview as any).lastName}</div>
-                                          )}
-                                          {(selectedUserForPreview as any).middleName && (
-                                            <div>Middle: {(selectedUserForPreview as any).middleName}</div>
-                                          )}
-                                          {(selectedUserForPreview as any).shortName && (
-                                            <div>Short: {(selectedUserForPreview as any).shortName}</div>
-                                          )}
-                                          {(selectedUserForPreview as any).username && (
-                                            <div>Username: {(selectedUserForPreview as any).username}</div>
-                                          )}
-                                        </div>
+                                    <div className="flex items-center gap-1 text-xs text-slate-500">
+                                      <Mail className="h-3 w-3 text-slate-400 shrink-0" />
+                                      <span className="truncate">{newUserData.email || <span className="italic text-slate-400">email@example.com</span>}</span>
+                                    </div>
+                                    {selectedUserForPreview?.positionTitle && (
+                                      <div className="flex items-center gap-1 text-xs text-slate-500">
+                                        <Target className="h-3 w-3 text-slate-400 shrink-0" />
+                                        <span className="truncate">{selectedUserForPreview.positionTitle}</span>
                                       </div>
-                                    )}
-
-                                    {/* Position & Job Information */}
-                                    {selectedUserForPreview.positionTitle && (
-                                      <div><span className="font-medium">Position:</span> {selectedUserForPreview.positionTitle}</div>
-                                    )}
-                                    {(selectedUserForPreview as any).jobLevel && (
-                                      <div><span className="font-medium">Job Level:</span> {(selectedUserForPreview as any).jobLevel}</div>
-                                    )}
-                                    {selectedUserForPreview.contactNumber && (
-                                      <div><span className="font-medium">Contact:</span> {selectedUserForPreview.contactNumber}</div>
-                                    )}
-                                    {selectedSectorHead && (
-                                      <div><span className="font-medium">Sector Head:</span> {selectedSectorHead}</div>
                                     )}
                                   </div>
                                 </div>
 
-                                <div className="p-2 bg-green-50 rounded border border-green-200">
-                                  <div className="text-xs text-green-700">
-                                    <div className="font-medium">Account Ready</div>
-                                    {(selectedUserForPreview as any).temporaryPassword ? (
-                                      <div className="mt-2 space-y-1">
-                                        <div className="font-medium text-green-800">Account Created Successfully</div>
-                                        <div><strong>Email:</strong> {selectedUserForPreview.email}</div>
-                                        <div><strong>Password:</strong> {(selectedUserForPreview as any).temporaryPassword}</div>
-                                        <div className="text-xs text-green-600 mt-2">
-                                          Save these credentials The user can login with this information.
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      <div>Password: Default password will be assigned</div>
-                                    )}
+                                {/* Org path */}
+                                {(newUserData.division || newUserData.department || newUserData.section) && (
+                                  <div className="flex items-start gap-1.5 text-xs text-slate-500 bg-slate-50 rounded-lg p-2.5">
+                                    <Building2 className="h-3 w-3 text-slate-400 shrink-0 mt-0.5" />
+                                    <span className="break-words leading-relaxed">
+                                      {[newUserData.division, newUserData.department, newUserData.section]
+                                        .filter(Boolean).join(' · ')}
+                                    </span>
                                   </div>
+                                )}
+
+                                {/* Badges row */}
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  {(newUserData.jobLevel) && (
+                                    <Badge variant="outline" className="text-xs rounded-md border-slate-200 text-slate-600">
+                                      {newUserData.jobLevel}
+                                    </Badge>
+                                  )}
+                                  <Badge className="text-xs rounded-md bg-slate-100 text-slate-500 border-slate-200 font-medium">
+                                    Not evaluated
+                                  </Badge>
+                                </div>
+
+                                {/* Default password notice */}
+                                <div className="flex items-start gap-2 text-xs text-blue-700 bg-blue-50 rounded-lg p-2.5 border border-blue-100">
+                                  <svg className="h-3.5 w-3.5 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clipRule="evenodd" />
+                                  </svg>
+                                  <span>Default password <strong>sogopassword</strong> will be assigned on creation.</span>
                                 </div>
                               </div>
                             </CardContent>

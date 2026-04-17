@@ -84,7 +84,7 @@ interface MemberProfile {
   }
 }
 
-type StatusFilter = 'ALL' | 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'
+type StatusFilter = 'ALL' | 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' | 'OVERDUE'
 
 interface MemberProfileModalProps {
   isOpen: boolean
@@ -167,16 +167,22 @@ export default function MemberProfileModal({ isOpen, onClose, memberId }: Member
   }
 
   // Status filter tabs definition
-  const filterTabs: { key: StatusFilter; label: string }[] = [
+  const filterTabs: { key: StatusFilter; label: string; danger?: boolean }[] = [
     { key: 'ALL',         label: 'All'         },
     { key: 'TODO',        label: 'To Do'       },
     { key: 'IN_PROGRESS', label: 'In Progress' },
     { key: 'IN_REVIEW',   label: 'In Review'   },
     { key: 'COMPLETED',   label: 'Completed'   },
+    { key: 'OVERDUE',     label: 'Overdue', danger: true },
   ]
+
+  const sot = new Date(); sot.setHours(0, 0, 0, 0)
+  const isTaskOverdue = (t: Task) => !!t.dueDate && new Date(t.dueDate) < sot && t.status !== 'COMPLETED'
 
   const filteredTasks = statusFilter === 'ALL'
     ? allTasks
+    : statusFilter === 'OVERDUE'
+    ? allTasks.filter(isTaskOverdue)
     : allTasks.filter(t => t.status === statusFilter)
 
   const taskCounts = {
@@ -185,6 +191,7 @@ export default function MemberProfileModal({ isOpen, onClose, memberId }: Member
     IN_PROGRESS: allTasks.filter(t => t.status === 'IN_PROGRESS').length,
     IN_REVIEW:   allTasks.filter(t => t.status === 'IN_REVIEW').length,
     COMPLETED:   allTasks.filter(t => t.status === 'COMPLETED').length,
+    OVERDUE:     allTasks.filter(isTaskOverdue).length,
   }
 
   const completionRate = allTasks.length > 0
@@ -359,26 +366,32 @@ export default function MemberProfileModal({ isOpen, onClose, memberId }: Member
 
                   {/* Status Filter Tabs */}
                   <div className="flex items-center gap-1 mb-4 bg-slate-100 p-1 rounded-lg w-fit flex-wrap">
-                    {filterTabs.map(tab => (
-                      <button
-                        key={tab.key}
-                        onClick={() => setStatusFilter(tab.key)}
-                        className={cn(
-                          "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
-                          statusFilter === tab.key
-                            ? "bg-white text-slate-900 shadow-sm"
-                            : "text-slate-500 hover:text-slate-700"
-                        )}
-                      >
-                        {tab.label}
-                        <span className={cn(
-                          "inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full text-[10px] font-bold",
-                          statusFilter === tab.key ? "bg-blue-100 text-blue-700" : "bg-slate-200 text-slate-500"
-                        )}>
-                          {taskCounts[tab.key]}
-                        </span>
-                      </button>
-                    ))}
+                    {filterTabs.map(tab => {
+                      const isActive = statusFilter === tab.key
+                      const isDanger = tab.danger && taskCounts[tab.key] > 0
+                      return (
+                        <button
+                          key={tab.key}
+                          onClick={() => setStatusFilter(tab.key)}
+                          className={cn(
+                            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
+                            isActive
+                              ? isDanger ? "bg-white text-red-600 shadow-sm" : "bg-white text-slate-900 shadow-sm"
+                              : "text-slate-500 hover:text-slate-700"
+                          )}
+                        >
+                          {tab.label}
+                          <span className={cn(
+                            "inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full text-[10px] font-bold",
+                            isActive
+                              ? isDanger ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"
+                              : isDanger ? "bg-red-50 text-red-500" : "bg-slate-200 text-slate-500"
+                          )}>
+                            {taskCounts[tab.key]}
+                          </span>
+                        </button>
+                      )
+                    })}
                   </div>
 
                   {/* Task List */}
@@ -395,8 +408,7 @@ export default function MemberProfileModal({ isOpen, onClose, memberId }: Member
                   ) : (
                     <div className="space-y-2">
                       {filteredTasks.map((task) => {
-                        const sot = new Date(); sot.setHours(0, 0, 0, 0)
-                        const isOverdue = task.dueDate && new Date(task.dueDate) < sot && task.status !== 'COMPLETED'
+                          const overdue = isTaskOverdue(task)
                         return (
                           <div
                             key={task.id}
@@ -425,13 +437,13 @@ export default function MemberProfileModal({ isOpen, onClose, memberId }: Member
                                   <Badge className={cn("text-[10px] px-1.5 h-5 border font-medium", getStatusColor(task.status))}>
                                     {task.status.replace(/_/g, ' ')}
                                   </Badge>
-                                  {isOverdue && (
+                                  {overdue && (
                                     <Badge className="text-[10px] px-1.5 h-5 bg-red-50 text-red-600 border border-red-200 font-medium">
                                       Overdue
                                     </Badge>
                                   )}
                                   {task.dueDate && (
-                                    <span className={cn("text-xs flex items-center gap-1", isOverdue ? "text-red-500 font-medium" : "text-slate-400")}>
+                                    <span className={cn("text-xs flex items-center gap-1", overdue ? "text-red-500 font-medium" : "text-slate-400")}>
                                       <Clock className="h-3 w-3" />
                                       {format(new Date(task.dueDate), 'MMM d, yyyy')}
                                     </span>

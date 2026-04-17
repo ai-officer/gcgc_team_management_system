@@ -27,14 +27,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { UserAvatar } from '@/components/shared/UserAvatar'
 import { Progress } from '@/components/ui/progress'
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import {
   Select,
@@ -43,8 +44,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { SearchableSelect } from '@/components/ui/searchable-select'
-import { 
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -55,6 +64,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { useToast } from '@/hooks/use-toast'
+import { cn } from '@/lib/utils'
 import { format, isAfter, subDays } from 'date-fns'
 import TaskForm from '@/components/tasks/TaskForm'
 import TaskViewModal from '@/components/tasks/TaskViewModal'
@@ -71,6 +81,7 @@ interface Task {
   progressPercentage: number
   taskType: 'INDIVIDUAL' | 'TEAM' | 'COLLABORATION'
   parentId?: string | null
+  boardId?: string | null
   // Google Calendar fields
   location?: string
   meetingLink?: string
@@ -141,12 +152,22 @@ interface User {
   image?: string
 }
 
+interface KanbanBoard {
+  id: string
+  name: string
+  description?: string
+  color: string
+  _count: { tasks: number }
+}
+
 const COLUMN_CONFIG = {
   TODO: { title: 'To Do', color: 'bg-gray-100', textColor: 'text-gray-700' },
   IN_PROGRESS: { title: 'In Progress', color: 'bg-blue-100', textColor: 'text-blue-700' },
   IN_REVIEW: { title: 'In Review', color: 'bg-yellow-100', textColor: 'text-yellow-700' },
   COMPLETED: { title: 'Completed', color: 'bg-green-100', textColor: 'text-green-700' },
 }
+
+const BOARD_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316']
 
 export default function TasksPage() {
   const { data: session } = useSession()
@@ -170,6 +191,16 @@ export default function TasksPage() {
   const [deleteScope, setDeleteScope] = useState<'single' | 'series'>('single')
   const [viewingTask, setViewingTask] = useState<Task | null>(null)
   const [showViewModal, setShowViewModal] = useState(false)
+
+  // Board state
+  const [boards, setBoards] = useState<KanbanBoard[]>([])
+  const [activeBoardId, setActiveBoardId] = useState<string | null>(null) // null = "All Tasks"
+  const [showCreateBoard, setShowCreateBoard] = useState(false)
+  const [newBoardName, setNewBoardName] = useState('')
+  const [newBoardColor, setNewBoardColor] = useState('#3B82F6')
+  const [newBoardDescription, setNewBoardDescription] = useState('')
+  const [creatingBoard, setCreatingBoard] = useState(false)
+  const [editingBoard, setEditingBoard] = useState<KanbanBoard | null>(null)
 
   // Open task modal from URL query param (e.g., from notification click)
   const openTaskFromUrl = useCallback(async (taskId: string) => {
@@ -207,6 +238,7 @@ export default function TasksPage() {
       if (selectedTeam) params.append('teamId', selectedTeam)
       if (selectedUser) params.append('userId', selectedUser)
       if (selectedTaskType) params.append('taskType', selectedTaskType)
+      if (activeBoardId) params.append('boardId', activeBoardId)
 
       console.log('Fetching tasks with params:', params.toString())
 
@@ -233,7 +265,7 @@ export default function TasksPage() {
 
   useEffect(() => {
     fetchTasks()
-  }, [session, selectedTeam, selectedUser, selectedTaskType])
+  }, [session, selectedTeam, selectedUser, selectedTaskType, activeBoardId])
 
   // Refetch tasks when page becomes visible (e.g., navigating back from Calendar)
   useEffect(() => {
@@ -270,11 +302,70 @@ export default function TasksPage() {
     }
   }
 
+  const fetchBoards = useCallback(async () => {
+    try {
+      const res = await fetch('/api/boards')
+      if (res.ok) {
+        const data = await res.json()
+        setBoards(data.boards || [])
+      }
+    } catch (e) {
+      console.error('Error fetching boards:', e)
+    }
+  }, [])
+
   useEffect(() => {
     if (session?.user) {
       fetchUsers()
+      fetchBoards()
     }
-  }, [session])
+  }, [session, fetchBoards])
+
+  const createBoard = async () => {
+    if (!newBoardName.trim()) return
+    setCreatingBoard(true)
+    try {
+      const res = await fetch('/api/boards', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newBoardName.trim(),
+          description: newBoardDescription || undefined,
+          color: newBoardColor,
+        }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setBoards(prev => [...prev, data.board])
+        setActiveBoardId(data.board.id)
+        setShowCreateBoard(false)
+        setNewBoardName('')
+        setNewBoardDescription('')
+        setNewBoardColor('#3B82F6')
+        toast({ title: `Board "${data.board.name}" created` })
+      }
+    } catch (e) {
+      console.error('Error creating board:', e)
+    } finally {
+      setCreatingBoard(false)
+    }
+  }
+
+  const deleteBoard = async (boardId: string) => {
+    const board = boards.find(b => b.id === boardId)
+    if (!board) return
+    try {
+      const res = await fetch(`/api/boards/${boardId}`, { method: 'DELETE' })
+      if (res.ok) {
+        setBoards(prev => prev.filter(b => b.id !== boardId))
+        if (activeBoardId === boardId) setActiveBoardId(null)
+        toast({ title: `Board "${board.name}" deleted. Tasks moved to All Tasks.` })
+        fetchTasks(false)
+      }
+    } catch (e) {
+      console.error('Error deleting board:', e)
+    }
+  }
 
   const handleDragEnd = async (result: DropResult) => {
     if (!result.destination) return
@@ -282,16 +373,16 @@ export default function TasksPage() {
     const { draggableId, destination, source } = result
     const newStatus = destination.droppableId as Task['status']
     const originalStatus = source.droppableId as Task['status']
-    
+
     // Don't do anything if dropped in the same position
     if (destination.droppableId === source.droppableId && destination.index === source.index) {
       return
     }
-    
+
     // Find the task being moved
     const taskBeingMoved = tasks.find(t => t.id === draggableId)
     if (!taskBeingMoved) return
-    
+
     // Check if user can change task status
     if (!canUserChangeTaskStatus(taskBeingMoved)) {
       toast({
@@ -311,12 +402,12 @@ export default function TasksPage() {
       })
       return
     }
-    
+
     // Optimistically update the UI
-    setTasks(prev => 
-      prev.map(task => 
-        task.id === draggableId 
-          ? { ...task, status: newStatus } 
+    setTasks(prev =>
+      prev.map(task =>
+        task.id === draggableId
+          ? { ...task, status: newStatus }
           : task
       )
     )
@@ -354,12 +445,12 @@ export default function TasksPage() {
 
     } catch (err) {
       console.error('Error updating task status:', err)
-      
+
       // Revert on error
-      setTasks(prev => 
-        prev.map(task => 
-          task.id === draggableId 
-            ? { ...task, status: originalStatus } 
+      setTasks(prev =>
+        prev.map(task =>
+          task.id === draggableId
+            ? { ...task, status: originalStatus }
             : task
         )
       )
@@ -393,7 +484,7 @@ export default function TasksPage() {
 
   const getProgressColor = (percentage: number) => {
     if (percentage < 25) return 'bg-red-500'
-    if (percentage < 50) return 'bg-orange-500' 
+    if (percentage < 50) return 'bg-orange-500'
     if (percentage < 75) return 'bg-yellow-500'
     return 'bg-green-500'
   }
@@ -421,6 +512,10 @@ export default function TasksPage() {
     try {
       // Extract subtasks from data
       const { subtasks, ...mainTaskData } = taskData
+      // Inject active board id
+      if (activeBoardId) {
+        mainTaskData.boardId = activeBoardId
+      }
       console.log('Creating task with data:', mainTaskData)
 
       const response = await fetch('/api/tasks', {
@@ -462,6 +557,9 @@ export default function TasksPage() {
       // Refresh tasks from server to ensure we get the latest data
       await fetchTasks()
 
+      // Refresh board counts
+      fetchBoards()
+
       const subtaskCount = subtasks?.length || 0
       toast({
         title: 'Success',
@@ -484,7 +582,7 @@ export default function TasksPage() {
 
     try {
       console.log('Updating task:', editingTask.id, 'with data:', taskData)
-      
+
       const response = await fetch(`/api/tasks/${editingTask.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -499,10 +597,10 @@ export default function TasksPage() {
 
       const updatedTask = await response.json()
       console.log('Task updated successfully:', updatedTask)
-      
+
       // Refresh tasks to ensure we have the latest data
       await fetchTasks()
-      
+
       setEditingTask(null)
       toast({
         title: 'Success',
@@ -540,6 +638,7 @@ export default function TasksPage() {
 
       // Refresh tasks to ensure we have the latest data
       await fetchTasks()
+      fetchBoards()
 
       setDeletingTask(null)
       setDeleteScope('single')
@@ -630,7 +729,7 @@ export default function TasksPage() {
     if (task.assignedBy?.id === session?.user?.id) return true
     return false
   }
-  
+
   // Helper function to open view modal for all users
   const handleTaskClick = (task: Task) => {
     setViewingTask(task)
@@ -649,7 +748,7 @@ export default function TasksPage() {
       console.error('Error fetching subtask:', err)
     }
   }
-  
+
   // Helper function to open edit modal (called from view modal)
   const handleEditFromView = (task: Task) => {
     setEditingTask(task)
@@ -723,6 +822,68 @@ export default function TasksPage() {
         </Button>
       </div>
 
+      {/* Board Tab Strip */}
+      <div className="flex items-center gap-1 overflow-x-auto pb-1 border-b border-gray-200">
+        {/* All Tasks tab */}
+        <button
+          onClick={() => setActiveBoardId(null)}
+          className={cn(
+            'flex items-center gap-1.5 px-4 py-2 rounded-t-lg text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px',
+            activeBoardId === null
+              ? 'border-blue-600 text-blue-700 bg-blue-50/50'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+          )}
+        >
+          <ListTodo className="h-4 w-4" />
+          All Tasks
+        </button>
+
+        {/* Board tabs */}
+        {boards.map(board => (
+          <div key={board.id} className="relative group flex items-center">
+            <button
+              onClick={() => setActiveBoardId(board.id)}
+              className={cn(
+                'flex items-center gap-1.5 pl-3 pr-8 py-2 rounded-t-lg text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px',
+                activeBoardId === board.id
+                  ? 'text-gray-900 bg-gray-50'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+              )}
+              style={activeBoardId === board.id ? { borderBottomColor: board.color } : {}}
+            >
+              <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: board.color }} />
+              {board.name}
+              <span className="ml-1 text-xs text-gray-400 font-normal">({board._count.tasks})</span>
+            </button>
+            {/* Board actions menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-gray-200 transition-all">
+                  <MoreHorizontal className="h-3.5 w-3.5 text-gray-500" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-36">
+                <DropdownMenuItem onClick={() => setEditingBoard(board)}>
+                  <Edit className="h-4 w-4 mr-2" /> Rename
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-red-600" onClick={() => deleteBoard(board.id)}>
+                  <Trash2 className="h-4 w-4 mr-2" /> Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        ))}
+
+        {/* New Board button */}
+        <button
+          onClick={() => setShowCreateBoard(true)}
+          className="flex items-center gap-1 px-3 py-2 text-sm text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors whitespace-nowrap ml-1"
+        >
+          <Plus className="h-4 w-4" />
+          New Board
+        </button>
+      </div>
+
       {/* Filters */}
       <div className="flex gap-4 items-center flex-wrap">
         <div className="relative flex-1 max-w-md">
@@ -734,7 +895,7 @@ export default function TasksPage() {
             className="pl-10"
           />
         </div>
-        
+
         <SearchableSelect
           options={users}
           value={selectedUser}
@@ -791,7 +952,7 @@ export default function TasksPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 min-h-[700px]">
           {Object.entries(COLUMN_CONFIG).map(([status, config]) => {
             const columnTasks = getTasksByStatus(status as Task['status'])
-            
+
             return (
               <div key={status} className="min-w-0 space-y-4">
                 <div className={`p-3 rounded-lg ${config.color} shadow-sm`}>
@@ -848,7 +1009,7 @@ export default function TasksPage() {
                                     </div>
                                   </div>
                                 )}
-                                
+
                                 {/* Cannot Move Indicator */}
                                 {!canUserChangeTaskStatus(task) && (
                                   <div className="absolute -top-2 -left-2 z-10">
@@ -857,7 +1018,7 @@ export default function TasksPage() {
                                     </div>
                                   </div>
                                 )}
-                                
+
                                 {/* Header Section */}
                                 <div className="flex items-start justify-between mb-3">
                                   <div className="flex items-start gap-2 flex-1 min-w-0">
@@ -891,9 +1052,9 @@ export default function TasksPage() {
                                   </div>
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                      <Button 
-                                        variant="ghost" 
-                                        size="sm" 
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
                                         className="h-8 w-8 p-0 flex-shrink-0 ml-2"
                                         onClick={(e) => e.stopPropagation()}
                                       >
@@ -909,7 +1070,7 @@ export default function TasksPage() {
                                         <Eye className="h-4 w-4 mr-2" />
                                         View Details
                                       </DropdownMenuItem>
-                                      
+
                                       {/* Edit option - only for task creators */}
                                       {isTaskCreatedByUser(task) && (
                                         <DropdownMenuItem onClick={(e) => {
@@ -932,7 +1093,7 @@ export default function TasksPage() {
 
                                       {/* Delete option - shown if user can delete */}
                                       {canDeleteTask(task) && (
-                                        <DropdownMenuItem 
+                                        <DropdownMenuItem
                                           className="text-red-600"
                                           onClick={(e) => {
                                             e.stopPropagation()
@@ -1167,6 +1328,106 @@ export default function TasksPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Create Board Dialog */}
+      <Dialog open={showCreateBoard} onOpenChange={setShowCreateBoard}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create Kanban Board</DialogTitle>
+            <DialogDescription>Give your board a name and pick a color.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Board Name <span className="text-red-500">*</span></Label>
+              <Input
+                placeholder="e.g. Team A, Marketing Sprint, Q2 Goals"
+                value={newBoardName}
+                onChange={e => setNewBoardName(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') createBoard() }}
+                autoFocus
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Description <span className="text-gray-400 text-xs font-normal">(optional)</span></Label>
+              <Input
+                placeholder="What is this board for?"
+                value={newBoardDescription}
+                onChange={e => setNewBoardDescription(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Color</Label>
+              <div className="flex gap-2">
+                {BOARD_COLORS.map(color => (
+                  <button
+                    key={color}
+                    type="button"
+                    onClick={() => setNewBoardColor(color)}
+                    className={cn(
+                      'w-8 h-8 rounded-full border-2 transition-transform hover:scale-110',
+                      newBoardColor === color ? 'border-gray-800 scale-110' : 'border-transparent'
+                    )}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateBoard(false)}>Cancel</Button>
+            <Button onClick={createBoard} disabled={!newBoardName.trim() || creatingBoard}>
+              {creatingBoard ? 'Creating...' : 'Create Board'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Rename Board Dialog */}
+      {editingBoard && (
+        <Dialog open={!!editingBoard} onOpenChange={() => setEditingBoard(null)}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Rename Board</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <Input
+                value={editingBoard.name}
+                onChange={e => setEditingBoard({ ...editingBoard, name: e.target.value })}
+                autoFocus
+              />
+              <div className="flex gap-2">
+                {BOARD_COLORS.map(color => (
+                  <button
+                    key={color}
+                    type="button"
+                    onClick={() => setEditingBoard({ ...editingBoard, color })}
+                    className={cn(
+                      'w-7 h-7 rounded-full border-2 transition-transform',
+                      editingBoard.color === color ? 'border-gray-800 scale-110' : 'border-transparent'
+                    )}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditingBoard(null)}>Cancel</Button>
+              <Button onClick={async () => {
+                const res = await fetch(`/api/boards/${editingBoard.id}`, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ name: editingBoard.name, color: editingBoard.color }),
+                })
+                if (res.ok) {
+                  const data = await res.json()
+                  setBoards(prev => prev.map(b => b.id === editingBoard.id ? { ...b, ...data.board } : b))
+                  setEditingBoard(null)
+                }
+              }}>Save</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }

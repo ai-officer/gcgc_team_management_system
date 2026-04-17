@@ -39,6 +39,8 @@ const createTaskSchema = z.object({
   taskWeight: z.number().int().min(1).max(5).optional(),
   slaHours: z.number().int().min(1).optional().nullable(),
   reminderDays: z.array(z.number().int().min(1)).optional().default([]),
+  // Kanban board
+  boardId: z.string().optional().nullable(),
 })
 
 const querySchema = z.object({
@@ -53,6 +55,7 @@ const querySchema = z.object({
   excludeCreator: z.string().optional(), // Exclude tasks created by this user
   parentId: z.string().optional(), // Filter subtasks by parent task
   includeSubtasks: z.string().optional(), // Include subtasks in results (default: false)
+  boardId: z.string().optional(), // Filter by board ('none' = unassigned)
 })
 
 export async function GET(req: NextRequest) {
@@ -83,7 +86,8 @@ export async function GET(req: NextRequest) {
       userId,
       excludeCreator,
       parentId,
-      includeSubtasks
+      includeSubtasks,
+      boardId,
     } = querySchema.parse(Object.fromEntries(searchParams))
 
     const pageNum = parseInt(page)
@@ -169,6 +173,13 @@ export async function GET(req: NextRequest) {
     if (teamId) where.teamId = teamId
     if (excludeCreator) {
       where.NOT = { creatorId: excludeCreator }
+    }
+
+    // Board filter
+    if (boardId === 'none') {
+      where.boardId = null
+    } else if (boardId) {
+      where.boardId = boardId
     }
     
     // Filter by specific user involvement
@@ -432,6 +443,7 @@ export async function POST(req: NextRequest) {
       taskWeight,
       slaHours,
       reminderDays,
+      boardId,
     } = createTaskSchema.parse(body)
 
     // No team membership verification needed since we're selecting from all users
@@ -541,6 +553,7 @@ export async function POST(req: NextRequest) {
             taskWeight: taskWeight || null,
             slaHours: slaHours || null,
             reminderDays: reminderDays || [],
+            boardId: boardId || null,
           }
         })
 
@@ -610,6 +623,7 @@ export async function POST(req: NextRequest) {
           taskWeight: taskWeight || null,
           slaHours: slaHours || null,
           reminderDays: reminderDays || [],
+          boardId: boardId || null,
         },
       })
 

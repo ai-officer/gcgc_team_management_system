@@ -1,27 +1,27 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  Calendar, 
-  Briefcase, 
-  Building, 
-  Users, 
-  CheckSquare, 
-  Clock, 
+import { Progress } from '@/components/ui/progress'
+import {
+  User,
+  Mail,
+  Phone,
+  Calendar,
+  Briefcase,
+  Building,
+  Users,
+  CheckSquare,
+  Clock,
   AlertTriangle,
   Activity,
   Target,
@@ -29,10 +29,15 @@ import {
   MapPin,
   Hash,
   UserCheck,
-  X
+  X,
+  Filter,
+  ChevronRight,
+  ListTodo,
+  Eye,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
+import TaskViewModal from '@/components/tasks/TaskViewModal'
 
 interface Task {
   id: string
@@ -46,10 +51,8 @@ interface Task {
   taskType: 'INDIVIDUAL' | 'TEAM' | 'COLLABORATION'
   createdAt: string
   updatedAt: string
-  team?: {
-    id: string
-    name: string
-  }
+  assignee?: { id: string; name: string; email: string; image?: string }
+  team?: { id: string; name: string }
 }
 
 interface MemberProfile {
@@ -81,6 +84,8 @@ interface MemberProfile {
   }
 }
 
+type StatusFilter = 'ALL' | 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'
+
 interface MemberProfileModalProps {
   isOpen: boolean
   onClose: () => void
@@ -89,34 +94,43 @@ interface MemberProfileModalProps {
 
 export default function MemberProfileModal({ isOpen, onClose, memberId }: MemberProfileModalProps) {
   const [memberProfile, setMemberProfile] = useState<MemberProfile | null>(null)
+  const [allTasks, setAllTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL')
+  const [viewingTask, setViewingTask] = useState<Task | null>(null)
 
   useEffect(() => {
     if (isOpen && memberId) {
       fetchMemberProfile()
+      setStatusFilter('ALL')
     }
   }, [isOpen, memberId])
 
   const fetchMemberProfile = async () => {
     if (!memberId) return
-
     try {
       setLoading(true)
       setError(null)
-      
-      const response = await fetch(`/api/user/team-members/${memberId}`)
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch member profile')
-      }
 
-      const data = await response.json()
-      setMemberProfile(data)
+      // Fetch profile + all tasks (including completed) in parallel
+      const [profileRes, tasksRes] = await Promise.all([
+        fetch(`/api/user/team-members/${memberId}`),
+        fetch(`/api/tasks?assigneeId=${memberId}&limit=500`),
+      ])
+
+      if (!profileRes.ok) throw new Error('Failed to fetch member profile')
+
+      const profileData = await profileRes.json()
+      setMemberProfile(profileData)
+
+      if (tasksRes.ok) {
+        const tasksData = await tasksRes.json()
+        setAllTasks(tasksData.tasks || [])
+      }
     } catch (err) {
-      console.error('Error fetching member profile:', err)
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred'
-      setError(`Failed to load member profile: ${errorMessage}`)
+      const msg = err instanceof Error ? err.message : 'Unknown error'
+      setError(`Failed to load member profile: ${msg}`)
     } finally {
       setLoading(false)
     }
@@ -124,368 +138,350 @@ export default function MemberProfileModal({ isOpen, onClose, memberId }: Member
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'TODO': return 'bg-gray-100 text-gray-700'
-      case 'IN_PROGRESS': return 'bg-blue-100 text-blue-700'
-      case 'IN_REVIEW': return 'bg-yellow-100 text-yellow-700'
-      case 'COMPLETED': return 'bg-green-100 text-green-700'
-      default: return 'bg-gray-100 text-gray-700'
+      case 'TODO':        return 'bg-slate-100 text-slate-700 border-slate-300'
+      case 'IN_PROGRESS': return 'bg-blue-100 text-blue-700 border-blue-300'
+      case 'IN_REVIEW':   return 'bg-amber-100 text-amber-700 border-amber-300'
+      case 'COMPLETED':   return 'bg-emerald-100 text-emerald-700 border-emerald-300'
+      default:            return 'bg-slate-100 text-slate-700 border-slate-300'
+    }
+  }
+
+  const getStatusAccent = (status: string) => {
+    switch (status) {
+      case 'TODO':        return 'border-l-slate-400'
+      case 'IN_PROGRESS': return 'border-l-blue-400'
+      case 'IN_REVIEW':   return 'border-l-amber-400'
+      case 'COMPLETED':   return 'border-l-emerald-400'
+      default:            return 'border-l-slate-300'
     }
   }
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'URGENT': return 'bg-red-100 text-red-700 border-red-200'
-      case 'HIGH': return 'bg-orange-100 text-orange-700 border-orange-200'
+      case 'HIGH':   return 'bg-orange-100 text-orange-700 border-orange-200'
       case 'MEDIUM': return 'bg-yellow-100 text-yellow-700 border-yellow-200'
-      case 'LOW': return 'bg-green-100 text-green-700 border-green-200'
-      default: return 'bg-gray-100 text-gray-700 border-gray-200'
+      case 'LOW':    return 'bg-green-100 text-green-700 border-green-200'
+      default:       return 'bg-slate-100 text-slate-700 border-slate-200'
     }
   }
 
-  const getTaskTypeIcon = (type: string) => {
-    switch (type) {
-      case 'INDIVIDUAL': return '👤'
-      case 'TEAM': return '👥'
-      case 'COLLABORATION': return '🤝'
-      default: return '📋'
-    }
+  // Status filter tabs definition
+  const filterTabs: { key: StatusFilter; label: string }[] = [
+    { key: 'ALL',         label: 'All'         },
+    { key: 'TODO',        label: 'To Do'       },
+    { key: 'IN_PROGRESS', label: 'In Progress' },
+    { key: 'IN_REVIEW',   label: 'In Review'   },
+    { key: 'COMPLETED',   label: 'Completed'   },
+  ]
+
+  const filteredTasks = statusFilter === 'ALL'
+    ? allTasks
+    : allTasks.filter(t => t.status === statusFilter)
+
+  const taskCounts = {
+    ALL:         allTasks.length,
+    TODO:        allTasks.filter(t => t.status === 'TODO').length,
+    IN_PROGRESS: allTasks.filter(t => t.status === 'IN_PROGRESS').length,
+    IN_REVIEW:   allTasks.filter(t => t.status === 'IN_REVIEW').length,
+    COMPLETED:   allTasks.filter(t => t.status === 'COMPLETED').length,
   }
+
+  const completionRate = allTasks.length > 0
+    ? Math.round((taskCounts.COMPLETED / allTasks.length) * 100)
+    : 0
 
   if (!isOpen) return null
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Member Profile
-          </DialogTitle>
-          <DialogDescription>
-            Detailed information about team member and their current tasks
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="flex-1 overflow-y-auto">
-          {loading && (
-            <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            </div>
-          )}
-
-          {error && (
-            <div className="flex items-center justify-center h-64">
-              <div className="text-center">
-                <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                <p className="text-red-600">{error}</p>
-                <Button onClick={fetchMemberProfile} className="mt-4">
-                  Try Again
-                </Button>
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col p-0">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b border-slate-100 shrink-0">
+            <DialogTitle className="flex items-center gap-2 text-slate-900">
+              <div className="p-1.5 bg-blue-50 rounded-lg">
+                <User className="h-4 w-4 text-blue-600" />
               </div>
-            </div>
-          )}
+              Member Profile
+            </DialogTitle>
+          </DialogHeader>
 
-          {memberProfile && (
-            <div className="space-y-6">
-              {/* Header Section */}
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-6">
-                    <div className="relative">
-                      <Avatar className="h-20 w-20 ring-4 ring-primary/10">
+          <div className="flex-1 overflow-y-auto">
+            {loading && (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-center space-y-3">
+                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto" />
+                  <p className="text-sm text-slate-500">Loading profile...</p>
+                </div>
+              </div>
+            )}
+
+            {error && (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                  <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                  <p className="text-red-600 mb-4">{error}</p>
+                  <Button onClick={fetchMemberProfile}>Try Again</Button>
+                </div>
+              </div>
+            )}
+
+            {memberProfile && (
+              <div className="space-y-0 divide-y divide-slate-100">
+
+                {/* ── Profile Header ── */}
+                <div className="px-6 py-5 bg-gradient-to-br from-blue-50 via-slate-50 to-purple-50">
+                  <div className="flex items-start gap-5">
+                    <div className="relative shrink-0">
+                      <Avatar className="h-16 w-16 ring-4 ring-white shadow-md">
                         <AvatarImage src={memberProfile.image || undefined} />
-                        <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium text-2xl">
+                        <AvatarFallback className="bg-blue-100 text-blue-700 font-bold text-xl">
                           {memberProfile.name
-                            ? memberProfile.name.split(' ').map(n => n[0]).join('')
-                            : memberProfile.email?.[0]?.toUpperCase()
-                          }
+                            ? memberProfile.name.split(' ').map(n => n[0]).join('').slice(0, 2)
+                            : memberProfile.email?.[0]?.toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div className={cn(
-                        "absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-4 border-background",
-                        memberProfile.isActive ? "bg-green-500" : "bg-gray-400"
+                        "absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-white",
+                        memberProfile.isActive ? "bg-emerald-500" : "bg-slate-400"
                       )} />
                     </div>
 
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h2 className="text-2xl font-bold text-foreground">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h2 className="text-xl font-bold text-slate-900 truncate">
                           {memberProfile.name || 'Unnamed User'}
                         </h2>
-                        <Badge variant={memberProfile.isActive ? 'default' : 'secondary'}>
+                        <Badge className={cn("text-xs border shrink-0", memberProfile.isActive ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-100 text-slate-600 border-slate-200")}>
                           {memberProfile.isActive ? 'Active' : 'Inactive'}
                         </Badge>
                       </div>
-
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Mail className="h-4 w-4" />
-                          <span>{memberProfile.email}</span>
-                        </div>
-                        
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">
                         {memberProfile.positionTitle && (
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <Briefcase className="h-4 w-4" />
-                            <span>{memberProfile.positionTitle}</span>
-                          </div>
+                          <span className="flex items-center gap-1"><Briefcase className="h-3.5 w-3.5" />{memberProfile.positionTitle}</span>
                         )}
-
+                        <span className="flex items-center gap-1"><Mail className="h-3.5 w-3.5" />{memberProfile.email}</span>
                         {memberProfile.contactNumber && (
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <Phone className="h-4 w-4" />
-                            <span>{memberProfile.contactNumber}</span>
-                          </div>
+                          <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5" />{memberProfile.contactNumber}</span>
                         )}
-
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Calendar className="h-4 w-4" />
-                          <span>Joined {format(new Date(memberProfile.createdAt), 'MMM dd, yyyy')}</span>
-                        </div>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3.5 w-3.5" />Joined {format(new Date(memberProfile.createdAt), 'MMM d, yyyy')}
+                        </span>
                       </div>
                     </div>
 
-                    {/* Quick Stats */}
-                    <div className="text-right">
-                      <div className="space-y-2">
-                        <div>
-                          <div className="text-2xl font-bold text-primary">
-                            {memberProfile.assignedTasks?.length || 0}
-                          </div>
-                          <div className="text-sm text-muted-foreground">Active Tasks</div>
+                    {/* Quick task stats */}
+                    <div className="flex items-center gap-3 shrink-0">
+                      {[
+                        { label: 'Total', value: allTasks.length, color: 'text-slate-900' },
+                        { label: 'Active', value: taskCounts.IN_PROGRESS + taskCounts.TODO + taskCounts.IN_REVIEW, color: 'text-blue-600' },
+                        { label: 'Done', value: taskCounts.COMPLETED, color: 'text-emerald-600' },
+                      ].map(stat => (
+                        <div key={stat.label} className="text-center bg-white/70 rounded-xl px-3 py-2 border border-slate-200/60 shadow-sm">
+                          <p className={cn("text-xl font-bold", stat.color)}>{stat.value}</p>
+                          <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">{stat.label}</p>
                         </div>
-                        
-                        {memberProfile._count?.completedTasks !== undefined && (
-                          <div>
-                            <div className="text-xl font-semibold text-green-600">
-                              {memberProfile._count.completedTasks}
-                            </div>
-                            <div className="text-sm text-muted-foreground">Completed</div>
-                          </div>
-                        )}
-                      </div>
+                      ))}
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Personal Information */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <User className="h-5 w-5" />
-                      Personal Information
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      {memberProfile.firstName && (
-                        <div>
-                          <span className="font-medium text-muted-foreground">First Name:</span>
-                          <div>{memberProfile.firstName}</div>
+                {/* ── Info Grid ── */}
+                <div className="px-6 py-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                  {/* Personal */}
+                  <div>
+                    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3 flex items-center gap-1.5">
+                      <User className="h-3.5 w-3.5" /> Personal Information
+                    </h3>
+                    <div className="space-y-2 text-sm">
+                      {[
+                        { label: 'Full Name', value: memberProfile.name },
+                        { label: 'Username', value: memberProfile.username },
+                        { label: 'Short Name', value: memberProfile.shortName },
+                        { label: 'Role', value: memberProfile.role },
+                        { label: 'Job Level', value: memberProfile.jobLevel },
+                      ].filter(f => f.value).map(field => (
+                        <div key={field.label} className="flex items-center justify-between py-1 border-b border-slate-50">
+                          <span className="text-slate-500">{field.label}</span>
+                          <span className="font-medium text-slate-800">{field.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Organizational */}
+                  <div>
+                    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3 flex items-center gap-1.5">
+                      <Building className="h-3.5 w-3.5" /> Organizational
+                    </h3>
+                    <div className="space-y-2 text-sm">
+                      {(memberProfile.division || memberProfile.department || memberProfile.section || memberProfile.team) && (
+                        <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100 text-slate-600 text-xs">
+                          <div className="flex items-center gap-1 text-slate-400 mb-1"><MapPin className="h-3 w-3" />Path</div>
+                          {[memberProfile.division, memberProfile.department, memberProfile.section, memberProfile.team]
+                            .filter(Boolean).join(' → ')}
                         </div>
                       )}
-                      
-                      {memberProfile.lastName && (
-                        <div>
-                          <span className="font-medium text-muted-foreground">Last Name:</span>
-                          <div>{memberProfile.lastName}</div>
+                      {[
+                        { label: 'Hierarchy Level', value: memberProfile.hierarchyLevel },
+                      ].filter(f => f.value).map(field => (
+                        <div key={field.label} className="flex items-center justify-between py-1 border-b border-slate-50">
+                          <span className="text-slate-500">{field.label}</span>
+                          <span className="font-medium text-slate-800">{field.value}</span>
                         </div>
-                      )}
+                      ))}
+                    </div>
+                  </div>
+                </div>
 
-                      {memberProfile.middleName && (
-                        <div>
-                          <span className="font-medium text-muted-foreground">Middle Name:</span>
-                          <div>{memberProfile.middleName}</div>
-                        </div>
-                      )}
+                {/* ── Task Overview ── */}
+                <div className="px-6 py-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
+                      <Activity className="h-3.5 w-3.5" /> Task Overview
+                    </h3>
+                    <span className="text-xs text-slate-400">{completionRate}% completion rate</span>
+                  </div>
 
-                      {memberProfile.shortName && (
-                        <div>
-                          <span className="font-medium text-muted-foreground">Short Name:</span>
-                          <div>{memberProfile.shortName}</div>
-                        </div>
-                      )}
-
-                      {memberProfile.username && (
-                        <div>
-                          <span className="font-medium text-muted-foreground">Username:</span>
-                          <div>{memberProfile.username}</div>
-                        </div>
-                      )}
-
-                      <div>
-                        <span className="font-medium text-muted-foreground">Role:</span>
-                        <div className="flex items-center gap-1">
-                          <UserCheck className="h-3 w-3" />
-                          {memberProfile.role}
-                        </div>
+                  {/* Mini completion bar */}
+                  {allTasks.length > 0 && (
+                    <div className="mb-5">
+                      <Progress value={completionRate} className="h-1.5 bg-slate-100 mb-1" />
+                      <div className="flex items-center gap-4 text-[10px] text-slate-400">
+                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-slate-400 inline-block" />To Do ({taskCounts.TODO})</span>
+                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-blue-400 inline-block" />In Progress ({taskCounts.IN_PROGRESS})</span>
+                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-amber-400 inline-block" />In Review ({taskCounts.IN_REVIEW})</span>
+                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-emerald-400 inline-block" />Done ({taskCounts.COMPLETED})</span>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  )}
 
-                {/* Organizational Information */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Building className="h-5 w-5" />
-                      Organizational Information
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-3 text-sm">
-                      {/* Organizational Path */}
-                      {(memberProfile.division || memberProfile.department) && (
-                        <div className="p-3 bg-muted/50 rounded-lg border">
-                          <div className="font-medium text-muted-foreground mb-2 flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            Organizational Path:
-                          </div>
-                          <div className="text-sm break-words">
-                            {[
-                              memberProfile.division,
-                              memberProfile.department,
-                              memberProfile.section,
-                              memberProfile.team
-                            ].filter(Boolean).join(' → ') || 'Not specified'}
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="grid grid-cols-1 gap-3">
-                        {memberProfile.jobLevel && (
-                          <div>
-                            <span className="font-medium text-muted-foreground">Job Level:</span>
-                            <div className="flex items-center gap-1">
-                              <Hash className="h-3 w-3" />
-                              {memberProfile.jobLevel}
-                            </div>
-                          </div>
+                  {/* Status Filter Tabs */}
+                  <div className="flex items-center gap-1 mb-4 bg-slate-100 p-1 rounded-lg w-fit flex-wrap">
+                    {filterTabs.map(tab => (
+                      <button
+                        key={tab.key}
+                        onClick={() => setStatusFilter(tab.key)}
+                        className={cn(
+                          "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
+                          statusFilter === tab.key
+                            ? "bg-white text-slate-900 shadow-sm"
+                            : "text-slate-500 hover:text-slate-700"
                         )}
+                      >
+                        {tab.label}
+                        <span className={cn(
+                          "inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full text-[10px] font-bold",
+                          statusFilter === tab.key ? "bg-blue-100 text-blue-700" : "bg-slate-200 text-slate-500"
+                        )}>
+                          {taskCounts[tab.key]}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
 
-                        {memberProfile.hierarchyLevel && (
-                          <div>
-                            <span className="font-medium text-muted-foreground">Hierarchy Level:</span>
-                            <div>{memberProfile.hierarchyLevel}</div>
-                          </div>
-                        )}
+                  {/* Task List */}
+                  {filteredTasks.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <div className="p-3 bg-slate-100 rounded-full mb-3">
+                        <ListTodo className="h-6 w-6 text-slate-300" />
                       </div>
+                      <p className="text-sm font-medium text-slate-500">No tasks</p>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        {statusFilter === 'ALL' ? 'No tasks assigned' : `No ${statusFilter.replace('_', ' ').toLowerCase()} tasks`}
+                      </p>
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Task Summary */}
-              {memberProfile.assignedTasks && memberProfile.assignedTasks.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Activity className="h-5 w-5" />
-                      Task Overview ({memberProfile.assignedTasks.length})
-                    </CardTitle>
-                    <CardDescription>
-                      Current active tasks and their status
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {/* Task Stats */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                      {['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED'].map((status) => {
-                        const count = memberProfile.assignedTasks.filter(task => task.status === status).length
-                        const statusColors = {
-                          'TODO': 'text-gray-600 bg-gray-100',
-                          'IN_PROGRESS': 'text-blue-600 bg-blue-100',
-                          'IN_REVIEW': 'text-yellow-600 bg-yellow-100',
-                          'COMPLETED': 'text-green-600 bg-green-100'
-                        }
-                        
+                  ) : (
+                    <div className="space-y-2">
+                      {filteredTasks.map((task) => {
+                        const sot = new Date(); sot.setHours(0, 0, 0, 0)
+                        const isOverdue = task.dueDate && new Date(task.dueDate) < sot && task.status !== 'COMPLETED'
                         return (
-                          <div key={status} className={`p-3 rounded-lg ${statusColors[status as keyof typeof statusColors]}`}>
-                            <div className="text-2xl font-bold">{count}</div>
-                            <div className="text-sm">{status.replace('_', ' ')}</div>
+                          <div
+                            key={task.id}
+                            className={cn(
+                              "group bg-white rounded-xl border border-slate-200 border-l-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer",
+                              getStatusAccent(task.status)
+                            )}
+                            onClick={() => setViewingTask(task)}
+                          >
+                            <div className="p-4">
+                              <div className="flex items-start justify-between gap-3 mb-2">
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="text-sm font-semibold text-slate-900 leading-snug">{task.title}</h4>
+                                  {task.description && (
+                                    <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{task.description}</p>
+                                  )}
+                                </div>
+                                <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-blue-500 group-hover:translate-x-0.5 transition-all shrink-0 mt-0.5" />
+                              </div>
+
+                              <div className="flex items-center justify-between gap-2 flex-wrap">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <Badge className={cn("text-[10px] px-1.5 h-5 border font-medium", getPriorityColor(task.priority))}>
+                                    {task.priority}
+                                  </Badge>
+                                  <Badge className={cn("text-[10px] px-1.5 h-5 border font-medium", getStatusColor(task.status))}>
+                                    {task.status.replace(/_/g, ' ')}
+                                  </Badge>
+                                  {isOverdue && (
+                                    <Badge className="text-[10px] px-1.5 h-5 bg-red-50 text-red-600 border border-red-200 font-medium">
+                                      Overdue
+                                    </Badge>
+                                  )}
+                                  {task.dueDate && (
+                                    <span className={cn("text-xs flex items-center gap-1", isOverdue ? "text-red-500 font-medium" : "text-slate-400")}>
+                                      <Clock className="h-3 w-3" />
+                                      {format(new Date(task.dueDate), 'MMM d, yyyy')}
+                                    </span>
+                                  )}
+                                </div>
+                                {task.progressPercentage > 0 && (
+                                  <span className="text-xs text-slate-400 flex items-center gap-1 shrink-0">
+                                    <TrendingUp className="h-3 w-3" />{task.progressPercentage}%
+                                  </span>
+                                )}
+                              </div>
+
+                              {task.progressPercentage > 0 && (
+                                <div className="mt-2">
+                                  <div className="h-1 w-full rounded-full bg-slate-100 overflow-hidden">
+                                    <div
+                                      className={cn("h-full rounded-full", task.progressPercentage >= 75 ? "bg-emerald-500" : task.progressPercentage >= 40 ? "bg-blue-500" : "bg-amber-500")}
+                                      style={{ width: `${task.progressPercentage}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         )
                       })}
                     </div>
+                  )}
+                </div>
 
-                    {/* Task List */}
-                    <div className="space-y-3 max-h-80 overflow-y-auto">
-                      {memberProfile.assignedTasks.map((task) => (
-                        <div key={task.id} className="p-4 border rounded-lg hover:bg-muted/30 transition-colors">
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <span className="text-lg">{getTaskTypeIcon(task.taskType)}</span>
-                              <h4 className="font-medium text-foreground">{task.title}</h4>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Badge className={`text-xs ${getPriorityColor(task.priority)}`}>
-                                {task.priority}
-                              </Badge>
-                              <Badge className={`text-xs ${getStatusColor(task.status)}`}>
-                                {task.status.replace('_', ' ')}
-                              </Badge>
-                            </div>
-                          </div>
+              </div>
+            )}
+          </div>
 
-                          {task.description && (
-                            <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
-                              {task.description}
-                            </p>
-                          )}
+          <div className="flex justify-end px-6 py-4 border-t border-slate-100 shrink-0">
+            <Button variant="outline" onClick={onClose} className="border-slate-200">
+              <X className="h-4 w-4 mr-2" />
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
-                          <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <div className="flex items-center gap-4">
-                              {task.dueDate && (
-                                <div className="flex items-center gap-1">
-                                  <Clock className="h-3 w-3" />
-                                  Due {format(new Date(task.dueDate), 'MMM dd')}
-                                </div>
-                              )}
-                              
-                              {task.team && (
-                                <div className="flex items-center gap-1">
-                                  <Users className="h-3 w-3" />
-                                  {task.team.name}
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="flex items-center gap-1">
-                              <TrendingUp className="h-3 w-3" />
-                              {task.progressPercentage}% complete
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* No Tasks Message */}
-              {(!memberProfile.assignedTasks || memberProfile.assignedTasks.length === 0) && (
-                <Card>
-                  <CardContent className="p-8 text-center">
-                    <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-medium mb-2">No Active Tasks</h3>
-                    <p className="text-muted-foreground">
-                      This team member currently has no assigned tasks.
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className="flex justify-end pt-4 border-t">
-          <Button variant="outline" onClick={onClose}>
-            <X className="h-4 w-4 mr-2" />
-            Close
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+      {/* Task Detail Modal — opens on top of profile modal */}
+      <TaskViewModal
+        open={!!viewingTask}
+        onOpenChange={(open) => { if (!open) setViewingTask(null) }}
+        task={viewingTask as any}
+        onTaskUpdate={fetchMemberProfile}
+      />
+    </>
   )
 }

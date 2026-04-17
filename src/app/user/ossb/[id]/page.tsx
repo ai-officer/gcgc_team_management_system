@@ -5,13 +5,6 @@ import { useRouter, useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -83,18 +76,18 @@ interface OSSBRequest {
 }
 
 const statusColors: Record<OSSBStatus, string> = {
-  DRAFT: 'bg-gray-500',
-  SUBMITTED: 'bg-blue-500',
-  ENDORSED: 'bg-indigo-500',
-  RECOMMENDED: 'bg-purple-500',
-  APPROVED: 'bg-green-500',
-  REJECTED: 'bg-red-500',
+  DRAFT: 'bg-gray-100 text-gray-700',
+  SUBMITTED: 'bg-blue-100 text-blue-700',
+  ENDORSED: 'bg-indigo-100 text-indigo-700',
+  RECOMMENDED: 'bg-purple-100 text-purple-700',
+  APPROVED: 'bg-green-100 text-green-700',
+  REJECTED: 'bg-red-100 text-red-700',
 }
 
 const mipColors: Record<MIPClassification, string> = {
-  MAINTENANCE: 'bg-amber-500',
-  IMPROVEMENT: 'bg-blue-500',
-  PROJECT: 'bg-green-500',
+  MAINTENANCE: 'bg-amber-100 text-amber-700',
+  IMPROVEMENT: 'bg-blue-100 text-blue-700',
+  PROJECT: 'bg-green-100 text-green-700',
 }
 
 export default function OSSBDetailPage() {
@@ -186,10 +179,12 @@ export default function OSSBDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-slate-600 font-medium">Loading OSSB request...</p>
+      <div className="bg-gray-50 p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-sm text-gray-600">Loading OSSB request...</p>
+          </div>
         </div>
       </div>
     )
@@ -197,10 +192,10 @@ export default function OSSBDetailPage() {
 
   if (!ossb) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="bg-gray-50 p-6">
         <div className="text-center py-12">
-          <h2 className="text-2xl font-bold mb-2">OSSB Request Not Found</h2>
-          <p className="text-muted-foreground mb-4">The requested OSSB could not be found.</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">OSSB Request Not Found</h2>
+          <p className="text-sm text-gray-600 mb-4">The requested OSSB could not be found.</p>
           <Button onClick={() => router.push('/user/ossb')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to OSSB Requests
@@ -211,293 +206,280 @@ export default function OSSBDetailPage() {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Professional Glassmorphism Header */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-slate-50 to-purple-50 opacity-60"></div>
-        <div className="relative backdrop-blur-sm bg-white/40 border border-slate-200/60 rounded-xl shadow-sm p-8">
-          <div className="flex items-center gap-4 mb-4">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => router.push('/user/ossb')}
-              className="border-slate-300 hover:bg-white/80"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div className="flex-1">
-              <h1 className="text-3xl font-bold text-slate-900 tracking-tight">{ossb.objectiveTitle}</h1>
-              <p className="text-slate-600 font-mono text-sm mt-1">{ossb.referenceNo}</p>
-            </div>
+    <div className="bg-gray-50 p-6 space-y-6">
+      {/* Page Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => router.push('/user/ossb')}
+            className="h-9 w-9 border-gray-200"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={() => router.push(`/user/ossb/${ossb.id}/edit`)}
-                className="border-slate-300 hover:bg-white/80"
-              >
-                <Edit className="mr-2 h-4 w-4" />
-                Edit
-              </Button>
-              <Button
-                onClick={() => setDeleteDialogOpen(true)}
-                className="bg-red-600 hover:bg-red-700 text-white"
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
-              </Button>
+              <h1 className="text-2xl font-bold text-gray-900">{ossb.objectiveTitle}</h1>
+              <Badge className={`${statusColors[ossb.status]} border-0 text-xs font-medium`}>
+                {ossb.status}
+              </Badge>
             </div>
+            <p className="text-sm text-gray-600 font-mono mt-0.5">{ossb.referenceNo}</p>
           </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => router.push(`/user/ossb/${ossb.id}/edit`)}
+            className="border-gray-200"
+          >
+            <Edit className="mr-2 h-4 w-4" />
+            Edit
+          </Button>
+          <Button
+            onClick={() => setDeleteDialogOpen(true)}
+            className="bg-red-600 hover:bg-red-700 text-white"
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete
+          </Button>
         </div>
       </div>
 
-      {/* Status and Classification */}
+      {/* Badges row */}
       <div className="flex items-center gap-2">
-        <Badge className={`${statusColors[ossb.status]} text-sm px-3 py-1`}>
-          {ossb.status}
-        </Badge>
-        <Badge className={`${mipColors[ossb.mipClassification]} text-sm px-3 py-1`}>
+        <Badge className={`${mipColors[ossb.mipClassification]} border-0 text-xs font-medium px-3 py-1`}>
           {ossb.mipClassification}
         </Badge>
         {ossb.partOfAnnualPlan && (
-          <Badge variant="outline" className="text-sm px-3 py-1">
+          <Badge variant="outline" className="text-xs font-medium px-3 py-1">
             Annual Plan
           </Badge>
         )}
       </div>
 
       {/* Section 1: Header Information */}
-      <Card className="border border-slate-200 bg-white shadow-sm rounded-xl">
-        <CardHeader>
-          <CardTitle className="text-xl font-bold text-slate-900">Header Information</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Branch/Department</p>
-              <p className="text-base">{ossb.branchOrDepartment}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Version No.</p>
-              <p className="text-base">{ossb.versionNo || 'N/A'}</p>
-            </div>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Header Information</h2>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Branch / Department</p>
+            <p className="text-sm text-gray-900">{ossb.branchOrDepartment}</p>
           </div>
-        </CardContent>
-      </Card>
+          <div>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Version No.</p>
+            <p className="text-sm text-gray-900">{ossb.versionNo || 'N/A'}</p>
+          </div>
+        </div>
+      </div>
 
       {/* Section 2: Project Information */}
-      <Card className="border border-slate-200 bg-white shadow-sm rounded-xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Project Information
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Calendar className="h-5 w-5 text-blue-600" />
+          <h2 className="text-lg font-semibold text-gray-900">Project Information</h2>
+        </div>
+        <div className="space-y-4">
           <div>
-            <p className="text-sm font-medium text-muted-foreground">Objective Statement</p>
-            <p className="text-base mt-1">{ossb.titleObjective}</p>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Objective Statement</p>
+            <p className="text-sm text-gray-900">{ossb.titleObjective}</p>
           </div>
-          <Separator />
+          <Separator className="bg-gray-100" />
           <div className="grid grid-cols-2 gap-4">
             {ossb.kraOrCpaNumber && (
               <div>
-                <p className="text-sm font-medium text-muted-foreground">KRA/CPA Number</p>
-                <p className="text-base">{ossb.kraOrCpaNumber}</p>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">KRA/CPA Number</p>
+                <p className="text-sm text-gray-900">{ossb.kraOrCpaNumber}</p>
               </div>
             )}
             {ossb.kraOrCpaName && (
               <div>
-                <p className="text-sm font-medium text-muted-foreground">KRA/CPA Name</p>
-                <p className="text-base">{ossb.kraOrCpaName}</p>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">KRA/CPA Name</p>
+                <p className="text-sm text-gray-900">{ossb.kraOrCpaName}</p>
               </div>
             )}
             {ossb.projectNumber && (
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Project Number</p>
-                <p className="text-base">{ossb.projectNumber}</p>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Project Number</p>
+                <p className="text-sm text-gray-900">{ossb.projectNumber}</p>
               </div>
             )}
           </div>
-          <Separator />
+          <Separator className="bg-gray-100" />
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Start Date</p>
-              <p className="text-base">{formatDate(ossb.startDate)}</p>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Start Date</p>
+              <p className="text-sm text-gray-900">{formatDate(ossb.startDate)}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">End Date</p>
-              <p className="text-base">{formatDate(ossb.endDate)}</p>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">End Date</p>
+              <p className="text-sm text-gray-900">{formatDate(ossb.endDate)}</p>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Section 3: Success Measures */}
-      <Card className="border border-slate-200 bg-white shadow-sm rounded-xl">
-        <CardHeader>
-          <CardTitle className="text-xl font-bold text-slate-900">Success Measures / Specific Standards</CardTitle>
-          <CardDescription className="text-slate-600">
-            Measurable outcomes and standards for this objective
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ol className="list-decimal list-inside space-y-2">
-            {ossb.successMeasures.map((measure, index) => (
-              <li key={index} className="text-base">
-                {measure}
-              </li>
-            ))}
-          </ol>
-        </CardContent>
-      </Card>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-1">Success Measures / Specific Standards</h2>
+        <p className="text-sm text-gray-600 mb-4">Measurable outcomes and standards for this objective</p>
+        <ol className="space-y-2">
+          {ossb.successMeasures.map((measure, index) => (
+            <li key={index} className="flex items-start gap-3 text-sm text-gray-900">
+              <span className="flex-shrink-0 inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold mt-0.5">
+                {index + 1}
+              </span>
+              <span>{measure}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
 
       {/* Section 4: Program Steps and Budget */}
-      <Card className="border border-slate-200 bg-white shadow-sm rounded-xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-900">
-            <DollarSign className="h-5 w-5 text-emerald-600" />
-            Program Steps and Budget
-          </CardTitle>
-          <CardDescription className="text-slate-600">
-            Total Budget: <span className="font-semibold text-lg text-emerald-600">{formatCurrency(ossb.totalBudget)}</span>
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {ossb.programSteps.map((step) => (
-              <div key={step.id} className="border rounded-lg p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1">
-                    <p className="font-medium">Step {step.stepNumber}</p>
-                    <p className="text-sm text-muted-foreground mt-1">{step.description}</p>
-                  </div>
-                  <Badge variant="secondary" className="ml-4">
-                    {formatCurrency(step.budget)}
-                  </Badge>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <DollarSign className="h-5 w-5 text-green-600" />
+            <h2 className="text-lg font-semibold text-gray-900">Program Steps and Budget</h2>
+          </div>
+          <span className="text-sm font-semibold text-green-700 bg-green-50 px-3 py-1 rounded-full">
+            Total: {formatCurrency(ossb.totalBudget)}
+          </span>
+        </div>
+        <div className="space-y-3">
+          {ossb.programSteps.map((step) => (
+            <div key={step.id} className="border border-gray-100 rounded-lg p-4">
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex items-start gap-3 flex-1">
+                  <span className="flex-shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-700 text-xs font-bold">
+                    {step.stepNumber}
+                  </span>
+                  <p className="text-sm text-gray-900">{step.description}</p>
                 </div>
-                <div className="grid grid-cols-2 gap-4 mt-3 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">Responsible:</span>
-                    <span>{step.responsiblePerson}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">Deadline:</span>
-                    <span>{formatDate(step.deadline)}</span>
-                  </div>
+                <span className="ml-4 text-sm font-semibold text-gray-900 whitespace-nowrap">
+                  {formatCurrency(step.budget)}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-3 ml-9 text-xs text-gray-600">
+                <div className="flex items-center gap-1.5">
+                  <Users className="h-3.5 w-3.5" />
+                  <span>{step.responsiblePerson}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5" />
+                  <span>{formatDate(step.deadline)}</span>
                 </div>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Section 5: Signatories */}
-      <Card className="border border-slate-200 bg-white shadow-sm rounded-xl">
-        <CardHeader>
-          <CardTitle className="text-xl font-bold text-slate-900">Signatories</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Signatories</h2>
+        <div className="grid grid-cols-2 gap-6">
           {ossb.preparedBy && (
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Prepared By</p>
-              <p className="text-base font-medium">{ossb.preparedBy}</p>
-              {ossb.preparedByPosition && <p className="text-sm text-muted-foreground">{ossb.preparedByPosition}</p>}
-              {ossb.datePrepared && <p className="text-sm text-muted-foreground">{formatDate(ossb.datePrepared)}</p>}
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Prepared By</p>
+              <p className="text-sm font-semibold text-gray-900">{ossb.preparedBy}</p>
+              {ossb.preparedByPosition && <p className="text-xs text-gray-600">{ossb.preparedByPosition}</p>}
+              {ossb.datePrepared && <p className="text-xs text-gray-500">{formatDate(ossb.datePrepared)}</p>}
             </div>
           )}
           {ossb.endorsedBy && (
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Endorsed By</p>
-              <p className="text-base font-medium">{ossb.endorsedBy}</p>
-              {ossb.endorsedByPosition && <p className="text-sm text-muted-foreground">{ossb.endorsedByPosition}</p>}
-              {ossb.dateEndorsed && <p className="text-sm text-muted-foreground">{formatDate(ossb.dateEndorsed)}</p>}
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Endorsed By</p>
+              <p className="text-sm font-semibold text-gray-900">{ossb.endorsedBy}</p>
+              {ossb.endorsedByPosition && <p className="text-xs text-gray-600">{ossb.endorsedByPosition}</p>}
+              {ossb.dateEndorsed && <p className="text-xs text-gray-500">{formatDate(ossb.dateEndorsed)}</p>}
             </div>
           )}
           {ossb.recommendedBy && (
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Recommended By</p>
-              <p className="text-base font-medium">{ossb.recommendedBy}</p>
-              {ossb.recommendedByPosition && <p className="text-sm text-muted-foreground">{ossb.recommendedByPosition}</p>}
-              {ossb.dateRecommended && <p className="text-sm text-muted-foreground">{formatDate(ossb.dateRecommended)}</p>}
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Recommended By</p>
+              <p className="text-sm font-semibold text-gray-900">{ossb.recommendedBy}</p>
+              {ossb.recommendedByPosition && <p className="text-xs text-gray-600">{ossb.recommendedByPosition}</p>}
+              {ossb.dateRecommended && <p className="text-xs text-gray-500">{formatDate(ossb.dateRecommended)}</p>}
             </div>
           )}
           {ossb.approvedBy && (
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Approved By</p>
-              <p className="text-base font-medium">{ossb.approvedBy}</p>
-              {ossb.approvedByPosition && <p className="text-sm text-muted-foreground">{ossb.approvedByPosition}</p>}
-              {ossb.dateApproved && <p className="text-sm text-muted-foreground">{formatDate(ossb.dateApproved)}</p>}
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Approved By</p>
+              <p className="text-sm font-semibold text-gray-900">{ossb.approvedBy}</p>
+              {ossb.approvedByPosition && <p className="text-xs text-gray-600">{ossb.approvedByPosition}</p>}
+              {ossb.dateApproved && <p className="text-xs text-gray-500">{formatDate(ossb.dateApproved)}</p>}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Section 6 & 7: Additional Information */}
-      <Card className="border border-slate-200 bg-white shadow-sm rounded-xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-900">
-            <FileText className="h-5 w-5 text-blue-600" />
-            Additional Information
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-4">
-            {ossb.hasGuidelines && (
-              <Badge variant="outline">Has Guidelines Attached</Badge>
-            )}
-            {ossb.hasComputationValue && (
-              <Badge variant="outline">Has Computation Value Attached</Badge>
-            )}
-          </div>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <FileText className="h-5 w-5 text-blue-600" />
+          <h2 className="text-lg font-semibold text-gray-900">Additional Information</h2>
+        </div>
+        <div className="space-y-4">
+          {(ossb.hasGuidelines || ossb.hasComputationValue) && (
+            <div className="flex gap-2 flex-wrap">
+              {ossb.hasGuidelines && (
+                <Badge variant="outline" className="text-xs">Guidelines Attached</Badge>
+              )}
+              {ossb.hasComputationValue && (
+                <Badge variant="outline" className="text-xs">Computation Value Attached</Badge>
+              )}
+            </div>
+          )}
           {ossb.otherAttachments && (
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Other Attachments</p>
-              <p className="text-base mt-1">{ossb.otherAttachments}</p>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Other Attachments</p>
+              <p className="text-sm text-gray-900">{ossb.otherAttachments}</p>
             </div>
           )}
           {ossb.ccRecipients && (
             <div>
-              <p className="text-sm font-medium text-muted-foreground">CC Recipients</p>
-              <p className="text-base mt-1">{ossb.ccRecipients}</p>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">CC Recipients</p>
+              <p className="text-sm text-gray-900">{ossb.ccRecipients}</p>
             </div>
           )}
           {ossb.remarks && (
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Remarks</p>
-              <p className="text-base mt-1">{ossb.remarks}</p>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Remarks</p>
+              <p className="text-sm text-gray-900">{ossb.remarks}</p>
             </div>
           )}
-        </CardContent>
-      </Card>
+          {!ossb.hasGuidelines && !ossb.hasComputationValue && !ossb.otherAttachments && !ossb.ccRecipients && !ossb.remarks && (
+            <p className="text-sm text-gray-500">No additional information provided.</p>
+          )}
+        </div>
+      </div>
 
       {/* Metadata */}
-      <Card className="border border-slate-200 bg-white shadow-sm rounded-xl">
-        <CardHeader>
-          <CardTitle className="text-xl font-bold text-slate-900">Metadata</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-3 gap-4 text-sm">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Metadata</h2>
+        <div className="grid grid-cols-3 gap-4">
           <div>
-            <p className="text-muted-foreground">Created By</p>
-            <p className="font-medium">{ossb.creator.name || ossb.creator.email}</p>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Created By</p>
+            <p className="text-sm font-medium text-gray-900">{ossb.creator.name || ossb.creator.email}</p>
           </div>
           <div>
-            <p className="text-muted-foreground">Created At</p>
-            <p className="font-medium">{formatDate(ossb.createdAt)}</p>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Created At</p>
+            <p className="text-sm font-medium text-gray-900">{formatDate(ossb.createdAt)}</p>
           </div>
           <div>
-            <p className="text-muted-foreground">Last Updated</p>
-            <p className="font-medium">{formatDate(ossb.updatedAt)}</p>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Last Updated</p>
+            <p className="text-sm font-medium text-gray-900">{formatDate(ossb.updatedAt)}</p>
           </div>
           {ossb.submittedAt && (
             <div>
-              <p className="text-muted-foreground">Submitted At</p>
-              <p className="font-medium">{formatDate(ossb.submittedAt)}</p>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Submitted At</p>
+              <p className="text-sm font-medium text-gray-900">{formatDate(ossb.submittedAt)}</p>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

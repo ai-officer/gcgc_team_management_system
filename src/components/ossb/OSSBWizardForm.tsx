@@ -16,7 +16,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { DatePicker } from '@/components/ui/date-picker'
 import { Separator } from '@/components/ui/separator'
@@ -25,7 +24,7 @@ import {
   ChevronLeft,
   ChevronRight,
   FileText,
-  CheckCircle,
+  Check,
   Upload,
   Trash2,
   Plus,
@@ -254,40 +253,87 @@ export default function OSSBWizardForm({ isOpen, onClose, onSuccess }: OSSBWizar
     }
   }
 
-  const progress = (currentStep / WIZARD_STEPS.length) * 100
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader className="pb-2">
+          <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-gray-900">
+            <FileText className="h-5 w-5 text-blue-600" />
             Create OSSB Request
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm text-gray-600">
             Objective / Specific Steps Budget Request Form
           </DialogDescription>
         </DialogHeader>
 
-        {/* Progress Bar */}
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Step {currentStep} of {WIZARD_STEPS.length}</span>
-            <span className="font-medium">{WIZARD_STEPS[currentStep - 1].title}</span>
+        {/* Step Indicator */}
+        <div className="px-1 py-2">
+          <div className="flex items-center">
+            {WIZARD_STEPS.map((step, index) => (
+              <React.Fragment key={step.number}>
+                <div className="flex flex-col items-center gap-1">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-colors ${
+                      currentStep === step.number
+                        ? 'bg-blue-600 text-white'
+                        : currentStep > step.number
+                        ? 'bg-green-500 text-white'
+                        : 'bg-gray-100 text-gray-400'
+                    }`}
+                  >
+                    {currentStep > step.number ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      step.number
+                    )}
+                  </div>
+                  <span
+                    className={`text-xs hidden sm:block whitespace-nowrap ${
+                      currentStep === step.number
+                        ? 'text-blue-600 font-medium'
+                        : currentStep > step.number
+                        ? 'text-green-600'
+                        : 'text-gray-400'
+                    }`}
+                  >
+                    {step.title.split(' ')[0]}
+                  </span>
+                </div>
+                {index < WIZARD_STEPS.length - 1 && (
+                  <div
+                    className={`flex-1 h-0.5 mx-1 transition-colors ${
+                      currentStep > step.number ? 'bg-green-500' : 'bg-gray-200'
+                    }`}
+                  />
+                )}
+              </React.Fragment>
+            ))}
           </div>
-          <Progress value={progress} />
+        </div>
+
+        {/* Validation Status Bar */}
+        <div className="flex items-center justify-between px-1 pb-1">
+          <Badge
+            className={`text-xs border-0 ${
+              isValid
+                ? 'bg-green-100 text-green-700'
+                : 'bg-amber-100 text-amber-700'
+            }`}
+          >
+            {isValid ? 'Form is ready to submit' : 'Form has validation errors'}
+          </Badge>
+          <span className="text-xs text-gray-500">
+            Step {currentStep} of {WIZARD_STEPS.length} &mdash; {WIZARD_STEPS[currentStep - 1].title}
+          </span>
         </div>
 
         {/* Validation Errors Display */}
         {Object.keys(errors).length > 0 && (
-          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
-            <h4 className="font-semibold text-destructive mb-2 flex items-center gap-2">
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              ⚠️ Cannot Submit - {Object.keys(errors).length} Error(s) Found:
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mx-1">
+            <h4 className="text-sm font-semibold text-red-700 mb-1">
+              {Object.keys(errors).length} error(s) found — please fix before submitting
             </h4>
-            <ul className="list-disc list-inside space-y-1 text-sm text-destructive">
+            <ul className="list-disc list-inside space-y-0.5 text-xs text-red-600">
               {Object.entries(errors).map(([key, error]: [string, any]) => {
                 const message = error?.message || error?.root?.message || 'Invalid value'
                 return (
@@ -297,77 +343,28 @@ export default function OSSBWizardForm({ isOpen, onClose, onSuccess }: OSSBWizar
                 )
               })}
             </ul>
-            <div className="mt-3 pt-3 border-t border-destructive/20">
-              <p className="text-xs text-destructive/80">
-                💡 Tip: Go back through the steps and ensure all required fields are filled correctly.
-              </p>
-            </div>
           </div>
         )}
 
-        {/* Form Validation Status */}
-        <div className="flex items-center justify-between text-sm">
-          <Badge variant={isValid ? "default" : "destructive"}>
-            {isValid ? '✅ Form is ready to submit' : '⚠️ Form has validation errors'}
-          </Badge>
-          <span className="text-muted-foreground">
-            {Object.keys(errors).length === 0
-              ? 'All fields validated'
-              : `${Object.keys(errors).length} error(s) to fix`}
-          </span>
-        </div>
-
-        {/* Step Indicators */}
-        <div className="flex justify-between">
-          {WIZARD_STEPS.map((step) => (
-            <div
-              key={step.number}
-              className={`flex flex-col items-center gap-1 ${
-                currentStep === step.number
-                  ? 'text-primary'
-                  : currentStep > step.number
-                  ? 'text-green-600'
-                  : 'text-muted-foreground'
-              }`}
-            >
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${
-                  currentStep === step.number
-                    ? 'bg-primary text-primary-foreground'
-                    : currentStep > step.number
-                    ? 'bg-green-600 text-white'
-                    : 'bg-muted'
-                }`}
-              >
-                {currentStep > step.number ? (
-                  <CheckCircle className="h-4 w-4" />
-                ) : (
-                  step.number
-                )}
-              </div>
-              <span className="text-xs hidden sm:block">{step.title.split(' ')[0]}</span>
-            </div>
-          ))}
-        </div>
-
-        <Separator />
-
         {/* Form Content */}
-        <form onSubmit={handleSubmit(onSubmit)} className="flex-1 overflow-hidden">
-          <ScrollArea className="h-[400px] pr-4">
-            {renderStep()}
+        <form onSubmit={handleSubmit(onSubmit)} className="flex-1 overflow-hidden flex flex-col">
+          <ScrollArea className="flex-1 pr-2">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mx-1 mb-2">
+              {renderStep()}
+            </div>
           </ScrollArea>
 
           {/* Navigation Buttons */}
-          <div className="flex justify-between pt-4 mt-4 border-t">
+          <div className="flex justify-between pt-4 mt-2 border-t border-gray-100 px-1">
             <Button
               type="button"
               variant="outline"
               onClick={previousStep}
               disabled={currentStep === 1}
+              className="border-gray-200"
             >
-              <ChevronLeft className="h-4 w-4 mr-2" />
-              Previous
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Back
             </Button>
 
             <div className="flex gap-2">
@@ -375,19 +372,25 @@ export default function OSSBWizardForm({ isOpen, onClose, onSuccess }: OSSBWizar
                 type="button"
                 variant="outline"
                 onClick={onClose}
+                className="border-gray-200"
               >
                 Cancel
               </Button>
 
               {currentStep < WIZARD_STEPS.length ? (
-                <Button type="button" onClick={nextStep}>
+                <Button
+                  type="button"
+                  onClick={nextStep}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
                   Next
-                  <ChevronRight className="h-4 w-4 ml-2" />
+                  <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               ) : (
                 <Button
                   type="submit"
                   disabled={isSubmitting}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
                   onClick={() => {
                     console.log('🖱️ Submit button clicked')
                     console.log('Form is valid:', isValid)
@@ -417,46 +420,50 @@ export default function OSSBWizardForm({ isOpen, onClose, onSuccess }: OSSBWizar
 // Section Components
 function Section1HeaderInfo({ register, errors, watch, setValue }: any) {
   return (
-    <div className="space-y-6 px-1">
+    <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold mb-1">Section 1: Header Information</h3>
-        <p className="text-sm text-muted-foreground">Basic information about your OSSB request</p>
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">Header Information</h3>
+        <p className="text-sm text-gray-600">Basic information about your OSSB request</p>
       </div>
 
       <div className="space-y-4">
         <div>
-          <Label htmlFor="branchOrDepartment">Branch or Department *</Label>
+          <Label htmlFor="branchOrDepartment" className="text-sm font-medium text-gray-700">
+            Branch or Department <span className="text-red-500">*</span>
+          </Label>
           <Input
             id="branchOrDepartment"
             {...register('branchOrDepartment')}
             placeholder="Enter branch or department name"
-            className="mt-1.5"
+            className="mt-1.5 border-gray-200"
           />
           {errors.branchOrDepartment && (
-            <p className="text-sm text-red-500 mt-1">{errors.branchOrDepartment.message}</p>
+            <p className="text-xs text-red-500 mt-1">{errors.branchOrDepartment.message}</p>
           )}
         </div>
 
         <div>
-          <Label htmlFor="objectiveTitle">Objective / Specific Steps Budget Title *</Label>
+          <Label htmlFor="objectiveTitle" className="text-sm font-medium text-gray-700">
+            Objective / Specific Steps Budget Title <span className="text-red-500">*</span>
+          </Label>
           <Input
             id="objectiveTitle"
             {...register('objectiveTitle')}
             placeholder="Enter budget title"
-            className="mt-1.5"
+            className="mt-1.5 border-gray-200"
           />
           {errors.objectiveTitle && (
-            <p className="text-sm text-red-500 mt-1">{errors.objectiveTitle.message}</p>
+            <p className="text-xs text-red-500 mt-1">{errors.objectiveTitle.message}</p>
           )}
         </div>
 
         <div>
-          <Label htmlFor="versionNo">Version No.</Label>
+          <Label htmlFor="versionNo" className="text-sm font-medium text-gray-700">Version No.</Label>
           <Input
             id="versionNo"
             {...register('versionNo')}
             placeholder="e.g., ver211001"
-            className="mt-1.5"
+            className="mt-1.5 border-gray-200"
           />
         </div>
 
@@ -466,7 +473,7 @@ function Section1HeaderInfo({ register, errors, watch, setValue }: any) {
             checked={watch('partOfAnnualPlan')}
             onCheckedChange={(checked) => setValue('partOfAnnualPlan', checked)}
           />
-          <Label htmlFor="partOfAnnualPlan" className="cursor-pointer">
+          <Label htmlFor="partOfAnnualPlan" className="text-sm font-medium text-gray-700 cursor-pointer">
             Part of Annual Plan
           </Label>
         </div>
@@ -477,19 +484,21 @@ function Section1HeaderInfo({ register, errors, watch, setValue }: any) {
 
 function Section2ProjectInfo({ register, errors, watch, setValue }: any) {
   return (
-    <div className="space-y-6 px-1">
+    <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold mb-1">Section 2: Project Information</h3>
-        <p className="text-sm text-muted-foreground">Detailed project classification and timeline</p>
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">Project Information</h3>
+        <p className="text-sm text-gray-600">Detailed project classification and timeline</p>
       </div>
 
       <div className="space-y-4">
         <div>
-          <Label htmlFor="mipClassification">M/I/P Classification *</Label>
+          <Label htmlFor="mipClassification" className="text-sm font-medium text-gray-700">
+            M/I/P Classification <span className="text-red-500">*</span>
+          </Label>
           <select
             id="mipClassification"
             {...register('mipClassification')}
-            className="w-full px-3 py-2 border rounded-md mt-1.5"
+            className="w-full px-3 py-2 border border-gray-200 rounded-md mt-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">Select classification</option>
             <option value="MAINTENANCE">Maintenance</option>
@@ -497,65 +506,64 @@ function Section2ProjectInfo({ register, errors, watch, setValue }: any) {
             <option value="PROJECT">Project</option>
           </select>
           {errors.mipClassification && (
-            <p className="text-sm text-red-500 mt-1">{errors.mipClassification.message}</p>
+            <p className="text-xs text-red-500 mt-1">{errors.mipClassification.message}</p>
           )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="kraOrCpaNumber">KRA/CPA #</Label>
+            <Label htmlFor="kraOrCpaNumber" className="text-sm font-medium text-gray-700">KRA/CPA #</Label>
             <Input
               id="kraOrCpaNumber"
               type="number"
               {...register('kraOrCpaNumber', { valueAsNumber: true })}
               placeholder="Enter number"
-              className="mt-1.5"
+              className="mt-1.5 border-gray-200"
             />
           </div>
           <div>
-            <Label htmlFor="projectNumber">Project #</Label>
+            <Label htmlFor="projectNumber" className="text-sm font-medium text-gray-700">Project #</Label>
             <Input
               id="projectNumber"
               type="number"
               {...register('projectNumber', { valueAsNumber: true })}
               placeholder="Enter number"
-              className="mt-1.5"
+              className="mt-1.5 border-gray-200"
             />
           </div>
         </div>
 
         <div>
-          <Label htmlFor="kraOrCpaName">KRA/CPA Name</Label>
+          <Label htmlFor="kraOrCpaName" className="text-sm font-medium text-gray-700">KRA/CPA Name</Label>
           <Input
             id="kraOrCpaName"
             {...register('kraOrCpaName')}
             placeholder="e.g., Marketing"
-            className="mt-1.5"
+            className="mt-1.5 border-gray-200"
           />
         </div>
 
         <div>
-          <Label htmlFor="titleObjective">Title / Objective Statement *</Label>
+          <Label htmlFor="titleObjective" className="text-sm font-medium text-gray-700">
+            Title / Objective Statement <span className="text-red-500">*</span>
+          </Label>
           <Textarea
             id="titleObjective"
             {...register('titleObjective')}
             placeholder="What is this that you want to improve?"
             rows={3}
-            className="mt-1.5"
+            className="mt-1.5 border-gray-200"
           />
           {errors.titleObjective && (
-            <p className="text-sm text-red-500 mt-1">{errors.titleObjective.message}</p>
+            <p className="text-xs text-red-500 mt-1">{errors.titleObjective.message}</p>
           )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-3">
-            <Label htmlFor="startDate" className="text-sm font-medium flex items-center gap-2">
+          <div className="space-y-2">
+            <Label htmlFor="startDate" className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
               <CalendarIcon className="h-3.5 w-3.5" />
-              Start Date
-              <span className="text-xs text-orange-600 font-semibold">
-                *Required
-              </span>
+              Start Date <span className="text-red-500">*</span>
             </Label>
             <DatePicker
               date={watch('startDate')}
@@ -563,16 +571,13 @@ function Section2ProjectInfo({ register, errors, watch, setValue }: any) {
               placeholder="Select start date"
             />
             {errors.startDate && (
-              <p className="text-sm text-red-500 mt-1">{errors.startDate.message}</p>
+              <p className="text-xs text-red-500 mt-1">{errors.startDate.message}</p>
             )}
           </div>
-          <div className="space-y-3">
-            <Label htmlFor="endDate" className="text-sm font-medium flex items-center gap-2">
-              <CalendarIcon className="h-3.5 w-3.5 text-orange-600" />
-              End Date
-              <span className="text-xs text-orange-600 font-semibold">
-                *Required
-              </span>
+          <div className="space-y-2">
+            <Label htmlFor="endDate" className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+              <CalendarIcon className="h-3.5 w-3.5" />
+              End Date <span className="text-red-500">*</span>
             </Label>
             <DatePicker
               date={watch('endDate')}
@@ -584,7 +589,7 @@ function Section2ProjectInfo({ register, errors, watch, setValue }: any) {
               }}
             />
             {errors.endDate && (
-              <p className="text-sm text-red-500 mt-1">{errors.endDate.message}</p>
+              <p className="text-xs text-red-500 mt-1">{errors.endDate.message}</p>
             )}
           </div>
         </div>
@@ -603,18 +608,18 @@ function Section2ProjectInfo({ register, errors, watch, setValue }: any) {
 
 function Section3SuccessMeasures({ fields, register, errors, append, remove }: any) {
   return (
-    <div className="space-y-6 px-1">
+    <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold mb-1">Section 3: Specific Standards / Success Measures</h3>
-        <p className="text-sm text-muted-foreground">Define success criteria (maximum 10 measures)</p>
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">Specific Standards / Success Measures</h3>
+        <p className="text-sm text-gray-600">Define success criteria (maximum 10 measures)</p>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {fields.map((field: any, index: number) => (
-          <div key={field.id} className="space-y-3 pb-4 border-b last:border-b-0">
+          <div key={field.id} className="border border-gray-100 rounded-lg p-4 space-y-2">
             <div className="flex items-center justify-between">
-              <Label className="text-base font-semibold">
-                {index === 0 ? 'a' : index === 1 ? 'b' : index === 2 ? 'c' : 'd'}. Success Measure {index + 1}
+              <Label className="text-sm font-semibold text-gray-700">
+                Success Measure {index + 1}
               </Label>
               {fields.length > 1 && (
                 <Button
@@ -622,25 +627,23 @@ function Section3SuccessMeasures({ fields, register, errors, append, remove }: a
                   variant="ghost"
                   size="sm"
                   onClick={() => remove(index)}
+                  className="h-7 w-7 p-0 text-gray-400 hover:text-red-500"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               )}
             </div>
 
             <div>
-              <Label htmlFor={`successMeasures.${index}`} className="text-sm">
-                Success Measure Description * (minimum 5 characters)
-              </Label>
               <Textarea
                 id={`successMeasures.${index}`}
                 {...register(`successMeasures.${index}`)}
                 placeholder="Describe the success criteria or measurable outcome"
-                rows={3}
-                className="mt-1.5"
+                rows={2}
+                className="border-gray-200 text-sm"
               />
               {errors.successMeasures?.[index] && (
-                <p className="text-sm text-red-500 mt-1">{errors.successMeasures[index].message}</p>
+                <p className="text-xs text-red-500 mt-1">{errors.successMeasures[index].message}</p>
               )}
             </div>
           </div>
@@ -650,7 +653,7 @@ function Section3SuccessMeasures({ fields, register, errors, append, remove }: a
           type="button"
           variant="outline"
           onClick={() => append('')}
-          className="w-full"
+          className="w-full border-dashed border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600"
           disabled={fields.length >= 10}
         >
           <Plus className="h-4 w-4 mr-2" />
@@ -674,59 +677,64 @@ function Section4ProgramSteps({ fields, register, errors, watch, setValue, appen
   }, [totalBudget, setValue])
 
   return (
-    <div className="space-y-6 px-1">
+    <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold mb-1">Section 4: Program Steps</h3>
-        <p className="text-sm text-muted-foreground">Define the steps and budget breakdown (maximum 10 steps)</p>
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">Program Steps</h3>
+        <p className="text-sm text-gray-600">Define the steps and budget breakdown (maximum 10 steps)</p>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {fields.map((field: any, index: number) => (
-          <div key={field.id} className="border rounded-lg p-4 space-y-4">
+          <div key={field.id} className="border border-gray-100 rounded-lg p-4 space-y-3">
             <div className="flex justify-between items-center">
-              <h4 className="font-semibold">Step {index + 1}</h4>
+              <h4 className="text-sm font-semibold text-gray-700">Step {index + 1}</h4>
               {fields.length > 1 && (
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   onClick={() => remove(index)}
+                  className="h-7 w-7 p-0 text-gray-400 hover:text-red-500"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               )}
             </div>
 
             <div>
-              <Label>Program Step Description *</Label>
+              <Label className="text-sm font-medium text-gray-700">
+                Program Step Description <span className="text-red-500">*</span>
+              </Label>
               <Textarea
                 {...register(`programSteps.${index}.description`)}
                 placeholder="Describe the activity"
                 rows={2}
-                className="mt-1.5"
+                className="mt-1.5 border-gray-200 text-sm"
               />
               {errors.programSteps?.[index]?.description && (
-                <p className="text-sm text-red-500 mt-1">{errors.programSteps[index].description.message}</p>
+                <p className="text-xs text-red-500 mt-1">{errors.programSteps[index].description.message}</p>
               )}
             </div>
 
             <div>
-              <Label>Responsible Person / Unit *</Label>
+              <Label className="text-sm font-medium text-gray-700">
+                Responsible Person / Unit <span className="text-red-500">*</span>
+              </Label>
               <Input
                 {...register(`programSteps.${index}.responsiblePerson`)}
                 placeholder="Who will do it"
-                className="mt-1.5"
+                className="mt-1.5 border-gray-200"
               />
               {errors.programSteps?.[index]?.responsiblePerson && (
-                <p className="text-sm text-red-500 mt-1">{errors.programSteps[index].responsiblePerson.message}</p>
+                <p className="text-xs text-red-500 mt-1">{errors.programSteps[index].responsiblePerson.message}</p>
               )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-3">
-                <Label className="text-sm font-medium flex items-center gap-2">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
                   <CalendarIcon className="h-3.5 w-3.5" />
-                  Deadline *
+                  Deadline <span className="text-red-500">*</span>
                 </Label>
                 <DatePicker
                   date={watch(`programSteps.${index}.deadline`)}
@@ -734,19 +742,22 @@ function Section4ProgramSteps({ fields, register, errors, watch, setValue, appen
                   placeholder="Select deadline"
                 />
                 {errors.programSteps?.[index]?.deadline && (
-                  <p className="text-sm text-red-500 mt-1">{errors.programSteps[index].deadline.message}</p>
+                  <p className="text-xs text-red-500 mt-1">{errors.programSteps[index].deadline.message}</p>
                 )}
               </div>
-              <div className="space-y-3">
-                <Label className="text-sm font-medium">Budget (₱) *</Label>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">
+                  Budget (PHP) <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   type="number"
                   step="0.01"
                   {...register(`programSteps.${index}.budget`, { valueAsNumber: true })}
                   placeholder="0.00"
+                  className="border-gray-200"
                 />
                 {errors.programSteps?.[index]?.budget && (
-                  <p className="text-sm text-red-500 mt-1">{errors.programSteps[index].budget.message}</p>
+                  <p className="text-xs text-red-500 mt-1">{errors.programSteps[index].budget.message}</p>
                 )}
               </div>
             </div>
@@ -763,7 +774,7 @@ function Section4ProgramSteps({ fields, register, errors, watch, setValue, appen
             deadline: new Date(),
             budget: 0
           })}
-          className="w-full"
+          className="w-full border-dashed border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600"
           disabled={fields.length >= 10}
         >
           <Plus className="h-4 w-4 mr-2" />
@@ -772,11 +783,11 @@ function Section4ProgramSteps({ fields, register, errors, watch, setValue, appen
             : `Add Program Step (${fields.length}/10)`}
         </Button>
 
-        <div className="bg-primary/10 p-4 rounded-lg border-2 border-primary/20">
-          <div className="flex justify-between items-center">
-            <span className="font-semibold text-lg">Total Budget:</span>
-            <span className="text-2xl font-bold">₱{totalBudget.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
-          </div>
+        <div className="bg-blue-50 border border-blue-100 p-4 rounded-lg flex justify-between items-center">
+          <span className="text-sm font-semibold text-blue-900">Total Budget</span>
+          <span className="text-lg font-bold text-blue-900">
+            &#8369;{totalBudget.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+          </span>
         </div>
       </div>
     </div>
@@ -785,29 +796,29 @@ function Section4ProgramSteps({ fields, register, errors, watch, setValue, appen
 
 function Section5Signatories({ register, errors, watch, setValue }: any) {
   return (
-    <div className="space-y-6 px-1">
+    <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold mb-1">Section 5: Signatories</h3>
-        <p className="text-sm text-muted-foreground">Approval chain and signatory information</p>
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">Signatories</h3>
+        <p className="text-sm text-gray-600">Approval chain and signatory information</p>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-5">
         {/* Prepared By */}
-        <div className="space-y-3 pb-4 border-b">
-          <h4 className="font-medium">Prepared By</h4>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Name</Label>
-              <Input {...register('preparedBy')} placeholder="Name" />
+        <div className="space-y-3 pb-4 border-b border-gray-100">
+          <h4 className="text-sm font-semibold text-gray-700">Prepared By</h4>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs font-medium text-gray-600">Name</Label>
+              <Input {...register('preparedBy')} placeholder="Name" className="mt-1 border-gray-200 text-sm" />
             </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Position</Label>
-              <Input {...register('preparedByPosition')} placeholder="Position" />
+            <div>
+              <Label className="text-xs font-medium text-gray-600">Position</Label>
+              <Input {...register('preparedByPosition')} placeholder="Position" className="mt-1 border-gray-200 text-sm" />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label className="text-sm font-medium flex items-center gap-2">
-              <CalendarIcon className="h-3.5 w-3.5" />
+          <div>
+            <Label className="text-xs font-medium text-gray-600 flex items-center gap-1.5 mb-1">
+              <CalendarIcon className="h-3 w-3" />
               Date Prepared
             </Label>
             <DatePicker
@@ -819,21 +830,21 @@ function Section5Signatories({ register, errors, watch, setValue }: any) {
         </div>
 
         {/* Endorsed By */}
-        <div className="space-y-3 pb-4 border-b">
-          <h4 className="font-medium">Endorsed By</h4>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Name</Label>
-              <Input {...register('endorsedBy')} placeholder="Name" />
+        <div className="space-y-3 pb-4 border-b border-gray-100">
+          <h4 className="text-sm font-semibold text-gray-700">Endorsed By</h4>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs font-medium text-gray-600">Name</Label>
+              <Input {...register('endorsedBy')} placeholder="Name" className="mt-1 border-gray-200 text-sm" />
             </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Position</Label>
-              <Input {...register('endorsedByPosition')} placeholder="Position" />
+            <div>
+              <Label className="text-xs font-medium text-gray-600">Position</Label>
+              <Input {...register('endorsedByPosition')} placeholder="Position" className="mt-1 border-gray-200 text-sm" />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label className="text-sm font-medium flex items-center gap-2">
-              <CalendarIcon className="h-3.5 w-3.5" />
+          <div>
+            <Label className="text-xs font-medium text-gray-600 flex items-center gap-1.5 mb-1">
+              <CalendarIcon className="h-3 w-3" />
               Date Endorsed
             </Label>
             <DatePicker
@@ -845,21 +856,21 @@ function Section5Signatories({ register, errors, watch, setValue }: any) {
         </div>
 
         {/* Recommended By */}
-        <div className="space-y-3 pb-4 border-b">
-          <h4 className="font-medium">Recommended By</h4>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Name</Label>
-              <Input {...register('recommendedBy')} placeholder="Name" />
+        <div className="space-y-3 pb-4 border-b border-gray-100">
+          <h4 className="text-sm font-semibold text-gray-700">Recommended By</h4>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs font-medium text-gray-600">Name</Label>
+              <Input {...register('recommendedBy')} placeholder="Name" className="mt-1 border-gray-200 text-sm" />
             </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Position</Label>
-              <Input {...register('recommendedByPosition')} placeholder="Position" />
+            <div>
+              <Label className="text-xs font-medium text-gray-600">Position</Label>
+              <Input {...register('recommendedByPosition')} placeholder="Position" className="mt-1 border-gray-200 text-sm" />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label className="text-sm font-medium flex items-center gap-2">
-              <CalendarIcon className="h-3.5 w-3.5" />
+          <div>
+            <Label className="text-xs font-medium text-gray-600 flex items-center gap-1.5 mb-1">
+              <CalendarIcon className="h-3 w-3" />
               Date Recommended
             </Label>
             <DatePicker
@@ -872,20 +883,20 @@ function Section5Signatories({ register, errors, watch, setValue }: any) {
 
         {/* Approved By */}
         <div className="space-y-3">
-          <h4 className="font-medium">Approved By</h4>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Name</Label>
-              <Input {...register('approvedBy')} placeholder="Name" />
+          <h4 className="text-sm font-semibold text-gray-700">Approved By</h4>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs font-medium text-gray-600">Name</Label>
+              <Input {...register('approvedBy')} placeholder="Name" className="mt-1 border-gray-200 text-sm" />
             </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Position</Label>
-              <Input {...register('approvedByPosition')} placeholder="Position" />
+            <div>
+              <Label className="text-xs font-medium text-gray-600">Position</Label>
+              <Input {...register('approvedByPosition')} placeholder="Position" className="mt-1 border-gray-200 text-sm" />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label className="text-sm font-medium flex items-center gap-2">
-              <CalendarIcon className="h-3.5 w-3.5" />
+          <div>
+            <Label className="text-xs font-medium text-gray-600 flex items-center gap-1.5 mb-1">
+              <CalendarIcon className="h-3 w-3" />
               Date Approved
             </Label>
             <DatePicker
@@ -902,10 +913,10 @@ function Section5Signatories({ register, errors, watch, setValue }: any) {
 
 function Section6Attachments({ register, errors, watch, setValue, uploadedFiles, onFileUpload, onRemoveFile }: any) {
   return (
-    <div className="space-y-6 px-1">
+    <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold mb-1">Section 6: Attachments / Supporting Documents</h3>
-        <p className="text-sm text-muted-foreground">Upload supporting files and documentation</p>
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">Attachments / Supporting Documents</h3>
+        <p className="text-sm text-gray-600">Upload supporting files and documentation</p>
       </div>
 
       <div className="space-y-4">
@@ -916,7 +927,7 @@ function Section6Attachments({ register, errors, watch, setValue, uploadedFiles,
               checked={watch('hasGuidelines')}
               onCheckedChange={(checked) => setValue('hasGuidelines', checked)}
             />
-            <Label htmlFor="hasGuidelines" className="cursor-pointer">
+            <Label htmlFor="hasGuidelines" className="text-sm text-gray-700 cursor-pointer">
               Guidelines, Systems, and Procedures
             </Label>
           </div>
@@ -927,55 +938,65 @@ function Section6Attachments({ register, errors, watch, setValue, uploadedFiles,
               checked={watch('hasComputationValue')}
               onCheckedChange={(checked) => setValue('hasComputationValue', checked)}
             />
-            <Label htmlFor="hasComputationValue" className="cursor-pointer">
+            <Label htmlFor="hasComputationValue" className="text-sm text-gray-700 cursor-pointer">
               Computation of Value (Revenue minus cost)
             </Label>
           </div>
         </div>
 
         <div>
-          <Label htmlFor="otherAttachments">Others (Please specify)</Label>
+          <Label htmlFor="otherAttachments" className="text-sm font-medium text-gray-700">Others (Please specify)</Label>
           <Input
             id="otherAttachments"
             {...register('otherAttachments')}
             placeholder="Specify other attachments"
-            className="mt-1.5"
+            className="mt-1.5 border-gray-200"
           />
         </div>
 
-        <Separator />
+        <Separator className="bg-gray-100" />
 
+        {/* File Upload Area */}
         <div>
-          <Label>Upload Files (Optional)</Label>
-          <p className="text-sm text-muted-foreground mb-2">
-            Supported formats: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, GIF (Max 10MB)
-          </p>
-          <Input
-            type="file"
-            onChange={onFileUpload}
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif"
-            className="cursor-pointer mt-1.5"
-          />
+          <Label className="text-sm font-medium text-gray-700 mb-2 block">Upload Files (Optional)</Label>
+          <label
+            htmlFor="file-upload"
+            className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-6 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
+          >
+            <Upload className="h-8 w-8 text-gray-400 mb-2" />
+            <p className="text-sm font-medium text-gray-700">Click to upload a file</p>
+            <p className="text-xs text-gray-500 mt-1">PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, GIF (Max 10MB)</p>
+            <Input
+              id="file-upload"
+              type="file"
+              onChange={onFileUpload}
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif"
+              className="hidden"
+            />
+          </label>
         </div>
 
         {uploadedFiles.length > 0 && (
           <div className="space-y-2">
-            <Label>Uploaded Files</Label>
+            <Label className="text-sm font-medium text-gray-700">Uploaded Files</Label>
             <div className="space-y-2">
               {uploadedFiles.map((file, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-md">
+                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-lg">
                   <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    <span className="text-sm">{file.fileName}</span>
-                    <Badge variant="secondary">{(file.fileSize / 1024).toFixed(2)} KB</Badge>
+                    <FileText className="h-4 w-4 text-blue-500" />
+                    <span className="text-sm text-gray-900">{file.fileName}</span>
+                    <Badge className="bg-gray-100 text-gray-600 border-0 text-xs">
+                      {(file.fileSize / 1024).toFixed(2)} KB
+                    </Badge>
                   </div>
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
                     onClick={() => onRemoveFile(index)}
+                    className="h-7 w-7 p-0 text-gray-400 hover:text-red-500"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               ))}
@@ -989,32 +1010,32 @@ function Section6Attachments({ register, errors, watch, setValue, uploadedFiles,
 
 function Section7CCRemarks({ register, errors }: any) {
   return (
-    <div className="space-y-6 px-1">
+    <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold mb-1">Section 7: CC / Remarks</h3>
-        <p className="text-sm text-muted-foreground">Additional recipients and notes</p>
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">CC / Remarks</h3>
+        <p className="text-sm text-gray-600">Additional recipients and notes</p>
       </div>
 
       <div className="space-y-4">
         <div>
-          <Label htmlFor="ccRecipients">CC / Recipients</Label>
+          <Label htmlFor="ccRecipients" className="text-sm font-medium text-gray-700">CC / Recipients</Label>
           <Textarea
             id="ccRecipients"
             {...register('ccRecipients')}
             placeholder="Additional recipients or departments"
             rows={2}
-            className="mt-1.5"
+            className="mt-1.5 border-gray-200 text-sm"
           />
         </div>
 
         <div>
-          <Label htmlFor="remarks">Remarks / Notes</Label>
+          <Label htmlFor="remarks" className="text-sm font-medium text-gray-700">Remarks / Notes</Label>
           <Textarea
             id="remarks"
             {...register('remarks')}
             placeholder="Optional comments"
             rows={3}
-            className="mt-1.5"
+            className="mt-1.5 border-gray-200 text-sm"
           />
         </div>
       </div>

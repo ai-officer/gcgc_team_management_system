@@ -451,7 +451,7 @@ export default function MemberManagementPage() {
       </div>
 
       {/* Main Content — fixed left column + flex right panel */}
-      <div className="flex gap-5 items-stretch min-h-[600px]">
+      <div className="flex gap-5 items-stretch h-[calc(100vh-280px)] min-h-[480px]">
 
         {/* ── Team Members Sidebar ── */}
         <div className="w-[320px] shrink-0 flex flex-col">

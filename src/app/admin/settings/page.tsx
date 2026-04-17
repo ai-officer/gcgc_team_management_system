@@ -132,12 +132,12 @@ export default function AdminSettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="bg-gray-50 p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Admin Settings</h1>
-          <p className="text-sm font-medium text-slate-600">Configure system-wide settings and preferences</p>
+          <h1 className="text-2xl font-bold text-gray-900">System Settings</h1>
+          <p className="text-sm text-gray-600">Configure system-wide settings and preferences</p>
         </div>
         <Button onClick={handleSave} disabled={saving}>
           <Save className="w-4 h-4 mr-2" />
@@ -147,15 +147,15 @@ export default function AdminSettingsPage() {
 
       <div className="grid gap-6">
         {/* System Settings */}
-        <Card className="bg-white border border-slate-200 rounded-xl shadow-sm">
-          <CardHeader className="border-b border-slate-100">
+        <Card className="bg-white border border-gray-100 rounded-xl shadow-sm">
+          <CardHeader className="border-b border-gray-100">
             <div className="flex items-center gap-2">
               <div className="p-2 bg-blue-50 rounded-lg">
                 <Database className="w-4 h-4 text-blue-600" />
               </div>
-              <CardTitle className="text-lg font-semibold text-slate-900">System Configuration</CardTitle>
+              <CardTitle className="text-lg font-semibold text-gray-900">System Configuration</CardTitle>
             </div>
-            <CardDescription className="text-sm font-medium text-slate-600 mt-1">
+            <CardDescription className="text-sm font-medium text-gray-600 mt-1">
               Basic system settings and information
             </CardDescription>
           </CardHeader>
@@ -196,15 +196,15 @@ export default function AdminSettingsPage() {
         </Card>
 
         {/* User Management Settings */}
-        <Card className="bg-white border border-slate-200 rounded-xl shadow-sm">
-          <CardHeader className="border-b border-slate-100">
+        <Card className="bg-white border border-gray-100 rounded-xl shadow-sm">
+          <CardHeader className="border-b border-gray-100">
             <div className="flex items-center gap-2">
               <div className="p-2 bg-emerald-50 rounded-lg">
                 <Users className="w-4 h-4 text-emerald-600" />
               </div>
-              <CardTitle className="text-lg font-semibold text-slate-900">User Management</CardTitle>
+              <CardTitle className="text-lg font-semibold text-gray-900">User Management</CardTitle>
             </div>
-            <CardDescription className="text-sm font-medium text-slate-600 mt-1">
+            <CardDescription className="text-sm font-medium text-gray-600 mt-1">
               Configure user registration and default settings
             </CardDescription>
           </CardHeader>
@@ -276,15 +276,15 @@ export default function AdminSettingsPage() {
         </Card>
 
         {/* Security Settings */}
-        <Card className="bg-white border border-slate-200 rounded-xl shadow-sm">
-          <CardHeader className="border-b border-slate-100">
+        <Card className="bg-white border border-gray-100 rounded-xl shadow-sm">
+          <CardHeader className="border-b border-gray-100">
             <div className="flex items-center gap-2">
               <div className="p-2 bg-red-50 rounded-lg">
                 <Shield className="w-4 h-4 text-red-600" />
               </div>
-              <CardTitle className="text-lg font-semibold text-slate-900">Security & Monitoring</CardTitle>
+              <CardTitle className="text-lg font-semibold text-gray-900">Security & Monitoring</CardTitle>
             </div>
-            <CardDescription className="text-sm font-medium text-slate-600 mt-1">
+            <CardDescription className="text-sm font-medium text-gray-600 mt-1">
               Security policies and system monitoring
             </CardDescription>
           </CardHeader>
@@ -318,15 +318,15 @@ export default function AdminSettingsPage() {
         </Card>
 
         {/* Notification Settings */}
-        <Card className="bg-white border border-slate-200 rounded-xl shadow-sm">
-          <CardHeader className="border-b border-slate-100">
+        <Card className="bg-white border border-gray-100 rounded-xl shadow-sm">
+          <CardHeader className="border-b border-gray-100">
             <div className="flex items-center gap-2">
               <div className="p-2 bg-purple-50 rounded-lg">
                 <Bell className="w-4 h-4 text-purple-600" />
               </div>
-              <CardTitle className="text-lg font-semibold text-slate-900">Notifications</CardTitle>
+              <CardTitle className="text-lg font-semibold text-gray-900">Notifications</CardTitle>
             </div>
-            <CardDescription className="text-sm font-medium text-slate-600 mt-1">
+            <CardDescription className="text-sm font-medium text-gray-600 mt-1">
               System notifications and alerts
             </CardDescription>
           </CardHeader>

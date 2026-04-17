@@ -156,7 +156,7 @@ export default function EvaluationsPage() {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
+    <div className="bg-gray-50 p-6 max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -173,8 +173,8 @@ export default function EvaluationsPage() {
 
       {/* New Evaluation Form */}
       {showForm && isLeaderOrAdmin && (
-        <div className="p-6 bg-white rounded-xl border-2 border-blue-200 shadow-sm space-y-5">
-          <h2 className="font-semibold text-gray-900">New Evaluation</h2>
+        <div className="p-6 bg-white rounded-xl border border-gray-100 shadow-sm space-y-5">
+          <h2 className="text-lg font-semibold text-gray-900">New Evaluation</h2>
 
           {/* Member select */}
           <div className="space-y-1">
@@ -228,7 +228,7 @@ export default function EvaluationsPage() {
                   key={opt.score}
                   type="button"
                   onClick={() => setFormScore(opt.score)}
-                  className={`w-14 h-14 rounded-full font-bold text-sm text-white transition-all border-4 ${opt.bg} ${formScore === opt.score ? 'border-gray-800 scale-110 shadow-md' : 'border-transparent opacity-70 hover:opacity-100'}`}
+                  className={`w-16 h-16 rounded-full font-bold text-sm text-white transition-all ${opt.bg} ${formScore === opt.score ? 'ring-4 ring-offset-2 ring-gray-800 scale-105 shadow-md' : 'opacity-70 hover:opacity-100'}`}
                 >
                   {opt.label}
                 </button>
@@ -307,7 +307,7 @@ export default function EvaluationsPage() {
           {evaluations.map(ev => {
             const score = getScoreStyle(ev.gradientScore)
             return (
-              <div key={ev.id} className="p-4 bg-white rounded-xl border shadow-sm space-y-3">
+              <div key={ev.id} className="p-5 bg-white rounded-xl border border-gray-100 shadow-sm space-y-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <UserAvatar

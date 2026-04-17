@@ -12,17 +12,13 @@ import {
   CheckSquare,
   MoreHorizontal,
   Target,
-  X,
   User,
   Users,
-  Handshake,
   Trash2,
-  TrendingUp,
   Activity,
   Award,
   AlertTriangle,
   BarChart3,
-  Zap,
   ListTodo,
   Eye
 } from 'lucide-react'
@@ -31,14 +27,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
-} from '@/components/ui/dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,9 +42,6 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Progress } from '@/components/ui/progress'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -67,11 +52,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
-import CreateTaskButton from '@/components/tasks/CreateTaskButton'
+import TaskForm from '@/components/tasks/TaskForm'
+import TaskViewModal from '@/components/tasks/TaskViewModal'
 
 interface TeamMember {
   id: string
@@ -161,44 +146,9 @@ export default function MemberManagementPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [viewMode, setViewMode] = useState<ViewMode>('list')
   const [isCreateTaskDialogOpen, setIsCreateTaskDialogOpen] = useState(false)
+  const [viewingTask, setViewingTask] = useState<Task | null>(null)
   const [memberSuggestions, setMemberSuggestions] = useState<MemberWithStats[]>([])
   const [suggestionsLoading, setSuggestionsLoading] = useState(false)
-
-  // Task creation form state
-  const [newTask, setNewTask] = useState<{
-    title: string
-    description: string
-    priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
-    status: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'
-    dueDate: string
-    startDate: string
-    progressPercentage: number
-    taskType: 'INDIVIDUAL' | 'TEAM' | 'COLLABORATION'
-    assigneeId: string
-    teamMemberIds: string[]
-    collaboratorIds: string[]
-    assignedById: string
-  }>({
-    title: '',
-    description: '',
-    priority: 'MEDIUM',
-    status: 'TODO',
-    dueDate: '',
-    startDate: '',
-    progressPercentage: 0,
-    taskType: 'INDIVIDUAL',
-    assigneeId: '',
-    teamMemberIds: [],
-    collaboratorIds: [],
-    assignedById: session?.user?.id || ''
-  })
-
-  // Selected users for task assignments
-  const [selectedTeamMembers, setSelectedTeamMembers] = useState<TeamMember[]>([])
-  const [selectedCollaborators, setSelectedCollaborators] = useState<TeamMember[]>([])
-  const [allUsers, setAllUsers] = useState<TeamMember[]>([])
-  const [teamMemberSearch, setTeamMemberSearch] = useState('')
-  const [collaboratorSearch, setCollaboratorSearch] = useState('')
 
   // Redirect if not a leader
   useEffect(() => {
@@ -243,26 +193,23 @@ export default function MemberManagementPage() {
 
     try {
       // First fetch team members to get their IDs
-      const [membersResponse, teamsResponse, usersResponse] = await Promise.all([
+      const [membersResponse, teamsResponse] = await Promise.all([
         fetch('/api/user/team-members'),
         fetch('/api/teams'),
-        fetch('/api/users')
       ])
 
-      if (!membersResponse.ok || !teamsResponse.ok || !usersResponse.ok) {
+      if (!membersResponse.ok || !teamsResponse.ok) {
         throw new Error('Failed to fetch data')
       }
 
-      const [membersData, teamsData, usersData] = await Promise.all([
+      const [membersData, teamsData] = await Promise.all([
         membersResponse.json(),
         teamsResponse.json(),
-        usersResponse.json()
       ])
 
       const members = membersData.members || []
       setTeamMembers(members)
       setTeams(teamsData.teams || [])
-      setAllUsers(usersData.users || [])
 
       // Now fetch tasks - if a specific member is selected, filter by that member
       // Otherwise fetch all tasks (the API returns tasks the leader can see)
@@ -306,145 +253,6 @@ export default function MemberManagementPage() {
     }
   }, [session])
 
-  const handleAssigneeSelect = (value: string) => {
-    setNewTask(prev => ({ ...prev, assigneeId: value }))
-  }
-
-  const handleCreateTask = async () => {
-    if (!newTask.title) {
-      toast({
-        title: "Error",
-        description: "Task title is required",
-        variant: "destructive"
-      })
-      return
-    }
-
-    if (newTask.taskType === 'INDIVIDUAL' && !newTask.assigneeId) {
-      toast({
-        title: "Error",
-        description: "Please select an assignee for individual tasks",
-        variant: "destructive"
-      })
-      return
-    }
-
-    if (newTask.taskType === 'TEAM' && selectedTeamMembers.length === 0) {
-      toast({
-        title: "Error",
-        description: "Please select team members for team tasks",
-        variant: "destructive"
-      })
-      return
-    }
-
-    if (newTask.taskType === 'COLLABORATION' && selectedCollaborators.length === 0) {
-      toast({
-        title: "Error",
-        description: "Please select collaborators for collaboration tasks",
-        variant: "destructive"
-      })
-      return
-    }
-
-    try {
-      const response = await fetch('/api/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...newTask,
-          dueDate: newTask.dueDate ? new Date(newTask.dueDate).toISOString() : undefined,
-          startDate: newTask.startDate ? new Date(newTask.startDate).toISOString() : undefined,
-          assignedById: session?.user?.id
-        })
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to create task')
-      }
-
-      const createdTask = await response.json()
-      setTasks(prev => [createdTask, ...prev])
-      resetTaskForm()
-      setIsCreateTaskDialogOpen(false)
-      fetchMemberSuggestions()
-
-      toast({
-        title: "Success",
-        description: "Task created and assigned successfully"
-      })
-    } catch (err: any) {
-      console.error('Error creating task:', err)
-      toast({
-        title: "Error",
-        description: err.message || "Failed to create task",
-        variant: "destructive"
-      })
-    }
-  }
-
-  const resetTaskForm = () => {
-    setNewTask({
-      title: '',
-      description: '',
-      priority: 'MEDIUM',
-      status: 'TODO',
-      dueDate: '',
-      startDate: '',
-      progressPercentage: 0,
-      taskType: 'INDIVIDUAL',
-      assigneeId: '',
-      teamMemberIds: [],
-      collaboratorIds: [],
-      assignedById: session?.user?.id || ''
-    })
-    setSelectedTeamMembers([])
-    setSelectedCollaborators([])
-    setTeamMemberSearch('')
-    setCollaboratorSearch('')
-  }
-
-  const addTeamMember = (user: TeamMember) => {
-    if (!selectedTeamMembers.find(m => m.id === user.id)) {
-      const newMembers = [...selectedTeamMembers, user]
-      setSelectedTeamMembers(newMembers)
-      setNewTask(prev => ({
-        ...prev,
-        teamMemberIds: [...prev.teamMemberIds, user.id]
-      }))
-    }
-  }
-
-  const removeTeamMember = (userId: string) => {
-    const newMembers = selectedTeamMembers.filter(m => m.id !== userId)
-    setSelectedTeamMembers(newMembers)
-    setNewTask(prev => ({
-      ...prev,
-      teamMemberIds: prev.teamMemberIds.filter(id => id !== userId)
-    }))
-  }
-
-  const addCollaborator = (user: TeamMember) => {
-    if (!selectedCollaborators.find(c => c.id === user.id)) {
-      const newCollaborators = [...selectedCollaborators, user]
-      setSelectedCollaborators(newCollaborators)
-      setNewTask(prev => ({
-        ...prev,
-        collaboratorIds: [...prev.collaboratorIds, user.id]
-      }))
-    }
-  }
-
-  const removeCollaborator = (userId: string) => {
-    const newCollaborators = selectedCollaborators.filter(c => c.id !== userId)
-    setSelectedCollaborators(newCollaborators)
-    setNewTask(prev => ({
-      ...prev,
-      collaboratorIds: prev.collaboratorIds.filter(id => id !== userId)
-    }))
-  }
-
   const handleDeleteTask = async () => {
     if (!deletingTask) return
 
@@ -476,22 +284,6 @@ export default function MemberManagementPage() {
 
   const canDeleteTask = (task: Task) => {
     return session?.user?.role === 'LEADER' || session?.user?.role === 'ADMIN'
-  }
-
-  const getTaskTypeIcon = (type: string) => {
-    switch (type) {
-      case 'INDIVIDUAL': return <User className="h-3 w-3" />
-      case 'TEAM': return <Users className="h-3 w-3" />
-      case 'COLLABORATION': return <Handshake className="h-3 w-3" />
-      default: return <CheckSquare className="h-3 w-3" />
-    }
-  }
-
-  const getProgressColor = (percentage: number) => {
-    if (percentage < 25) return 'bg-red-500'
-    if (percentage < 50) return 'bg-orange-500'
-    if (percentage < 75) return 'bg-yellow-500'
-    return 'bg-green-500'
   }
 
   const getPriorityColor = (priority: string) => {
@@ -594,431 +386,10 @@ export default function MemberManagementPage() {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <CreateTaskButton size="sm" onTaskCreated={() => { fetchData(); fetchMemberSuggestions(); }} />
-              <Dialog open={isCreateTaskDialogOpen} onOpenChange={setIsCreateTaskDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="shadow-sm">
+              <Button className="shadow-sm" onClick={() => setIsCreateTaskDialogOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Assign Task
               </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Create and Assign Task</DialogTitle>
-                <DialogDescription>
-                  Create a new task with all details and assign it to your team members
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="space-y-6">
-                {/* Basic Information */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Task Title *</Label>
-                    <Input
-                      id="title"
-                      value={newTask.title}
-                      onChange={(e) => setNewTask(prev => ({ ...prev, title: e.target.value }))}
-                      placeholder="Enter task title"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="priority">Priority</Label>
-                    <Select
-                      value={newTask.priority}
-                      onValueChange={(value) => setNewTask(prev => ({ ...prev, priority: value as any }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="LOW">Low</SelectItem>
-                        <SelectItem value="MEDIUM">Medium</SelectItem>
-                        <SelectItem value="HIGH">High</SelectItem>
-                        <SelectItem value="URGENT">Urgent</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    value={newTask.description}
-                    onChange={(e) => setNewTask(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Describe the task in detail"
-                    rows={3}
-                  />
-                </div>
-
-                {/* Status and Progress */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="status">Status</Label>
-                    <Select
-                      value={newTask.status}
-                      onValueChange={(value) => setNewTask(prev => ({ ...prev, status: value as any }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="TODO">To Do</SelectItem>
-                        <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                        <SelectItem value="IN_REVIEW">In Review</SelectItem>
-                        <SelectItem value="COMPLETED">Completed</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="startDate">Start Date</Label>
-                    <Input
-                      id="startDate"
-                      type="date"
-                      value={newTask.startDate}
-                      onChange={(e) => setNewTask(prev => ({ ...prev, startDate: e.target.value }))}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="dueDate">Due Date</Label>
-                    <Input
-                      id="dueDate"
-                      type="date"
-                      value={newTask.dueDate}
-                      onChange={(e) => setNewTask(prev => ({ ...prev, dueDate: e.target.value }))}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Progress: {newTask.progressPercentage}%</Label>
-                  <div className="space-y-2">
-                    <Input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={newTask.progressPercentage}
-                      onChange={(e) => setNewTask(prev => ({ ...prev, progressPercentage: Number(e.target.value) }))}
-                      className="w-full"
-                    />
-                    <Progress
-                      value={newTask.progressPercentage}
-                      className={`h-3 ${getProgressColor(newTask.progressPercentage)}`}
-                    />
-                  </div>
-                </div>
-
-                {/* Task Type Selection */}
-                <div className="space-y-4">
-                  <Label>Task Type</Label>
-                  <div className="grid grid-cols-3 gap-4">
-                    {(['INDIVIDUAL', 'TEAM', 'COLLABORATION'] as const).map((type) => (
-                      <Card
-                        key={type}
-                        className={cn(
-                          "cursor-pointer transition-all hover:shadow-md",
-                          newTask.taskType === type ? "ring-2 ring-primary bg-primary/5" : ""
-                        )}
-                        onClick={() => {
-                          setNewTask(prev => ({ ...prev, taskType: type, assigneeId: '', teamMemberIds: [], collaboratorIds: [] }))
-                          setSelectedTeamMembers([])
-                          setSelectedCollaborators([])
-                        }}
-                      >
-                        <CardContent className="flex flex-col items-center p-4">
-                          <div className="text-2xl mb-2">
-                            {type === 'INDIVIDUAL' && '👤'}
-                            {type === 'TEAM' && '👥'}
-                            {type === 'COLLABORATION' && '🤝'}
-                          </div>
-                          <span className="text-sm font-medium capitalize">
-                            {type.toLowerCase()}
-                          </span>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Individual Task Assignment */}
-                {newTask.taskType === 'INDIVIDUAL' && (
-                  <div className="space-y-4">
-                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      <div className="flex items-center gap-2 mb-2">
-                        <User className="h-4 w-4 text-blue-600" />
-                        <span className="text-sm font-medium text-blue-800">Individual Task</span>
-                      </div>
-                      <p className="text-sm text-blue-700">
-                        Select a team member to assign this individual task to.
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="assignee">Assign to *</Label>
-                      <Select
-                        value={newTask.assigneeId}
-                        onValueChange={handleAssigneeSelect}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select team member (sorted by availability)" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {(() => {
-                            const usersWithAvailability = allUsers
-                              .filter(user => user.id !== session?.user?.id)
-                              .map(user => {
-                                const memberStats = memberSuggestions.find(m => m.id === user.id)
-                                return {
-                                  ...user,
-                                  taskCount: memberStats?.taskCounts?.total || 0,
-                                  availabilityScore: memberStats?.availabilityScore || 0,
-                                  taskCounts: memberStats?.taskCounts || { todo: 0, inProgress: 0, inReview: 0, total: 0 }
-                                }
-                              })
-                              .sort((a, b) => a.availabilityScore - b.availabilityScore)
-
-                            return usersWithAvailability.map((member, index) => (
-                              <SelectItem key={member.id} value={member.id}>
-                                <div className="flex items-center gap-2 w-full">
-                                  <Avatar className="h-6 w-6">
-                                    <AvatarImage src={member.image || undefined} />
-                                    <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium text-xs">
-                                      {member.name
-                                        ? member.name.split(' ').map(n => n[0]).join('')
-                                        : member.email?.[0]?.toUpperCase()
-                                      }
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
-                                      <div className="font-medium truncate">{member.name || 'No name'}</div>
-                                      {index === 0 && (
-                                        <Badge className="bg-green-100 text-green-700 text-xs px-1 py-0">
-                                          Most Available
-                                        </Badge>
-                                      )}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground">
-                                      {member.email} • {member.taskCount} active tasks
-                                    </div>
-                                  </div>
-                                </div>
-                              </SelectItem>
-                            ))
-                          })()}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                )}
-
-                {/* Team Task Assignment */}
-                {newTask.taskType === 'TEAM' && (
-                  <div className="space-y-4">
-                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Users className="h-4 w-4 text-green-600" />
-                        <span className="text-sm font-medium text-green-800">Team Task</span>
-                      </div>
-                      <p className="text-sm text-green-700">
-                        You are the team leader. Select team members to work on this task.
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Team Members *</Label>
-                      <Select onValueChange={(value) => {
-                        const user = allUsers.find(u => u.id === value)
-                        if (user) addTeamMember(user)
-                      }}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Search and add team members..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <div className="p-2">
-                            <Input
-                              placeholder="Search users..."
-                              value={teamMemberSearch}
-                              onChange={(e) => setTeamMemberSearch(e.target.value)}
-                              className="mb-2"
-                            />
-                          </div>
-                          {allUsers
-                            .filter(user => {
-                              const searchMatch = !teamMemberSearch ||
-                                user.name?.toLowerCase().includes(teamMemberSearch.toLowerCase()) ||
-                                user.email.toLowerCase().includes(teamMemberSearch.toLowerCase())
-                              return user.id !== session?.user?.id &&
-                                     !selectedTeamMembers.find(sm => sm.id === user.id) &&
-                                     searchMatch
-                            })
-                            .map((user) => (
-                              <SelectItem key={user.id} value={user.id}>
-                                <div className="flex items-center gap-2">
-                                  <Avatar className="h-6 w-6">
-                                    <AvatarImage src={user.image || undefined} />
-                                    <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium text-xs">
-                                      {user.name
-                                        ? user.name.split(' ').map(n => n[0]).join('')
-                                        : user.email?.[0]?.toUpperCase()
-                                      }
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <div>
-                                    <div className="font-medium">{user.name || 'No name'}</div>
-                                    <div className="text-xs text-muted-foreground">{user.email}</div>
-                                  </div>
-                                </div>
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-
-                      {selectedTeamMembers.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {selectedTeamMembers.map((member) => (
-                            <Badge key={member.id} variant="secondary" className="flex items-center gap-1">
-                              <Avatar className="h-4 w-4">
-                                <AvatarImage src={member.image || undefined} />
-                                <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium text-xs">
-                                  {member.name
-                                    ? member.name.split(' ').map(n => n[0]).join('')
-                                    : member.email?.[0]?.toUpperCase()
-                                  }
-                                </AvatarFallback>
-                              </Avatar>
-                              {member.name || member.email}
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
-                                onClick={() => removeTeamMember(member.id)}
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Collaboration Task Assignment */}
-                {newTask.taskType === 'COLLABORATION' && (
-                  <div className="space-y-4">
-                    <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Handshake className="h-4 w-4 text-purple-600" />
-                        <span className="text-sm font-medium text-purple-800">Collaboration Task</span>
-                      </div>
-                      <p className="text-sm text-purple-700">
-                        Select collaborators who will work together with you on this task.
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Collaborators *</Label>
-                      <Select onValueChange={(value) => {
-                        const user = allUsers.find(u => u.id === value)
-                        if (user) addCollaborator(user)
-                      }}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Search and add collaborators..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <div className="p-2">
-                            <Input
-                              placeholder="Search users..."
-                              value={collaboratorSearch}
-                              onChange={(e) => setCollaboratorSearch(e.target.value)}
-                              className="mb-2"
-                            />
-                          </div>
-                          {allUsers
-                            .filter(user => {
-                              const searchMatch = !collaboratorSearch ||
-                                user.name?.toLowerCase().includes(collaboratorSearch.toLowerCase()) ||
-                                user.email.toLowerCase().includes(collaboratorSearch.toLowerCase())
-                              return user.id !== session?.user?.id &&
-                                     !selectedCollaborators.find(sc => sc.id === user.id) &&
-                                     searchMatch
-                            })
-                            .map((user) => (
-                              <SelectItem key={user.id} value={user.id}>
-                                <div className="flex items-center gap-2">
-                                  <Avatar className="h-6 w-6">
-                                    <AvatarImage src={user.image || undefined} />
-                                    <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium text-xs">
-                                      {user.name
-                                        ? user.name.split(' ').map(n => n[0]).join('')
-                                        : user.email?.[0]?.toUpperCase()
-                                      }
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <div>
-                                    <div className="font-medium">{user.name || 'No name'}</div>
-                                    <div className="text-xs text-muted-foreground">{user.email}</div>
-                                  </div>
-                                </div>
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-
-                      {selectedCollaborators.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {selectedCollaborators.map((collaborator) => (
-                            <Badge key={collaborator.id} variant="secondary" className="flex items-center gap-1">
-                              <Avatar className="h-4 w-4">
-                                <AvatarImage src={collaborator.image || undefined} />
-                                <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium text-xs">
-                                  {collaborator.name
-                                    ? collaborator.name.split(' ').map(n => n[0]).join('')
-                                    : collaborator.email?.[0]?.toUpperCase()
-                                  }
-                                </AvatarFallback>
-                              </Avatar>
-                              {collaborator.name || collaborator.email}
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
-                                onClick={() => removeCollaborator(collaborator.id)}
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex justify-end gap-2 pt-4 border-t">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setIsCreateTaskDialogOpen(false)
-                      resetTaskForm()
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button onClick={handleCreateTask}>
-                    Create & Assign Task
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
             </div>
           </div>
         </div>
@@ -1218,12 +589,31 @@ export default function MemberManagementPage() {
                         <p className="text-xs text-slate-600 truncate font-medium">
                           {member.email}
                         </p>
-                        {member._count && (
-                          <Badge variant="secondary" className="text-xs mt-1 rounded-md bg-blue-50 text-blue-700 border-blue-200 font-medium">
-                            <CheckSquare className="h-3 w-3 mr-1" />
-                            {member._count.assignedTasks} tasks
-                          </Badge>
-                        )}
+                        {(() => {
+                          const stats = memberSuggestions.find(s => s.id === member.id)
+                          const workload = stats?.workloadPercentage ?? 0
+                          const total = stats?.taskCounts?.total ?? member._count?.assignedTasks ?? 0
+                          return (
+                            <div className="mt-1.5 space-y-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] text-slate-500">{total} active task{total !== 1 ? 's' : ''}</span>
+                                <span className={cn(
+                                  "text-[10px] font-medium",
+                                  workload >= 80 ? "text-red-600" : workload >= 50 ? "text-amber-600" : "text-green-600"
+                                )}>{Math.round(workload)}%</span>
+                              </div>
+                              <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
+                                <div
+                                  className={cn(
+                                    "h-full rounded-full transition-all",
+                                    workload >= 80 ? "bg-red-500" : workload >= 50 ? "bg-amber-500" : "bg-green-500"
+                                  )}
+                                  style={{ width: `${Math.min(workload, 100)}%` }}
+                                />
+                              </div>
+                            </div>
+                          )
+                        })()}
                       </div>
                     </div>
                   ))
@@ -1274,18 +664,18 @@ export default function MemberManagementPage() {
 
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="icon" className="border-0 rounded-none bg-white hover:bg-blue-50">
+                      <Button variant="outline" size="icon" className="rounded-lg bg-white hover:bg-blue-50">
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="border-0 rounded-none">
-                      <DropdownMenuLabel className="font-bold">View Mode</DropdownMenuLabel>
+                    <DropdownMenuContent align="end" className="rounded-lg">
+                      <DropdownMenuLabel className="font-semibold">View Mode</DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => setViewMode('list')} className="font-bold">
+                      <DropdownMenuItem onClick={() => setViewMode('list')}>
                         <ListTodo className="h-4 w-4 mr-2" />
                         List View
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setViewMode('kanban')} className="font-bold">
+                      <DropdownMenuItem onClick={() => setViewMode('kanban')}>
                         <BarChart3 className="h-4 w-4 mr-2" />
                         Kanban Board
                       </DropdownMenuItem>
@@ -1297,9 +687,9 @@ export default function MemberManagementPage() {
             <CardContent className="bg-gray-50">
               {filteredTasks.length === 0 ? (
                 <div className="text-center py-16">
-                  <CheckSquare className="h-16 w-16 text-gray-400 mx-auto mb-4 opacity-50" />
-                  <h3 className="text-lg font-bold mb-2 text-gray-900">No tasks found</h3>
-                  <p className="text-gray-600 mb-6 font-bold">
+                  <CheckSquare className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2 text-gray-600">No tasks found</h3>
+                  <p className="text-gray-400 mb-6 text-sm">
                     {selectedMember
                       ? 'This member has no assigned tasks'
                       : statusFilter !== 'all'
@@ -1307,7 +697,7 @@ export default function MemberManagementPage() {
                       : 'No tasks assigned to team members yet'
                     }
                   </p>
-                  <Button onClick={() => setIsCreateTaskDialogOpen(true)} className="border-0 rounded-none bg-blue-500 hover:bg-blue-600 font-bold">
+                  <Button onClick={() => setIsCreateTaskDialogOpen(true)} className="rounded-lg">
                     <Plus className="h-4 w-4 mr-2" />
                     {selectedMember ? 'Assign First Task' : 'Create First Task'}
                   </Button>
@@ -1315,10 +705,10 @@ export default function MemberManagementPage() {
               ) : viewMode === 'list' ? (
                 <div className="space-y-3">
                   {filteredTasks.map((task) => (
-                    <div key={task.id} className="p-4 border-0 rounded-none bg-white hover:bg-gray-100 transition-all duration-200 group">
+                    <div key={task.id} className="p-4 border border-gray-100 rounded-lg bg-white hover:bg-gray-50 transition-all duration-200 group">
                       <div className="flex items-start justify-between mb-3">
                         <div className="space-y-2 flex-1">
-                          <h4 className="font-bold text-gray-900">{task.title}</h4>
+                          <h4 className="font-semibold text-gray-900">{task.title}</h4>
                           <div className="flex items-center gap-2 flex-wrap">
                             <Badge className={cn("text-xs border", getPriorityColor(task.priority))}>
                               {task.priority}
@@ -1342,11 +732,10 @@ export default function MemberManagementPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setViewingTask(task)}>
                               <Eye className="h-4 w-4 mr-2" />
                               View Details
                             </DropdownMenuItem>
-                            <DropdownMenuItem>Reassign</DropdownMenuItem>
                             {canDeleteTask(task) && (
                               <>
                                 <DropdownMenuSeparator />
@@ -1439,7 +828,7 @@ export default function MemberManagementPage() {
                                         </Button>
                                       </DropdownMenuTrigger>
                                       <DropdownMenuContent align="end">
-                                        <DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => setViewingTask(task)}>
                                           <Eye className="h-4 w-4 mr-2" />
                                           View
                                         </DropdownMenuItem>
@@ -1500,6 +889,45 @@ export default function MemberManagementPage() {
           </Card>
         </div>
       </div>
+
+      {/* Assign Task via TaskForm */}
+      {isCreateTaskDialogOpen && (
+        <TaskForm
+          open={isCreateTaskDialogOpen}
+          preSelectedMemberId={selectedMember || undefined}
+          onOpenChange={(open) => setIsCreateTaskDialogOpen(open)}
+          onSubmit={async (data) => {
+            try {
+              const response = await fetch('/api/tasks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+              })
+
+              if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.error || 'Failed to create task')
+              }
+
+              toast({ title: 'Success', description: 'Task assigned successfully' })
+              setIsCreateTaskDialogOpen(false)
+              fetchData()
+              fetchMemberSuggestions()
+            } catch (err: any) {
+              toast({ title: 'Error', description: err.message || 'Failed to assign task', variant: 'destructive' })
+              throw err
+            }
+          }}
+        />
+      )}
+
+      {/* Task Detail Modal */}
+      <TaskViewModal
+        open={!!viewingTask}
+        onOpenChange={(open) => { if (!open) setViewingTask(null) }}
+        task={viewingTask}
+        onTaskUpdate={() => { fetchData(); fetchMemberSuggestions() }}
+      />
 
       {/* Delete Task Confirmation Dialog */}
       <AlertDialog open={!!deletingTask} onOpenChange={() => setDeletingTask(null)}>

@@ -220,23 +220,23 @@ export default function AdminDashboard() {
   const rowEnd = Math.min(pagination.page * pagination.limit, pagination.total)
 
   return (
-    <div className="space-y-6 bg-slate-50/30 min-h-screen">
+    <div className="space-y-6 bg-gray-50 min-h-screen p-6">
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
             Workforce Dashboard
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">{getTodayLabel()}</p>
+          <p className="text-sm text-gray-500 mt-0.5">{getTodayLabel()}</p>
         </div>
         <div className="flex items-center gap-2">
           <a
             href="/admin/users"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-all"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 hover:border-gray-300 transition-all"
           >
             All Users
-            <ArrowUpRight className="h-3.5 w-3.5 text-slate-400" />
+            <ArrowUpRight className="h-3.5 w-3.5 text-gray-400" />
           </a>
           <a
             href="/admin/teams"
@@ -252,76 +252,72 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
         {/* Total Personnel */}
-        <Card className="border border-slate-200 rounded-xl shadow-sm bg-white overflow-hidden">
-          <div className="h-1 w-full bg-blue-500" />
+        <Card className="border border-gray-100 rounded-xl shadow-sm bg-white">
           <CardContent className="p-5">
             <div className="flex items-start justify-between mb-3">
               <div className="p-2 bg-blue-50 rounded-lg">
                 <Users className="h-4 w-4 text-blue-600" />
               </div>
             </div>
-            <div className="text-3xl font-bold text-slate-900 leading-none mb-1">
+            <div className="text-2xl font-bold text-gray-900 leading-none mb-1">
               {stats.totalUsers}
             </div>
-            <div className="text-sm font-medium text-slate-500 mb-3">Total Personnel</div>
-            <div className="text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <div className="text-sm font-medium text-gray-500 mb-3">Total Personnel</div>
+            <div className="text-xs text-gray-400 border-t border-gray-100 pt-2">
               {stats.leaderCount} leaders &middot; {stats.memberCount} members
             </div>
           </CardContent>
         </Card>
 
         {/* Active Rate */}
-        <Card className="border border-slate-200 rounded-xl shadow-sm bg-white overflow-hidden">
-          <div className="h-1 w-full bg-emerald-500" />
+        <Card className="border border-gray-100 rounded-xl shadow-sm bg-white">
           <CardContent className="p-5">
             <div className="flex items-start justify-between mb-3">
               <div className="p-2 bg-emerald-50 rounded-lg">
                 <Activity className="h-4 w-4 text-emerald-600" />
               </div>
             </div>
-            <div className="text-3xl font-bold text-slate-900 leading-none mb-1">
+            <div className="text-2xl font-bold text-gray-900 leading-none mb-1">
               {activeRate}%
             </div>
-            <div className="text-sm font-medium text-slate-500 mb-3">Active Rate</div>
-            <div className="text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <div className="text-sm font-medium text-gray-500 mb-3">Active Rate</div>
+            <div className="text-xs text-gray-400 border-t border-gray-100 pt-2">
               {stats.activeUsers} active &middot; {inactiveCount} inactive
             </div>
           </CardContent>
         </Card>
 
         {/* Teams & Sections */}
-        <Card className="border border-slate-200 rounded-xl shadow-sm bg-white overflow-hidden">
-          <div className="h-1 w-full bg-purple-500" />
+        <Card className="border border-gray-100 rounded-xl shadow-sm bg-white">
           <CardContent className="p-5">
             <div className="flex items-start justify-between mb-3">
               <div className="p-2 bg-purple-50 rounded-lg">
                 <Building2 className="h-4 w-4 text-purple-600" />
               </div>
             </div>
-            <div className="text-3xl font-bold text-slate-900 leading-none mb-1">
+            <div className="text-2xl font-bold text-gray-900 leading-none mb-1">
               {stats.totalTeams}
             </div>
-            <div className="text-sm font-medium text-slate-500 mb-3">Teams &amp; Sections</div>
-            <div className="text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <div className="text-sm font-medium text-gray-500 mb-3">Teams &amp; Sections</div>
+            <div className="text-xs text-gray-400 border-t border-gray-100 pt-2">
               {stats.totalSections} sections
             </div>
           </CardContent>
         </Card>
 
         {/* New This Month */}
-        <Card className="border border-slate-200 rounded-xl shadow-sm bg-white overflow-hidden">
-          <div className="h-1 w-full bg-amber-500" />
+        <Card className="border border-gray-100 rounded-xl shadow-sm bg-white">
           <CardContent className="p-5">
             <div className="flex items-start justify-between mb-3">
               <div className="p-2 bg-amber-50 rounded-lg">
                 <UserPlus className="h-4 w-4 text-amber-600" />
               </div>
             </div>
-            <div className="text-3xl font-bold text-slate-900 leading-none mb-1">
+            <div className="text-2xl font-bold text-gray-900 leading-none mb-1">
               {stats.newUsersThisMonth}
             </div>
-            <div className="text-sm font-medium text-slate-500 mb-3">New This Month</div>
-            <div className="text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <div className="text-sm font-medium text-gray-500 mb-3">New This Month</div>
+            <div className="text-xs text-gray-400 border-t border-gray-100 pt-2">
               {newUsersFootnote}
             </div>
           </CardContent>
@@ -329,39 +325,39 @@ export default function AdminDashboard() {
       </div>
 
       {/* ── Row 2: Task KPI cards ───────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
 
         {/* Total Tasks */}
-        <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4 flex items-center gap-3">
-          <div className="p-2 bg-slate-100 rounded-lg shrink-0">
-            <CheckSquare className="h-4 w-4 text-slate-600" />
+        <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-4 flex items-center gap-3">
+          <div className="p-2 bg-gray-100 rounded-lg shrink-0">
+            <CheckSquare className="h-4 w-4 text-gray-600" />
           </div>
           <div>
-            <div className="text-xl font-bold text-slate-900">{stats.totalTasks}</div>
-            <div className="text-xs text-slate-500 font-medium">Total Tasks</div>
+            <div className="text-xl font-bold text-gray-900">{stats.totalTasks}</div>
+            <div className="text-xs text-gray-500 font-medium">Total Tasks</div>
           </div>
         </div>
 
         {/* Completed */}
-        <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4 flex items-center gap-3">
+        <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-4 flex items-center gap-3">
           <div className="p-2 bg-green-50 rounded-lg shrink-0">
             <CheckCircle2 className="h-4 w-4 text-green-600" />
           </div>
           <div>
-            <div className="text-xl font-bold text-slate-900">{stats.completedTasks}</div>
-            <div className="text-xs text-slate-500 font-medium">Completed</div>
+            <div className="text-xl font-bold text-gray-900">{stats.completedTasks}</div>
+            <div className="text-xs text-gray-500 font-medium">Completed</div>
             <div className="text-xs text-green-600 font-medium">{completionRate}% rate</div>
           </div>
         </div>
 
         {/* In Progress */}
-        <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4 flex items-center gap-3">
+        <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-4 flex items-center gap-3">
           <div className="p-2 bg-blue-50 rounded-lg shrink-0">
             <Clock className="h-4 w-4 text-blue-600" />
           </div>
           <div>
-            <div className="text-xl font-bold text-slate-900">{stats.inProgressTasks}</div>
-            <div className="text-xs text-slate-500 font-medium">In Progress</div>
+            <div className="text-xl font-bold text-gray-900">{stats.inProgressTasks}</div>
+            <div className="text-xs text-gray-500 font-medium">In Progress</div>
           </div>
         </div>
 
@@ -370,25 +366,25 @@ export default function AdminDashboard() {
           'border rounded-xl shadow-sm p-4 flex items-center gap-3',
           stats.overdueTasks > 0
             ? 'bg-red-50 border-red-200'
-            : 'bg-white border-slate-200'
+            : 'bg-white border-gray-100'
         )}>
           <div className={cn(
             'p-2 rounded-lg shrink-0',
-            stats.overdueTasks > 0 ? 'bg-red-100' : 'bg-slate-100'
+            stats.overdueTasks > 0 ? 'bg-red-100' : 'bg-gray-100'
           )}>
             <AlertTriangle className={cn(
               'h-4 w-4',
-              stats.overdueTasks > 0 ? 'text-red-600' : 'text-slate-400'
+              stats.overdueTasks > 0 ? 'text-red-600' : 'text-gray-400'
             )} />
           </div>
           <div>
             <div className={cn(
               'text-xl font-bold',
-              stats.overdueTasks > 0 ? 'text-red-700' : 'text-slate-900'
+              stats.overdueTasks > 0 ? 'text-red-700' : 'text-gray-900'
             )}>
               {stats.overdueTasks}
             </div>
-            <div className="text-xs text-slate-500 font-medium">Overdue</div>
+            <div className="text-xs text-gray-500 font-medium">Overdue</div>
             <div className={cn(
               'text-xs font-medium',
               stats.overdueTasks > 0 ? 'text-red-600' : 'text-green-600'
@@ -403,9 +399,9 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
 
         {/* Personnel Overview — col-span-3 */}
-        <Card className="lg:col-span-3 border border-slate-200 rounded-xl shadow-sm bg-white">
-          <CardHeader className="pb-3 border-b border-slate-100">
-            <CardTitle className="flex items-center gap-2 text-base font-semibold text-slate-900">
+        <Card className="lg:col-span-3 border border-gray-100 rounded-xl shadow-sm bg-white">
+          <CardHeader className="pb-3 border-b border-gray-100">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold text-gray-900">
               <div className="p-1.5 bg-blue-50 rounded-lg">
                 <Shield className="h-4 w-4 text-blue-600" />
               </div>
@@ -418,9 +414,9 @@ export default function AdminDashboard() {
             <div className="space-y-3">
               {/* Leaders */}
               <div className="flex items-center gap-3">
-                <div className="w-20 text-sm font-medium text-slate-700 shrink-0">Leaders</div>
+                <div className="w-20 text-sm font-medium text-gray-700 shrink-0">Leaders</div>
                 <div className="flex-1">
-                  <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-blue-500 rounded-full transition-all duration-500"
                       style={{ width: `${stats.totalUsers > 0 ? (stats.leaderCount / stats.totalUsers) * 100 : 0}%` }}
@@ -428,7 +424,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-sm font-semibold text-slate-900 w-6 text-right">
+                  <span className="text-sm font-semibold text-gray-900 w-6 text-right">
                     {stats.leaderCount}
                   </span>
                   <Badge className="text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0">
@@ -439,9 +435,9 @@ export default function AdminDashboard() {
 
               {/* Members */}
               <div className="flex items-center gap-3">
-                <div className="w-20 text-sm font-medium text-slate-700 shrink-0">Members</div>
+                <div className="w-20 text-sm font-medium text-gray-700 shrink-0">Members</div>
                 <div className="flex-1">
-                  <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-emerald-500 rounded-full transition-all duration-500"
                       style={{ width: `${stats.totalUsers > 0 ? (stats.memberCount / stats.totalUsers) * 100 : 0}%` }}
@@ -449,7 +445,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-sm font-semibold text-slate-900 w-6 text-right">
+                  <span className="text-sm font-semibold text-gray-900 w-6 text-right">
                     {stats.memberCount}
                   </span>
                   <Badge className="text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0">
@@ -459,11 +455,11 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className="border-t border-slate-100" />
+            <div className="border-t border-gray-100" />
 
             {/* Hierarchy Distribution */}
             <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
                 Hierarchy Distribution
               </p>
               {stats.hierarchyDistribution.length > 0 ? (
@@ -483,18 +479,18 @@ export default function AdminDashboard() {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-slate-400 text-center py-2">No hierarchy data</p>
+                <p className="text-sm text-gray-400 text-center py-2">No hierarchy data</p>
               )}
             </div>
 
             {/* Inactive callout */}
             {inactiveCount > 0 && (
-              <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5">
+              <div className="flex items-center justify-between bg-gray-50 border border-gray-100 rounded-lg px-4 py-2.5">
                 <div>
-                  <span className="text-sm font-semibold text-slate-700">
+                  <span className="text-sm font-semibold text-gray-700">
                     Inactive Users: {inactiveCount}
                   </span>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-xs text-gray-500 mt-0.5">
                     Review and update account statuses
                   </p>
                 </div>
@@ -510,9 +506,9 @@ export default function AdminDashboard() {
         </Card>
 
         {/* Monthly Registrations — col-span-2 */}
-        <Card className="lg:col-span-2 border border-slate-200 rounded-xl shadow-sm bg-white">
-          <CardHeader className="pb-3 border-b border-slate-100">
-            <CardTitle className="flex items-center gap-2 text-base font-semibold text-slate-900">
+        <Card className="lg:col-span-2 border border-gray-100 rounded-xl shadow-sm bg-white">
+          <CardHeader className="pb-3 border-b border-gray-100">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold text-gray-900">
               <div className="p-1.5 bg-emerald-50 rounded-lg">
                 <TrendingUp className="h-4 w-4 text-emerald-600" />
               </div>
@@ -522,8 +518,8 @@ export default function AdminDashboard() {
           <CardContent className="pt-4">
             {maxRegistrations === 0 ? (
               <div className="text-center py-8">
-                <TrendingUp className="mx-auto h-8 w-8 text-slate-200 mb-2" />
-                <p className="text-sm text-slate-400">No registrations yet</p>
+                <TrendingUp className="mx-auto h-8 w-8 text-gray-200 mb-2" />
+                <p className="text-sm text-gray-400">No registrations yet</p>
               </div>
             ) : (
               <div className="space-y-2.5">
@@ -531,14 +527,14 @@ export default function AdminDashboard() {
                   const barPct = Math.max((data.users / maxRegistrations) * 100, data.users > 0 ? 4 : 0)
                   return (
                     <div key={data.month} className="flex items-center gap-2">
-                      <span className="text-xs text-slate-500 w-16 shrink-0">{data.month}</span>
-                      <div className="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                      <span className="text-xs text-gray-500 w-16 shrink-0">{data.month}</span>
+                      <div className="flex-1 bg-gray-100 rounded-full h-1.5 overflow-hidden">
                         <div
                           className="h-full bg-emerald-500 rounded-full transition-all duration-500"
                           style={{ width: `${barPct}%` }}
                         />
                       </div>
-                      <span className="text-xs font-semibold text-slate-900 w-5 text-right">
+                      <span className="text-xs font-semibold text-gray-900 w-5 text-right">
                         {data.users}
                       </span>
                       {data.change !== 0 && (
@@ -563,17 +559,17 @@ export default function AdminDashboard() {
       </div>
 
       {/* ── Row 4: Recent Personnel table ──────────────────────────────────── */}
-      <Card className="border border-slate-200 rounded-xl shadow-sm bg-white">
-        <CardHeader className="pb-3 border-b border-slate-100">
+      <Card className="border border-gray-100 rounded-xl shadow-sm bg-white">
+        <CardHeader className="pb-3 border-b border-gray-100">
           <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-base font-semibold text-slate-900">
+            <div className="flex items-center gap-2 text-base font-semibold text-gray-900">
               <div className="p-1.5 bg-blue-50 rounded-lg">
                 <UserPlus className="h-4 w-4 text-blue-600" />
               </div>
               Recent Personnel
             </div>
             {pagination.total > 0 && (
-              <span className="text-xs font-medium text-slate-500">
+              <span className="text-xs font-medium text-gray-500">
                 Showing {rowStart}–{rowEnd} of {pagination.total}
               </span>
             )}
@@ -582,26 +578,26 @@ export default function AdminDashboard() {
         <CardContent className="p-0">
 
           {/* Table header row */}
-          <div className="hidden md:grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-4 px-6 py-2.5 border-b border-slate-100 bg-slate-50/60">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Name</span>
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Role</span>
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Level</span>
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Joined</span>
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</span>
+          <div className="hidden md:grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-4 px-6 py-2.5 border-b border-gray-100 bg-gray-50">
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Name</span>
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Role</span>
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Level</span>
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Joined</span>
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Status</span>
           </div>
 
           {/* Rows */}
-          <div className={cn('divide-y divide-slate-100', tableLoading && 'opacity-60 pointer-events-none')}>
+          <div className={cn('divide-y divide-gray-100', tableLoading && 'opacity-60 pointer-events-none')}>
             {stats.recentUsers.data.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <Users className="h-8 w-8 text-slate-200 mb-2" />
-                <p className="text-sm text-slate-400">No personnel records found</p>
+                <Users className="h-8 w-8 text-gray-200 mb-2" />
+                <p className="text-sm text-gray-400">No personnel records found</p>
               </div>
             ) : (
               stats.recentUsers.data.map(user => (
                 <div
                   key={user.id}
-                  className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-2 md:gap-4 px-6 py-3.5 hover:bg-slate-50 transition-colors"
+                  className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-2 md:gap-4 px-6 py-3 hover:bg-gray-50 transition-colors"
                 >
                   {/* Avatar + Name + Email */}
                   <div className="flex items-center gap-3">
@@ -611,8 +607,8 @@ export default function AdminDashboard() {
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0">
-                      <div className="text-sm font-semibold text-slate-900 truncate">{user.name}</div>
-                      <div className="text-xs text-slate-500 truncate">{user.email}</div>
+                      <div className="text-sm font-semibold text-gray-900 truncate">{user.name}</div>
+                      <div className="text-xs text-gray-500 truncate">{user.email}</div>
                     </div>
                   </div>
 
@@ -630,13 +626,13 @@ export default function AdminDashboard() {
                         {user.hierarchyLevel}
                       </Badge>
                     ) : (
-                      <span className="text-slate-400 text-sm">&mdash;</span>
+                      <span className="text-gray-400 text-sm">&mdash;</span>
                     )}
                   </div>
 
                   {/* Joined */}
                   <div className="flex items-center">
-                    <span className="text-xs text-slate-600">{formatDate(user.createdAt)}</span>
+                    <span className="text-xs text-gray-600">{formatDate(user.createdAt)}</span>
                   </div>
 
                   {/* Status */}
@@ -646,7 +642,7 @@ export default function AdminDashboard() {
                         'text-xs font-medium border px-2 py-0.5',
                         user.isActive
                           ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                          : 'bg-slate-100 text-slate-500 border-slate-200'
+                          : 'bg-gray-100 text-gray-500 border-gray-200'
                       )}
                     >
                       {user.isActive ? 'Active' : 'Inactive'}
@@ -659,7 +655,7 @@ export default function AdminDashboard() {
 
           {/* Pagination */}
           {pagination.totalPages > 1 && (
-            <div className="flex items-center justify-between px-6 py-3 border-t border-slate-100">
+            <div className="flex items-center justify-between px-6 py-3 border-t border-gray-100">
               <Button
                 variant="outline"
                 size="sm"
@@ -670,7 +666,7 @@ export default function AdminDashboard() {
                 <ChevronLeft className="h-3.5 w-3.5 mr-1" />
                 Previous
               </Button>
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-gray-500">
                 Page {pagination.page} of {pagination.totalPages}
               </span>
               <Button

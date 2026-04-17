@@ -304,14 +304,13 @@ export default function CalendarSyncSettingsModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <CalendarIcon className="h-5 w-5" />
-            Google Calendar Sync Settings
+          <DialogTitle className="text-lg font-semibold text-gray-900">
+            Calendar Sync Settings
           </DialogTitle>
-          <DialogDescription>
-            Configure how your TMS calendar syncs with Google Calendar
+          <DialogDescription className="text-sm text-gray-500">
+            Configure how your calendar syncs with Google Calendar
           </DialogDescription>
         </DialogHeader>
 
@@ -329,20 +328,18 @@ export default function CalendarSyncSettingsModal({
           </Alert>
         )}
 
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Connection Status */}
           <div className="space-y-2">
-            <Label className="text-base font-semibold">Connection Status</Label>
+            <p className="text-sm font-medium text-gray-900">Connection Status</p>
             {settings.isEnabled ? (
-              <div className="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
                   <div>
-                    <span className="text-green-700 font-medium block">Automatic Sync Enabled</span>
-                    <span className="text-green-600 text-sm">
-                      Syncing with: <strong>
-                        {calendars.find(cal => cal.id === settings.googleCalendarId)?.summary || 'TMS_CALENDAR'}
-                      </strong> (dedicated work calendar)
+                    <span className="text-sm font-medium text-green-700 block">Automatic Sync Enabled</span>
+                    <span className="text-xs text-green-600">
+                      {calendars.find(cal => cal.id === settings.googleCalendarId)?.summary || 'TMS_CALENDAR'}
                     </span>
                   </div>
                 </div>
@@ -351,47 +348,30 @@ export default function CalendarSyncSettingsModal({
                   size="sm"
                   onClick={disconnectGoogleCalendar}
                   disabled={loading}
+                  className="text-xs"
                 >
                   Disconnect
                 </Button>
               </div>
             ) : isConnected ? (
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="mb-3">
-                  <p className="text-blue-700 font-medium">Ready for Automatic Sync</p>
-                  <p className="text-sm text-blue-600">
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
+                <div>
+                  <p className="text-sm font-medium text-blue-700">Ready for Automatic Sync</p>
+                  <p className="text-xs text-blue-600 mt-0.5">
                     Enable sync to create a dedicated TMS_CALENDAR in your Google Calendar
                   </p>
                 </div>
-                <div className="p-4 bg-white border border-blue-300 rounded-lg">
-                  <div className="flex items-start gap-3 mb-3">
-                    <CalendarIcon className="h-6 w-6 text-blue-600 mt-1 flex-shrink-0" />
-                    <div>
-                      <p className="font-semibold text-sm mb-1">TMS_CALENDAR (Work Calendar Only)</p>
-                      <p className="text-xs text-gray-600 mb-2">
-                        Creates a separate "TMS_CALENDAR" in Google Calendar exclusively for your work tasks and events.
-                        Your personal calendar stays completely separate and private.
-                      </p>
-                      <ul className="text-xs text-gray-600 space-y-1 mb-3">
-                        <li>✓ Work tasks sync only to TMS_CALENDAR</li>
-                        <li>✓ Personal calendar remains untouched</li>
-                        <li>✓ Easy to toggle visibility in Google Calendar</li>
-                        <li>✓ Perfect work-life separation</li>
-                      </ul>
-                    </div>
-                  </div>
-                  <Button onClick={enableAutoSync} disabled={loading} className="w-full">
-                    <CalendarIcon className="h-4 w-4 mr-2" />
-                    {loading ? 'Creating TMS_CALENDAR...' : 'Enable Sync with TMS_CALENDAR'}
-                  </Button>
-                </div>
+                <Button onClick={enableAutoSync} disabled={loading} className="w-full" size="sm">
+                  <CalendarIcon className="h-4 w-4 mr-2" />
+                  {loading ? 'Creating TMS_CALENDAR...' : 'Enable Sync with TMS_CALENDAR'}
+                </Button>
               </div>
             ) : (
-              <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                <p className="text-sm text-gray-600 mb-3">
-                  Connect your Google account to enable automatic calendar synchronization with your Gmail calendar
+              <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg space-y-3">
+                <p className="text-sm text-gray-600">
+                  Connect your Google account to enable automatic calendar synchronization
                 </p>
-                <Button onClick={connectGoogleCalendar} disabled={loading}>
+                <Button onClick={connectGoogleCalendar} disabled={loading} size="sm">
                   <CalendarIcon className="h-4 w-4 mr-2" />
                   Connect Google Calendar
                 </Button>
@@ -403,122 +383,107 @@ export default function CalendarSyncSettingsModal({
             <>
               <Separator />
 
-              {/* Automatic Sync Info */}
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <CalendarIcon className="h-5 w-5 text-blue-600" />
-                  <span className="text-blue-700 font-medium">TMS_CALENDAR Sync Active</span>
-                </div>
-                <p className="text-sm text-blue-600">
-                  Your work tasks and events are automatically synchronized with a dedicated <strong>TMS_CALENDAR</strong> in Google Calendar.
-                  Your personal calendar is NOT affected. Any changes made in either the TMS or TMS_CALENDAR will be reflected bidirectionally.
+              {/* Sync Direction */}
+              <div className="space-y-2">
+                <Label htmlFor="sync-direction" className="text-sm font-medium text-gray-900">
+                  Sync Direction
+                </Label>
+                <Select
+                  value={settings.syncDirection}
+                  onValueChange={(value: any) =>
+                    setSettings({ ...settings, syncDirection: value })
+                  }
+                >
+                  <SelectTrigger id="sync-direction">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="BOTH">Two-way sync (recommended)</SelectItem>
+                    <SelectItem value="TMS_TO_GOOGLE">TMS → Google Calendar only</SelectItem>
+                    <SelectItem value="GOOGLE_TO_TMS">Google Calendar → TMS only</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500">
+                  {settings.syncDirection === 'BOTH' && 'Events will be synced in both directions'}
+                  {settings.syncDirection === 'TMS_TO_GOOGLE' && 'Only TMS events will be exported to Google'}
+                  {settings.syncDirection === 'GOOGLE_TO_TMS' && 'Only Google events will be imported to TMS'}
                 </p>
               </div>
 
-              {/* Sync Direction - Only show when sync is enabled */}
-              {settings.isEnabled && (
-                <div className="space-y-2">
-                  <Label htmlFor="sync-direction">Sync Direction</Label>
-                  <Select
-                    value={settings.syncDirection}
-                    onValueChange={(value: any) =>
-                      setSettings({ ...settings, syncDirection: value })
-                    }
-                  >
-                    <SelectTrigger id="sync-direction">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="BOTH">Two-way sync (recommended)</SelectItem>
-                      <SelectItem value="TMS_TO_GOOGLE">TMS → Google Calendar only</SelectItem>
-                      <SelectItem value="GOOGLE_TO_TMS">Google Calendar → TMS only</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-sm text-gray-500">
-                    {settings.syncDirection === 'BOTH' && 'Events will be synced in both directions'}
-                    {settings.syncDirection === 'TMS_TO_GOOGLE' && 'Only TMS events will be exported to Google'}
-                    {settings.syncDirection === 'GOOGLE_TO_TMS' && 'Only Google events will be imported to TMS'}
-                  </p>
-                </div>
-              )}
-
               <Separator />
 
-              {/* Event Types to Sync - Only show when sync is enabled */}
-              {settings.isEnabled && (
-                <div className="space-y-4">
-                  <Label className="text-base font-semibold">Event Types to Sync</Label>
+              {/* Event Types to Sync */}
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-gray-900 mb-3">Event Types to Sync</p>
 
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="sync-deadlines">Task Deadlines</Label>
-                      <p className="text-sm text-gray-500">Sync task due dates as calendar events</p>
-                    </div>
-                    <Switch
-                      id="sync-deadlines"
-                      checked={settings.syncTaskDeadlines}
-                      onCheckedChange={(checked) =>
-                        setSettings({ ...settings, syncTaskDeadlines: checked })
-                      }
-                    />
+                <div className="flex items-center justify-between py-4 border-b border-gray-100">
+                  <div>
+                    <Label htmlFor="sync-deadlines" className="font-medium text-gray-900 cursor-pointer">
+                      Task Deadlines
+                    </Label>
+                    <p className="text-sm text-gray-500">Sync task due dates as calendar events</p>
                   </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="sync-team">Team Events</Label>
-                      <p className="text-sm text-gray-500">Sync team meetings and events</p>
-                    </div>
-                    <Switch
-                      id="sync-team"
-                      checked={settings.syncTeamEvents}
-                      onCheckedChange={(checked) =>
-                        setSettings({ ...settings, syncTeamEvents: checked })
-                      }
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="sync-personal">Personal Events</Label>
-                      <p className="text-sm text-gray-500">Sync personal calendar events</p>
-                    </div>
-                    <Switch
-                      id="sync-personal"
-                      checked={settings.syncPersonalEvents}
-                      onCheckedChange={(checked) =>
-                        setSettings({ ...settings, syncPersonalEvents: checked })
-                      }
-                    />
-                  </div>
-
+                  <Switch
+                    id="sync-deadlines"
+                    checked={settings.syncTaskDeadlines}
+                    onCheckedChange={(checked) =>
+                      setSettings({ ...settings, syncTaskDeadlines: checked })
+                    }
+                  />
                 </div>
-              )}
+
+                <div className="flex items-center justify-between py-4 border-b border-gray-100">
+                  <div>
+                    <Label htmlFor="sync-team" className="font-medium text-gray-900 cursor-pointer">
+                      Team Events
+                    </Label>
+                    <p className="text-sm text-gray-500">Sync team meetings and events</p>
+                  </div>
+                  <Switch
+                    id="sync-team"
+                    checked={settings.syncTeamEvents}
+                    onCheckedChange={(checked) =>
+                      setSettings({ ...settings, syncTeamEvents: checked })
+                    }
+                  />
+                </div>
+
+                <div className="flex items-center justify-between py-4 last:border-0">
+                  <div>
+                    <Label htmlFor="sync-personal" className="font-medium text-gray-900 cursor-pointer">
+                      Personal Events
+                    </Label>
+                    <p className="text-sm text-gray-500">Sync personal calendar events</p>
+                  </div>
+                  <Switch
+                    id="sync-personal"
+                    checked={settings.syncPersonalEvents}
+                    onCheckedChange={(checked) =>
+                      setSettings({ ...settings, syncPersonalEvents: checked })
+                    }
+                  />
+                </div>
+              </div>
 
               <Separator />
 
               {/* Real-time Sync Status */}
-              {settings.isEnabled && (
-                <div className="space-y-3">
-                  <Label className="text-base font-semibold">Real-time Sync Status</Label>
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                      <span className="text-green-700 text-sm font-medium">TMS_CALENDAR Live Sync Active</span>
-                    </div>
-                    <p className="text-sm text-green-600 mt-1">
-                      All work-related changes in TMS_CALENDAR are automatically reflected in TMS and vice versa.
-                      Your personal Google Calendar is NOT synced, keeping work and personal separate.
-                    </p>
-                  </div>
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shrink-0"></div>
+                  <span className="text-sm font-medium text-green-700">TMS_CALENDAR Live Sync Active</span>
                 </div>
-              )}
+                <p className="text-xs text-green-600 mt-1">
+                  Changes in TMS_CALENDAR are automatically reflected in TMS and vice versa.
+                </p>
+              </div>
             </>
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="mt-6">
           <Button variant="outline" onClick={onClose}>
-            Close
+            Cancel
           </Button>
           {settings.isEnabled && (
             <Button onClick={saveSettings} disabled={loading}>
@@ -530,4 +495,3 @@ export default function CalendarSyncSettingsModal({
     </Dialog>
   )
 }
-

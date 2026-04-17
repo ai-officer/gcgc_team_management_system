@@ -1,12 +1,11 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { Calendar, momentLocalizer, Views } from 'react-big-calendar'
 import moment from 'moment'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
-import { Calendar as CalendarIcon, AlertCircle, Settings, Wifi, WifiOff, RefreshCw, FileText, Clock, Users, User, Tag, CheckCircle2, AlertTriangle, Flag, X } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Calendar as CalendarIcon, AlertCircle, Settings, Wifi, WifiOff, RefreshCw, FileText, Clock, Users, User, Tag, CheckCircle2, Flag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -395,7 +394,7 @@ export default function CalendarPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="bg-gray-50 p-6 min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     )
@@ -403,7 +402,7 @@ export default function CalendarPage() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="bg-gray-50 p-6 min-h-screen flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <p className="text-red-600">{error}</p>
@@ -412,135 +411,79 @@ export default function CalendarPage() {
     )
   }
 
-  const isLeader = session?.user?.role === 'LEADER'
-
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+    <div className="bg-gray-50 p-6 space-y-6">
+      {/* Page Header */}
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Calendar</h1>
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <p className="text-sm sm:text-base text-muted-foreground">
-              {isLeader
-                ? "View your schedule and team deadlines"
-                : "View your schedule and task deadlines"
-              }
-            </p>
-            <div className="flex items-center gap-2">
-              {isConnected ? (
-                <Badge variant="outline" className="flex items-center gap-1 bg-green-50 text-green-700 border-green-200">
-                  <Wifi className="h-3 w-3" />
-                  Live
-                </Badge>
-              ) : (
-                <Badge variant="outline" className="flex items-center gap-1 bg-gray-50 text-gray-500">
-                  <WifiOff className="h-3 w-3" />
-                  Offline
-                </Badge>
-              )}
-              {status.isSyncing && (
-                <Badge variant="outline" className="flex items-center gap-1">
-                  <RefreshCw className="h-3 w-3 animate-spin" />
-                  Syncing...
-                </Badge>
-              )}
-            </div>
-          </div>
+          <h1 className="text-2xl font-bold text-gray-900">Calendar</h1>
+          <p className="text-sm text-gray-500 mt-1">Schedule, deadlines, and events</p>
         </div>
-        <div className="grid grid-cols-3 sm:flex sm:flex-wrap gap-2 w-full sm:w-auto">
-          <CreateTaskButton
-            onTaskCreated={fetchCalendarData}
-            className="text-xs sm:text-sm px-2.5 sm:px-4"
-          />
-          <Button
-            disabled
-            variant="outline"
-            className="opacity-50 cursor-not-allowed text-xs sm:text-sm px-2.5 sm:px-4"
-            title="OSSB Request feature is temporarily disabled"
-          >
-            <FileText className="h-4 w-4 shrink-0 sm:mr-2" />
-            <span className="hidden sm:inline">Create OSSB Request (Disabled)</span>
-            <span className="sm:hidden truncate">OSSB</span>
-          </Button>
+        <div className="flex items-center gap-3">
+          {/* Live / Offline + Syncing indicators */}
+          <div className="flex items-center gap-2">
+            {isConnected ? (
+              <Badge variant="outline" className="flex items-center gap-1 bg-green-50 text-green-700 border-green-200">
+                <Wifi className="h-3 w-3" />
+                Live
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="flex items-center gap-1 bg-gray-50 text-gray-500">
+                <WifiOff className="h-3 w-3" />
+                Offline
+              </Badge>
+            )}
+            {status.isSyncing && (
+              <Badge variant="outline" className="flex items-center gap-1">
+                <RefreshCw className="h-3 w-3 animate-spin" />
+                Syncing...
+              </Badge>
+            )}
+          </div>
           <Button
             variant="outline"
             onClick={() => setIsSyncSettingsOpen(true)}
-            className="text-xs sm:text-sm px-2.5 sm:px-4"
+            className="text-sm"
           >
-            <Settings className="h-4 w-4 shrink-0 sm:mr-2" />
-            <span className="hidden sm:inline">Google Calendar Sync</span>
-            <span className="sm:hidden truncate">Sync</span>
+            <Settings className="h-4 w-4 mr-2" />
+            Sync Settings
           </Button>
+          <CreateTaskButton
+            onTaskCreated={fetchCalendarData}
+            className="text-sm"
+          />
         </div>
       </div>
 
-      {/* Legend */}
-      <Card>
-        <CardHeader className="pb-2 sm:pb-6">
-          <CardTitle className="text-base sm:text-lg">Event Types</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-              <span className="text-sm">Meetings</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-cyan-500"></div>
-              <span className="text-sm">Google Synced</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-red-600"></div>
-              <span className="text-sm">Urgent Deadlines</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-orange-600"></div>
-              <span className="text-sm">High Priority</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-yellow-600"></div>
-              <span className="text-sm">Medium Priority</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-green-600"></div>
-              <span className="text-sm">Low Priority</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-purple-600"></div>
-              <span className="text-sm">Holidays</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Calendar */}
-      <div className="w-full [&_.rbc-calendar]:h-[500px] sm:[&_.rbc-calendar]:h-[700px] overflow-x-auto">
-        <Calendar
-          localizer={localizer}
-          events={events}
-          startAccessor="start"
-          endAccessor="end"
-          style={{ minHeight: 500 }}
-          onSelectEvent={handleSelectEvent}
-          eventPropGetter={eventStyleGetter}
-          views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
-          defaultView={Views.MONTH}
-          popup={true}
-          showMultiDayTimes
-          step={30}
-          timeslots={2}
-          doShowMoreDrillDown={true}
-          messages={{
-            showMore: (total: number) => `+${total} more`,
-            noEventsInRange: 'No events scheduled for this period. Create a task or sync with Google Calendar to see events here.'
-          }}
-        />
+      {/* Calendar Container */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden p-4">
+        <div className="[&_.rbc-calendar]:h-[500px] sm:[&_.rbc-calendar]:h-[700px]">
+          <Calendar
+            localizer={localizer}
+            events={events}
+            startAccessor="start"
+            endAccessor="end"
+            style={{ minHeight: 500 }}
+            onSelectEvent={handleSelectEvent}
+            eventPropGetter={eventStyleGetter}
+            views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
+            defaultView={Views.MONTH}
+            popup={true}
+            showMultiDayTimes
+            step={30}
+            timeslots={2}
+            doShowMoreDrillDown={true}
+            messages={{
+              showMore: (total: number) => `+${total} more`,
+              noEventsInRange: 'No events scheduled for this period. Create a task or sync with Google Calendar to see events here.'
+            }}
+          />
+        </div>
       </div>
 
-      {/* Event Details Dialog - Professional Design */}
+      {/* Event Details Dialog */}
       <Dialog open={isEventDialogOpen} onOpenChange={setIsEventDialogOpen}>
-        <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden">
+        <DialogContent className="sm:max-w-[480px] bg-white rounded-xl shadow-md border border-gray-100 p-0 overflow-hidden">
           {/* Accessibility - Visually Hidden Title & Description */}
           <DialogHeader className="sr-only">
             <DialogTitle>{selectedEvent?.title || 'Event Details'}</DialogTitle>
@@ -574,16 +517,16 @@ export default function CalendarPage() {
                          selectedEvent.resource?.type === 'PERSONAL' ? 'Holiday' : 'Event'}
                       </span>
                       {selectedEvent.allDay && (
-                        <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
                           All Day
                         </span>
                       )}
                     </div>
-                    <h2 className="text-lg font-semibold text-foreground leading-tight" aria-hidden="true">
+                    <h2 className="text-lg font-semibold text-gray-900 leading-tight" aria-hidden="true">
                       {selectedEvent.title.replace(/^\[(.*?)\]\s*/, '')}
                     </h2>
                     {selectedEvent.title.match(/^\[(.*?)\]/) && (
-                      <p className="text-sm text-muted-foreground mt-1">
+                      <p className="text-sm text-gray-500 mt-1">
                         {selectedEvent.title.match(/^\[(.*?)\]/)?.[1]}
                       </p>
                     )}
@@ -595,11 +538,11 @@ export default function CalendarPage() {
               <div className="px-6 py-5 space-y-5">
                 {/* Date & Time Section */}
                 <div className="flex items-start gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 text-primary shrink-0">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-50 text-blue-600 shrink-0">
                     <CalendarIcon className="h-5 w-5" />
                   </div>
                   <div className="flex-1 pt-0.5">
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-medium text-gray-900">
                       {selectedEvent.start.toLocaleDateString('en-US', {
                         weekday: 'long',
                         month: 'long',
@@ -608,7 +551,7 @@ export default function CalendarPage() {
                       })}
                     </p>
                     {!selectedEvent.allDay && (
-                      <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                      <p className="text-sm text-gray-600 flex items-center gap-1.5 mt-0.5">
                         <Clock className="h-3.5 w-3.5" />
                         {selectedEvent.start.toLocaleTimeString('en-US', {
                           hour: 'numeric',
@@ -617,7 +560,7 @@ export default function CalendarPage() {
                         })}
                         {selectedEvent.start.getTime() !== selectedEvent.end.getTime() && (
                           <>
-                            <span className="text-muted-foreground/60">→</span>
+                            <span className="text-gray-400">→</span>
                             {selectedEvent.end.toLocaleTimeString('en-US', {
                               hour: 'numeric',
                               minute: '2-digit',
@@ -628,7 +571,7 @@ export default function CalendarPage() {
                       </p>
                     )}
                     {selectedEvent.start.toDateString() !== selectedEvent.end.toDateString() && (
-                      <p className="text-sm text-primary font-medium mt-1">
+                      <p className="text-sm text-blue-600 font-medium mt-1">
                         → {selectedEvent.end.toLocaleDateString('en-US', {
                           weekday: 'short',
                           month: 'short',
@@ -642,36 +585,36 @@ export default function CalendarPage() {
                 {/* Team Section */}
                 {selectedEvent.resource?.team && (
                   <div className="flex items-start gap-3">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-500/10 text-blue-600 shrink-0">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-50 text-blue-600 shrink-0">
                       <Users className="h-5 w-5" />
                     </div>
                     <div className="flex-1 pt-0.5">
-                      <p className="text-sm font-medium text-foreground">
+                      <p className="text-sm font-medium text-gray-900">
                         {selectedEvent.resource.team.name}
                       </p>
-                      <p className="text-sm text-muted-foreground">Team</p>
+                      <p className="text-sm text-gray-500">Team</p>
                     </div>
                   </div>
                 )}
 
                 {/* Task Details Section */}
                 {selectedEvent.resource?.task && (
-                  <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+                  <div className="rounded-lg border border-gray-100 bg-gray-50 p-4 space-y-3">
                     <div className="flex items-center gap-2">
-                      <Tag className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm font-medium text-foreground">Task Details</span>
+                      <Tag className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm font-medium text-gray-900">Task Details</span>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       {/* Priority Badge */}
                       <span
                         className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold ${
                           selectedEvent.resource.task.priority === 'URGENT'
-                            ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                            ? 'bg-red-100 text-red-700' :
                           selectedEvent.resource.task.priority === 'HIGH'
-                            ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
+                            ? 'bg-orange-100 text-orange-700' :
                           selectedEvent.resource.task.priority === 'MEDIUM'
-                            ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                            'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                            ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-green-100 text-green-700'
                         }`}
                       >
                         <Flag className="h-3.5 w-3.5" />
@@ -681,12 +624,12 @@ export default function CalendarPage() {
                       <span
                         className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold ${
                           selectedEvent.resource.task.status === 'COMPLETED'
-                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                            ? 'bg-green-100 text-green-700' :
                           selectedEvent.resource.task.status === 'IN_PROGRESS'
-                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                            ? 'bg-blue-100 text-blue-700' :
                           selectedEvent.resource.task.status === 'IN_REVIEW'
-                            ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
-                            'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
+                            ? 'bg-purple-100 text-purple-700' :
+                            'bg-gray-100 text-gray-700'
                         }`}
                       >
                         {selectedEvent.resource.task.status === 'COMPLETED' ? (
@@ -705,11 +648,11 @@ export default function CalendarPage() {
                 {/* Description */}
                 {selectedEvent.resource?.description && !selectedEvent.resource?.task && (
                   <div className="flex items-start gap-3">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-muted text-muted-foreground shrink-0">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gray-100 text-gray-500 shrink-0">
                       <FileText className="h-5 w-5" />
                     </div>
                     <div className="flex-1 pt-0.5">
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-gray-600">
                         {selectedEvent.resource.description}
                       </p>
                     </div>
@@ -718,39 +661,39 @@ export default function CalendarPage() {
 
                 {/* Creator Section */}
                 {selectedEvent.resource?.creator && (
-                  <div className="flex items-start gap-3 pt-2 border-t">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-muted text-muted-foreground shrink-0">
+                  <div className="flex items-start gap-3 pt-2 border-t border-gray-100">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gray-100 text-gray-500 shrink-0">
                       <User className="h-5 w-5" />
                     </div>
                     <div className="flex-1 pt-0.5">
-                      <p className="text-sm font-medium text-foreground">
+                      <p className="text-sm font-medium text-gray-900">
                         {selectedEvent.resource.creator.name}
                       </p>
-                      <p className="text-xs text-muted-foreground">Created by</p>
+                      <p className="text-xs text-gray-500">Created by</p>
                     </div>
                   </div>
                 )}
 
                 {/* Subtasks Section */}
                 {selectedEvent.resource?.task && (
-                  <div className="pt-2 border-t space-y-2">
+                  <div className="pt-2 border-t border-gray-100 space-y-2">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
-                        <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm font-medium text-gray-900 flex items-center gap-1.5">
+                        <CheckCircle2 className="h-4 w-4 text-gray-400" />
                         Subtasks
-                        <span className="text-xs text-muted-foreground font-normal">
+                        <span className="text-xs text-gray-400 font-normal">
                           ({(selectedEvent.resource.subtasks || []).length})
                         </span>
                       </p>
                       {(selectedEvent.resource.subtasks || []).length > 0 && (
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-gray-400">
                           {(selectedEvent.resource.subtasks || []).filter(s => s.status === 'COMPLETED').length}/
                           {(selectedEvent.resource.subtasks || []).length} done
                         </span>
                       )}
                     </div>
                     {(selectedEvent.resource.subtasks || []).length === 0 ? (
-                      <p className="text-xs text-muted-foreground pl-5">No subtasks</p>
+                      <p className="text-xs text-gray-400 pl-5">No subtasks</p>
                     ) : (
                       <div className="space-y-1.5 pl-1">
                         {(selectedEvent.resource.subtasks || []).map((subtask) => (
@@ -777,12 +720,12 @@ export default function CalendarPage() {
                               )}
                             </button>
                             <span
-                              className={`text-xs flex-1 truncate ${subtask.status === 'COMPLETED' ? 'line-through text-muted-foreground' : 'text-foreground'}`}
+                              className={`text-sm flex-1 truncate ${subtask.status === 'COMPLETED' ? 'line-through text-gray-400' : 'text-gray-900'}`}
                             >
                               {subtask.title}
                             </span>
                             {subtask.assignee && (
-                              <span className="text-xs text-muted-foreground truncate max-w-[80px]">
+                              <span className="text-xs text-gray-400 truncate max-w-[80px]">
                                 {subtask.assignee.name}
                               </span>
                             )}
@@ -796,7 +739,7 @@ export default function CalendarPage() {
 
               {/* Footer Actions */}
               {selectedEvent.resource?.task?.id && (
-                <div className="px-6 py-4 border-t bg-muted/20">
+                <div className="px-6 py-4 border-t border-gray-100 bg-gray-50">
                   <Button
                     variant="outline"
                     className="w-full"

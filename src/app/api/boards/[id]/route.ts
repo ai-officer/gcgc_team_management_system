@@ -8,7 +8,17 @@ const updateSchema = z.object({
   name: z.string().min(1).max(50).optional(),
   description: z.string().max(200).optional(),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+  memberIds: z.array(z.string()).optional(), // full replacement of member list
 })
+
+const memberInclude = {
+  members: {
+    include: {
+      user: { select: { id: true, name: true, email: true, image: true, role: true } },
+    },
+  },
+  _count: { select: { tasks: true } },
+}
 
 export async function PATCH(
   request: Request,
@@ -24,12 +34,26 @@ export async function PATCH(
     if (!board) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
     const body = await request.json()
-    const data = updateSchema.parse(body)
+    const { memberIds, ...data } = updateSchema.parse(body)
 
+    // If memberIds is provided, do a full replacement
     const updated = await prisma.kanbanBoard.update({
       where: { id: params.id },
-      data,
-      include: { _count: { select: { tasks: true } } },
+      data: {
+        ...data,
+        ...(memberIds !== undefined
+          ? {
+              members: {
+                deleteMany: {},
+                create: memberIds.map(userId => ({ userId })),
+              },
+            }
+          : {}),
+      },
+      include: {
+        ...memberInclude,
+        owner: { select: { id: true, name: true, email: true, image: true } },
+      },
     })
     return NextResponse.json({ board: updated })
   } catch (error) {
@@ -54,7 +78,6 @@ export async function DELETE(
     })
     if (!board) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-    // Unassign tasks before deleting the board
     await prisma.task.updateMany({
       where: { boardId: params.id },
       data: { boardId: null },

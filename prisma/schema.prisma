@@ -61,6 +61,7 @@ model User {
   evaluationsReceived    TaskEvaluation[]    @relation("EvaluationReceived")
   procurementsCreated    TaskProcurement[]   @relation("ProcurementCreator")
   boards                 KanbanBoard[]       @relation("BoardOwner")
+  boardMemberships       KanbanBoardMember[] @relation("BoardMember")
 
   @@map("users")
 }
@@ -177,10 +178,24 @@ model KanbanBoard {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  owner User   @relation("BoardOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  tasks Task[]
+  owner   User                @relation("BoardOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  tasks   Task[]
+  members KanbanBoardMember[]
 
   @@map("kanban_boards")
+}
+
+model KanbanBoardMember {
+  id        String   @id @default(cuid())
+  boardId   String
+  userId    String
+  createdAt DateTime @default(now())
+
+  board KanbanBoard @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  user  User        @relation("BoardMember", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([boardId, userId])
+  @@map("kanban_board_members")
 }
 
 model Task {

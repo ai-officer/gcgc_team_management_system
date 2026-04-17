@@ -22,6 +22,8 @@ import {
   RefreshCw,
   ListTodo,
   Copy,
+  UserPlus,
+  Settings2,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -53,6 +55,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { SearchableSelect } from '@/components/ui/searchable-select'
+import { SearchableMultiSelect } from '@/components/ui/searchable-multi-select'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -152,11 +155,22 @@ interface User {
   image?: string
 }
 
+interface BoardMemberUser {
+  id: string
+  name: string
+  email: string
+  image?: string
+  role?: string
+}
+
 interface KanbanBoard {
   id: string
   name: string
   description?: string
   color: string
+  ownerId: string
+  owner?: BoardMemberUser
+  members: { userId: string; user: BoardMemberUser }[]
   _count: { tasks: number }
 }
 
@@ -199,8 +213,10 @@ export default function TasksPage() {
   const [newBoardName, setNewBoardName] = useState('')
   const [newBoardColor, setNewBoardColor] = useState('#3B82F6')
   const [newBoardDescription, setNewBoardDescription] = useState('')
+  const [newBoardMemberIds, setNewBoardMemberIds] = useState<string[]>([])
   const [creatingBoard, setCreatingBoard] = useState(false)
   const [editingBoard, setEditingBoard] = useState<KanbanBoard | null>(null)
+  const [editingBoardMemberIds, setEditingBoardMemberIds] = useState<string[]>([])
 
   // Open task modal from URL query param (e.g., from notification click)
   const openTaskFromUrl = useCallback(async (taskId: string) => {
@@ -332,6 +348,7 @@ export default function TasksPage() {
           name: newBoardName.trim(),
           description: newBoardDescription || undefined,
           color: newBoardColor,
+          memberIds: newBoardMemberIds,
         }),
       })
       if (res.ok) {
@@ -342,6 +359,7 @@ export default function TasksPage() {
         setNewBoardName('')
         setNewBoardDescription('')
         setNewBoardColor('#3B82F6')
+        setNewBoardMemberIds([])
         toast({ title: `Board "${data.board.name}" created` })
       }
     } catch (e) {
@@ -839,40 +857,71 @@ export default function TasksPage() {
         </button>
 
         {/* Board tabs */}
-        {boards.map(board => (
-          <div key={board.id} className="relative group flex items-center">
-            <button
-              onClick={() => setActiveBoardId(board.id)}
-              className={cn(
-                'flex items-center gap-1.5 pl-3 pr-8 py-2 rounded-t-lg text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px',
-                activeBoardId === board.id
-                  ? 'text-gray-900 bg-gray-50'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+        {boards.map(board => {
+          const isOwner = board.ownerId === session?.user?.id
+          const memberCount = board.members?.length ?? 0
+          return (
+            <div key={board.id} className="relative group flex items-center">
+              <button
+                onClick={() => setActiveBoardId(board.id)}
+                className={cn(
+                  'flex items-center gap-1.5 pl-3 pr-8 py-2 rounded-t-lg text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px',
+                  activeBoardId === board.id
+                    ? 'text-gray-900 bg-gray-50'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                )}
+                style={activeBoardId === board.id ? { borderBottomColor: board.color } : {}}
+              >
+                <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: board.color }} />
+                {board.name}
+                <span className="ml-1 text-xs text-gray-400 font-normal">({board._count.tasks})</span>
+                {/* Member avatars */}
+                {memberCount > 0 && (
+                  <div className="flex -space-x-1 ml-1">
+                    {board.members.slice(0, 3).map(m => (
+                      <Avatar key={m.userId} className="h-4 w-4 border border-white ring-0">
+                        <AvatarImage src={m.user.image} />
+                        <AvatarFallback className="text-[8px]">
+                          {m.user.name?.[0] ?? m.user.email[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                    ))}
+                    {memberCount > 3 && (
+                      <span className="h-4 w-4 rounded-full bg-gray-200 border border-white text-[8px] flex items-center justify-center text-gray-600">
+                        +{memberCount - 3}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {/* Shared-to-me badge */}
+                {!isOwner && (
+                  <span className="ml-1 text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full font-medium leading-none">shared</span>
+                )}
+              </button>
+              {/* Board actions menu — only owner can edit/delete */}
+              {isOwner && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-gray-200 transition-all">
+                      <MoreHorizontal className="h-3.5 w-3.5 text-gray-500" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44">
+                    <DropdownMenuItem onClick={() => {
+                      setEditingBoard(board)
+                      setEditingBoardMemberIds(board.members.map(m => m.userId))
+                    }}>
+                      <Settings2 className="h-4 w-4 mr-2" /> Edit Board
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="text-red-600" onClick={() => deleteBoard(board.id)}>
+                      <Trash2 className="h-4 w-4 mr-2" /> Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
-              style={activeBoardId === board.id ? { borderBottomColor: board.color } : {}}
-            >
-              <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: board.color }} />
-              {board.name}
-              <span className="ml-1 text-xs text-gray-400 font-normal">({board._count.tasks})</span>
-            </button>
-            {/* Board actions menu */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-gray-200 transition-all">
-                  <MoreHorizontal className="h-3.5 w-3.5 text-gray-500" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-36">
-                <DropdownMenuItem onClick={() => setEditingBoard(board)}>
-                  <Edit className="h-4 w-4 mr-2" /> Rename
-                </DropdownMenuItem>
-                <DropdownMenuItem className="text-red-600" onClick={() => deleteBoard(board.id)}>
-                  <Trash2 className="h-4 w-4 mr-2" /> Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        ))}
+            </div>
+          )
+        })}
 
         {/* New Board button */}
         <button
@@ -1330,11 +1379,14 @@ export default function TasksPage() {
       </AlertDialog>
 
       {/* Create Board Dialog */}
-      <Dialog open={showCreateBoard} onOpenChange={setShowCreateBoard}>
+      <Dialog open={showCreateBoard} onOpenChange={(open) => {
+        setShowCreateBoard(open)
+        if (!open) { setNewBoardName(''); setNewBoardDescription(''); setNewBoardColor('#3B82F6'); setNewBoardMemberIds([]) }
+      }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Create Kanban Board</DialogTitle>
-            <DialogDescription>Give your board a name and pick a color.</DialogDescription>
+            <DialogDescription>Give your board a name, color, and invite members who can see it.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
@@ -1372,6 +1424,23 @@ export default function TasksPage() {
                 ))}
               </div>
             </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <UserPlus className="h-4 w-4 text-gray-500" />
+                Members <span className="text-gray-400 text-xs font-normal">(optional)</span>
+              </Label>
+              <SearchableMultiSelect
+                options={users.filter(u => u.id !== session?.user?.id)}
+                selected={users.filter(u => newBoardMemberIds.includes(u.id))}
+                onSelect={opt => setNewBoardMemberIds(prev => [...prev, opt.id])}
+                onRemove={id => setNewBoardMemberIds(prev => prev.filter(x => x !== id))}
+                onClear={() => setNewBoardMemberIds([])}
+                placeholder="Search members or leaders to add..."
+              />
+              {newBoardMemberIds.length > 0 && (
+                <p className="text-xs text-gray-500">{newBoardMemberIds.length} person{newBoardMemberIds.length > 1 ? 's' : ''} will be able to view this board</p>
+              )}
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreateBoard(false)}>Cancel</Button>
@@ -1382,48 +1451,80 @@ export default function TasksPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Rename Board Dialog */}
+      {/* Edit Board Dialog */}
       {editingBoard && (
-        <Dialog open={!!editingBoard} onOpenChange={() => setEditingBoard(null)}>
-          <DialogContent className="max-w-sm">
+        <Dialog open={!!editingBoard} onOpenChange={(open) => { if (!open) { setEditingBoard(null); setEditingBoardMemberIds([]) } }}>
+          <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Rename Board</DialogTitle>
+              <DialogTitle>Edit Board</DialogTitle>
+              <DialogDescription>Update the board name, color, and manage who can see it.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-2">
-              <Input
-                value={editingBoard.name}
-                onChange={e => setEditingBoard({ ...editingBoard, name: e.target.value })}
-                autoFocus
-              />
-              <div className="flex gap-2">
-                {BOARD_COLORS.map(color => (
-                  <button
-                    key={color}
-                    type="button"
-                    onClick={() => setEditingBoard({ ...editingBoard, color })}
-                    className={cn(
-                      'w-7 h-7 rounded-full border-2 transition-transform',
-                      editingBoard.color === color ? 'border-gray-800 scale-110' : 'border-transparent'
-                    )}
-                    style={{ backgroundColor: color }}
-                  />
-                ))}
+              <div className="space-y-2">
+                <Label>Board Name</Label>
+                <Input
+                  value={editingBoard.name}
+                  onChange={e => setEditingBoard({ ...editingBoard, name: e.target.value })}
+                  autoFocus
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Color</Label>
+                <div className="flex gap-2">
+                  {BOARD_COLORS.map(color => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => setEditingBoard({ ...editingBoard, color })}
+                      className={cn(
+                        'w-7 h-7 rounded-full border-2 transition-transform',
+                        editingBoard.color === color ? 'border-gray-800 scale-110' : 'border-transparent'
+                      )}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  <UserPlus className="h-4 w-4 text-gray-500" />
+                  Members
+                </Label>
+                <SearchableMultiSelect
+                  options={users.filter(u => u.id !== session?.user?.id)}
+                  selected={users.filter(u => editingBoardMemberIds.includes(u.id))}
+                  onSelect={opt => setEditingBoardMemberIds(prev => [...prev, opt.id])}
+                  onRemove={id => setEditingBoardMemberIds(prev => prev.filter(x => x !== id))}
+                  onClear={() => setEditingBoardMemberIds([])}
+                  placeholder="Search members or leaders..."
+                />
+                {editingBoardMemberIds.length > 0 ? (
+                  <p className="text-xs text-gray-500">{editingBoardMemberIds.length} person{editingBoardMemberIds.length > 1 ? 's' : ''} can view this board</p>
+                ) : (
+                  <p className="text-xs text-gray-400">Only you can see this board</p>
+                )}
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setEditingBoard(null)}>Cancel</Button>
+              <Button variant="outline" onClick={() => { setEditingBoard(null); setEditingBoardMemberIds([]) }}>Cancel</Button>
               <Button onClick={async () => {
                 const res = await fetch(`/api/boards/${editingBoard.id}`, {
                   method: 'PATCH',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ name: editingBoard.name, color: editingBoard.color }),
+                  body: JSON.stringify({
+                    name: editingBoard.name,
+                    color: editingBoard.color,
+                    memberIds: editingBoardMemberIds,
+                  }),
                 })
                 if (res.ok) {
                   const data = await res.json()
                   setBoards(prev => prev.map(b => b.id === editingBoard.id ? { ...b, ...data.board } : b))
                   setEditingBoard(null)
+                  setEditingBoardMemberIds([])
+                  toast({ title: 'Board updated' })
                 }
-              }}>Save</Button>
+              }}>Save Changes</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

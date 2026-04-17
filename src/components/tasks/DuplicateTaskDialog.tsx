@@ -109,42 +109,39 @@ export default function DuplicateTaskDialog({ open, onOpenChange, sourceTask, on
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Copy className="h-5 w-5" />
+          <DialogTitle className="text-base font-semibold text-gray-900 flex items-center gap-2">
+            <Copy className="h-4 w-4 text-gray-500" />
             Duplicate Task
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm text-gray-500">
             Choose which fields to copy to the new task. Title is always copied.
           </DialogDescription>
         </DialogHeader>
 
         {sourceTask && (
-          <div className="py-2 px-3 bg-muted/50 rounded-lg text-sm text-gray-700 font-medium truncate">
-            "{sourceTask.title}"
+          <div className="py-2 px-3 bg-gray-50 border border-gray-100 rounded-lg text-sm text-gray-700 font-medium truncate">
+            &ldquo;{sourceTask.title}&rdquo;
           </div>
         )}
 
-        <div className="space-y-2">
-          {FIELD_OPTIONS.map(({ key, label, description }) => (
+        <div className="grid grid-cols-2 gap-1.5">
+          {FIELD_OPTIONS.map(({ key, label }) => (
             <label
               key={key}
-              className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors hover:bg-muted/40 ${options[key] ? 'bg-blue-50/60' : ''}`}
+              className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors hover:bg-gray-50 ${options[key] ? 'bg-blue-50' : ''}`}
             >
-              <div className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${options[key] ? 'bg-blue-600 border-blue-600' : 'border-gray-300'}`}>
-                {options[key] && <Check className="h-3 w-3 text-white" />}
+              <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${options[key] ? 'bg-blue-600 border-blue-600' : 'border-gray-300'}`}>
+                {options[key] && <Check className="h-2.5 w-2.5 text-white" />}
               </div>
               <input type="checkbox" className="hidden" checked={options[key]} onChange={() => toggle(key)} />
-              <div className="flex-1 min-w-0">
-                <span className="text-sm font-medium text-gray-800">{label}</span>
-                {description && <p className="text-xs text-gray-500 mt-0.5">{description}</p>}
-              </div>
+              <span className="text-sm font-medium text-gray-700 truncate">{label}</span>
             </label>
           ))}
         </div>
 
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleConfirm} className="gap-2">
+        <DialogFooter className="gap-2 pt-2 border-t border-gray-100">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-lg">Cancel</Button>
+          <Button onClick={handleConfirm} className="gap-2 rounded-lg">
             <Copy className="h-4 w-4" />
             Duplicate ({selectedCount} fields)
           </Button>

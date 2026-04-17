@@ -96,12 +96,12 @@ export default function CreateTaskButton({
       <Button
         variant={variant}
         size={size}
-        className={className}
+        className={`rounded-lg ${className}`}
         onClick={() => setIsTaskFormOpen(true)}
       >
         <Plus className="h-4 w-4 shrink-0 sm:mr-2" />
-        <span className="hidden sm:inline">Create Task</span>
-        <span className="sm:hidden">Task</span>
+        <span className="hidden sm:inline">New Task</span>
+        <span className="sm:hidden">New</span>
       </Button>
 
       <TaskForm

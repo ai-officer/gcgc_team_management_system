@@ -5,8 +5,7 @@ import { useSession } from 'next-auth/react'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
-import { format } from 'date-fns'
-import { CalendarIcon, Plus, X, Users, User, Handshake, ListTodo, Trash2, ChevronDown, Settings2, RefreshCw } from 'lucide-react'
+import { CalendarIcon, Plus, Users, User, Handshake, ListTodo, Trash2, ChevronDown, Settings2, RefreshCw } from 'lucide-react'
 import { DatePicker } from '@/components/ui/date-picker'
 import { TimePicker } from '@/components/ui/time-picker'
 import { SearchableMultiSelect, SelectOption } from '@/components/ui/searchable-multi-select'
@@ -17,12 +16,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Progress } from '@/components/ui/progress'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   Dialog,
   DialogContent,
@@ -38,7 +35,6 @@ import { generateOccurrenceDates } from '@/lib/recurring'
 // Types
 type TaskType = 'INDIVIDUAL' | 'TEAM' | 'COLLABORATION'
 type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'
-type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
 
 interface User {
   id: string
@@ -522,51 +518,32 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
     }
   }
 
-  const getPriorityColor = (priority: Priority) => {
-    switch (priority) {
-      case 'URGENT': return 'bg-red-100 text-red-800 border-red-300'
-      case 'HIGH': return 'bg-orange-100 text-orange-800 border-orange-300'
-      case 'MEDIUM': return 'bg-yellow-100 text-yellow-800 border-yellow-300'
-      case 'LOW': return 'bg-green-100 text-green-800 border-green-300'
-      default: return 'bg-gray-100 text-gray-800 border-gray-300'
-    }
-  }
-
-  const getStatusColor = (status: TaskStatus) => {
-    switch (status) {
-      case 'TODO': return 'bg-gray-100 text-gray-800 border-gray-300'
-      case 'IN_PROGRESS': return 'bg-blue-100 text-blue-800 border-blue-300'
-      case 'IN_REVIEW': return 'bg-purple-100 text-purple-800 border-purple-300'
-      case 'COMPLETED': return 'bg-green-100 text-green-800 border-green-300'
-      default: return 'bg-gray-100 text-gray-800 border-gray-300'
-    }
-  }
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto z-[100]">
+      <DialogContent className="max-w-2xl z-[100]">
         <DialogHeader>
-          <DialogTitle>{task ? 'Edit Task' : duplicateFrom ? 'Duplicate Task' : 'Create New Task'}</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-base font-semibold text-gray-900">
+            {task ? 'Edit Task' : duplicateFrom ? 'Duplicate Task' : 'Create New Task'}
+          </DialogTitle>
+          <DialogDescription className="text-sm text-gray-500">
             {task ? 'Update the task details below.' : duplicateFrom ? 'Review and adjust the duplicated task before saving.' : 'Fill in the details to create a new task.'}
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(handleSubmit)}>
+          <div className="max-h-[70vh] overflow-y-auto px-1 space-y-6 py-1">
+
           {/* Basic Information Section */}
-          <Card className="border-2">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Basic Information</CardTitle>
-              <CardDescription>Task title, description, and priority</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="title" className="text-base">Task Title <span className="text-red-500">*</span></Label>
+          <div>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider pb-2 border-b border-gray-100 mb-4">Basic Information</p>
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="title" className="text-sm font-medium text-gray-700">Task Title <span className="text-red-500">*</span></Label>
                 <Input
                   id="title"
                   {...form.register('title')}
                   placeholder="Enter a clear, descriptive task title"
-                  className="h-11"
+                  className="h-9"
                 />
                 {form.formState.errors.title && (
                   <p className="text-sm text-red-500 flex items-center gap-1">
@@ -575,186 +552,127 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="description" className="text-base">Description</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="description" className="text-sm font-medium text-gray-700">Description</Label>
                 <Textarea
                   id="description"
                   {...form.register('description')}
                   placeholder="Provide details about this task..."
                   rows={3}
-                  className="resize-none"
+                  className="resize-none text-sm"
                 />
               </div>
+            </div>
+          </div>
 
-{/* Only show Priority here when editing - for new tasks it's in Status & Schedule section */}
+          {/* Priority & Settings Section */}
+          <div>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider pb-2 border-b border-gray-100 mb-4">Priority &amp; Settings</p>
+            <div className="space-y-4">
+              {/* Priority pill buttons */}
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium text-gray-700">Priority</Label>
+                <div className="flex gap-2">
+                  {([
+                    { value: 'URGENT', label: 'Urgent', base: 'bg-red-50 border-red-200 text-red-700', active: 'bg-red-500 border-red-500 text-white' },
+                    { value: 'HIGH',   label: 'High',   base: 'bg-orange-50 border-orange-200 text-orange-700', active: 'bg-orange-500 border-orange-500 text-white' },
+                    { value: 'MEDIUM', label: 'Medium', base: 'bg-amber-50 border-amber-200 text-amber-700', active: 'bg-amber-400 border-amber-400 text-white' },
+                    { value: 'LOW',    label: 'Low',    base: 'bg-green-50 border-green-200 text-green-700', active: 'bg-green-500 border-green-500 text-white' },
+                  ] as const).map(({ value, label, base, active }) => {
+                    const isSelected = form.watch('priority') === value
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => form.setValue('priority', value)}
+                        className={cn(
+                          'flex-1 py-1.5 px-2 rounded-full border text-xs font-semibold transition-all',
+                          isSelected ? active : base
+                        )}
+                      >
+                        {label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Status */}
+              <div className="space-y-1.5">
+                <Label htmlFor="status" className="text-sm font-medium text-gray-700">Status</Label>
+                <Select
+                  value={form.watch('status')}
+                  onValueChange={(value) => form.setValue('status', value as TaskStatus)}
+                >
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="TODO">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+                        To Do
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="IN_PROGRESS">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-blue-400"></div>
+                        In Progress
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="IN_REVIEW">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-purple-400"></div>
+                        In Review
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="COMPLETED">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-green-400"></div>
+                        Completed
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Progress — editing only */}
               {task && (
-                <div className="space-y-2">
-                  <Label htmlFor="priority" className="text-base">Priority Level</Label>
-                  <Select
-                    value={form.watch('priority')}
-                    onValueChange={(value) => form.setValue('priority', value as Priority)}
-                  >
-                    <SelectTrigger className="h-11">
-                      <SelectValue placeholder="Select priority" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="LOW">
-                        <div className="flex items-center gap-2">
-                          <Badge className="bg-green-100 text-green-800 border-green-300 hover:bg-green-100">Low</Badge>
-                          <span className="text-xs text-muted-foreground">Can wait</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="MEDIUM">
-                        <div className="flex items-center gap-2">
-                          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-100">Medium</Badge>
-                          <span className="text-xs text-muted-foreground">Normal priority</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="HIGH">
-                        <div className="flex items-center gap-2">
-                          <Badge className="bg-orange-100 text-orange-800 border-orange-300 hover:bg-orange-100">High</Badge>
-                          <span className="text-xs text-muted-foreground">Important</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="URGENT">
-                        <div className="flex items-center gap-2">
-                          <Badge className="bg-red-100 text-red-800 border-red-300 hover:bg-red-100">Urgent</Badge>
-                          <span className="text-xs text-muted-foreground">Critical!</span>
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Badge className={cn("w-fit", getPriorityColor(form.watch('priority')))}>
-                    {form.watch('priority')} Priority
-                  </Badge>
+                <div className="space-y-1.5">
+                  <Label htmlFor="progress" className="text-sm font-medium text-gray-700">Progress: {progressPercentage}%</Label>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      <Input
+                        type="range"
+                        min="0"
+                        max="99"
+                        value={Math.min(progressPercentage, 99)}
+                        onChange={(e) => form.setValue('progressPercentage', Math.min(Number(e.target.value), 99))}
+                        className="w-full"
+                      />
+                      <span className="text-sm font-semibold min-w-[3rem] text-right">{progressPercentage}%</span>
+                    </div>
+                    <Progress
+                      value={progressPercentage}
+                      className={`h-2 ${getProgressColor(progressPercentage)}`}
+                    />
+                    <p className="text-xs text-amber-600">Max 99%. Task must be reviewed by Team Leader to reach 100%.</p>
+                  </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          {/* Status and Schedule Section */}
-          <Card className="border-2">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Status & Schedule</CardTitle>
-              <CardDescription>Track progress and set deadlines</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Status and Progress Row */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-3">
-                  <Label htmlFor="status" className="text-base">Task Status</Label>
-                  <Select
-                    value={form.watch('status')}
-                    onValueChange={(value) => form.setValue('status', value as TaskStatus)}
-                  >
-                    <SelectTrigger className="h-11">
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="TODO">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-gray-400"></div>
-                          To Do
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="IN_PROGRESS">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-                          In Progress
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="IN_REVIEW">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-purple-400"></div>
-                          In Review
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="COMPLETED">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-green-400"></div>
-                          Completed
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Badge className={cn("w-fit", getStatusColor(form.watch('status')))}>
-                    {form.watch('status').replace('_', ' ')}
-                  </Badge>
-                </div>
-
-{/* Show Priority for new tasks, Progress for editing */}
-                {task ? (
-                  <div className="space-y-3">
-                    <Label htmlFor="progress" className="text-base">Progress: {progressPercentage}%</Label>
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <Input
-                          type="range"
-                          min="0"
-                          max="99"
-                          value={Math.min(progressPercentage, 99)}
-                          onChange={(e) => form.setValue('progressPercentage', Math.min(Number(e.target.value), 99))}
-                          className="w-full"
-                        />
-                        <span className="text-sm font-semibold min-w-[3rem] text-right">{progressPercentage}%</span>
-                      </div>
-                      <Progress
-                        value={progressPercentage}
-                        className={`h-3 ${getProgressColor(progressPercentage)}`}
-                      />
-                      <p className="text-xs text-amber-600 flex items-center gap-1">
-                        <span>ℹ️</span> Max 99%. Task must be reviewed by Team Leader to reach 100%.
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <Label htmlFor="priority" className="text-base">Priority Level</Label>
-                    <Select
-                      value={form.watch('priority')}
-                      onValueChange={(value) => form.setValue('priority', value as Priority)}
-                    >
-                      <SelectTrigger className="h-11">
-                        <SelectValue placeholder="Select priority" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="LOW">
-                          <div className="flex items-center gap-2">
-                            <Badge className="bg-green-100 text-green-800 border-green-300 hover:bg-green-100">Low</Badge>
-                            <span className="text-xs text-muted-foreground">Can wait</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="MEDIUM">
-                          <div className="flex items-center gap-2">
-                            <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-100">Medium</Badge>
-                            <span className="text-xs text-muted-foreground">Normal priority</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="HIGH">
-                          <div className="flex items-center gap-2">
-                            <Badge className="bg-orange-100 text-orange-800 border-orange-300 hover:bg-orange-100">High</Badge>
-                            <span className="text-xs text-muted-foreground">Important</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="URGENT">
-                          <div className="flex items-center gap-2">
-                            <Badge className="bg-red-100 text-red-800 border-red-300 hover:bg-red-100">Urgent</Badge>
-                            <span className="text-xs text-muted-foreground">Critical!</span>
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Badge className={cn("w-fit", getPriorityColor(form.watch('priority')))}>
-                      {form.watch('priority')} Priority
-                    </Badge>
-                  </div>
-                )}
-              </div>
+          {/* Schedule Section */}
+          <div>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider pb-2 border-b border-gray-100 mb-4">Schedule</p>
+            <div className="space-y-4">
+              {/* Status and Progress Row — removed duplicate status, keeping date range */}
 
               {/* Date Range */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <Label className="text-base">Date Range</Label>
+                  <Label className="text-sm font-medium text-gray-700">Date Range</Label>
                   <Badge variant="outline" className="text-xs">
                     {form.watch('allDay') ? 'All-day task' : 'Specific times'}
                   </Badge>
@@ -1057,33 +975,26 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
                   )}
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* Weight, SLA & Reminders */}
           <Collapsible>
-            <Card className="border-2">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100">
               <CollapsibleTrigger asChild>
-                <CardHeader className="pb-3 cursor-pointer hover:bg-muted/30 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-muted rounded-full">
-                        <Settings2 className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-base">Priority Settings</CardTitle>
-                        <CardDescription>Weight, SLA target, and deadline reminders</CardDescription>
-                      </div>
-                    </div>
-                    <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform duration-200" />
+                <div className="flex items-center justify-between px-5 py-3 cursor-pointer hover:bg-gray-50 transition-colors rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <Settings2 className="h-4 w-4 text-gray-400" />
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Task Weight &amp; SLA</p>
                   </div>
-                </CardHeader>
+                  <ChevronDown className="h-4 w-4 text-gray-400 transition-transform duration-200" />
+                </div>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <CardContent className="space-y-5 pt-0">
+                <div className="px-5 pb-5 space-y-4 border-t border-gray-100 pt-4">
                   {/* Task Weight (1-5 stars) */}
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Task Weight <span className="text-xs text-muted-foreground font-normal">(1 = low gravity, 5 = critical)</span></Label>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-gray-700">Task Weight <span className="text-xs text-gray-400 font-normal">(1 = low, 5 = critical)</span></Label>
                     <div className="flex gap-2">
                       {[1, 2, 3, 4, 5].map(w => (
                         <button
@@ -1093,13 +1004,13 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
                           className={`w-9 h-9 rounded-lg border-2 text-sm font-bold transition-all ${form.watch('taskWeight') && form.watch('taskWeight')! >= w ? 'bg-amber-400 border-amber-500 text-white' : 'border-gray-200 text-gray-400 hover:border-amber-300'}`}
                         >★</button>
                       ))}
-                      {form.watch('taskWeight') && <span className="text-sm text-muted-foreground self-center">Weight: {form.watch('taskWeight')}/5</span>}
+                      {form.watch('taskWeight') && <span className="text-sm text-gray-400 self-center">Weight: {form.watch('taskWeight')}/5</span>}
                     </div>
                   </div>
 
                   {/* SLA Hours */}
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">SLA Target</Label>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-gray-700">SLA Target</Label>
                     <div className="flex flex-wrap gap-2">
                       {[4, 8, 24, 48, 72, 168].map(h => (
                         <button
@@ -1115,8 +1026,8 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
                   </div>
 
                   {/* Reminder Days */}
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Deadline Reminders</Label>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-gray-700">Deadline Reminders</Label>
                     <div className="flex flex-wrap gap-2">
                       {[1, 3, 7, 14].map(d => {
                         const selected = (form.watch('reminderDays') || []).includes(d)
@@ -1136,245 +1047,160 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
                       })}
                     </div>
                   </div>
-                </CardContent>
+                </div>
               </CollapsibleContent>
-            </Card>
+            </div>
           </Collapsible>
 
           {/* Editing recurring instance notice */}
           {task && task.recurringParentId && (
-            <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <RefreshCw className="h-5 w-5 text-blue-600 flex-shrink-0" />
+            <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <RefreshCw className="h-4 w-4 text-blue-600 flex-shrink-0" />
               <div className="text-sm text-blue-800">
                 <p className="font-semibold">Recurring task</p>
-                <p>Saving changes will update only this task instance. Future instances will be created fresh from the original series settings.</p>
+                <p className="text-xs mt-0.5">Saving changes will update only this task instance. Future instances will be created fresh from the original series settings.</p>
               </div>
             </div>
           )}
 
-          {/* Subtasks Section - Collapsible (only for new tasks) */}
+          {/* Subtasks Section — only for new tasks */}
           {!task && (
-            <Collapsible>
-              <Card className="border-2 border-amber-200 bg-amber-50/50">
-                <CollapsibleTrigger asChild>
-                  <CardHeader className="pb-3 cursor-pointer hover:bg-amber-100/50 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-amber-100 rounded-full">
-                          <ListTodo className="h-5 w-5 text-amber-600" />
+            <div>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider pb-2 border-b border-gray-100 mb-4">Subtasks</p>
+              <div className="space-y-3">
+                {/* Add Subtask Form */}
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Enter subtask title..."
+                    value={newSubtaskTitle}
+                    onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        addSubtask()
+                      }
+                    }}
+                    className="flex-1 h-9 text-sm"
+                  />
+                  <Select
+                    value={newSubtaskAssigneeId}
+                    onValueChange={setNewSubtaskAssigneeId}
+                  >
+                    <SelectTrigger className="w-[160px] h-9 text-sm">
+                      <SelectValue placeholder="Assign to..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={session?.user?.id || 'self'}>
+                        Myself
+                      </SelectItem>
+                      {users.filter(u => u.id !== session?.user?.id).map((user) => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.name || user.email}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="date"
+                    value={newSubtaskDeadline}
+                    onChange={(e) => setNewSubtaskDeadline(e.target.value)}
+                    className="w-[140px] h-9 text-sm"
+                    placeholder="Deadline"
+                  />
+                  <Button
+                    type="button"
+                    size="icon"
+                    onClick={addSubtask}
+                    disabled={!newSubtaskTitle.trim()}
+                    className="h-9 w-9 shrink-0"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* Subtasks List */}
+                {pendingSubtasks.length > 0 && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs text-gray-500">{pendingSubtasks.length} subtask{pendingSubtasks.length !== 1 ? 's' : ''} to create</p>
+                    {pendingSubtasks.map((subtask) => (
+                      <div
+                        key={subtask.id}
+                        className="flex items-center justify-between px-3 py-2 bg-white rounded-lg border border-gray-100 shadow-sm"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                          <div>
+                            <p className="text-sm font-medium text-gray-800">{subtask.title}</p>
+                            <p className="text-xs text-gray-400">
+                              {subtask.assignee?.name || subtask.assignee?.email || 'You'}
+                              {subtask.dueDate && (
+                                <span className="ml-2">• Due: {new Date(subtask.dueDate).toLocaleDateString()}</span>
+                              )}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <CardTitle className="text-base text-amber-900">Subtasks</CardTitle>
-                          <CardDescription className="text-amber-700">
-                            Break this task into smaller pieces and assign them to team members
-                          </CardDescription>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {pendingSubtasks.length > 0 && (
-                          <Badge className="bg-amber-500 text-white">
-                            {pendingSubtasks.length}
-                          </Badge>
-                        )}
-                        <ChevronDown className="h-5 w-5 text-amber-600 transition-transform duration-200" />
-                      </div>
-                    </div>
-                  </CardHeader>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <CardContent className="space-y-4 pt-0">
-                    {/* Add Subtask Form */}
-                    <div className="space-y-3">
-                      <div className="flex gap-2">
-                        <Input
-                          placeholder="Enter subtask title..."
-                          value={newSubtaskTitle}
-                          onChange={(e) => setNewSubtaskTitle(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault()
-                              addSubtask()
-                            }
-                          }}
-                          className="flex-1"
-                        />
-                        <Select
-                          value={newSubtaskAssigneeId}
-                          onValueChange={setNewSubtaskAssigneeId}
-                        >
-                          <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Assign to..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={session?.user?.id || 'self'}>
-                              Myself
-                            </SelectItem>
-                            {users.filter(u => u.id !== session?.user?.id).map((user) => (
-                              <SelectItem key={user.id} value={user.id}>
-                                {user.name || user.email}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Input
-                          type="date"
-                          value={newSubtaskDeadline}
-                          onChange={(e) => setNewSubtaskDeadline(e.target.value)}
-                          className="w-[150px]"
-                          placeholder="Deadline"
-                        />
                         <Button
                           type="button"
+                          variant="ghost"
                           size="icon"
-                          onClick={addSubtask}
-                          disabled={!newSubtaskTitle.trim()}
+                          onClick={() => removeSubtask(subtask.id)}
+                          className="h-7 w-7 text-gray-400 hover:text-red-500 hover:bg-red-50"
                         >
-                          <Plus className="h-4 w-4" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
-                    </div>
+                    ))}
+                  </div>
+                )}
 
-                    {/* Subtasks List */}
-                    {pendingSubtasks.length > 0 && (
-                      <div className="space-y-2">
-                        <Label className="text-sm text-amber-800">
-                          {pendingSubtasks.length} subtask{pendingSubtasks.length !== 1 ? 's' : ''} to create
-                        </Label>
-                        <div className="space-y-2">
-                          {pendingSubtasks.map((subtask) => (
-                            <div
-                              key={subtask.id}
-                              className="flex items-center justify-between p-3 bg-white rounded-lg border border-amber-200"
-                            >
-                              <div className="flex items-center gap-3">
-                                <div className="w-2 h-2 rounded-full bg-amber-400" />
-                                <div>
-                                  <p className="text-sm font-medium">{subtask.title}</p>
-                                  <p className="text-xs text-muted-foreground">
-                                    Assigned to: {subtask.assignee?.name || subtask.assignee?.email || 'You'}
-                                    {subtask.dueDate && (
-                                      <span className="ml-2">• Due: {new Date(subtask.dueDate).toLocaleDateString()}</span>
-                                    )}
-                                  </p>
-                                </div>
-                              </div>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => removeSubtask(subtask.id)}
-                                className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {pendingSubtasks.length === 0 && (
-                      <div className="text-center py-4 text-amber-600">
-                        <ListTodo className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                        <p className="text-sm">No subtasks added yet</p>
-                        <p className="text-xs text-muted-foreground">
-                          Add subtasks above to break down this task
-                        </p>
-                      </div>
-                    )}
-                  </CardContent>
-                </CollapsibleContent>
-              </Card>
-            </Collapsible>
-          )}
-
-          {/* Task Type Selection */}
-          <Card className="border-2">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Task Type</CardTitle>
-              <CardDescription>Choose who will be involved in this task</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {(['INDIVIDUAL', 'TEAM', 'COLLABORATION'] as TaskType[]).map((type) => (
-                  <Card
-                    key={type}
-                    className={cn(
-                      "cursor-pointer transition-all hover:shadow-lg hover:scale-105 border-2",
-                      taskType === type 
-                        ? "ring-2 ring-primary border-primary bg-primary/5" 
-                        : "border-border hover:border-primary/50"
-                    )}
-                    onClick={() => form.setValue('taskType', type)}
-                  >
-                    <CardContent className="flex flex-col items-center justify-center p-6 space-y-3">
-                      <div className={cn(
-                        "p-3 rounded-full transition-colors",
-                        taskType === type 
-                          ? "bg-primary text-primary-foreground" 
-                          : "bg-muted"
-                      )}>
-                        {getTaskTypeIcon(type)}
-                      </div>
-                      <div className="text-center">
-                        <span className="text-sm font-semibold capitalize block">
-                          {type.toLowerCase()}
-                        </span>
-                        <span className="text-xs text-muted-foreground mt-1 block">
-                          {type === 'INDIVIDUAL' && 'Just you'}
-                          {type === 'TEAM' && 'You + team members'}
-                          {type === 'COLLABORATION' && 'You + collaborators'}
-                        </span>
-                      </div>
-                      {taskType === type && (
-                        <Badge className="bg-primary">
-                          Selected
-                        </Badge>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Task Type Specific Fields */}
-          {taskType === 'INDIVIDUAL' && (
-            <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-blue-100 rounded-full">
-                  <User className="h-4 w-4 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-blue-900">
-                    Individual Task
-                  </p>
-                  <p className="text-sm text-blue-700 mt-1">
-                    This task is assigned to you automatically. Perfect for personal work items.
-                  </p>
-                </div>
+                {pendingSubtasks.length === 0 && (
+                  <div className="text-center py-3 text-gray-400">
+                    <ListTodo className="h-7 w-7 mx-auto mb-1.5 opacity-40" />
+                    <p className="text-xs">No subtasks yet — add one above</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          {taskType === 'TEAM' && (
-            <Card className="border-2 border-purple-200 bg-purple-50/50">
-              <CardHeader className="pb-3">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 bg-purple-100 rounded-full">
-                    <Users className="h-5 w-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-base text-purple-900">Team Task</CardTitle>
-                    <CardDescription className="text-purple-700">
-                      You are the team leader. Select members to join this task.
-                    </CardDescription>
-                  </div>
+          {/* Assignment Section */}
+          <div>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider pb-2 border-b border-gray-100 mb-4">Assignment</p>
+            <div className="space-y-4">
+              {/* Task Type pill selector */}
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium text-gray-700">Task Type</Label>
+                <div className="flex gap-2">
+                  {(['INDIVIDUAL', 'TEAM', 'COLLABORATION'] as TaskType[]).map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => form.setValue('taskType', type)}
+                      className={cn(
+                        'flex items-center gap-1.5 flex-1 justify-center py-2 px-3 rounded-lg border text-xs font-semibold transition-all',
+                        taskType === type
+                          ? 'bg-gray-900 border-gray-900 text-white shadow-sm'
+                          : 'bg-white border-gray-200 text-gray-600 hover:border-gray-400'
+                      )}
+                    >
+                      {getTaskTypeIcon(type)}
+                      <span className="capitalize">{type.toLowerCase()}</span>
+                    </button>
+                  ))}
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-base">Team Members</Label>
+              </div>
+
+              {/* Individual info */}
+              {taskType === 'INDIVIDUAL' && (
+                <div className="px-3 py-2 bg-blue-50 border border-blue-100 rounded-lg">
+                  <p className="text-xs text-blue-700">This task is assigned to you automatically.</p>
+                </div>
+              )}
+
+              {/* Team members */}
+              {taskType === 'TEAM' && (
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-gray-700">Team Members</Label>
                   <SearchableMultiSelect
                     options={users.filter(u => u.id !== session?.user?.id) as SelectOption[]}
                     selected={selectedTeamMembers as SelectOption[]}
@@ -1388,28 +1214,12 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
                     emptyText="No team members available"
                   />
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              )}
 
-          {taskType === 'COLLABORATION' && (
-            <Card className="border-2 border-green-200 bg-green-50/50">
-              <CardHeader className="pb-3">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 bg-green-100 rounded-full">
-                    <Handshake className="h-5 w-5 text-green-600" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-base text-green-900">Collaboration Task</CardTitle>
-                    <CardDescription className="text-green-700">
-                      You are the primary assignee. Add collaborators to work together.
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-base">Collaborators</Label>
+              {/* Collaborators */}
+              {taskType === 'COLLABORATION' && (
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-gray-700">Collaborators</Label>
                   <SearchableMultiSelect
                     options={users.filter(u => u.id !== session?.user?.id) as SelectOption[]}
                     selected={selectedCollaborators as SelectOption[]}
@@ -1423,39 +1233,30 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
                     emptyText="No collaborators available"
                   />
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              )}
+            </div>
+          </div>
 
-          {/* Advanced Settings - Collapsible */}
+          {/* Additional Section */}
           <Collapsible>
-            <Card className="border-2">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100">
               <CollapsibleTrigger asChild>
-                <CardHeader className="pb-4 cursor-pointer hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-gray-100 rounded-lg">
-                        <Settings2 className="h-5 w-5 text-gray-600" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg">Advanced Settings</CardTitle>
-                        <CardDescription>Calendar integration and location</CardDescription>
-                      </div>
-                    </div>
-                    <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform duration-200" />
+                <div className="flex items-center justify-between px-5 py-3 cursor-pointer hover:bg-gray-50 transition-colors rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <Settings2 className="h-4 w-4 text-gray-400" />
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Additional Settings</p>
                   </div>
-                </CardHeader>
+                  <ChevronDown className="h-4 w-4 text-gray-400 transition-transform duration-200" />
+                </div>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <CardContent className="space-y-6 pt-0">
+                <div className="px-5 pb-5 space-y-4 border-t border-gray-100 pt-4">
                   {/* All Day Toggle */}
-                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border">
-                    <div className="space-y-1">
-                      <Label htmlFor="allDay" className="text-base font-semibold">All-day Task</Label>
-                      <p className="text-sm text-muted-foreground">
-                        {form.watch('allDay')
-                          ? 'Task can be done anytime during the selected day(s)'
-                          : 'Task has specific start and end times'}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor="allDay" className="text-sm font-medium text-gray-700">All-day Task</Label>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {form.watch('allDay') ? 'Task can be done anytime during the selected day(s)' : 'Task has specific start and end times'}
                       </p>
                     </div>
                     <Switch
@@ -1465,58 +1266,45 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Location */}
-                    <div className="space-y-3">
-                      <Label htmlFor="location" className="text-sm font-medium flex items-center gap-2">
-                        <span className="text-base">📍</span>
-                        Location
-                      </Label>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="location" className="text-sm font-medium text-gray-700">Location</Label>
                       <Input
                         id="location"
                         {...form.register('location')}
-                        placeholder="e.g., Conference Room A, Building 5"
-                        className="h-11"
+                        placeholder="e.g., Conference Room A"
+                        className="h-9 text-sm"
                       />
-                      <p className="text-xs text-muted-foreground">
-                        Physical location or address
-                      </p>
                     </div>
 
                     {/* Meeting Link */}
-                    <div className="space-y-3">
-                      <Label htmlFor="meetingLink" className="text-sm font-medium flex items-center gap-2">
-                        <span className="text-base">🔗</span>
-                        Meeting Link
-                      </Label>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="meetingLink" className="text-sm font-medium text-gray-700">Meeting Link</Label>
                       <Input
                         id="meetingLink"
                         {...form.register('meetingLink')}
                         placeholder="https://meet.google.com/..."
                         type="url"
-                        className="h-11"
+                        className="h-9 text-sm"
                       />
-                      <p className="text-xs text-muted-foreground">
-                        Virtual meeting URL (Meet, Zoom, Teams)
-                      </p>
                       {form.formState.errors.meetingLink && (
-                        <p className="text-xs text-red-500 flex items-center gap-1">
-                          <span>⚠</span> Please enter a valid URL
-                        </p>
+                        <p className="text-xs text-red-500">Please enter a valid URL</p>
                       )}
                     </div>
                   </div>
-
-                </CardContent>
+                </div>
               </CollapsibleContent>
-            </Card>
+            </div>
           </Collapsible>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          </div>
+
+          <DialogFooter className="pt-4 border-t border-gray-100 mt-2">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="rounded-lg">
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} className="rounded-lg">
               {loading ? 'Saving...' : task ? 'Update Task' : duplicateFrom ? 'Duplicate Task' : 'Create Task'}
             </Button>
           </DialogFooter>

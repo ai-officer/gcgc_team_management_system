@@ -60,6 +60,7 @@ model User {
   evaluationsGiven       TaskEvaluation[]    @relation("EvaluationGiven")
   evaluationsReceived    TaskEvaluation[]    @relation("EvaluationReceived")
   procurementsCreated    TaskProcurement[]   @relation("ProcurementCreator")
+  boards                 KanbanBoard[]       @relation("BoardOwner")
 
   @@map("users")
 }
@@ -167,6 +168,21 @@ model TeamMember {
   @@map("team_members")
 }
 
+model KanbanBoard {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  color       String   @default("#3B82F6")
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner User   @relation("BoardOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  tasks Task[]
+
+  @@map("kanban_boards")
+}
+
 model Task {
   id                    String             @id @default(cuid())
   title                 String
@@ -214,6 +230,9 @@ model Task {
   slaHours              Int?               // SLA target in hours (e.g. 8, 24, 48, 72)
   // Custom notification reminders
   reminderDays          Int[]              @default([]) // Days before deadline to send reminder
+  // Kanban board
+  boardId               String?
+  board                 KanbanBoard?       @relation(fields: [boardId], references: [id], onDelete: SetNull)
   // Relations
   parent                Task?              @relation("TaskSubtasks", fields: [parentId], references: [id], onDelete: Cascade)
   subtasks              Task[]             @relation("TaskSubtasks")

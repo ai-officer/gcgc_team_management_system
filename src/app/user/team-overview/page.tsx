@@ -159,6 +159,9 @@ export default function TeamOverviewPage() {
   const [selectedSectorHead, setSelectedSectorHead] = useState('')
   const [isCreatingUser, setIsCreatingUser] = useState(false)
 
+  // Search within Add Member — existing user picker
+  const [addMemberSearch, setAddMemberSearch] = useState('')
+
   // Profile modal state
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   const [selectedMemberIdForProfile, setSelectedMemberIdForProfile] = useState<string | null>(null)
@@ -456,6 +459,7 @@ export default function TeamOverviewPage() {
     setHotels([])
 
     setShowLivePreview(false)
+    setAddMemberSearch('')
   }
 
   // Wizard navigation functions
@@ -853,7 +857,6 @@ export default function TeamOverviewPage() {
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <CreateTaskButton size="sm" onTaskCreated={fetchTeamData} />
           <Dialog open={isAddMemberDialogOpen} onOpenChange={handleDialogOpenChange}>
             <DialogTrigger asChild>
               <Button className="shadow-sm">
@@ -935,9 +938,28 @@ export default function TeamOverviewPage() {
 
                   <div className="space-y-3">
                     <Label>Available Users</Label>
+                    {/* Search box */}
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                      <input
+                        type="text"
+                        placeholder="Search by name, email or position…"
+                        value={addMemberSearch}
+                        onChange={e => setAddMemberSearch(e.target.value)}
+                        className="w-full pl-9 pr-3 py-2 text-sm border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                      />
+                    </div>
                     {availableUsers.length > 0 ? (
                       <div className="space-y-2 max-h-60 overflow-y-auto">
-                        {availableUsers.map(user => (
+                        {availableUsers
+                          .filter(u => {
+                            const q = addMemberSearch.toLowerCase()
+                            return !q ||
+                              u.name?.toLowerCase().includes(q) ||
+                              u.email?.toLowerCase().includes(q) ||
+                              u.positionTitle?.toLowerCase().includes(q)
+                          })
+                          .map(user => (
                           <div
                             key={user.id}
                             className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 cursor-pointer transition-colors"
@@ -964,6 +986,16 @@ export default function TeamOverviewPage() {
                             <ArrowRight className="h-4 w-4 text-muted-foreground" />
                           </div>
                         ))}
+                        {addMemberSearch && !availableUsers.some(u => {
+                          const q = addMemberSearch.toLowerCase()
+                          return u.name?.toLowerCase().includes(q) ||
+                            u.email?.toLowerCase().includes(q) ||
+                            u.positionTitle?.toLowerCase().includes(q)
+                        }) && (
+                          <div className="text-center py-6 text-muted-foreground text-sm">
+                            No users match &ldquo;{addMemberSearch}&rdquo;
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div className="text-center py-8 text-muted-foreground">

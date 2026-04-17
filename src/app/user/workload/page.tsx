@@ -21,6 +21,10 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import MemberProfileModal from '@/components/shared/MemberProfileModal'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+
+const ITEMS_PER_PAGE = 9
 
 interface UserWorkload {
   id: string
@@ -44,6 +48,9 @@ export default function WorkloadPage() {
   const router = useRouter()
   const [workload, setWorkload] = useState<UserWorkload[]>([])
   const [loading, setLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.role !== 'LEADER' && session?.user?.role !== 'ADMIN') {
@@ -53,6 +60,7 @@ export default function WorkloadPage() {
 
   const fetchWorkload = async () => {
     setLoading(true)
+    setCurrentPage(1)
     try {
       const res = await fetch('/api/workload')
       if (res.ok) {
@@ -62,6 +70,11 @@ export default function WorkloadPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const openProfile = (id: string) => {
+    setSelectedMemberId(id)
+    setIsProfileOpen(true)
   }
 
   useEffect(() => { fetchWorkload() }, [])
@@ -113,6 +126,9 @@ export default function WorkloadPage() {
   const totalOverdue  = workload.reduce((s, u) => s + u.tasks.overdue, 0)
   const totalMembers  = workload.length
   const available     = workload.filter(u => u.tasks.todo + u.tasks.inProgress + u.tasks.inReview === 0 && u.tasks.overdue === 0).length
+
+  const totalPages    = Math.max(1, Math.ceil(workload.length / ITEMS_PER_PAGE))
+  const paginated     = workload.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
 
   return (
     <div className="space-y-8">
@@ -247,7 +263,7 @@ export default function WorkloadPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-          {workload.map(user => {
+          {paginated.map(user => {
             const level = getActivityLevel(user.tasks)
             const active = user.tasks.todo + user.tasks.inProgress + user.tasks.inReview
             const completionRate = user.tasks.total > 0
@@ -265,9 +281,10 @@ export default function WorkloadPage() {
               <Card
                 key={user.id}
                 className={cn(
-                  "bg-white rounded-xl border border-slate-200 border-l-4 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5",
+                  "group bg-white rounded-xl border border-slate-200 border-l-4 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 cursor-pointer",
                   level.accent
                 )}
+                onClick={() => openProfile(user.id)}
               >
                 {/* Member Header */}
                 <CardHeader className="pb-3 pt-5">
@@ -352,12 +369,78 @@ export default function WorkloadPage() {
                     <p className="text-[10px] text-slate-400 mt-1">{active} active · {user.tasks.completed} completed</p>
                   </div>
 
+                  {/* View profile hint */}
+                  <div className="flex items-center justify-end pt-1">
+                    <span className="text-xs text-blue-500 font-medium flex items-center gap-1 group-hover:gap-2 transition-all">
+                      View profile <ArrowRight className="h-3 w-3" />
+                    </span>
+                  </div>
+
                 </CardContent>
               </Card>
             )
           })}
         </div>
       )}
+
+      {/* ── Pagination ── */}
+      {!loading && workload.length > ITEMS_PER_PAGE && (
+        <div className="flex items-center justify-between px-1">
+          <p className="text-sm text-slate-500">
+            Showing{' '}
+            <span className="font-semibold text-slate-700">
+              {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, workload.length)}
+            </span>{' '}
+            of <span className="font-semibold text-slate-700">{workload.length}</span> members
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40"
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+            </Button>
+
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={cn(
+                    "h-8 w-8 rounded-lg text-sm font-medium transition-all",
+                    page === currentPage
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "text-slate-600 hover:bg-slate-100"
+                  )}
+                >
+                  {page}
+                </button>
+              ))}
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40"
+            >
+              Next <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Member Profile Modal ── */}
+      <MemberProfileModal
+        isOpen={isProfileOpen}
+        onClose={() => { setIsProfileOpen(false); setSelectedMemberId(null) }}
+        memberId={selectedMemberId}
+      />
+
     </div>
   )
 }

@@ -373,250 +373,163 @@ export default function MemberManagementPage() {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Professional Glassmorphism Header */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-slate-50 to-purple-50 opacity-60"></div>
-        <div className="relative backdrop-blur-sm bg-white/40 border border-slate-200/60 rounded-xl shadow-sm p-8">
-          <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-start">
-            <div className="space-y-2">
-              <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Member Management</h1>
-              <p className="text-slate-600 text-base font-medium max-w-2xl">
-                Assign tasks, track progress, and optimize team workload distribution
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button className="shadow-sm" onClick={() => setIsCreateTaskDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Assign Task
-              </Button>
-            </div>
-          </div>
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Member Management</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Assign tasks, track progress, and optimize team workload</p>
         </div>
+        <Button onClick={() => setIsCreateTaskDialogOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Assign Task
+        </Button>
       </div>
 
-      {/* Team Stats Dashboard - Professional */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl hover:-translate-y-1">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-blue-600"></div>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Total Tasks</CardTitle>
-            <div className="p-2.5 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
-              <BarChart3 className="h-5 w-5 text-blue-600" />
+      {/* Stat Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="bg-white rounded-xl shadow-sm border border-gray-100">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Tasks</span>
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <BarChart3 className="h-4 w-4 text-blue-600" />
+              </div>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-baseline gap-2">
-              <div className="text-4xl font-bold text-slate-900">{teamStats.totalTasks}</div>
-              <span className="text-sm text-slate-500 font-medium">tasks</span>
-            </div>
-            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-              <span className="text-xs text-slate-500">Assigned to {teamStats.totalMembers} members</span>
-              <BarChart3 className="h-4 w-4 text-blue-600" />
-            </div>
+            <div className="text-3xl font-bold text-gray-900">{teamStats.totalTasks}</div>
+            <p className="text-xs text-gray-500 mt-1">{teamStats.totalMembers} members</p>
           </CardContent>
         </Card>
 
-        <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl hover:-translate-y-1">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-purple-600"></div>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">In Progress</CardTitle>
-            <div className="p-2.5 bg-purple-50 rounded-lg group-hover:bg-purple-100 transition-colors">
-              <Activity className="h-5 w-5 text-purple-600" />
+        <Card className="bg-white rounded-xl shadow-sm border border-gray-100">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">In Progress</span>
+              <div className="p-2 bg-purple-50 rounded-lg">
+                <Activity className="h-4 w-4 text-purple-600" />
+              </div>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-baseline gap-2">
-              <div className="text-4xl font-bold text-slate-900">{teamStats.inProgressTasks}</div>
-              <span className="text-sm text-slate-500 font-medium">active</span>
-            </div>
-            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-              <span className="text-xs text-slate-500">Active work items</span>
-              <Activity className="h-4 w-4 text-purple-600" />
-            </div>
+            <div className="text-3xl font-bold text-gray-900">{teamStats.inProgressTasks}</div>
+            <p className="text-xs text-gray-500 mt-1">Active work items</p>
           </CardContent>
         </Card>
 
-        <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl hover:-translate-y-1">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-emerald-600"></div>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Completed</CardTitle>
-            <div className="p-2.5 bg-emerald-50 rounded-lg group-hover:bg-emerald-100 transition-colors">
-              <Award className="h-5 w-5 text-emerald-600" />
+        <Card className="bg-white rounded-xl shadow-sm border border-gray-100">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Completed</span>
+              <div className="p-2 bg-emerald-50 rounded-lg">
+                <Award className="h-4 w-4 text-emerald-600" />
+              </div>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-baseline gap-2">
-              <div className="text-4xl font-bold text-slate-900">{teamStats.completedTasks}</div>
-              <span className="text-sm text-slate-500 font-medium">done</span>
-            </div>
-            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-              <span className="text-xs text-slate-500">Tasks finished</span>
-              <Award className="h-4 w-4 text-emerald-600" />
-            </div>
+            <div className="text-3xl font-bold text-gray-900">{teamStats.completedTasks}</div>
+            <p className="text-xs text-gray-500 mt-1">Tasks finished</p>
           </CardContent>
         </Card>
 
         <Card className={cn(
-          "group relative overflow-hidden border bg-white hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl hover:-translate-y-1",
-          teamStats.urgentTasks + teamStats.overdueTasks > 0 ? "border-red-200" : "border-slate-200"
+          "bg-white rounded-xl shadow-sm border",
+          teamStats.urgentTasks + teamStats.overdueTasks > 0 ? "border-red-100" : "border-gray-100"
         )}>
-          <div className={cn(
-            "absolute top-0 left-0 w-full h-1 bg-gradient-to-r",
-            teamStats.urgentTasks + teamStats.overdueTasks > 0 ? "from-red-500 to-red-600" : "from-slate-300 to-slate-400"
-          )}></div>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Urgent & Overdue</CardTitle>
-            <div className={cn(
-              "p-2.5 rounded-lg transition-colors",
-              teamStats.urgentTasks + teamStats.overdueTasks > 0 ? "bg-red-50 group-hover:bg-red-100" : "bg-slate-50 group-hover:bg-slate-100"
-            )}>
-              <AlertTriangle className={cn(
-                "h-5 w-5",
-                teamStats.urgentTasks + teamStats.overdueTasks > 0 ? "text-red-600" : "text-slate-400"
-              )} />
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Urgent & Overdue</span>
+              <div className={cn("p-2 rounded-lg", teamStats.urgentTasks + teamStats.overdueTasks > 0 ? "bg-red-50" : "bg-gray-50")}>
+                <AlertTriangle className={cn("h-4 w-4", teamStats.urgentTasks + teamStats.overdueTasks > 0 ? "text-red-500" : "text-gray-400")} />
+              </div>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-baseline gap-2">
-              <div className={cn(
-                "text-4xl font-bold",
-                teamStats.urgentTasks + teamStats.overdueTasks > 0 ? "text-slate-900" : "text-slate-400"
-              )}>{teamStats.urgentTasks + teamStats.overdueTasks}</div>
-              <span className="text-sm text-slate-500 font-medium">tasks</span>
+            <div className={cn("text-3xl font-bold", teamStats.urgentTasks + teamStats.overdueTasks > 0 ? "text-red-600" : "text-gray-400")}>
+              {teamStats.urgentTasks + teamStats.overdueTasks}
             </div>
-            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-              <span className="text-xs text-slate-500">
-                {teamStats.urgentTasks} urgent • {teamStats.overdueTasks} overdue
-              </span>
-              <AlertTriangle className={cn(
-                "h-4 w-4",
-                teamStats.urgentTasks + teamStats.overdueTasks > 0 ? "text-red-600" : "text-slate-400"
-              )} />
-            </div>
+            <p className="text-xs text-gray-500 mt-1">{teamStats.urgentTasks} urgent · {teamStats.overdueTasks} overdue</p>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Team Members Sidebar - Professional */}
-        <Card className="lg:col-span-1 border border-slate-200 rounded-xl bg-white shadow-sm">
-          <CardHeader className="pb-4 border-b border-slate-100">
-            <CardTitle className="flex items-center gap-2 text-lg font-semibold text-slate-900">
-              <div className="p-2 bg-blue-50 rounded-lg">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 items-start">
+        {/* Team Members Sidebar */}
+        <Card className="lg:col-span-1 bg-white rounded-xl shadow-sm border border-gray-100">
+          <CardHeader className="pb-3 border-b border-gray-100 px-4 pt-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold text-gray-900 flex items-center gap-2">
                 <UserCheck className="h-4 w-4 text-blue-600" />
-              </div>
-              Team Members
-            </CardTitle>
-            <CardDescription className="text-sm text-slate-600 font-medium">
-              {teamMembers.length} member{teamMembers.length !== 1 ? 's' : ''}
-            </CardDescription>
+                Team Members
+              </CardTitle>
+              <span className="text-xs text-gray-400 font-medium">{teamMembers.length}</span>
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
+          <CardContent className="p-3">
+            <div className="space-y-2">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
                 <Input
                   placeholder="Search members..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 border-slate-200 rounded-lg bg-white focus:border-blue-500 focus:ring-blue-500"
+                  className="pl-9 h-8 text-sm border-gray-200 rounded-lg bg-gray-50 focus:bg-white"
                 />
               </div>
 
-              <div className="space-y-2 max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
-                <div
+              <div className="space-y-1 max-h-[620px] overflow-y-auto">
+                {/* All Members row */}
+                <button
                   className={cn(
-                    "flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-all",
-                    !selectedMember
-                      ? 'bg-blue-50 border border-blue-200'
-                      : 'bg-white border border-slate-200 hover:border-blue-200 hover:bg-slate-50'
+                    "w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors",
+                    !selectedMember ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'
                   )}
                   onClick={() => setSelectedMember('')}
                 >
-                  <div className={cn(
-                    "p-2 rounded-lg",
-                    !selectedMember ? 'bg-blue-100' : 'bg-slate-100'
-                  )}>
-                    <Users className={cn(
-                      "h-4 w-4",
-                      !selectedMember ? 'text-blue-600' : 'text-slate-600'
-                    )} />
+                  <div className={cn("p-1.5 rounded-md", !selectedMember ? 'bg-blue-100' : 'bg-gray-100')}>
+                    <Users className="h-3.5 w-3.5" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={cn(
-                      "font-semibold text-sm",
-                      !selectedMember ? 'text-blue-900' : 'text-slate-900'
-                    )}>
-                      All Members
-                    </p>
-                    <p className={cn(
-                      "text-xs font-medium",
-                      !selectedMember ? 'text-blue-600' : 'text-slate-600'
-                    )}>
-                      View all tasks
-                    </p>
+                    <p className="text-sm font-medium truncate">All Members</p>
+                    <p className="text-[11px] text-gray-400">{teamStats.totalTasks} tasks</p>
                   </div>
-                </div>
+                </button>
 
                 {filteredMembers.length === 0 ? (
-                  <p className="text-center text-slate-600 py-4 text-sm font-medium">
+                  <p className="text-center text-gray-400 py-4 text-xs">
                     {searchTerm ? 'No members match' : 'No members found'}
                   </p>
                 ) : (
-                  filteredMembers.map((member) => (
-                    <div
-                      key={member.id}
-                      className={cn(
-                        "flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-all group",
-                        selectedMember === member.id
-                          ? 'bg-blue-50 border border-blue-200'
-                          : 'bg-white border border-slate-200 hover:border-blue-200 hover:bg-slate-50'
-                      )}
-                      onClick={() => setSelectedMember(member.id === selectedMember ? '' : member.id)}
-                    >
-                      <Avatar className="h-10 w-10 ring-2 rounded-lg group-hover:ring-blue-400 transition-all ring-slate-200">
-                        <AvatarImage src={member.image} />
-                        <AvatarFallback className="bg-blue-100 text-blue-700 font-bold rounded-lg">
-                          {member.name ? member.name.split(' ').map(n => n[0]).join('') : member.email[0].toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm truncate text-slate-900">
-                          {member.name || 'Unnamed User'}
-                        </p>
-                        <p className="text-xs text-slate-600 truncate font-medium">
-                          {member.email}
-                        </p>
-                        {(() => {
-                          const stats = memberSuggestions.find(s => s.id === member.id)
-                          const workload = stats?.workloadPercentage ?? 0
-                          const total = stats?.taskCounts?.total ?? member._count?.assignedTasks ?? 0
-                          return (
-                            <div className="mt-1.5 space-y-1">
-                              <div className="flex items-center justify-between">
-                                <span className="text-[10px] text-slate-500">{total} active task{total !== 1 ? 's' : ''}</span>
-                                <span className={cn(
-                                  "text-[10px] font-medium",
-                                  workload >= 80 ? "text-red-600" : workload >= 50 ? "text-amber-600" : "text-green-600"
-                                )}>{Math.round(workload)}%</span>
-                              </div>
-                              <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-                                <div
-                                  className={cn(
-                                    "h-full rounded-full transition-all",
-                                    workload >= 80 ? "bg-red-500" : workload >= 50 ? "bg-amber-500" : "bg-green-500"
-                                  )}
-                                  style={{ width: `${Math.min(workload, 100)}%` }}
-                                />
-                              </div>
+                  filteredMembers.map((member) => {
+                    const stats = memberSuggestions.find(s => s.id === member.id)
+                    const workload = stats?.workloadPercentage ?? 0
+                    const total = stats?.taskCounts?.total ?? member._count?.assignedTasks ?? 0
+                    const isSelected = selectedMember === member.id
+                    return (
+                      <button
+                        key={member.id}
+                        className={cn(
+                          "w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors",
+                          isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'
+                        )}
+                        onClick={() => setSelectedMember(isSelected ? '' : member.id)}
+                      >
+                        <Avatar className="h-8 w-8 shrink-0">
+                          <AvatarImage src={member.image} />
+                          <AvatarFallback className={cn("text-xs font-semibold", isSelected ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-600")}>
+                            {member.name ? member.name.split(' ').map(n => n[0]).join('') : member.email[0].toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className={cn("text-sm font-medium truncate", isSelected ? "text-blue-900" : "text-gray-800")}>
+                            {member.name || 'Unnamed User'}
+                          </p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <div className="h-1 flex-1 rounded-full bg-gray-100 overflow-hidden">
+                              <div
+                                className={cn("h-full rounded-full", workload >= 80 ? "bg-red-400" : workload >= 50 ? "bg-amber-400" : "bg-green-400")}
+                                style={{ width: `${Math.min(workload, 100)}%` }}
+                              />
                             </div>
-                          )
-                        })()}
-                      </div>
-                    </div>
-                  ))
+                            <span className="text-[10px] text-gray-400 shrink-0">{total}t</span>
+                          </div>
+                        </div>
+                      </button>
+                    )
+                  })
                 )}
               </div>
             </div>
@@ -625,35 +538,34 @@ export default function MemberManagementPage() {
 
         {/* Tasks Area */}
         <div className="lg:col-span-3">
-          <Card className="border border-slate-200 rounded-xl shadow-sm">
-            <CardHeader className="border-b border-slate-100 bg-white rounded-t-xl">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                  <CardTitle className="flex items-center gap-2 text-slate-900 font-semibold">
-                    <div className="p-2 bg-blue-50 rounded-lg">
-                      <Target className="h-4 w-4 text-blue-600" />
-                    </div>
-                    {selectedMember
-                      ? `Tasks for ${teamMembers.find(m => m.id === selectedMember)?.name || 'Selected Member'}`
-                      : 'All Team Tasks'
-                    }
-                  </CardTitle>
-                  <CardDescription className="mt-1 text-slate-600 font-medium">
-                    {selectedMember
-                      ? 'Tasks assigned to the selected member'
-                      : 'Tasks assigned to all team members'}
-                  </CardDescription>
+          <Card className="bg-white rounded-xl shadow-sm border border-gray-100">
+            <CardHeader className="border-b border-gray-100 px-5 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Target className="h-4 w-4 text-blue-600 shrink-0" />
+                  <div className="min-w-0">
+                    <h2 className="text-sm font-semibold text-gray-900 truncate">
+                      {selectedMember
+                        ? `${teamMembers.find(m => m.id === selectedMember)?.name || 'Member'}'s Tasks`
+                        : 'All Team Tasks'
+                      }
+                    </h2>
+                    <p className="text-xs text-gray-400">
+                      {filteredTasks.length} task{filteredTasks.length !== 1 ? 's' : ''}
+                      {statusFilter !== 'all' ? ` · ${statusFilter.replace('_', ' ')}` : ''}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <Select value={statusFilter} onValueChange={(value: StatusFilter) => setStatusFilter(value)}>
-                    <SelectTrigger className="w-[180px] border-slate-200 rounded-lg bg-white">
-                      <div className="flex items-center gap-2">
-                        <Filter className="h-4 w-4 text-slate-600" />
+                    <SelectTrigger className="w-[140px] h-8 text-xs border-gray-200 rounded-lg bg-gray-50">
+                      <div className="flex items-center gap-1.5">
+                        <Filter className="h-3 w-3 text-gray-500" />
                         <SelectValue placeholder="Status" />
                       </div>
                     </SelectTrigger>
-                    <SelectContent className="border border-slate-200 rounded-lg shadow-lg">
+                    <SelectContent>
                       <SelectItem value="all">All Status</SelectItem>
                       <SelectItem value="TODO">To Do</SelectItem>
                       <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
@@ -664,12 +576,12 @@ export default function MemberManagementPage() {
 
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="icon" className="rounded-lg bg-white hover:bg-blue-50">
-                        <MoreHorizontal className="h-4 w-4" />
+                      <Button variant="outline" size="sm" className="h-8 px-2 rounded-lg bg-gray-50 border-gray-200">
+                        <MoreHorizontal className="h-4 w-4 text-gray-500" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="rounded-lg">
-                      <DropdownMenuLabel className="font-semibold">View Mode</DropdownMenuLabel>
+                      <DropdownMenuLabel className="font-semibold text-xs text-gray-500 uppercase tracking-wide">View Mode</DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => setViewMode('list')}>
                         <ListTodo className="h-4 w-4 mr-2" />
@@ -684,7 +596,7 @@ export default function MemberManagementPage() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="bg-gray-50">
+            <CardContent className="p-4 bg-gray-50/50">
               {filteredTasks.length === 0 ? (
                 <div className="text-center py-16">
                   <CheckSquare className="h-16 w-16 text-gray-300 mx-auto mb-4" />
@@ -703,90 +615,90 @@ export default function MemberManagementPage() {
                   </Button>
                 </div>
               ) : viewMode === 'list' ? (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {filteredTasks.map((task) => (
-                    <div key={task.id} className="p-4 border border-gray-100 rounded-lg bg-white hover:bg-gray-50 transition-all duration-200 group">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="space-y-2 flex-1">
-                          <h4 className="font-semibold text-gray-900">{task.title}</h4>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Badge className={cn("text-xs border", getPriorityColor(task.priority))}>
-                              {task.priority}
-                            </Badge>
-                            <Badge className={cn("text-xs border", getStatusColor(task.status))}>
-                              {task.status.replace('_', ' ')}
-                            </Badge>
-                            {task.dueDate && (
-                              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                Due {format(new Date(task.dueDate), 'MMM dd, yyyy')}
-                              </span>
-                            )}
-                          </div>
-                        </div>
+                    <div
+                      key={task.id}
+                      className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow group"
+                    >
+                      <div className="flex items-start gap-3 p-4">
+                        {/* Left accent by status */}
+                        <div className={cn(
+                          "w-1 self-stretch rounded-full shrink-0",
+                          task.status === 'COMPLETED' ? "bg-green-400" :
+                          task.status === 'IN_PROGRESS' ? "bg-blue-400" :
+                          task.status === 'IN_REVIEW' ? "bg-amber-400" : "bg-gray-200"
+                        )} />
 
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => setViewingTask(task)}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Details
-                            </DropdownMenuItem>
-                            {canDeleteTask(task) && (
-                              <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  className="text-red-600 focus:text-red-600"
-                                  onClick={() => setDeletingTask(task)}
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-sm text-gray-900 truncate">{task.title}</h4>
+                              {task.description && (
+                                <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{task.description}</p>
+                              )}
+                            </div>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => setViewingTask(task)}>
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View Details
                                 </DropdownMenuItem>
-                              </>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-
-                      {task.description && (
-                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{task.description}</p>
-                      )}
-
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          {task.team ? (
-                            <Badge variant="outline" className="text-xs">
-                              <Users className="h-3 w-3 mr-1" />
-                              {task.team.name}
-                            </Badge>
-                          ) : (
-                            <Badge variant="secondary" className="text-xs">
-                              <User className="h-3 w-3 mr-1" />
-                              Individual
-                            </Badge>
-                          )}
-                        </div>
-
-                        {task.assignee && (
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-6 w-6 ring-2 ring-transparent hover:ring-primary/20 transition-all">
-                              <AvatarImage src={task.assignee.image || undefined} />
-                              <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-medium text-xs">
-                                {task.assignee.name ?
-                                  task.assignee.name.split(' ').map(n => n[0]).join('') :
-                                  task.assignee.email[0].toUpperCase()
-                                }
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="text-xs text-muted-foreground">
-                              {task.assignee.name || task.assignee.email}
-                            </span>
+                                {canDeleteTask(task) && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      className="text-red-600 focus:text-red-600"
+                                      onClick={() => setDeletingTask(task)}
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
-                        )}
+
+                          <div className="flex items-center justify-between mt-2 gap-2">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <Badge className={cn("text-[10px] px-1.5 py-0 h-5 border", getPriorityColor(task.priority))}>
+                                {task.priority}
+                              </Badge>
+                              <Badge className={cn("text-[10px] px-1.5 py-0 h-5 border", getStatusColor(task.status))}>
+                                {task.status.replace('_', ' ')}
+                              </Badge>
+                              {task.dueDate && (
+                                <span className="text-[11px] text-gray-400 flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {format(new Date(task.dueDate), 'MMM d, yyyy')}
+                                </span>
+                              )}
+                            </div>
+
+                            {task.assignee && (
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <Avatar className="h-5 w-5">
+                                  <AvatarImage src={task.assignee.image || undefined} />
+                                  <AvatarFallback className="bg-blue-100 text-blue-700 text-[9px] font-semibold">
+                                    {task.assignee.name ?
+                                      task.assignee.name.split(' ').map(n => n[0]).join('') :
+                                      task.assignee.email[0].toUpperCase()
+                                    }
+                                  </AvatarFallback>
+                                </Avatar>
+                                <span className="text-xs text-gray-500 truncate max-w-[100px]">
+                                  {task.assignee.name || task.assignee.email}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -925,7 +837,7 @@ export default function MemberManagementPage() {
       <TaskViewModal
         open={!!viewingTask}
         onOpenChange={(open) => { if (!open) setViewingTask(null) }}
-        task={viewingTask}
+        task={viewingTask as any}
         onTaskUpdate={() => { fetchData(); fetchMemberSuggestions() }}
       />
 

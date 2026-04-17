@@ -861,15 +861,15 @@ export default function TeamOverviewPage() {
                 Add Member
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-[95vw] max-h-[95vh] overflow-hidden flex flex-col">
-              <DialogHeader>
+            <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] flex flex-col">
+              <DialogHeader className="shrink-0">
                 <DialogTitle>Add Team Member</DialogTitle>
                 <DialogDescription>
                   Choose how you'd like to add a new member to your team.
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="flex-1 overflow-y-auto">
+              <div className="flex-1 overflow-y-auto px-1 pb-4">
               {!addMemberMode && !showPreview && (
                 <div className="space-y-4">
                   {/* Step 1: Choose Method */}
@@ -982,7 +982,7 @@ export default function TeamOverviewPage() {
               )}
 
               {addMemberMode === 'create' && (
-                <div className="flex flex-col h-full space-y-4">
+                <div className="flex flex-col space-y-4">
                   {/* Step Indicator */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -1014,9 +1014,9 @@ export default function TeamOverviewPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 flex-1 min-h-0">
+                  <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                     {/* Left Column - Form */}
-                    <div className="xl:col-span-2 space-y-4 overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                    <div className="xl:col-span-2 space-y-4">
 
                   {/* Step-based form content */}
                   {createUserStep === 'group-setup' && (
@@ -1481,12 +1481,10 @@ export default function TeamOverviewPage() {
                     </div>
 
                     {/* Right Column - Live Preview */}
-                    <div className="xl:col-span-1 space-y-4 overflow-y-auto pl-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                      <div className="sticky top-0 bg-white z-10 pb-2">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Eye className="h-4 w-4" />
-                          Live Preview
-                        </div>
+                    <div className="xl:col-span-1 space-y-3">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Eye className="h-4 w-4" />
+                        Live Preview
                       </div>
 
                         {showLivePreview && (
@@ -1570,7 +1568,6 @@ export default function TeamOverviewPage() {
                             </CardContent>
                           </Card>
                         )}
-                      </div>
                     </div>
 
                   {/* Step Navigation */}

@@ -1446,102 +1446,105 @@ export default function TaskViewModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        {/* Simple Header */}
-        <DialogHeader className="space-y-4 pr-8">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 space-y-2 min-w-0">
-              <div className="flex items-center gap-2">
-                {getTaskTypeIcon(task.taskType)}
-                <DialogTitle className="text-xl font-semibold truncate">
-                  {task.title}
-                </DialogTitle>
-              </div>
-              <DialogDescription className="text-sm text-gray-600">
-                Created by {task.creator?.name || task.creator?.email || 'Unknown'} on {format(new Date(task.createdAt), 'MMM dd, yyyy')}
+      <DialogContent className="max-w-3xl overflow-hidden p-0 gap-0">
+        {/* ── HEADER ── */}
+        <DialogHeader className="px-6 pt-6 pb-4 border-b border-gray-100 space-y-3 pr-12">
+          {/* Title row */}
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="mt-0.5 text-gray-400 flex-shrink-0">
+              {getTaskTypeIcon(task.taskType)}
+            </div>
+            <div className="flex-1 min-w-0">
+              <DialogTitle className="text-xl font-semibold text-gray-900 leading-tight">
+                {task.title}
+              </DialogTitle>
+              <DialogDescription className="mt-1 text-sm text-gray-500">
+                #{task.id.slice(-8).toUpperCase()} · Created {format(new Date(task.createdAt), 'MMM dd, yyyy')}
+                {task.creator && (
+                  <> by <span className="text-gray-700 font-medium">{task.creator.name || task.creator.email}</span></>
+                )}
                 {task.assignedBy && task.assignedBy.id !== task.creator?.id && (
-                  <> • Assigned by {task.assignedBy.name || task.assignedBy.email}</>
+                  <> · Assigned by <span className="text-gray-700 font-medium">{task.assignedBy.name || task.assignedBy.email}</span></>
                 )}
               </DialogDescription>
             </div>
-
-            {/* Action buttons - positioned to avoid X button overlap */}
-            <div className="flex items-center gap-2 shrink-0">
-              {onDuplicate && (
-                <Button variant="outline" size="sm" onClick={() => { onDuplicate(task); onOpenChange(false) }}>
-                  <Copy className="h-4 w-4 mr-2" />
-                  Duplicate
-                </Button>
-              )}
-              {isTaskCreator && (
-                <Button variant="outline" size="sm" onClick={handleEdit}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
-                </Button>
-              )}
-            </div>
-          </div>
-
-          {/* Status and Priority Badges */}
-          <div className="flex items-center gap-3">
-            <Badge variant="secondary" className={getPriorityColor(task.priority)}>
+            {/* Priority badge */}
+            <span className={`flex-shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+              task.priority === 'URGENT' ? 'bg-red-100 text-red-700' :
+              task.priority === 'HIGH' ? 'bg-orange-100 text-orange-700' :
+              task.priority === 'MEDIUM' ? 'bg-amber-100 text-amber-700' :
+              'bg-green-100 text-green-700'
+            }`}>
               {task.priority}
-            </Badge>
-            <Badge variant="secondary" className={getStatusColor(task.status)}>
-              {formatStatus(task.status)}
-            </Badge>
-            <Badge variant="outline">
-              {task.taskType.replace('_', ' ')}
-            </Badge>
+            </span>
           </div>
 
-          {/* Progress Bar - Editable for assignees */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Progress</span>
+          {/* Status pill row */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {(['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED'] as const).map((s) => (
+              <span
+                key={s}
+                className={`inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
+                  task.status === s
+                    ? s === 'TODO'
+                      ? 'bg-gray-100 text-gray-800 border-gray-300 shadow-sm'
+                      : s === 'IN_PROGRESS'
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                      : s === 'IN_REVIEW'
+                      ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
+                      : 'bg-green-600 text-white border-green-600 shadow-sm'
+                    : 'bg-white text-gray-400 border-gray-200'
+                }`}
+              >
+                {s === 'TODO' ? 'To Do' : s === 'IN_PROGRESS' ? 'In Progress' : s === 'IN_REVIEW' ? 'In Review' : 'Completed'}
+              </span>
+            ))}
+            <span className="ml-2 inline-flex items-center px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 text-xs font-medium border border-gray-200">
+              {task.taskType.replace('_', ' ')}
+            </span>
+            {task.recurringParentId && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-medium border border-blue-200">
+                <RefreshCw className="h-3 w-3" />
+                Recurring
+              </span>
+            )}
+          </div>
+
+          {/* Progress bar */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-gray-500 font-medium">Progress</span>
               {isEditingProgress ? (
                 <div className="flex items-center gap-2">
-                  <span className="font-medium">{localProgress}%</span>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 w-6 p-0"
+                  <span className="font-semibold text-gray-700">{localProgress}%</span>
+                  <button
                     onClick={handleProgressUpdate}
                     disabled={savingProgress}
+                    className="h-5 w-5 flex items-center justify-center rounded text-green-600 hover:bg-green-50"
                   >
                     {savingProgress ? (
-                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-600" />
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-green-600" />
                     ) : (
-                      <Check className="h-3 w-3 text-green-600" />
+                      <Check className="h-3 w-3" />
                     )}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 w-6 p-0"
-                    onClick={() => {
-                      setIsEditingProgress(false)
-                      setLocalProgress(task.progressPercentage)
-                    }}
+                  </button>
+                  <button
+                    onClick={() => { setIsEditingProgress(false); setLocalProgress(task.progressPercentage) }}
+                    className="h-5 w-5 flex items-center justify-center rounded text-gray-400 hover:bg-gray-100"
                   >
-                    <X className="h-3 w-3 text-gray-500" />
-                  </Button>
+                    <X className="h-3 w-3" />
+                  </button>
                 </div>
               ) : (
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{task.progressPercentage}%</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-semibold text-gray-700">{task.progressPercentage}%</span>
                   {canAddSubtasks && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 px-2 text-xs text-gray-500 hover:text-gray-700"
-                      onClick={() => {
-                        setLocalProgress(task.progressPercentage)
-                        setIsEditingProgress(true)
-                      }}
+                    <button
+                      onClick={() => { setLocalProgress(task.progressPercentage); setIsEditingProgress(true) }}
+                      className="h-5 w-5 flex items-center justify-center rounded text-gray-400 hover:bg-gray-100"
                     >
                       <Pencil className="h-3 w-3" />
-                    </Button>
+                    </button>
                   )}
                 </div>
               )}
@@ -1553,131 +1556,32 @@ export default function TaskViewModal({
                 max={canCompleteTask ? 100 : 90}
                 value={localProgress}
                 onChange={(e) => setLocalProgress(Number(e.target.value))}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                className="w-full h-1.5 bg-gray-200 rounded-full appearance-none cursor-pointer accent-blue-600"
               />
             ) : (
-              <Progress value={task.progressPercentage} className="h-2" />
+              <Progress value={task.progressPercentage} className="h-1.5" />
             )}
           </div>
         </DialogHeader>
 
-        {/* Content */}
-        <div className="space-y-6">
+        {/* ── SCROLLABLE BODY ── */}
+        <div className="max-h-[65vh] overflow-y-auto px-6 py-5 space-y-5">
+
           {/* Description */}
           {task.description && (
-            <div className="space-y-2">
-              <h4 className="font-medium text-gray-900">Description</h4>
-              <p className="text-gray-700 leading-relaxed">{task.description}</p>
+            <div className="bg-gray-50 rounded-lg p-4">
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Description</p>
+              <p className="text-sm text-gray-700 leading-relaxed">{task.description}</p>
             </div>
           )}
 
-          {/* Due Date */}
-          {task.dueDate && (
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2 text-sm">
-                <Clock className="h-4 w-4 text-gray-500" />
-                <span className="text-gray-600">Due:</span>
-                <span className="font-medium">{format(new Date(task.dueDate), 'EEEE, MMM dd, yyyy')}</span>
-                {(() => { const sot = new Date(); sot.setHours(0,0,0,0); return new Date(task.dueDate) < sot })() && task.status !== 'COMPLETED' && (
-                  <Badge variant="destructive" className="ml-2">Overdue</Badge>
-                )}
-                {/* Leader can extend due date for assignees */}
-                {(canCompleteTask || session?.user?.role === 'LEADER') && task.status !== 'COMPLETED' && (
-                  <button
-                    onClick={() => { setShowDueDateOverride(v => !v); setNewDueDate(task.dueDate ? task.dueDate.split('T')[0] : '') }}
-                    className="text-xs text-blue-500 hover:text-blue-700 underline ml-1"
-                  >
-                    {showDueDateOverride ? 'Cancel' : 'Extend'}
-                  </button>
-                )}
-              </div>
-              {showDueDateOverride && (
-                <div className="flex items-center gap-2 ml-6">
-                  <input
-                    type="date"
-                    value={newDueDate}
-                    min={new Date().toISOString().split('T')[0]}
-                    onChange={(e) => setNewDueDate(e.target.value)}
-                    className="text-xs border rounded px-2 py-1 h-7"
-                  />
-                  <Button
-                    size="sm"
-                    className="h-7 text-xs"
-                    disabled={!newDueDate || savingDueDate}
-                    onClick={async () => {
-                      if (!newDueDate || !task.id) return
-                      setSavingDueDate(true)
-                      try {
-                        const res = await fetch(`/api/tasks/${task.id}`, {
-                          method: 'PATCH',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ dueDate: new Date(newDueDate).toISOString() })
-                        })
-                        if (res.ok) {
-                          toast({ title: 'Due date updated' })
-                          setShowDueDateOverride(false)
-                          onTaskUpdate?.()
-                        } else {
-                          const err = await res.json()
-                          toast({ title: 'Error', description: err.error, variant: 'destructive' })
-                        }
-                      } catch (e) { console.error(e) } finally { setSavingDueDate(false) }
-                    }}
-                  >
-                    {savingDueDate ? 'Saving...' : <Check className="h-3 w-3" />}
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* SLA + Weight display */}
-          {(task.slaHours || task.taskWeight) && (
-            <div className="flex items-center gap-3 text-xs flex-wrap">
-              {task.taskWeight && (
-                <span className="flex items-center gap-1 text-amber-600">
-                  {'★'.repeat(task.taskWeight)}{'☆'.repeat(5 - task.taskWeight)}
-                  <span className="text-gray-500 ml-1">Weight {task.taskWeight}/5</span>
-                </span>
-              )}
-              {task.slaHours && (() => {
-                const createdMs = new Date(task.createdAt).getTime()
-                const slaDeadline = new Date(createdMs + task.slaHours! * 60 * 60 * 1000)
-                const breached = new Date() > slaDeadline && task.status !== 'COMPLETED'
-                const slaDays = task.slaHours! >= 168 ? `${task.slaHours! / 168}w` : task.slaHours! >= 24 ? `${task.slaHours! / 24}d` : `${task.slaHours!}h`
-                return (
-                  <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full border ${breached ? 'bg-red-50 text-red-700 border-red-200 font-semibold' : 'bg-gray-50 text-gray-600 border-gray-200'}`}>
-                    {breached ? '⚠ SLA Breached' : `SLA: ${slaDays}`}
-                  </span>
-                )
-              })()}
-            </div>
-          )}
-
-          {/* People Involved */}
-          <div className="space-y-3">
-            <h4 className="font-medium text-gray-900">People</h4>
-            
-            <div className="space-y-2">
-              {/* Creator */}
-              {task.creator && (
-                <div className="flex items-center gap-2 text-sm">
-                  <UserAvatar
-                    userId={task.creator.id}
-                    image={task.creator.image}
-                    name={task.creator.name}
-                    email={task.creator.email}
-                    className="h-6 w-6"
-                    fallbackClassName="text-xs"
-                  />
-                  <span className="text-gray-600">Creator:</span>
-                  <span className="font-medium">{task.creator.name || task.creator.email}</span>
-                </div>
-              )}
-
-              {/* Assignee */}
-              {task.assignee && (
-                <div className="flex items-center gap-2 text-sm">
+          {/* Meta info grid */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {/* Assignee */}
+            {task.assignee && (
+              <div className="bg-gray-50 rounded-lg p-3 space-y-1">
+                <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Assignee</p>
+                <div className="flex items-center gap-2">
                   <UserAvatar
                     userId={task.assignee.id}
                     image={task.assignee.image}
@@ -1686,329 +1590,358 @@ export default function TaskViewModal({
                     className="h-6 w-6"
                     fallbackClassName="text-xs"
                   />
-                  <span className="text-gray-600">Assigned to:</span>
-                  <span className="font-medium">{task.assignee.name || task.assignee.email}</span>
+                  <span className="text-sm font-medium text-gray-900 truncate">{task.assignee.name || task.assignee.email}</span>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Team Members */}
-              {task.taskType === 'TEAM' && task.teamMembers && task.teamMembers.length > 0 && (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Users className="h-4 w-4 text-gray-500" />
-                    <span className="text-gray-600">Team ({task.teamMembers.length}):</span>
-                  </div>
-                  <div className="ml-6 space-y-1">
-                    {task.teamMembers.map((member) => (
-                      <div key={member.userId} className="flex items-center gap-2 text-sm">
-                        <UserAvatar
-                          userId={member.user.id}
-                          image={member.user.image}
-                          name={member.user.name}
-                          email={member.user.email}
-                          className="h-5 w-5"
-                          fallbackClassName="text-xs"
-                        />
-                        <span>{member.user.name || member.user.email}</span>
-                      </div>
-                    ))}
-                  </div>
+            {/* Due Date */}
+            {task.dueDate && (
+              <div className="bg-gray-50 rounded-lg p-3 space-y-1">
+                <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Due Date</p>
+                <div className="flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                  <span className="text-sm font-medium text-gray-900">{format(new Date(task.dueDate), 'MMM dd, yyyy')}</span>
+                  {(() => { const sot = new Date(); sot.setHours(0,0,0,0); return new Date(task.dueDate) < sot })() && task.status !== 'COMPLETED' && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-700">Overdue</span>
+                  )}
                 </div>
-              )}
-
-              {/* Collaborators */}
-              {task.taskType === 'COLLABORATION' && task.collaborators && task.collaborators.length > 0 && (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Handshake className="h-4 w-4 text-gray-500" />
-                    <span className="text-gray-600">Collaborators ({task.collaborators.length}):</span>
-                  </div>
-                  <div className="ml-6 space-y-1">
-                    {task.collaborators.map((collaborator) => (
-                      <div key={collaborator.userId} className="flex items-center gap-2 text-sm">
-                        <UserAvatar
-                          userId={collaborator.user.id}
-                          image={collaborator.user.image}
-                          name={collaborator.user.name}
-                          email={collaborator.user.email}
-                          className="h-5 w-5"
-                          fallbackClassName="text-xs"
-                        />
-                        <span>{collaborator.user.name || collaborator.user.email}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Subtasks Section - Available on all tasks including subtasks */}
-          {(
-            <div className="border-t pt-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <h4 className="font-medium text-gray-900 flex items-center gap-2">
-                  <ListTodo className="h-4 w-4" />
-                  Subtasks ({localSubtasks?.length || 0})
-                </h4>
-                {canAddSubtasks && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowAddSubtask(true)}
-                    className="h-7"
+                {(canCompleteTask || session?.user?.role === 'LEADER') && task.status !== 'COMPLETED' && (
+                  <button
+                    onClick={() => { setShowDueDateOverride(v => !v); setNewDueDate(task.dueDate ? task.dueDate.split('T')[0] : '') }}
+                    className="text-xs text-blue-500 hover:text-blue-700 underline"
                   >
-                    <Plus className="h-3 w-3 mr-1" />
-                    Add Subtask
-                  </Button>
+                    {showDueDateOverride ? 'Cancel' : 'Extend'}
+                  </button>
+                )}
+                {showDueDateOverride && (
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <input
+                      type="date"
+                      value={newDueDate}
+                      min={new Date().toISOString().split('T')[0]}
+                      onChange={(e) => setNewDueDate(e.target.value)}
+                      className="text-xs border rounded px-1.5 py-1 h-6 flex-1"
+                    />
+                    <Button
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      disabled={!newDueDate || savingDueDate}
+                      onClick={async () => {
+                        if (!newDueDate || !task.id) return
+                        setSavingDueDate(true)
+                        try {
+                          const res = await fetch(`/api/tasks/${task.id}`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ dueDate: new Date(newDueDate).toISOString() })
+                          })
+                          if (res.ok) {
+                            toast({ title: 'Due date updated' })
+                            setShowDueDateOverride(false)
+                            onTaskUpdate?.()
+                          } else {
+                            const err = await res.json()
+                            toast({ title: 'Error', description: err.error, variant: 'destructive' })
+                          }
+                        } catch (e) { console.error(e) } finally { setSavingDueDate(false) }
+                      }}
+                    >
+                      {savingDueDate ? '...' : <Check className="h-3 w-3" />}
+                    </Button>
+                  </div>
                 )}
               </div>
+            )}
 
-              {/* Add Subtask Form */}
-              {showAddSubtask && (
-                <div className="p-3 bg-gray-50 rounded-lg space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Input
-                      placeholder="Enter subtask title..."
-                      value={newSubtaskTitle}
-                      onChange={(e) => setNewSubtaskTitle(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault()
-                          handleAddSubtask()
-                        }
-                        if (e.key === 'Escape') {
-                          setShowAddSubtask(false)
-                          setNewSubtaskTitle('')
-                          setNewSubtaskAssigneeId('')
-                        }
-                      }}
-                      className="flex-1"
-                      autoFocus
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1">
-                      <Select
-                        value={newSubtaskAssigneeId}
-                        onValueChange={setNewSubtaskAssigneeId}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Assign to..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={session?.user?.id || ''}>
-                            <div className="flex items-center gap-2">
-                              <span>Myself</span>
-                            </div>
-                          </SelectItem>
-                          {availableUsers
-                            .filter(u => u.id !== session?.user?.id)
-                            .map((user) => (
-                              <SelectItem key={user.id} value={user.id}>
-                                <div className="flex items-center gap-2">
-                                  <span>{user.name || user.email}</span>
-                                </div>
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="flex-1">
-                      <Input
-                        type="date"
-                        value={newSubtaskDeadline}
-                        onChange={(e) => setNewSubtaskDeadline(e.target.value)}
-                        placeholder="Deadline"
-                        className="w-full"
-                      />
-                    </div>
-                    <Button
-                      size="sm"
-                      onClick={handleAddSubtask}
-                      disabled={!newSubtaskTitle.trim() || addingSubtask}
-                    >
-                      {addingSubtask ? (
-                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white" />
-                      ) : (
-                        <Check className="h-4 w-4" />
-                      )}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setShowAddSubtask(false)
-                        setNewSubtaskTitle('')
-                        setNewSubtaskAssigneeId('')
-                        setNewSubtaskDeadline('')
-                      }}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
+            {/* Task Weight */}
+            {task.taskWeight && (
+              <div className="bg-gray-50 rounded-lg p-3 space-y-1">
+                <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Weight</p>
+                <div className="flex items-center gap-1">
+                  <span className="text-sm font-medium text-amber-600">
+                    {'★'.repeat(task.taskWeight)}{'☆'.repeat(5 - task.taskWeight)}
+                  </span>
+                  <span className="text-xs text-gray-500">{task.taskWeight}/5</span>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Subtasks List */}
-              {localSubtasks && localSubtasks.length > 0 ? (
-                <div className="space-y-2">
-                  {localSubtasks.map((subtask) => {
-                    const getSubtaskStatusIcon = () => {
-                      switch (subtask.status) {
-                        case 'COMPLETED':
-                          return <CheckCircle2 className="h-4 w-4 text-green-500" />
-                        case 'IN_PROGRESS':
-                        case 'IN_REVIEW':
-                          return <AlertCircle className="h-4 w-4 text-blue-500" />
-                        default:
-                          return <Circle className="h-4 w-4 text-gray-400" />
-                      }
-                    }
-
-                    return (
-                      <div
-                        key={subtask.id}
-                        className={`flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors ${onSubtaskClick ? 'cursor-pointer' : ''}`}
-                        onClick={() => onSubtaskClick?.(subtask.id)}
-                      >
-                        {/* Checkable status icon */}
-                        <button
-                          className="flex-shrink-0 focus:outline-none hover:scale-110 transition-transform"
-                          title={subtask.status === 'COMPLETED' ? 'Mark as incomplete' : 'Mark as complete'}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleToggleSubtaskCompletion(subtask)
-                          }}
-                        >
-                          {getSubtaskStatusIcon()}
-                        </button>
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-sm font-medium truncate ${
-                            subtask.status === 'COMPLETED' ? 'text-gray-500 line-through' : 'text-gray-900'
-                          }`}>
-                            {subtask.title}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge
-                              variant="outline"
-                              className={`text-xs ${
-                                subtask.priority === 'URGENT' ? 'text-red-600 border-red-200' :
-                                subtask.priority === 'HIGH' ? 'text-orange-600 border-orange-200' :
-                                subtask.priority === 'MEDIUM' ? 'text-yellow-600 border-yellow-200' :
-                                'text-green-600 border-green-200'
-                              }`}
-                            >
-                              {subtask.priority}
-                            </Badge>
-                            {subtask.dueDate && (
-                              <span className="text-xs text-gray-500">
-                                Due {format(new Date(subtask.dueDate), 'MMM dd')}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        {subtask.assignee && (
-                          <UserAvatar
-                            userId={subtask.assignee.id}
-                            image={subtask.assignee.image}
-                            name={subtask.assignee.name}
-                            email={subtask.assignee.email}
-                            className="h-6 w-6"
-                            fallbackClassName="text-xs"
-                          />
-                        )}
-                        <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                      </div>
-                    )
-                  })}
-                </div>
-              ) : (
-                !showAddSubtask && (
-                  <div className="text-center py-6 text-gray-500">
-                    <ListTodo className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No subtasks yet</p>
-                    {canAddSubtasks && (
-                      <Button
-                        variant="link"
-                        size="sm"
-                        onClick={() => setShowAddSubtask(true)}
-                        className="mt-1"
-                      >
-                        Add a subtask
-                      </Button>
+            {/* SLA */}
+            {task.slaHours && (() => {
+              const createdMs = new Date(task.createdAt).getTime()
+              const slaDeadline = new Date(createdMs + task.slaHours! * 60 * 60 * 1000)
+              const breached = new Date() > slaDeadline && task.status !== 'COMPLETED'
+              const slaDays = task.slaHours! >= 168 ? `${task.slaHours! / 168}w` : task.slaHours! >= 24 ? `${task.slaHours! / 24}d` : `${task.slaHours!}h`
+              return (
+                <div className="bg-gray-50 rounded-lg p-3 space-y-1">
+                  <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">SLA</p>
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                    <span className={`text-sm font-medium ${breached ? 'text-red-700' : 'text-gray-900'}`}>
+                      {breached ? 'Breached' : slaDays}
+                    </span>
+                    {breached && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-700">!</span>
                     )}
                   </div>
-                )
-              )}
+                </div>
+              )
+            })()}
+          </div>
 
-              {/* Subtask Progress */}
-              {localSubtasks && localSubtasks.length > 0 && (
-                <div className="pt-2">
-                  <div className="flex items-center justify-between text-sm mb-1">
-                    <span className="text-gray-600">Subtask Progress</span>
-                    <span className="font-medium">
-                      {localSubtasks.filter(s => s.status === 'COMPLETED').length} / {localSubtasks.length} completed
-                    </span>
+          {/* People */}
+          {(task.creator || (task.taskType === 'TEAM' && task.teamMembers?.length) || (task.taskType === 'COLLABORATION' && task.collaborators?.length)) && (
+            <div className="bg-gray-50 rounded-lg p-4">
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">People</p>
+              <div className="space-y-2">
+                {task.creator && (
+                  <div className="flex items-center gap-2.5 text-sm">
+                    <UserAvatar
+                      userId={task.creator.id}
+                      image={task.creator.image}
+                      name={task.creator.name}
+                      email={task.creator.email}
+                      className="h-6 w-6"
+                      fallbackClassName="text-xs"
+                    />
+                    <span className="text-gray-500">Creator</span>
+                    <span className="font-medium text-gray-900">{task.creator.name || task.creator.email}</span>
                   </div>
-                  <Progress
-                    value={(localSubtasks.filter(s => s.status === 'COMPLETED').length / localSubtasks.length) * 100}
-                    className="h-2"
-                  />
-                </div>
-              )}
+                )}
+                {task.taskType === 'TEAM' && task.teamMembers && task.teamMembers.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <Users className="h-3.5 w-3.5" />
+                      <span>Team ({task.teamMembers.length})</span>
+                    </div>
+                    <div className="ml-5 space-y-1.5">
+                      {task.teamMembers.map((member) => (
+                        <div key={member.userId} className="flex items-center gap-2 text-sm">
+                          <UserAvatar
+                            userId={member.user.id}
+                            image={member.user.image}
+                            name={member.user.name}
+                            email={member.user.email}
+                            className="h-5 w-5"
+                            fallbackClassName="text-xs"
+                          />
+                          <span className="text-gray-700">{member.user.name || member.user.email}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {task.taskType === 'COLLABORATION' && task.collaborators && task.collaborators.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <Handshake className="h-3.5 w-3.5" />
+                      <span>Collaborators ({task.collaborators.length})</span>
+                    </div>
+                    <div className="ml-5 space-y-1.5">
+                      {task.collaborators.map((collaborator) => (
+                        <div key={collaborator.userId} className="flex items-center gap-2 text-sm">
+                          <UserAvatar
+                            userId={collaborator.user.id}
+                            image={collaborator.user.image}
+                            name={collaborator.user.name}
+                            email={collaborator.user.email}
+                            className="h-5 w-5"
+                            fallbackClassName="text-xs"
+                          />
+                          <span className="text-gray-700">{collaborator.user.name || collaborator.user.email}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
-          {/* Parent Task Link - Show if this is a subtask */}
+          {/* Parent Task Link */}
           {task.parent && (
-            <div className="border-t pt-4">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <ChevronRight className="h-4 w-4 rotate-180" />
-                <span>Subtask of:</span>
-                <span className="font-medium text-gray-900">{task.parent.title}</span>
-              </div>
+            <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 text-sm text-gray-600">
+              <ChevronRight className="h-4 w-4 rotate-180 text-gray-400" />
+              <span>Subtask of:</span>
+              <span className="font-medium text-gray-900">{task.parent.title}</span>
             </div>
           )}
 
-          {/* Recurring Task Info */}
-          {task.recurringParentId && (
-            <div className="border-t pt-4">
-              <div className="flex items-center gap-2 text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
-                <RefreshCw className="h-4 w-4 flex-shrink-0" />
-                <span className="font-medium">Recurring task</span>
-                <span className="text-blue-500">·</span>
-                <span>Part of a recurring series</span>
-              </div>
+          {/* Subtasks */}
+          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                <ListTodo className="h-3.5 w-3.5" />
+                Subtasks ({localSubtasks?.length || 0})
+              </p>
+              {canAddSubtasks && (
+                <Button variant="outline" size="sm" onClick={() => setShowAddSubtask(true)} className="h-7 text-xs">
+                  <Plus className="h-3 w-3 mr-1" />Add Subtask
+                </Button>
+              )}
             </div>
-          )}
 
-          {/* Timestamps (Completion Time vs Evaluation Time) */}
+            {showAddSubtask && (
+              <div className="p-3 bg-white rounded-lg border border-gray-200 space-y-3">
+                <Input
+                  placeholder="Enter subtask title..."
+                  value={newSubtaskTitle}
+                  onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddSubtask() }
+                    if (e.key === 'Escape') { setShowAddSubtask(false); setNewSubtaskTitle(''); setNewSubtaskAssigneeId('') }
+                  }}
+                  className="flex-1"
+                  autoFocus
+                />
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <Select value={newSubtaskAssigneeId} onValueChange={setNewSubtaskAssigneeId}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Assign to..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={session?.user?.id || ''}>
+                          <div className="flex items-center gap-2"><span>Myself</span></div>
+                        </SelectItem>
+                        {availableUsers.filter(u => u.id !== session?.user?.id).map((user) => (
+                          <SelectItem key={user.id} value={user.id}>
+                            <div className="flex items-center gap-2"><span>{user.name || user.email}</span></div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex-1">
+                    <Input
+                      type="date"
+                      value={newSubtaskDeadline}
+                      onChange={(e) => setNewSubtaskDeadline(e.target.value)}
+                      placeholder="Deadline"
+                      className="w-full"
+                    />
+                  </div>
+                  <Button size="sm" onClick={handleAddSubtask} disabled={!newSubtaskTitle.trim() || addingSubtask}>
+                    {addingSubtask ? <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white" /> : <Check className="h-4 w-4" />}
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => { setShowAddSubtask(false); setNewSubtaskTitle(''); setNewSubtaskAssigneeId(''); setNewSubtaskDeadline('') }}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {localSubtasks && localSubtasks.length > 0 ? (
+              <div className="space-y-1.5">
+                {localSubtasks.map((subtask) => {
+                  const getSubtaskStatusIcon = () => {
+                    switch (subtask.status) {
+                      case 'COMPLETED': return <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      case 'IN_PROGRESS':
+                      case 'IN_REVIEW': return <AlertCircle className="h-4 w-4 text-blue-500" />
+                      default: return <Circle className="h-4 w-4 text-gray-300" />
+                    }
+                  }
+                  return (
+                    <div
+                      key={subtask.id}
+                      className={`flex items-center gap-3 px-3 py-2.5 bg-white rounded-lg border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-colors ${onSubtaskClick ? 'cursor-pointer' : ''}`}
+                      onClick={() => onSubtaskClick?.(subtask.id)}
+                    >
+                      <button
+                        className="flex-shrink-0 focus:outline-none hover:scale-110 transition-transform"
+                        title={subtask.status === 'COMPLETED' ? 'Mark as incomplete' : 'Mark as complete'}
+                        onClick={(e) => { e.stopPropagation(); handleToggleSubtaskCompletion(subtask) }}
+                      >
+                        {getSubtaskStatusIcon()}
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-medium truncate ${subtask.status === 'COMPLETED' ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
+                          {subtask.title}
+                        </p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className={`text-xs font-medium ${
+                            subtask.priority === 'URGENT' ? 'text-red-600' :
+                            subtask.priority === 'HIGH' ? 'text-orange-600' :
+                            subtask.priority === 'MEDIUM' ? 'text-amber-600' :
+                            'text-green-600'
+                          }`}>{subtask.priority}</span>
+                          {subtask.dueDate && (
+                            <span className="text-xs text-gray-400">Due {format(new Date(subtask.dueDate), 'MMM dd')}</span>
+                          )}
+                        </div>
+                      </div>
+                      {subtask.assignee && (
+                        <UserAvatar
+                          userId={subtask.assignee.id}
+                          image={subtask.assignee.image}
+                          name={subtask.assignee.name}
+                          email={subtask.assignee.email}
+                          className="h-6 w-6"
+                          fallbackClassName="text-xs"
+                        />
+                      )}
+                      <ChevronRight className="h-4 w-4 text-gray-300 flex-shrink-0" />
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              !showAddSubtask && (
+                <div className="text-center py-4 text-gray-400">
+                  <ListTodo className="h-7 w-7 mx-auto mb-1.5 opacity-40" />
+                  <p className="text-xs">No subtasks yet</p>
+                  {canAddSubtasks && (
+                    <Button variant="link" size="sm" onClick={() => setShowAddSubtask(true)} className="mt-1 text-xs h-auto p-0">
+                      Add a subtask
+                    </Button>
+                  )}
+                </div>
+              )
+            )}
+
+            {localSubtasks && localSubtasks.length > 0 && (
+              <div className="pt-1 space-y-1">
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <span>Completion</span>
+                  <span className="font-medium">{localSubtasks.filter(s => s.status === 'COMPLETED').length} / {localSubtasks.length}</span>
+                </div>
+                <Progress
+                  value={(localSubtasks.filter(s => s.status === 'COMPLETED').length / localSubtasks.length) * 100}
+                  className="h-1.5"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Timeline */}
           {(task.memberSubmittedAt || task.leaderEvaluatedAt) && (
-            <div className="border-t pt-4 space-y-2">
-              <h4 className="font-medium text-gray-900 text-sm">Timeline</h4>
-              {task.memberSubmittedAt && (
-                <div className="flex items-center gap-2 text-xs text-gray-600">
-                  <Clock className="h-3.5 w-3.5 text-yellow-500" />
-                  <span>Submitted for review:</span>
-                  <span className="font-medium">{format(new Date(task.memberSubmittedAt), 'MMM dd, yyyy HH:mm')}</span>
-                  {task.assignee && <span className="text-gray-400">by {task.assignee.name || task.assignee.email}</span>}
-                </div>
-              )}
-              {task.leaderEvaluatedAt && (
-                <div className="flex items-center gap-2 text-xs text-gray-600">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
-                  <span>Approved/Completed:</span>
-                  <span className="font-medium">{format(new Date(task.leaderEvaluatedAt), 'MMM dd, yyyy HH:mm')}</span>
-                </div>
-              )}
+            <div className="bg-gray-50 rounded-lg p-4">
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Timeline</p>
+              <div className="space-y-2">
+                {task.memberSubmittedAt && (
+                  <div className="flex items-center gap-3 text-sm">
+                    <span className="h-2 w-2 rounded-full bg-amber-400 flex-shrink-0" />
+                    <span className="text-gray-500 min-w-0">Submitted for review</span>
+                    <span className="font-medium text-gray-900 ml-auto text-right">{format(new Date(task.memberSubmittedAt), 'MMM dd, yyyy HH:mm')}</span>
+                  </div>
+                )}
+                {task.leaderEvaluatedAt && (
+                  <div className="flex items-center gap-3 text-sm">
+                    <span className="h-2 w-2 rounded-full bg-green-500 flex-shrink-0" />
+                    <span className="text-gray-500 min-w-0">Approved / Completed</span>
+                    <span className="font-medium text-gray-900 ml-auto text-right">{format(new Date(task.leaderEvaluatedAt), 'MMM dd, yyyy HH:mm')}</span>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
-          {/* Work Quality Rating */}
+          {/* Work Quality */}
           {(task.status === 'IN_REVIEW' || task.status === 'COMPLETED') && (canCompleteTask || session?.user?.role === 'LEADER') && (
-            <div className="border-t pt-4 space-y-3">
-              <h4 className="font-medium text-gray-900 text-sm">Work Quality</h4>
+            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Work Quality</p>
               {(() => {
                 const qualities = [
                   { value: 'NONE', label: '0%', color: 'bg-gray-400' },
@@ -2019,10 +1952,9 @@ export default function TaskViewModal({
                 ]
                 return (
                   <div className="space-y-3">
-                    {/* Leader rating */}
                     {canCompleteTask && (
-                      <div className="space-y-1">
-                        <p className="text-xs text-gray-500">Leader Rating</p>
+                      <div className="space-y-2">
+                        <p className="text-xs text-gray-400">Leader Rating</p>
                         <div className="flex gap-2">
                           {qualities.map(q => (
                             <button
@@ -2034,13 +1966,12 @@ export default function TaskViewModal({
                             >{q.label}</button>
                           ))}
                         </div>
-                        {task.workQuality && <p className="text-xs text-gray-500">Current: <span className="font-medium capitalize">{task.workQuality.toLowerCase()}</span></p>}
+                        {task.workQuality && <p className="text-xs text-gray-400">Current: <span className="font-medium text-gray-700 capitalize">{task.workQuality.toLowerCase()}</span></p>}
                       </div>
                     )}
-                    {/* Senior override */}
                     {(session?.user?.role === 'ADMIN' || (session?.user?.role === 'LEADER' && !canCompleteTask)) && task.workQuality && (
-                      <div className="space-y-1">
-                        <p className="text-xs text-gray-500">Senior Leader Override</p>
+                      <div className="space-y-2">
+                        <p className="text-xs text-gray-400">Senior Leader Override</p>
                         <div className="flex gap-2">
                           {qualities.map(q => (
                             <button
@@ -2052,7 +1983,7 @@ export default function TaskViewModal({
                             >{q.label}</button>
                           ))}
                         </div>
-                        {task.seniorWorkQuality && <p className="text-xs text-gray-500">Override: <span className="font-medium capitalize">{task.seniorWorkQuality.toLowerCase()}</span></p>}
+                        {task.seniorWorkQuality && <p className="text-xs text-gray-400">Override: <span className="font-medium text-gray-700 capitalize">{task.seniorWorkQuality.toLowerCase()}</span></p>}
                       </div>
                     )}
                   </div>
@@ -2061,13 +1992,14 @@ export default function TaskViewModal({
             </div>
           )}
 
-          {/* Dependencies Section */}
-          <div className="border-t pt-4 space-y-3">
+          {/* Dependencies */}
+          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <h4 className="font-medium text-gray-900 flex items-center gap-2 text-sm">
-                <AlertCircle className="h-4 w-4 text-orange-500" />
-                Dependencies ({dependencies.blockedBy.length} blocking this task)
-              </h4>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                <AlertCircle className="h-3.5 w-3.5 text-orange-400" />
+                Dependencies
+                <span className="text-gray-400 font-normal normal-case tracking-normal text-xs">({dependencies.blockedBy.length} blocking)</span>
+              </p>
               {canCompleteTask && (
                 <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setDepSearchQuery(depSearchQuery ? '' : ' ')}>
                   <Plus className="h-3 w-3 mr-1" />Add
@@ -2075,30 +2007,28 @@ export default function TaskViewModal({
               )}
             </div>
 
-            {/* Blocked-by warning */}
             {dependencies.blockedBy.some(d => d.status !== 'COMPLETED') && (
-              <div className="flex items-center gap-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
-                <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+              <div className="flex items-start gap-2 p-2.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700">
+                <AlertCircle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
                 <span>This task is blocked by incomplete tasks and cannot move to In Progress until they are resolved.</span>
               </div>
             )}
 
-            {/* Search for dependency */}
             {canCompleteTask && (
               <div className="space-y-1">
                 <Input
                   placeholder="Search tasks to add as dependency..."
                   value={depSearchQuery}
                   onChange={(e) => { setDepSearchQuery(e.target.value); searchTasksForDependency(e.target.value) }}
-                  className="h-7 text-xs"
+                  className="h-7 text-xs bg-white"
                 />
                 {depSearchResults.length > 0 && (
-                  <div className="border rounded bg-white shadow-sm max-h-32 overflow-y-auto">
+                  <div className="border rounded-lg bg-white shadow-sm max-h-32 overflow-y-auto">
                     {depSearchResults.map(t => (
                       <button key={t.id} onClick={() => handleAddDependency(t.id)}
                         className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 flex items-center justify-between gap-2">
                         <span className="truncate">{t.title}</span>
-                        <span className={`text-xs px-1.5 py-0.5 rounded ${t.status === 'COMPLETED' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{t.status.replace('_', ' ')}</span>
+                        <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${t.status === 'COMPLETED' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{t.status.replace('_', ' ')}</span>
                       </button>
                     ))}
                   </div>
@@ -2106,18 +2036,23 @@ export default function TaskViewModal({
               </div>
             )}
 
-            {/* Blockers list */}
             {loadingDeps ? (
-              <div className="flex justify-center py-2"><div className="animate-spin h-4 w-4 rounded-full border-b-2 border-gray-400" /></div>
+              <div className="flex justify-center py-3"><div className="animate-spin h-4 w-4 rounded-full border-b-2 border-gray-400" /></div>
             ) : dependencies.blockedBy.length > 0 ? (
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 {dependencies.blockedBy.map(dep => (
-                  <div key={dep.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded text-xs">
-                    {dep.status === 'COMPLETED' ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500 flex-shrink-0" /> : <Circle className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />}
-                    <span className={`flex-1 truncate ${dep.status === 'COMPLETED' ? 'line-through text-gray-400' : 'text-gray-700'}`}>{dep.title}</span>
-                    <span className={`px-1.5 py-0.5 rounded text-xs ${dep.status === 'COMPLETED' ? 'bg-green-50 text-green-700' : dep.status === 'IN_PROGRESS' ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>{dep.status.replace('_', ' ')}</span>
+                  <div key={dep.id} className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-gray-100 text-sm">
+                    {dep.status === 'COMPLETED'
+                      ? <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                      : <Circle className="h-4 w-4 text-gray-300 flex-shrink-0" />}
+                    <span className={`flex-1 truncate text-xs ${dep.status === 'COMPLETED' ? 'line-through text-gray-400' : 'text-gray-700'}`}>{dep.title}</span>
+                    <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                      dep.status === 'COMPLETED' ? 'bg-green-50 text-green-700' :
+                      dep.status === 'IN_PROGRESS' ? 'bg-blue-50 text-blue-700' :
+                      'bg-gray-100 text-gray-600'
+                    }`}>{dep.status.replace('_', ' ')}</span>
                     {canCompleteTask && (
-                      <button onClick={() => handleRemoveDependency(dep.id)} className="text-gray-400 hover:text-red-500">
+                      <button onClick={() => handleRemoveDependency(dep.id)} className="text-gray-300 hover:text-red-500 ml-1">
                         <X className="h-3 w-3" />
                       </button>
                     )}
@@ -2129,13 +2064,14 @@ export default function TaskViewModal({
             )}
           </div>
 
-          {/* Deliverables Section */}
-          <div className="border-t pt-4 space-y-3">
+          {/* Deliverables */}
+          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <h4 className="font-medium text-gray-900 flex items-center gap-2 text-sm">
-                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                Deliverables ({deliverables.filter(d => d.isCompleted).length}/{deliverables.length})
-              </h4>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                Deliverables
+                <span className="text-gray-400 font-normal normal-case tracking-normal text-xs">({deliverables.filter(d => d.isCompleted).length}/{deliverables.length})</span>
+              </p>
               {(canCompleteTask || session?.user?.role === 'LEADER') && (
                 <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setShowAddDeliverable(v => !v)}>
                   <Plus className="h-3 w-3 mr-1" />Add
@@ -2143,14 +2079,16 @@ export default function TaskViewModal({
               )}
             </div>
 
-            {/* Progress bar */}
             {deliverables.length > 0 && (
-              <div>
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs text-gray-400 mb-1">
+                  <span>{deliverables.filter(d => d.isCompleted).length} of {deliverables.length} completed</span>
+                  <span>{Math.round((deliverables.filter(d => d.isCompleted).length / deliverables.length) * 100)}%</span>
+                </div>
                 <Progress value={deliverables.length > 0 ? (deliverables.filter(d => d.isCompleted).length / deliverables.length) * 100 : 0} className="h-1.5" />
               </div>
             )}
 
-            {/* Add deliverable form */}
             {showAddDeliverable && (
               <div className="flex gap-2">
                 <Input
@@ -2158,7 +2096,7 @@ export default function TaskViewModal({
                   value={newDeliverableName}
                   onChange={(e) => setNewDeliverableName(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') handleAddDeliverable(); if (e.key === 'Escape') setShowAddDeliverable(false) }}
-                  className="h-7 text-xs flex-1"
+                  className="h-7 text-xs flex-1 bg-white"
                   autoFocus
                 />
                 <Button size="sm" className="h-7" onClick={handleAddDeliverable} disabled={!newDeliverableName.trim() || addingDeliverable}>
@@ -2169,16 +2107,20 @@ export default function TaskViewModal({
             )}
 
             {loadingDeliverables ? (
-              <div className="flex justify-center py-2"><div className="animate-spin h-4 w-4 rounded-full border-b-2 border-gray-400" /></div>
+              <div className="flex justify-center py-3"><div className="animate-spin h-4 w-4 rounded-full border-b-2 border-gray-400" /></div>
             ) : deliverables.length > 0 ? (
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 {deliverables.map(d => (
-                  <div key={d.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded text-xs group">
+                  <div key={d.id} className="flex items-center gap-2.5 px-3 py-2 bg-white rounded-lg border border-gray-100 group">
                     <button onClick={() => handleToggleDeliverable(d)} className="flex-shrink-0">
-                      {d.isCompleted ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <Circle className="h-4 w-4 text-gray-300 hover:text-gray-500" />}
+                      {d.isCompleted
+                        ? <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        : <Circle className="h-4 w-4 text-gray-300 hover:text-gray-400 transition-colors" />}
                     </button>
-                    <span className={`flex-1 ${d.isCompleted ? 'line-through text-gray-400' : 'text-gray-700'}`}>{d.name}</span>
-                    {d.isCompleted && d.submittedBy && <span className="text-gray-400 hidden group-hover:inline">{d.submittedBy.name || d.submittedBy.email}</span>}
+                    <span className={`flex-1 text-sm ${d.isCompleted ? 'line-through text-gray-400' : 'text-gray-700'}`}>{d.name}</span>
+                    {d.isCompleted && d.submittedBy && (
+                      <span className="text-xs text-gray-400 hidden group-hover:inline">{d.submittedBy.name || d.submittedBy.email}</span>
+                    )}
                     {(canCompleteTask || session?.user?.role === 'LEADER') && (
                       <button onClick={() => handleDeleteDeliverable(d.id)} className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
                         <X className="h-3 w-3" />
@@ -2192,28 +2134,28 @@ export default function TaskViewModal({
             )}
           </div>
 
-          {/* PR / PO Section */}
-          <div className="border-t pt-4 space-y-3">
+          {/* PR / PO */}
+          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <h4 className="font-medium text-gray-900 flex items-center gap-2 text-sm">
-                <FileText className="h-4 w-4 text-blue-500" />
-                Procurement ({procurements.length})
-              </h4>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                <FileText className="h-3.5 w-3.5 text-blue-400" />
+                Procurement
+                <span className="text-gray-400 font-normal normal-case tracking-normal text-xs">({procurements.length})</span>
+              </p>
               <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setShowAddProcurement(v => !v)}>
                 <Plus className="h-3 w-3 mr-1" />Add PR/PO
               </Button>
             </div>
 
-            {/* Add form */}
             {showAddProcurement && (
-              <div className="p-3 bg-gray-50 rounded space-y-2 text-xs">
+              <div className="p-3 bg-white rounded-lg border border-gray-200 space-y-2 text-xs">
                 <div className="flex gap-2">
                   <button onClick={() => setNewProcurement(p => ({ ...p, type: 'PURCHASE_REQUEST' }))}
-                    className={`flex-1 py-1 rounded border text-center font-medium ${newProcurement.type === 'PURCHASE_REQUEST' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300'}`}>
+                    className={`flex-1 py-1.5 rounded-lg border text-center font-medium transition-colors ${newProcurement.type === 'PURCHASE_REQUEST' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:border-blue-300'}`}>
                     Purchase Request (PR)
                   </button>
                   <button onClick={() => setNewProcurement(p => ({ ...p, type: 'PURCHASE_ORDER' }))}
-                    className={`flex-1 py-1 rounded border text-center font-medium ${newProcurement.type === 'PURCHASE_ORDER' ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-600 border-gray-300'}`}>
+                    className={`flex-1 py-1.5 rounded-lg border text-center font-medium transition-colors ${newProcurement.type === 'PURCHASE_ORDER' ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-600 border-gray-300 hover:border-green-300'}`}>
                     Purchase Order (PO)
                   </button>
                 </div>
@@ -2234,22 +2176,23 @@ export default function TaskViewModal({
             )}
 
             {loadingProcurement ? (
-              <div className="flex justify-center py-2"><div className="animate-spin h-4 w-4 rounded-full border-b-2 border-gray-400" /></div>
+              <div className="flex justify-center py-3"><div className="animate-spin h-4 w-4 rounded-full border-b-2 border-gray-400" /></div>
             ) : procurements.length > 0 ? (
               <div className="space-y-2">
                 {procurements.map(p => (
-                  <div key={p.id} className="p-3 bg-gray-50 rounded border text-xs space-y-1">
+                  <div key={p.id} className="px-3 py-2.5 bg-white rounded-lg border border-gray-100 space-y-1.5">
                     <div className="flex items-center justify-between gap-2">
-                      <span className={`px-2 py-0.5 rounded font-semibold ${p.type === 'PURCHASE_REQUEST' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
-                        {p.type === 'PURCHASE_REQUEST' ? 'PR' : 'PO'}
-                      </span>
-                      {p.referenceNumber && <span className="text-gray-500 font-mono">{p.referenceNumber}</span>}
-                      <span className="flex-1" />
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${p.type === 'PURCHASE_REQUEST' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                          {p.type === 'PURCHASE_REQUEST' ? 'PR' : 'PO'}
+                        </span>
+                        {p.referenceNumber && <span className="text-xs text-gray-500 font-mono">{p.referenceNumber}</span>}
+                      </div>
                       {(session?.user?.role === 'ADMIN' || session?.user?.role === 'LEADER') && (
                         <select
                           value={p.status}
                           onChange={(e) => handleUpdateProcurementStatus(p.id, e.target.value as Procurement['status'])}
-                          className={`text-xs rounded px-1.5 py-0.5 border font-medium ${p.status === 'APPROVED' || p.status === 'PROCESSED' ? 'bg-green-50 text-green-700 border-green-200' : p.status === 'REJECTED' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-yellow-50 text-yellow-700 border-yellow-200'}`}
+                          className={`text-xs rounded-lg px-2 py-1 border font-medium ${p.status === 'APPROVED' || p.status === 'PROCESSED' ? 'bg-green-50 text-green-700 border-green-200' : p.status === 'REJECTED' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}
                         >
                           <option value="PENDING">Pending</option>
                           <option value="APPROVED">Approved</option>
@@ -2258,13 +2201,13 @@ export default function TaskViewModal({
                         </select>
                       )}
                     </div>
-                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-gray-600">
-                      {p.amount && <span>Amount: <strong>₱{p.amount.toLocaleString()}</strong></span>}
-                      {p.vendor && <span>Vendor: <strong>{p.vendor}</strong></span>}
-                      {p.approverName && <span>Approver: <strong>{p.approverName}</strong></span>}
+                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-gray-600">
+                      {p.amount && <span>Amount: <strong className="text-gray-900">₱{p.amount.toLocaleString()}</strong></span>}
+                      {p.vendor && <span>Vendor: <strong className="text-gray-900">{p.vendor}</strong></span>}
+                      {p.approverName && <span>Approver: <strong className="text-gray-900">{p.approverName}</strong></span>}
                     </div>
-                    {p.notes && <p className="text-gray-500 italic">{p.notes}</p>}
-                    <p className="text-gray-400">By {p.createdBy.name || p.createdBy.email} · {format(new Date(p.createdAt), 'MMM dd, yyyy')}</p>
+                    {p.notes && <p className="text-xs text-gray-400 italic">{p.notes}</p>}
+                    <p className="text-xs text-gray-400">By {p.createdBy.name || p.createdBy.email} · {format(new Date(p.createdAt), 'MMM dd, yyyy')}</p>
                   </div>
                 ))}
               </div>
@@ -2273,28 +2216,28 @@ export default function TaskViewModal({
             )}
           </div>
 
-          {/* Enhanced Comments Section */}
-          <div className="border-t pt-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="font-medium text-gray-900 flex items-center gap-2">
-                <MessageSquare className="h-4 w-4" />
+          {/* Comments */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <div className="h-px flex-1 bg-gray-200" />
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+                <MessageSquare className="h-3.5 w-3.5" />
                 Comments ({comments.length})
-              </h4>
+              </p>
+              <div className="h-px flex-1 bg-gray-200" />
             </div>
 
-            {/* Add Comment with Mentions and File Attachments */}
-            <div className="space-y-3 relative">
+            {/* New comment input */}
+            <div className="space-y-2 relative">
               <div className="relative">
                 <Textarea
                   placeholder="Write a comment... Use @ to mention someone"
                   value={newComment}
                   onChange={(e) => handleCommentChange(e.target.value)}
-                  className="min-h-[80px] resize-none pr-10"
+                  className="min-h-[80px] resize-none bg-white border-gray-200 focus:border-blue-300"
                 />
-                
-                {/* Mention Dropdown */}
                 {showMentions && mentionUsers.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg z-10 max-h-40 overflow-y-auto">
+                  <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto">
                     {mentionUsers.map((user) => (
                       <button
                         key={user.id}
@@ -2310,38 +2253,30 @@ export default function TaskViewModal({
                           fallbackClassName="text-xs"
                         />
                         <div>
-                          <div className="font-medium text-sm">{user.name}</div>
-                          <div className="text-xs text-gray-500">{user.email}</div>
+                          <div className="font-medium text-sm text-gray-900">{user.name}</div>
+                          <div className="text-xs text-gray-400">{user.email}</div>
                         </div>
                       </button>
                     ))}
                   </div>
                 )}
               </div>
-              
-              {/* Pending File Preview */}
+
               {pendingFile && (
                 <div className="relative inline-block">
                   {isImageFile(pendingFile.fileType) ? (
-                    <img
-                      src={pendingFile.fileUrl}
-                      alt="Pending attachment"
-                      className="max-w-xs rounded-lg border"
-                    />
+                    <img src={pendingFile.fileUrl} alt="Pending attachment" className="max-w-xs rounded-lg border" />
                   ) : (
                     <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border">
                       {getFileIcon(pendingFile.fileType)}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{pendingFile.fileName}</p>
-                        <p className="text-xs text-gray-500">{formatFileSize(pendingFile.fileSize)}</p>
+                        <p className="text-xs text-gray-400">{formatFileSize(pendingFile.fileSize)}</p>
                       </div>
                     </div>
                   )}
                   <button
-                    onClick={() => {
-                      setPendingFile(null)
-                      if (fileInputRef.current) fileInputRef.current.value = ''
-                    }}
+                    onClick={() => { setPendingFile(null); if (fileInputRef.current) fileInputRef.current.value = '' }}
                     className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
                     title="Remove attachment"
                   >
@@ -2351,7 +2286,7 @@ export default function TaskViewModal({
               )}
 
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -2360,9 +2295,7 @@ export default function TaskViewModal({
                       const file = e.target.files?.[0]
                       if (file) {
                         const uploadedFile = await handleFileUpload(file)
-                        if (uploadedFile) {
-                          setPendingFile({ file, ...uploadedFile })
-                        }
+                        if (uploadedFile) setPendingFile({ file, ...uploadedFile })
                       }
                     }}
                   />
@@ -2371,57 +2304,68 @@ export default function TaskViewModal({
                     size="sm"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploadingFile || !!pendingFile}
-                    className="text-gray-500"
+                    className="text-gray-400 hover:text-gray-600 h-8 px-2"
                   >
                     {uploadingFile ? (
-                      <>
-                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-500 mr-1" />
-                        Uploading...
-                      </>
+                      <><div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-500 mr-1" />Uploading...</>
                     ) : (
-                      <>
-                        <Paperclip className="h-4 w-4 mr-1" />
-                        Attach
-                      </>
+                      <><Paperclip className="h-4 w-4 mr-1" />Attach</>
                     )}
                   </Button>
                 </div>
-
                 <Button
                   onClick={() => handleAddComment()}
                   disabled={(!newComment.trim() && !pendingFile) || submittingComment}
                   size="sm"
+                  className="h-8"
                 >
                   {submittingComment ? (
-                    <>
-                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2" />
-                      Posting...
-                    </>
+                    <><div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1.5" />Posting...</>
                   ) : (
-                    <>
-                      <Send className="h-3 w-3 mr-2" />
-                      Post
-                    </>
+                    <><Send className="h-3 w-3 mr-1.5" />Post</>
                   )}
                 </Button>
               </div>
             </div>
 
-            {/* Comments List with Reactions and Replies */}
-            <div className="space-y-6 max-h-[400px] overflow-y-auto">
+            {/* Comments list */}
+            <div className="space-y-4">
               {loadingComments ? (
                 <div className="flex justify-center py-8">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-400" />
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-300" />
                 </div>
               ) : comments.length > 0 ? (
                 comments.map((comment) => renderComment(comment))
               ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">No comments yet</p>
+                <div className="text-center py-8 text-gray-400">
+                  <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                  <p className="text-sm">No comments yet. Start the conversation.</p>
                 </div>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* ── STICKY FOOTER ── */}
+        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-white">
+          <div className="flex items-center gap-2">
+            {onDuplicate && (
+              <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-700" onClick={() => { onDuplicate(task); onOpenChange(false) }}>
+                <Copy className="h-4 w-4 mr-2" />
+                Duplicate
+              </Button>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+              Close
+            </Button>
+            {isTaskCreator && onEdit && (
+              <Button size="sm" onClick={handleEdit}>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Task
+              </Button>
+            )}
           </div>
         </div>
       </DialogContent>

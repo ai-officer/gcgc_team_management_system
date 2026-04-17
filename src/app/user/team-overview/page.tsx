@@ -17,8 +17,14 @@ import {
   Filter,
   Activity,
   Target,
-  Award
+  Award,
+  Star,
+  ClipboardList,
+  CalendarDays,
+  Building2,
+  TrendingUp
 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -91,6 +97,7 @@ type FilterStatus = 'all' | 'active' | 'inactive'
 export default function TeamOverviewPage() {
   const { data: session } = useSession()
   const { toast } = useToast()
+  const router = useRouter()
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
   const [availableUsers, setAvailableUsers] = useState<TeamMember[]>([])
   const [teamStats, setTeamStats] = useState<TeamStats | null>(null)
@@ -156,6 +163,10 @@ export default function TeamOverviewPage() {
   const [isAssignTaskDialogOpen, setIsAssignTaskDialogOpen] = useState(false)
   const [selectedMemberForTask, setSelectedMemberForTask] = useState<string | null>(null)
 
+  // Evaluation state
+  const [evalScores, setEvalScores] = useState<Map<string, number>>(new Map())
+  const [evalDates, setEvalDates] = useState<Map<string, Date>>(new Map())
+
   // Redirect if not a leader
   useEffect(() => {
     if (session?.user?.role !== 'LEADER') {
@@ -191,6 +202,22 @@ export default function TeamOverviewPage() {
       if (usersResponse.ok) {
         const usersData = await usersResponse.json()
         setAvailableUsers(usersData.users || [])
+      }
+
+      // Fetch evaluations to compute per-member scores
+      const evalsRes = await fetch('/api/evaluations?limit=200')
+      if (evalsRes.ok) {
+        const evalsData = await evalsRes.json()
+        const scoreMap = new Map<string, number>()
+        const dateMap = new Map<string, Date>()
+        for (const ev of evalsData.evaluations ?? []) {
+          if (!scoreMap.has(ev.evaluatee.id)) {
+            scoreMap.set(ev.evaluatee.id, ev.gradientScore)
+            dateMap.set(ev.evaluatee.id, new Date(ev.evaluatedAt ?? ev.periodEndDate))
+          }
+        }
+        setEvalScores(scoreMap)
+        setEvalDates(dateMap)
       }
     } catch (err) {
       console.error('Error fetching team data:', err)
@@ -724,6 +751,24 @@ export default function TeamOverviewPage() {
 
     return matchesSearch && matchesFilter
   })
+
+  // Derived stats for people-centric cards
+  const avgEvalScore = evalScores.size > 0
+    ? Math.round(Array.from(evalScores.values()).reduce((a, b) => a + b, 0) / evalScores.size)
+    : null
+
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+  const membersNeedingEval = teamMembers.filter(m =>
+    !evalDates.has(m.id) || evalDates.get(m.id)! < thirtyDaysAgo
+  ).length
+
+  const thisMonthStart = new Date()
+  thisMonthStart.setDate(1)
+  thisMonthStart.setHours(0, 0, 0, 0)
+  const newMembersThisMonth = teamMembers.filter(m =>
+    new Date(m.createdAt) >= thisMonthStart
+  ).length
 
   if (session?.user?.role !== 'LEADER') {
     return null
@@ -1983,112 +2028,112 @@ export default function TeamOverviewPage() {
         </div>
       </div>
 
-      {/* Professional Team Stats */}
-      {teamStats && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl hover:-translate-y-1">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-blue-600"></div>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Team Members</CardTitle>
-              <div className="p-2.5 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
-                <Users className="h-5 w-5 text-blue-600" />
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-baseline gap-2">
-                <div className="text-4xl font-bold text-slate-900">{teamStats.totalMembers}</div>
-                <span className="text-sm text-slate-500 font-medium">members</span>
-              </div>
-              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                <span className="text-xs text-slate-500">Active in team</span>
-                <Users className="h-4 w-4 text-blue-600" />
-              </div>
-            </CardContent>
-          </Card>
+      {/* Team Stats — people-centric */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Total Members */}
+        <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 rounded-xl hover:-translate-y-1">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-blue-600"></div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Total Members</CardTitle>
+            <div className="p-2.5 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
+              <Users className="h-5 w-5 text-blue-600" />
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-baseline gap-2">
+              <div className="text-4xl font-bold text-slate-900">{teamStats?.totalMembers ?? teamMembers.length}</div>
+              <span className="text-sm text-slate-500 font-medium">people</span>
+            </div>
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+              <span className="text-xs text-slate-500">
+                {teamMembers.filter(m => m.isActive).length} active
+              </span>
+              <Users className="h-4 w-4 text-blue-600" />
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl hover:-translate-y-1">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-purple-600"></div>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Active Tasks</CardTitle>
-              <div className="p-2.5 bg-purple-50 rounded-lg group-hover:bg-purple-100 transition-colors">
-                <Activity className="h-5 w-5 text-purple-600" />
+        {/* Avg Eval Score */}
+        <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 rounded-xl hover:-translate-y-1">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 to-amber-600"></div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Avg Eval Score</CardTitle>
+            <div className="p-2.5 bg-amber-50 rounded-lg group-hover:bg-amber-100 transition-colors">
+              <Star className="h-5 w-5 text-amber-600" />
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-baseline gap-2">
+              <div className="text-4xl font-bold text-slate-900">
+                {avgEvalScore !== null ? avgEvalScore : '—'}
               </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-baseline gap-2">
-                <div className="text-4xl font-bold text-slate-900">{teamStats.activeTasks}</div>
-                <span className="text-sm text-slate-500 font-medium">tasks</span>
-              </div>
-              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                <span className="text-xs text-slate-500">In progress</span>
-                <Activity className="h-4 w-4 text-purple-600" />
-              </div>
-            </CardContent>
-          </Card>
+              {avgEvalScore !== null && <span className="text-sm text-slate-500 font-medium">/ 100</span>}
+            </div>
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+              <span className="text-xs text-slate-500">
+                {evalScores.size > 0 ? `${evalScores.size} evaluated` : 'No evaluations yet'}
+              </span>
+              <TrendingUp className="h-4 w-4 text-amber-600" />
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl hover:-translate-y-1">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-emerald-600"></div>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Completed</CardTitle>
-              <div className="p-2.5 bg-emerald-50 rounded-lg group-hover:bg-emerald-100 transition-colors">
-                <Award className="h-5 w-5 text-emerald-600" />
+        {/* Needs Evaluation */}
+        <Card className={`group relative overflow-hidden border transition-all duration-300 rounded-xl hover:-translate-y-1 ${
+          membersNeedingEval > 0
+            ? 'border-orange-200 bg-white hover:shadow-lg'
+            : 'border-slate-200 bg-white hover:shadow-md'
+        }`}>
+          <div className={`absolute top-0 left-0 w-full h-1 ${
+            membersNeedingEval > 0
+              ? 'bg-gradient-to-r from-orange-500 to-orange-600'
+              : 'bg-gradient-to-r from-emerald-400 to-emerald-500'
+          }`}></div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Need Evaluation</CardTitle>
+            <div className={`p-2.5 rounded-lg transition-colors ${
+              membersNeedingEval > 0 ? 'bg-orange-50 group-hover:bg-orange-100' : 'bg-emerald-50 group-hover:bg-emerald-100'
+            }`}>
+              <ClipboardList className={`h-5 w-5 ${membersNeedingEval > 0 ? 'text-orange-600' : 'text-emerald-600'}`} />
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-baseline gap-2">
+              <div className={`text-4xl font-bold ${membersNeedingEval > 0 ? 'text-orange-600' : 'text-slate-400'}`}>
+                {membersNeedingEval}
               </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-baseline gap-2">
-                <div className="text-4xl font-bold text-slate-900">{teamStats.completedTasks}</div>
-                <span className="text-sm text-slate-500 font-medium">done</span>
-              </div>
-              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                <span className="text-xs text-slate-500">Tasks finished</span>
-                <Award className="h-4 w-4 text-emerald-600" />
-              </div>
-            </CardContent>
-          </Card>
+              <span className="text-sm text-slate-500 font-medium">members</span>
+            </div>
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+              <span className="text-xs text-slate-500">
+                {membersNeedingEval > 0 ? 'No eval in 30 days' : 'All up to date'}
+              </span>
+              {membersNeedingEval === 0 && <span className="text-emerald-600 text-sm font-bold">✓</span>}
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card className={`group relative overflow-hidden border transition-all duration-300 rounded-xl ${
-            teamStats.overdueTasks > 0
-              ? 'border-red-200 bg-red-50 hover:shadow-lg cursor-pointer hover:-translate-y-1'
-              : 'border-slate-200 bg-white hover:shadow-md'
-          }`}>
-            <div className={`absolute top-0 left-0 w-full h-1 ${
-              teamStats.overdueTasks > 0
-                ? 'bg-gradient-to-r from-red-500 to-red-600'
-                : 'bg-gradient-to-r from-slate-300 to-slate-400'
-            }`}></div>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className={`text-sm font-semibold uppercase tracking-wide ${
-                teamStats.overdueTasks > 0 ? 'text-red-700' : 'text-slate-600'
-              }`}>
-                Overdue
-              </CardTitle>
-              <div className={`p-2.5 rounded-lg group-hover:scale-110 transition-transform ${
-                teamStats.overdueTasks > 0 ? 'bg-red-100' : 'bg-slate-100'
-              }`}>
-                <AlertCircle className={`h-5 w-5 ${teamStats.overdueTasks > 0 ? 'text-red-600' : 'text-slate-500'}`} />
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-baseline gap-2">
-                <div className={`text-4xl font-bold ${
-                  teamStats.overdueTasks > 0 ? 'text-red-600' : 'text-slate-400'
-                }`}>
-                  {teamStats.overdueTasks}
-                </div>
-                <span className="text-sm text-slate-500 font-medium">tasks</span>
-              </div>
-              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                <span className="text-xs text-slate-500">
-                  {teamStats.overdueTasks > 0 ? 'Need attention' : 'All clear'}
-                </span>
-                {teamStats.overdueTasks === 0 && (
-                  <span className="text-lg">✓</span>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+        {/* New Members This Month */}
+        <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 rounded-xl hover:-translate-y-1">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-violet-500 to-violet-600"></div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">New This Month</CardTitle>
+            <div className="p-2.5 bg-violet-50 rounded-lg group-hover:bg-violet-100 transition-colors">
+              <CalendarDays className="h-5 w-5 text-violet-600" />
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-baseline gap-2">
+              <div className="text-4xl font-bold text-slate-900">{newMembersThisMonth}</div>
+              <span className="text-sm text-slate-500 font-medium">joined</span>
+            </div>
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+              <span className="text-xs text-slate-500">Since the 1st</span>
+              <CalendarDays className="h-4 w-4 text-violet-600" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Professional Filters & Search */}
       <Card className="border border-slate-200 bg-white shadow-sm rounded-xl">
@@ -2203,6 +2248,13 @@ export default function TeamOverviewPage() {
                       <CheckSquare className="h-4 w-4 mr-2 text-slate-600" />
                       Assign Task
                     </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => router.push(`/user/evaluations?evaluateeId=${member.id}`)}
+                      className="rounded-md cursor-pointer"
+                    >
+                      <Star className="h-4 w-4 mr-2 text-slate-600" />
+                      Evaluate
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       className="text-red-600 focus:text-red-600 rounded-md cursor-pointer"
@@ -2283,15 +2335,39 @@ export default function TeamOverviewPage() {
                       )}
                     </div>
 
-                    {member._count && (
+                    {(member.department || member.section) && (
                       <div className={cn(
-                        "flex items-center gap-1 text-xs text-slate-600 font-medium",
+                        "flex items-center gap-1 text-xs text-slate-500",
                         viewMode === 'grid' && "justify-center"
                       )}>
-                        <CheckSquare className="h-3 w-3 text-slate-400" />
-                        <span>{member._count.assignedTasks} tasks assigned</span>
+                        <Building2 className="h-3 w-3 text-slate-400 shrink-0" />
+                        <span className="truncate">
+                          {[member.department, member.section].filter(Boolean).join(' · ')}
+                        </span>
                       </div>
                     )}
+
+                    <div className={cn(
+                      "flex items-center gap-2 flex-wrap",
+                      viewMode === 'grid' && "justify-center"
+                    )}>
+                      {member._count && (
+                        <div className="flex items-center gap-1 text-xs text-slate-600 font-medium">
+                          <CheckSquare className="h-3 w-3 text-slate-400" />
+                          <span>{member._count.assignedTasks} tasks</span>
+                        </div>
+                      )}
+                      {evalScores.has(member.id) ? (
+                        <Badge className="text-xs rounded-md bg-amber-50 text-amber-700 border-amber-200 font-medium">
+                          <Star className="h-3 w-3 mr-1" />
+                          {evalScores.get(member.id)}/100
+                        </Badge>
+                      ) : (
+                        <Badge className="text-xs rounded-md bg-slate-100 text-slate-500 border-slate-200 font-medium">
+                          Not evaluated
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 </div>
               </CardContent>

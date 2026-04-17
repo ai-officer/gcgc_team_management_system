@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react'
 import { Calendar, momentLocalizer, Views } from 'react-big-calendar'
 import moment from 'moment'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
-import { Calendar as CalendarIcon, AlertCircle, Settings, Wifi, WifiOff, RefreshCw, FileText, Clock, Users, User, Tag, CheckCircle2, AlertTriangle, Flag, X } from 'lucide-react'
+import { Calendar as CalendarIcon, AlertCircle, Settings, Wifi, WifiOff, RefreshCw, FileText, Clock, Users, User, Tag, CheckCircle2, AlertTriangle, Flag, X, ChevronRight } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -117,6 +117,10 @@ export default function CalendarPage() {
   const [viewingTask, setViewingTask] = useState<any>(null)
   const [loadingTaskDetails, setLoadingTaskDetails] = useState(false)
   const [togglingSubtaskId, setTogglingSubtaskId] = useState<string | null>(null)
+  // "+N more" overflow modal
+  const [showMoreOpen, setShowMoreOpen] = useState(false)
+  const [showMoreDate, setShowMoreDate] = useState<Date | null>(null)
+  const [showMoreEvents, setShowMoreEvents] = useState<CalendarEvent[]>([])
   const { toast } = useToast()
 
   const handleToggleSubtask = async (subtaskId: string, currentStatus: string) => {
@@ -374,6 +378,18 @@ export default function CalendarPage() {
     }
   }
 
+  const handleShowMore = (moreEvents: CalendarEvent[], date: Date) => {
+    setShowMoreEvents(moreEvents)
+    setShowMoreDate(date)
+    setShowMoreOpen(true)
+  }
+
+  const handleShowMoreEventClick = (event: CalendarEvent) => {
+    setShowMoreOpen(false)
+    setSelectedEvent(event)
+    setIsEventDialogOpen(true)
+  }
+
   // Event style getter - CRITICAL for multi-day events
   const eventStyleGetter = (event: CalendarEvent) => {
     const backgroundColor = event.resource?.color || '#3b82f6'
@@ -526,11 +542,12 @@ export default function CalendarPage() {
           eventPropGetter={eventStyleGetter}
           views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
           defaultView={Views.MONTH}
-          popup={true}
+          popup={false}
           showMultiDayTimes
           step={30}
           timeslots={2}
-          doShowMoreDrillDown={true}
+          doShowMoreDrillDown={false}
+          onShowMore={handleShowMore}
           messages={{
             showMore: (total: number) => `+${total} more`,
             noEventsInRange: 'No events scheduled for this period. Create a task or sync with Google Calendar to see events here.'
@@ -824,6 +841,96 @@ export default function CalendarPage() {
               )}
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Show More Events Modal */}
+      <Dialog open={showMoreOpen} onOpenChange={setShowMoreOpen}>
+        <DialogContent className="max-w-md p-0 overflow-hidden">
+          <DialogHeader className="px-5 pt-5 pb-4 border-b">
+            <DialogTitle className="flex items-center gap-2 text-base font-semibold">
+              <CalendarIcon className="h-4 w-4 text-primary" />
+              {showMoreDate?.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+              {showMoreEvents.length} event{showMoreEvents.length !== 1 ? 's' : ''} on this day
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="overflow-y-auto max-h-[60vh] divide-y divide-gray-100">
+            {showMoreEvents.map((event) => {
+              const color = event.resource?.color || '#3b82f6'
+              const typeLabel =
+                event.resource?.type === 'DEADLINE' ? 'Task' :
+                event.resource?.type === 'MEETING' ? 'Meeting' :
+                event.resource?.type === 'PERSONAL' ? 'Holiday' : 'Event'
+              const priorityLabel = event.resource?.task?.priority
+              const statusLabel = event.resource?.task?.status?.replace(/_/g, ' ')
+
+              return (
+                <button
+                  key={event.id}
+                  onClick={() => handleShowMoreEventClick(event)}
+                  className="w-full flex items-center gap-3 px-5 py-3.5 text-left hover:bg-gray-50 transition-colors group"
+                >
+                  {/* Color dot */}
+                  <span
+                    className="w-3 h-3 rounded-full flex-shrink-0 mt-0.5"
+                    style={{ backgroundColor: color }}
+                  />
+
+                  {/* Event info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate leading-tight">
+                      {event.title.replace(/^\[.*?\]\s*/, '')}
+                    </p>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      <span
+                        className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+                        style={{ backgroundColor: `${color}20`, color }}
+                      >
+                        {typeLabel}
+                      </span>
+                      {!event.allDay ? (
+                        <span className="text-[11px] text-gray-400 flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {event.start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                        </span>
+                      ) : (
+                        <span className="text-[11px] text-gray-400">All day</span>
+                      )}
+                      {priorityLabel && (
+                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                          priorityLabel === 'URGENT' ? 'bg-red-100 text-red-600' :
+                          priorityLabel === 'HIGH' ? 'bg-orange-100 text-orange-600' :
+                          priorityLabel === 'MEDIUM' ? 'bg-yellow-100 text-yellow-600' :
+                          'bg-green-100 text-green-600'
+                        }`}>
+                          {priorityLabel}
+                        </span>
+                      )}
+                      {statusLabel && (
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                          event.resource?.task?.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
+                          event.resource?.task?.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-700' :
+                          event.resource?.task?.status === 'IN_REVIEW' ? 'bg-purple-100 text-purple-700' :
+                          'bg-gray-100 text-gray-600'
+                        }`}>
+                          {statusLabel}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-gray-500 flex-shrink-0 transition-colors" />
+                </button>
+              )
+            })}
+          </div>
+
+          <div className="px-5 py-3 border-t bg-gray-50">
+            <p className="text-xs text-gray-400 text-center">Click any event to see full details</p>
+          </div>
         </DialogContent>
       </Dialog>
 

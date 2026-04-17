@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter } from 'date-fns'
 import {
-  Star, Plus, X, BarChart3, Users, Award, TrendingUp, Calendar, Filter, ArrowRight, MessageSquare
+  Star, Plus, X, BarChart3, Users, Award, TrendingUp, Calendar, Filter,
+  ArrowRight, MessageSquare, Search, Eye, ChevronRight
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -12,6 +13,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
+import { Input } from '@/components/ui/input'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select'
@@ -54,10 +56,10 @@ const GRADIENT_OPTIONS: {
   badge: string
   accent: string
 }[] = [
-  { score: 0,   label: '0%',   sublabel: 'None',      dot: 'bg-slate-400',   badge: 'bg-slate-100 text-slate-700 border-slate-300',   accent: 'border-l-slate-400'  },
-  { score: 25,  label: '25%',  sublabel: 'Poor',      dot: 'bg-red-400',     badge: 'bg-red-100 text-red-700 border-red-300',         accent: 'border-l-red-400'    },
-  { score: 50,  label: '50%',  sublabel: 'Fair',      dot: 'bg-amber-400',   badge: 'bg-amber-100 text-amber-700 border-amber-300',   accent: 'border-l-amber-400'  },
-  { score: 75,  label: '75%',  sublabel: 'Good',      dot: 'bg-blue-400',    badge: 'bg-blue-100 text-blue-700 border-blue-300',      accent: 'border-l-blue-400'   },
+  { score: 0,   label: '0%',   sublabel: 'None',      dot: 'bg-slate-400',   badge: 'bg-slate-100 text-slate-700 border-slate-300',      accent: 'border-l-slate-400'   },
+  { score: 25,  label: '25%',  sublabel: 'Poor',      dot: 'bg-red-400',     badge: 'bg-red-100 text-red-700 border-red-300',            accent: 'border-l-red-400'     },
+  { score: 50,  label: '50%',  sublabel: 'Fair',      dot: 'bg-amber-400',   badge: 'bg-amber-100 text-amber-700 border-amber-300',      accent: 'border-l-amber-400'   },
+  { score: 75,  label: '75%',  sublabel: 'Good',      dot: 'bg-blue-400',    badge: 'bg-blue-100 text-blue-700 border-blue-300',         accent: 'border-l-blue-400'    },
   { score: 100, label: '100%', sublabel: 'Excellent', dot: 'bg-emerald-500', badge: 'bg-emerald-100 text-emerald-700 border-emerald-300', accent: 'border-l-emerald-500' },
 ]
 
@@ -100,7 +102,13 @@ export default function EvaluationsPage() {
   const [users, setUsers] = useState<User[]>([])
   const [filterPeriod, setFilterPeriod] = useState<string>('all')
   const [filterEvaluatee, setFilterEvaluatee] = useState<string>('all')
+  const [searchTerm, setSearchTerm] = useState('')
   const [showForm, setShowForm] = useState(false)
+
+  // Member detail modal
+  const [viewingMember, setViewingMember] = useState<User | null>(null)
+  const [memberEvals, setMemberEvals] = useState<Evaluation[]>([])
+  const [loadingMemberEvals, setLoadingMemberEvals] = useState(false)
 
   // Form state
   const [formEvaluateeId, setFormEvaluateeId] = useState('')
@@ -136,6 +144,25 @@ export default function EvaluationsPage() {
       const res = await fetch('/api/users?limit=100&isActive=true')
       if (res.ok) { const d = await res.json(); setUsers(d.users || []) }
     } catch (e) { console.error(e) }
+  }
+
+  const openMemberDetail = async (member: User) => {
+    setViewingMember(member)
+    setLoadingMemberEvals(true)
+    try {
+      const params = new URLSearchParams()
+      params.set('evaluateeId', member.id)
+      const res = await fetch(`/api/evaluations?${params}`)
+      if (res.ok) {
+        const data = await res.json()
+        setMemberEvals(data.evaluations || [])
+      }
+    } catch (e) { console.error(e) } finally { setLoadingMemberEvals(false) }
+  }
+
+  const closeMemberDetail = () => {
+    setViewingMember(null)
+    setMemberEvals([])
   }
 
   const handleSubmit = async () => {
@@ -188,6 +215,25 @@ export default function EvaluationsPage() {
   const uniqueMembers = new Set(evaluations.map(e => e.evaluatee.id)).size
 
   const { start: previewStart, end: previewEnd } = getPeriodDates(formPeriod)
+
+  // Search filter applied client-side
+  const filtered = searchTerm.trim()
+    ? evaluations.filter(ev => {
+        const q = searchTerm.toLowerCase()
+        return (
+          (ev.evaluatee.name || '').toLowerCase().includes(q) ||
+          (ev.evaluatee.email || '').toLowerCase().includes(q) ||
+          (ev.evaluator.name || '').toLowerCase().includes(q)
+        )
+      })
+    : evaluations
+
+  // Member detail modal stats
+  const memberAvgScore = memberEvals.length > 0
+    ? Math.round(memberEvals.reduce((s, e) => s + e.gradientScore, 0) / memberEvals.length)
+    : 0
+  const memberHighCount = memberEvals.filter(e => e.gradientScore >= 75).length
+  const memberEvaluatorCount = new Set(memberEvals.map(e => e.evaluator.id)).size
 
   return (
     <div className="space-y-8">
@@ -305,6 +351,25 @@ export default function EvaluationsPage() {
           <span className="font-medium">Filter by:</span>
         </div>
 
+        {/* Search */}
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+          <Input
+            placeholder="Search by member or evaluator name..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="pl-9 h-9 border-slate-200 bg-slate-50 text-sm rounded-lg"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+
         <Select value={filterPeriod} onValueChange={setFilterPeriod}>
           <SelectTrigger className="w-44 border-slate-200 bg-slate-50 rounded-lg h-9 text-sm">
             <SelectValue placeholder="All periods" />
@@ -332,19 +397,23 @@ export default function EvaluationsPage() {
           </Select>
         )}
 
-        {(filterPeriod !== 'all' || filterEvaluatee !== 'all') && (
+        {(filterPeriod !== 'all' || filterEvaluatee !== 'all' || searchTerm) && (
           <Button
             variant="ghost"
             size="sm"
             className="text-slate-500 hover:text-slate-700 h-9"
-            onClick={() => { setFilterPeriod('all'); setFilterEvaluatee('all') }}
+            onClick={() => { setFilterPeriod('all'); setFilterEvaluatee('all'); setSearchTerm('') }}
           >
             <X className="h-3.5 w-3.5 mr-1.5" /> Clear filters
           </Button>
         )}
 
         <div className="ml-auto text-sm text-slate-500 shrink-0">
-          <span className="font-semibold text-slate-900">{evaluations.length}</span> evaluation{evaluations.length !== 1 ? 's' : ''}
+          <span className="font-semibold text-slate-900">{filtered.length}</span>
+          {filtered.length !== evaluations.length && (
+            <span className="text-slate-400"> of {evaluations.length}</span>
+          )}
+          <span> evaluation{filtered.length !== 1 ? 's' : ''}</span>
         </div>
       </div>
 
@@ -356,20 +425,20 @@ export default function EvaluationsPage() {
             <p className="text-sm text-slate-500">Loading evaluations...</p>
           </div>
         </div>
-      ) : evaluations.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <div className="p-4 bg-slate-100 rounded-full mb-4">
             <Star className="h-10 w-10 text-slate-300" />
           </div>
           <h3 className="text-base font-semibold text-slate-600 mb-1">No evaluations found</h3>
           <p className="text-sm text-slate-400 max-w-xs">
-            {filterPeriod !== 'all' || filterEvaluatee !== 'all'
+            {filterPeriod !== 'all' || filterEvaluatee !== 'all' || searchTerm
               ? 'Try adjusting your filters to see more results.'
               : isLeaderOrAdmin
               ? 'Get started by creating the first evaluation for your team.'
               : 'No evaluations have been submitted for your account yet.'}
           </p>
-          {isLeaderOrAdmin && filterPeriod === 'all' && filterEvaluatee === 'all' && (
+          {isLeaderOrAdmin && filterPeriod === 'all' && filterEvaluatee === 'all' && !searchTerm && (
             <Button className="mt-6" onClick={() => setShowForm(true)}>
               <Plus className="h-4 w-4 mr-2" /> New Evaluation
             </Button>
@@ -377,13 +446,14 @@ export default function EvaluationsPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {evaluations.map(ev => {
+          {filtered.map(ev => {
             const opt = getScoreOption(ev.gradientScore)
             return (
               <div
                 key={ev.id}
+                onClick={() => openMemberDetail(ev.evaluatee)}
                 className={cn(
-                  "group bg-white rounded-xl border border-slate-200 border-l-4 shadow-sm hover:shadow-md transition-all duration-200",
+                  "group bg-white rounded-xl border border-slate-200 border-l-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer",
                   opt.accent
                 )}
               >
@@ -416,6 +486,10 @@ export default function EvaluationsPage() {
                         <span className={cn("w-2 h-2 rounded-full mr-1.5 inline-block", opt.dot)} />
                         {ev.gradientScore}% · {opt.sublabel}
                       </Badge>
+                      <div className="flex items-center gap-1 text-xs text-slate-400 group-hover:text-blue-600 transition-colors ml-1">
+                        <Eye className="h-3.5 w-3.5" />
+                        <ChevronRight className="h-3.5 w-3.5" />
+                      </div>
                     </div>
                   </div>
 
@@ -446,12 +520,170 @@ export default function EvaluationsPage() {
                       <p className="text-sm text-slate-600 italic leading-relaxed">"{ev.comments}"</p>
                     </div>
                   )}
+
+                  {/* View hint */}
+                  <p className="text-xs text-slate-400 group-hover:text-blue-500 mt-3 text-right transition-colors">
+                    Click to view all evaluations for this member →
+                  </p>
                 </div>
               </div>
             )
           })}
         </div>
       )}
+
+      {/* ── Member Detail Modal ── */}
+      <Dialog open={!!viewingMember} onOpenChange={(open) => { if (!open) closeMemberDetail() }}>
+        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+          <DialogHeader className="shrink-0">
+            {viewingMember && (
+              <div className="flex items-center gap-4 pb-2">
+                <UserAvatar
+                  userId={viewingMember.id}
+                  image={viewingMember.image}
+                  name={viewingMember.name}
+                  email={viewingMember.email}
+                  className="h-14 w-14 shrink-0"
+                />
+                <div className="min-w-0">
+                  <DialogTitle className="text-xl font-bold text-slate-900">
+                    {viewingMember.name || viewingMember.email}
+                  </DialogTitle>
+                  <DialogDescription className="text-sm text-slate-500 mt-0.5">
+                    {viewingMember.email} · <span className="capitalize">{viewingMember.role?.toLowerCase()}</span>
+                  </DialogDescription>
+                </div>
+              </div>
+            )}
+          </DialogHeader>
+
+          {/* Mini Stats */}
+          {!loadingMemberEvals && memberEvals.length > 0 && (
+            <div className="grid grid-cols-3 gap-3 shrink-0">
+              <div className="bg-blue-50 rounded-xl p-4 text-center border border-blue-100">
+                <p className="text-2xl font-bold text-blue-700">{memberEvals.length}</p>
+                <p className="text-xs text-blue-600 font-medium mt-0.5">Total Evaluations</p>
+              </div>
+              <div className={cn("rounded-xl p-4 text-center border", memberAvgScore >= 75 ? 'bg-emerald-50 border-emerald-100' : memberAvgScore >= 50 ? 'bg-amber-50 border-amber-100' : 'bg-red-50 border-red-100')}>
+                <p className={cn("text-2xl font-bold", memberAvgScore >= 75 ? 'text-emerald-700' : memberAvgScore >= 50 ? 'text-amber-700' : 'text-red-700')}>{memberAvgScore}%</p>
+                <p className={cn("text-xs font-medium mt-0.5", memberAvgScore >= 75 ? 'text-emerald-600' : memberAvgScore >= 50 ? 'text-amber-600' : 'text-red-600')}>Average Score</p>
+              </div>
+              <div className="bg-purple-50 rounded-xl p-4 text-center border border-purple-100">
+                <p className="text-2xl font-bold text-purple-700">{memberEvaluatorCount}</p>
+                <p className="text-xs text-purple-600 font-medium mt-0.5">Evaluator{memberEvaluatorCount !== 1 ? 's' : ''}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Evaluations List */}
+          <div className="flex-1 overflow-y-auto min-h-0">
+            {loadingMemberEvals ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="text-center space-y-3">
+                  <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-blue-600 mx-auto" />
+                  <p className="text-sm text-slate-500">Loading evaluations...</p>
+                </div>
+              </div>
+            ) : memberEvals.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="p-3 bg-slate-100 rounded-full mb-3">
+                  <Star className="h-8 w-8 text-slate-300" />
+                </div>
+                <p className="text-sm font-medium text-slate-600">No evaluations yet</p>
+                <p className="text-xs text-slate-400 mt-1">This member hasn't been evaluated.</p>
+              </div>
+            ) : (
+              <div className="space-y-3 pr-1">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+                  All Evaluations Received · {memberEvals.length} record{memberEvals.length !== 1 ? 's' : ''}
+                </p>
+                {memberEvals.map(ev => {
+                  const opt = getScoreOption(ev.gradientScore)
+                  return (
+                    <div
+                      key={ev.id}
+                      className={cn(
+                        "bg-white rounded-xl border border-slate-200 border-l-4 shadow-sm",
+                        opt.accent
+                      )}
+                    >
+                      <div className="p-4">
+                        {/* Evaluator row */}
+                        <div className="flex items-center justify-between gap-3 mb-3">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <UserAvatar
+                              userId={ev.evaluator.id}
+                              image={ev.evaluator.image}
+                              name={ev.evaluator.name}
+                              email={ev.evaluator.email}
+                              className="h-8 w-8 shrink-0"
+                            />
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-slate-800 truncate">{ev.evaluator.name || ev.evaluator.email}</p>
+                              <p className="text-xs text-slate-400">{format(new Date(ev.evaluatedAt), 'MMM d, yyyy · h:mm a')}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Badge className={cn("text-xs border font-medium px-2 py-0.5", PERIOD_BADGE[ev.period])}>
+                              {PERIOD_LABEL[ev.period]}
+                            </Badge>
+                            <Badge className={cn("text-sm border font-bold px-2.5 py-0.5", opt.badge)}>
+                              <span className={cn("w-1.5 h-1.5 rounded-full mr-1 inline-block", opt.dot)} />
+                              {ev.gradientScore}%
+                            </Badge>
+                          </div>
+                        </div>
+
+                        {/* Score bar */}
+                        <div className="mb-2">
+                          <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {format(new Date(ev.periodStartDate), 'MMM d')} – {format(new Date(ev.periodEndDate), 'MMM d, yyyy')}
+                            </span>
+                            <span className="font-semibold">{opt.sublabel}</span>
+                          </div>
+                          <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                            <div
+                              className={cn("h-1.5 rounded-full", getProgressColor(ev.gradientScore))}
+                              style={{ width: `${ev.gradientScore}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Comments */}
+                        {ev.comments && (
+                          <div className="flex items-start gap-2 bg-slate-50 rounded-lg px-3 py-2 mt-2">
+                            <MessageSquare className="h-3 w-3 text-slate-400 mt-0.5 shrink-0" />
+                            <p className="text-xs text-slate-600 italic leading-relaxed">"{ev.comments}"</p>
+                          </div>
+                        )}
+
+                        {ev.task && (
+                          <p className="text-xs text-slate-400 mt-2">
+                            Task: <span className="font-medium text-slate-600">{ev.task.title}</span>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="shrink-0 pt-2 border-t border-slate-100">
+            <Button variant="outline" onClick={closeMemberDetail} className="border-slate-200">
+              Close
+            </Button>
+            {isLeaderOrAdmin && (
+              <Button onClick={() => { closeMemberDetail(); setFormEvaluateeId(viewingMember?.id || ''); setShowForm(true) }}>
+                <Plus className="h-4 w-4 mr-2" /> Evaluate This Member
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ── New Evaluation Dialog ── */}
       <Dialog open={showForm} onOpenChange={(open) => { if (!open) closeForm() }}>

@@ -22,7 +22,9 @@ import {
   ClipboardList,
   CalendarDays,
   Building2,
-  TrendingUp
+  TrendingUp,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -166,6 +168,12 @@ export default function TeamOverviewPage() {
   // Evaluation state
   const [evalScores, setEvalScores] = useState<Map<string, number>>(new Map())
   const [evalDates, setEvalDates] = useState<Map<string, Date>>(new Map())
+
+  // Card filter & pagination
+  type CardFilter = 'all' | 'needs-eval' | 'new-this-month' | 'evaluated'
+  const [cardFilter, setCardFilter] = useState<CardFilter>('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 9
 
   // Redirect if not a leader
   useEffect(() => {
@@ -749,8 +757,37 @@ export default function TeamOverviewPage() {
       (filterStatus === 'active' && member.isActive) ||
       (filterStatus === 'inactive' && !member.isActive)
 
-    return matchesSearch && matchesFilter
+    if (!matchesSearch || !matchesFilter) return false
+
+    if (cardFilter === 'needs-eval') {
+      const thirtyDaysAgoCf = new Date()
+      thirtyDaysAgoCf.setDate(thirtyDaysAgoCf.getDate() - 30)
+      const hasRecentEval = evalDates.has(member.id) && evalDates.get(member.id)! >= thirtyDaysAgoCf
+      if (hasRecentEval) return false
+    }
+    if (cardFilter === 'new-this-month') {
+      const thisMonthStartCf = new Date()
+      thisMonthStartCf.setDate(1)
+      thisMonthStartCf.setHours(0, 0, 0, 0)
+      if (new Date(member.createdAt) < thisMonthStartCf) return false
+    }
+    if (cardFilter === 'evaluated') {
+      if (!evalScores.has(member.id)) return false
+    }
+
+    return true
   })
+
+  // Reset to page 1 whenever filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [debouncedSearchTerm, filterStatus, cardFilter])
+
+  const totalPages = Math.max(1, Math.ceil(filteredMembers.length / ITEMS_PER_PAGE))
+  const paginatedMembers = filteredMembers.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  )
 
   // Derived stats for people-centric cards
   const avgEvalScore = evalScores.size > 0
@@ -2031,7 +2068,13 @@ export default function TeamOverviewPage() {
       {/* Team Stats — people-centric */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Total Members */}
-        <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 rounded-xl hover:-translate-y-1">
+        <Card
+          onClick={() => setCardFilter('all')}
+          className={cn(
+            "group relative overflow-hidden border bg-white hover:shadow-lg transition-all duration-300 rounded-xl hover:-translate-y-1 cursor-pointer",
+            cardFilter === 'all' ? "border-blue-400 ring-2 ring-blue-200" : "border-slate-200"
+          )}
+        >
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-blue-600"></div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Total Members</CardTitle>
@@ -2054,7 +2097,13 @@ export default function TeamOverviewPage() {
         </Card>
 
         {/* Avg Eval Score */}
-        <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 rounded-xl hover:-translate-y-1">
+        <Card
+          onClick={() => setCardFilter('evaluated')}
+          className={cn(
+            "group relative overflow-hidden border bg-white hover:shadow-lg transition-all duration-300 rounded-xl hover:-translate-y-1 cursor-pointer",
+            cardFilter === 'evaluated' ? "border-amber-400 ring-2 ring-amber-200" : "border-slate-200"
+          )}
+        >
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 to-amber-600"></div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">Avg Eval Score</CardTitle>
@@ -2079,11 +2128,17 @@ export default function TeamOverviewPage() {
         </Card>
 
         {/* Needs Evaluation */}
-        <Card className={`group relative overflow-hidden border transition-all duration-300 rounded-xl hover:-translate-y-1 ${
-          membersNeedingEval > 0
-            ? 'border-orange-200 bg-white hover:shadow-lg'
-            : 'border-slate-200 bg-white hover:shadow-md'
-        }`}>
+        <Card
+          onClick={() => setCardFilter('needs-eval')}
+          className={cn(
+            "group relative overflow-hidden border bg-white transition-all duration-300 rounded-xl hover:-translate-y-1 cursor-pointer",
+            cardFilter === 'needs-eval'
+              ? "border-orange-400 ring-2 ring-orange-200 hover:shadow-lg"
+              : membersNeedingEval > 0
+                ? "border-orange-200 hover:shadow-lg"
+                : "border-slate-200 hover:shadow-md"
+          )}
+        >
           <div className={`absolute top-0 left-0 w-full h-1 ${
             membersNeedingEval > 0
               ? 'bg-gradient-to-r from-orange-500 to-orange-600'
@@ -2114,7 +2169,13 @@ export default function TeamOverviewPage() {
         </Card>
 
         {/* New Members This Month */}
-        <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 rounded-xl hover:-translate-y-1">
+        <Card
+          onClick={() => setCardFilter('new-this-month')}
+          className={cn(
+            "group relative overflow-hidden border bg-white hover:shadow-lg transition-all duration-300 rounded-xl hover:-translate-y-1 cursor-pointer",
+            cardFilter === 'new-this-month' ? "border-violet-400 ring-2 ring-violet-200" : "border-slate-200"
+          )}
+        >
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-violet-500 to-violet-600"></div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-semibold text-slate-600 uppercase tracking-wide">New This Month</CardTitle>
@@ -2186,6 +2247,24 @@ export default function TeamOverviewPage() {
         </CardContent>
       </Card>
 
+      {/* Active card filter label */}
+      {cardFilter !== 'all' && (
+        <div className="flex items-center gap-2 text-sm text-slate-600">
+          <span className="font-medium">Filtered:</span>
+          <Badge variant="secondary" className="rounded-md bg-slate-100 text-slate-700">
+            {cardFilter === 'evaluated' && 'Evaluated members'}
+            {cardFilter === 'needs-eval' && 'Needs evaluation (30 days)'}
+            {cardFilter === 'new-this-month' && 'New this month'}
+          </Badge>
+          <button
+            onClick={() => setCardFilter('all')}
+            className="text-xs text-blue-600 hover:underline"
+          >
+            Clear
+          </button>
+        </div>
+      )}
+
       {/* Professional Team Members Grid/List */}
       {filteredMembers.length === 0 ? (
         <Card className="border border-slate-200 bg-white shadow-sm rounded-xl">
@@ -2215,7 +2294,7 @@ export default function TeamOverviewPage() {
             ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
             : "space-y-4"
         )}>
-          {filteredMembers.map((member) => (
+          {paginatedMembers.map((member) => (
             <Card
               key={member.id}
               className={cn(
@@ -2373,6 +2452,53 @@ export default function TeamOverviewPage() {
               </CardContent>
             </Card>
           ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {filteredMembers.length > ITEMS_PER_PAGE && (
+        <div className="flex items-center justify-between bg-white border border-slate-200 rounded-xl px-5 py-3 shadow-sm">
+          <span className="text-sm text-slate-500">
+            Showing{' '}
+            <span className="font-medium text-slate-700">
+              {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredMembers.length)}
+            </span>{' '}
+            of <span className="font-medium text-slate-700">{filteredMembers.length}</span> members
+          </span>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 rounded-lg border-slate-200"
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+              <Button
+                key={page}
+                variant={page === currentPage ? 'default' : 'outline'}
+                size="icon"
+                className={cn(
+                  "h-8 w-8 rounded-lg text-xs",
+                  page === currentPage ? "" : "border-slate-200 text-slate-600"
+                )}
+                onClick={() => setCurrentPage(page)}
+              >
+                {page}
+              </Button>
+            ))}
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 rounded-lg border-slate-200"
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       )}
 

@@ -7,14 +7,11 @@ import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea
 import {
   Plus,
   Search,
-  Filter,
   Calendar,
-  Clock,
   User,
   Users,
   Handshake,
   AlertCircle,
-  CheckSquare,
   MoreHorizontal,
   Edit,
   Eye,
@@ -23,11 +20,8 @@ import {
   ListTodo,
   Copy,
 } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { UserAvatar } from '@/components/shared/UserAvatar'
 import { Progress } from '@/components/ui/progress'
 import { 
@@ -142,10 +136,10 @@ interface User {
 }
 
 const COLUMN_CONFIG = {
-  TODO: { title: 'To Do', color: 'bg-gray-100', textColor: 'text-gray-700' },
-  IN_PROGRESS: { title: 'In Progress', color: 'bg-blue-100', textColor: 'text-blue-700' },
-  IN_REVIEW: { title: 'In Review', color: 'bg-yellow-100', textColor: 'text-yellow-700' },
-  COMPLETED: { title: 'Completed', color: 'bg-green-100', textColor: 'text-green-700' },
+  TODO: { title: 'To Do', color: 'bg-gray-50', textColor: 'text-gray-700', badgeColor: 'bg-gray-100 text-gray-700' },
+  IN_PROGRESS: { title: 'In Progress', color: 'bg-blue-50', textColor: 'text-blue-700', badgeColor: 'bg-blue-100 text-blue-700' },
+  IN_REVIEW: { title: 'In Review', color: 'bg-amber-50', textColor: 'text-amber-700', badgeColor: 'bg-amber-100 text-amber-700' },
+  COMPLETED: { title: 'Completed', color: 'bg-green-50', textColor: 'text-green-700', badgeColor: 'bg-green-100 text-green-700' },
 }
 
 export default function TasksPage() {
@@ -376,7 +370,7 @@ export default function TasksPage() {
     switch (priority) {
       case 'URGENT': return 'bg-red-500'
       case 'HIGH': return 'bg-orange-500'
-      case 'MEDIUM': return 'bg-yellow-500'
+      case 'MEDIUM': return 'bg-amber-500'
       case 'LOW': return 'bg-green-500'
       default: return 'bg-gray-500'
     }
@@ -389,13 +383,6 @@ export default function TasksPage() {
       case 'COLLABORATION': return <Handshake className="h-3 w-3" />
       default: return <User className="h-3 w-3" />
     }
-  }
-
-  const getProgressColor = (percentage: number) => {
-    if (percentage < 25) return 'bg-red-500'
-    if (percentage < 50) return 'bg-orange-500' 
-    if (percentage < 75) return 'bg-yellow-500'
-    return 'bg-green-500'
   }
 
   const getTasksByStatus = (status: Task['status']) => {
@@ -690,15 +677,15 @@ export default function TasksPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="bg-gray-50 min-h-screen p-6 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="bg-gray-50 min-h-screen p-6 flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <p className="text-red-600">{error}</p>
@@ -708,99 +695,103 @@ export default function TasksPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
+    <div className="bg-gray-50 min-h-screen p-6">
+      {/* Page Header */}
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Tasks</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl font-bold text-gray-900">My Tasks</h1>
+          <p className="text-sm text-gray-500 mt-0.5">
             Manage your tasks and collaborations
           </p>
         </div>
-        <Button onClick={() => setShowTaskForm(true)}>
+        <Button onClick={() => setShowTaskForm(true)} className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm">
           <Plus className="h-4 w-4 mr-2" />
           New Task
         </Button>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-4 items-center flex-wrap">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search tasks by title, description, or users..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+      {/* Filter Bar */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+        <div className="flex gap-3 items-center flex-wrap">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Search tasks..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 h-9 bg-gray-50 border-gray-200 text-sm focus:bg-white"
+            />
+          </div>
+
+          <SearchableSelect
+            options={users}
+            value={selectedUser}
+            onValueChange={setSelectedUser}
+            placeholder="Filter by user"
+            allLabel="All users"
+            maxDisplayed={10}
           />
+
+          <Select value={selectedTaskType || "all"} onValueChange={(value) => setSelectedTaskType(value === "all" ? "" : value)}>
+            <SelectTrigger className="w-[160px] h-9 bg-gray-50 border-gray-200 text-sm">
+              <SelectValue placeholder="Task type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All task types</SelectItem>
+              <SelectItem value="INDIVIDUAL">
+                <div className="flex items-center gap-2">
+                  <User className="h-3.5 w-3.5" />
+                  <span>Individual</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="TEAM">
+                <div className="flex items-center gap-2">
+                  <Users className="h-3.5 w-3.5" />
+                  <span>Team</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="COLLABORATION">
+                <div className="flex items-center gap-2">
+                  <Handshake className="h-3.5 w-3.5" />
+                  <span>Collaboration</span>
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+
+          {(selectedUser || selectedTaskType || searchTerm) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 text-gray-500 hover:text-gray-700 text-sm"
+              onClick={() => {
+                setSelectedUser('')
+                setSelectedTaskType('')
+                setSearchTerm('')
+              }}
+            >
+              Clear Filters
+            </Button>
+          )}
         </div>
-        
-        <SearchableSelect
-          options={users}
-          value={selectedUser}
-          onValueChange={setSelectedUser}
-          placeholder="Filter by user"
-          allLabel="All users"
-          maxDisplayed={10}
-        />
-
-        <Select value={selectedTaskType || "all"} onValueChange={(value) => setSelectedTaskType(value === "all" ? "" : value)}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Filter by task type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All task types</SelectItem>
-            <SelectItem value="INDIVIDUAL">
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                <span>Individual</span>
-              </div>
-            </SelectItem>
-            <SelectItem value="TEAM">
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                <span>Team</span>
-              </div>
-            </SelectItem>
-            <SelectItem value="COLLABORATION">
-              <div className="flex items-center gap-2">
-                <Handshake className="h-4 w-4" />
-                <span>Collaboration</span>
-              </div>
-            </SelectItem>
-          </SelectContent>
-        </Select>
-
-        {(selectedUser || selectedTaskType || searchTerm) && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setSelectedUser('')
-              setSelectedTaskType('')
-              setSearchTerm('')
-            }}
-          >
-            Clear Filters
-          </Button>
-        )}
       </div>
 
       {/* Kanban Board */}
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 min-h-[700px]">
+        <div className="flex gap-4 overflow-x-auto pb-4">
           {Object.entries(COLUMN_CONFIG).map(([status, config]) => {
             const columnTasks = getTasksByStatus(status as Task['status'])
-            
+
             return (
-              <div key={status} className="min-w-0 space-y-4">
-                <div className={`p-3 rounded-lg ${config.color} shadow-sm`}>
-                  <h3 className={`font-semibold ${config.textColor} flex items-center justify-between text-sm`}>
+              <div key={status} className="min-w-[280px] max-w-[320px] flex-1 flex flex-col">
+                {/* Column Header */}
+                <div className={`${config.color} rounded-xl p-3 mb-3 flex items-center justify-between`}>
+                  <h3 className={`font-semibold ${config.textColor} text-sm uppercase tracking-wide`}>
                     {config.title}
-                    <Badge variant="secondary" className="ml-2 text-xs">
-                      {columnTasks.length}
-                    </Badge>
                   </h3>
+                  <span className={`${config.badgeColor} text-xs font-medium px-2 py-0.5 rounded-full`}>
+                    {columnTasks.length}
+                  </span>
                 </div>
 
                 <Droppable droppableId={status}>
@@ -808,289 +799,250 @@ export default function TasksPage() {
                     <div
                       ref={provided.innerRef}
                       {...provided.droppableProps}
-                      className={`space-y-3 min-h-[550px] p-2 rounded-lg transition-colors ${
-                        snapshot.isDraggingOver ? 'bg-muted/20 border-2 border-dashed border-primary/30' : ''
+                      className={`flex-1 min-h-[500px] rounded-xl transition-colors ${
+                        snapshot.isDraggingOver ? 'bg-blue-50/40 border-2 border-dashed border-blue-300' : ''
                       }`}
                     >
-                      {columnTasks.map((task, index) => (
+                      {columnTasks.map((task, index) => {
+                        const _sot = new Date(); _sot.setHours(0, 0, 0, 0)
+                        const isOverdue = task.dueDate && new Date(task.dueDate) < _sot && task.status !== 'COMPLETED'
+                        return (
                         <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={!canUserChangeTaskStatus(task)}>
                           {(provided, snapshot) => {
                             const canDrag = canUserChangeTaskStatus(task)
                             return (
-                            <Card
+                            <div
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               {...(canDrag ? provided.dragHandleProps : {})}
-                              className={`relative cursor-pointer transition-all duration-200 min-h-[160px] ${
-                                canDrag
-                                  ? 'hover:cursor-grab active:cursor-grabbing'
-                                  : 'cursor-default'
+                              className={`relative bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-2 transition-shadow ${
+                                isOverdue ? 'border-l-2 border-l-red-400' : ''
                               } ${
-                                snapshot.isDragging
-                                  ? 'shadow-xl rotate-2 scale-105 z-50'
-                                  : canDrag ? 'hover:shadow-md hover:-translate-y-1 shadow-sm' : 'shadow-sm'
-                              } bg-white border border-gray-200 rounded-lg ${
+                                canDrag ? 'cursor-grab active:cursor-grabbing hover:shadow-md' : 'cursor-default'
+                              } ${
+                                snapshot.isDragging ? 'shadow-xl rotate-1 scale-105 z-50' : ''
+                              } ${
                                 !canDrag ? 'opacity-90' : ''
                               }`}
-                              onClick={(e) => {
-                                // Only open edit if not dragging and clicked on card content
+                              onClick={() => {
                                 if (!snapshot.isDragging) {
                                   handleTaskClick(task)
                                 }
                               }}
                             >
-                              <CardContent className="p-4">
-                                {/* New Task Indicator */}
-                                {isTaskNew(task) && !isTaskCreatedByUser(task) && (
-                                  <div className="absolute -top-3 -right-3 z-10">
-                                    <div className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold shadow-lg animate-pulse">
-                                      NEW
-                                    </div>
+                              {/* New Task Indicator */}
+                              {isTaskNew(task) && !isTaskCreatedByUser(task) && (
+                                <div className="absolute -top-2.5 -right-2.5 z-10">
+                                  <div className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-bold shadow-md animate-pulse">
+                                    NEW
                                   </div>
-                                )}
-                                
-                                {/* Cannot Move Indicator */}
-                                {!canUserChangeTaskStatus(task) && (
-                                  <div className="absolute -top-2 -left-2 z-10">
-                                    <div className="bg-amber-500 text-white text-xs px-2 py-1 rounded-full font-bold shadow-lg">
-                                      💬 Comment Only
-                                    </div>
+                                </div>
+                              )}
+
+                              {/* Cannot Move Indicator */}
+                              {!canUserChangeTaskStatus(task) && (
+                                <div className="absolute -top-2 -left-2 z-10">
+                                  <div className="bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full font-bold shadow-md">
+                                    Comment Only
                                   </div>
-                                )}
-                                
-                                {/* Header Section */}
-                                <div className="flex items-start justify-between mb-3">
-                                  <div className="flex items-start gap-2 flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                                      <div className="flex-shrink-0">
-                                        {getTaskTypeIcon(task.taskType)}
-                                      </div>
-                                      <div className="min-w-0 flex-1">
-                                        <div className="flex items-center gap-1 mb-1">
-                                          <h4 className="font-semibold text-base leading-tight text-gray-900 truncate">
-                                            {task.title}
-                                          </h4>
-                                          {task.recurringParentId && (
-                                            <RefreshCw className="h-3 w-3 text-blue-500 flex-shrink-0" />
-                                          )}
-                                        </div>
-                                        <div className="flex items-center gap-1 flex-wrap">
-                                          {task.parentId && (
-                                            <Badge className="text-xs bg-violet-500 text-white border-violet-600">
-                                              Subtask
-                                            </Badge>
-                                          )}
-                                          {!isTaskCreatedByUser(task) && (
-                                            <Badge variant="outline" className="text-xs">
-                                              Assigned
-                                            </Badge>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </div>
+                                </div>
+                              )}
+
+                              {/* Card Top Row: priority dot + title + actions */}
+                              <div className="flex items-start gap-2 mb-1">
+                                <div className={`w-2 h-2 rounded-full flex-shrink-0 mt-1 ${getPriorityColor(task.priority)}`} />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1">
+                                    <h4 className="font-medium text-gray-900 text-sm leading-tight truncate">
+                                      {task.title}
+                                    </h4>
+                                    {task.recurringParentId && (
+                                      <RefreshCw className="h-3 w-3 text-blue-500 flex-shrink-0" />
+                                    )}
                                   </div>
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button 
-                                        variant="ghost" 
-                                        size="sm" 
-                                        className="h-8 w-8 p-0 flex-shrink-0 ml-2"
-                                        onClick={(e) => e.stopPropagation()}
-                                      >
-                                        <MoreHorizontal className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      {/* View option - available for all users */}
+                                  <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                                    {task.parentId && (
+                                      <span className="inline-flex items-center text-xs bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded font-medium">
+                                        Subtask
+                                      </span>
+                                    )}
+                                    {!isTaskCreatedByUser(task) && (
+                                      <span className="inline-flex items-center text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-medium">
+                                        Assigned
+                                      </span>
+                                    )}
+                                    {task.team && (
+                                      <span className="inline-flex items-center text-xs bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-medium truncate max-w-[80px]">
+                                        {task.team.name}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-6 w-6 p-0 flex-shrink-0 text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <MoreHorizontal className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-40">
+                                    <DropdownMenuItem onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleTaskClick(task)
+                                    }}>
+                                      <Eye className="h-4 w-4 mr-2" />
+                                      View
+                                    </DropdownMenuItem>
+                                    {isTaskCreatedByUser(task) && (
                                       <DropdownMenuItem onClick={(e) => {
                                         e.stopPropagation()
-                                        handleTaskClick(task)
+                                        openEditForm(task)
                                       }}>
-                                        <Eye className="h-4 w-4 mr-2" />
-                                        View Details
+                                        <Edit className="h-4 w-4 mr-2" />
+                                        Edit
                                       </DropdownMenuItem>
-                                      
-                                      {/* Edit option - only for task creators */}
-                                      {isTaskCreatedByUser(task) && (
-                                        <DropdownMenuItem onClick={(e) => {
+                                    )}
+                                    <DropdownMenuItem onClick={(e) => {
+                                      e.stopPropagation()
+                                      openDuplicateForm(task)
+                                    }}>
+                                      <Copy className="h-4 w-4 mr-2" />
+                                      Duplicate
+                                    </DropdownMenuItem>
+                                    {canDeleteTask(task) && (
+                                      <DropdownMenuItem
+                                        className="text-red-600 focus:text-red-600"
+                                        onClick={(e) => {
                                           e.stopPropagation()
-                                          openEditForm(task)
-                                        }}>
-                                          <Edit className="h-4 w-4 mr-2" />
-                                          Edit
-                                        </DropdownMenuItem>
-                                      )}
-
-                                      {/* Duplicate option - available to all */}
-                                      <DropdownMenuItem onClick={(e) => {
-                                        e.stopPropagation()
-                                        openDuplicateForm(task)
-                                      }}>
-                                        <Copy className="h-4 w-4 mr-2" />
-                                        Duplicate
+                                          setDeletingTask(task)
+                                        }}
+                                      >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Delete
                                       </DropdownMenuItem>
+                                    )}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
 
-                                      {/* Delete option - shown if user can delete */}
-                                      {canDeleteTask(task) && (
-                                        <DropdownMenuItem 
-                                          className="text-red-600"
-                                          onClick={(e) => {
-                                            e.stopPropagation()
-                                            setDeletingTask(task)
-                                          }}
-                                        >
-                                          <Trash2 className="h-4 w-4 mr-2" />
-                                          Delete
-                                        </DropdownMenuItem>
-                                      )}
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
+                              {/* Description */}
+                              {task.description && (
+                                <p className="text-xs text-gray-500 line-clamp-2 mt-1 ml-4 leading-relaxed">
+                                  {task.description}
+                                </p>
+                              )}
+
+                              {/* Progress Section */}
+                              <div className="mt-3 ml-4">
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-xs text-gray-400">Progress</span>
+                                  <span className="text-xs font-medium text-gray-600">{task.progressPercentage || 0}%</span>
                                 </div>
+                                <Progress
+                                  value={task.progressPercentage || 0}
+                                  className="h-1.5 bg-gray-100"
+                                />
+                              </div>
 
-                                {/* Description */}
-                                {task.description && (
-                                  <div className="mb-3">
-                                    <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">
-                                      {task.description}
-                                    </p>
-                                  </div>
-                                )}
-
-                                {/* Progress Section */}
-                                <div className="mb-3">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <span className="text-xs font-medium text-gray-700">Progress</span>
-                                    <span className="text-xs font-semibold text-gray-900">{task.progressPercentage || 0}%</span>
-                                  </div>
-                                  <Progress
-                                    value={task.progressPercentage || 0}
-                                    className="h-2 bg-gray-200"
-                                  />
-                                </div>
-
-                                {/* Subtask count badge — click the card to view/manage subtasks in the detail modal */}
-                                {task.subtasks && task.subtasks.length > 0 && (
-                                  <div className="mb-3">
-                                    <span className="inline-flex items-center gap-1 text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                                      <ListTodo className="h-3 w-3" />
-                                      {task.subtasks.filter(s => s.status === 'COMPLETED').length}/{task.subtasks.length} subtasks
-                                    </span>
-                                  </div>
-                                )}
-
-                                {/* Badges and Due Date */}
-                                {(() => {
-                                  const _sot = new Date(); _sot.setHours(0, 0, 0, 0)
-                                  const overdue = task.dueDate && new Date(task.dueDate) < _sot && task.status !== 'COMPLETED'
-                                  return (
-                                    <div className="flex items-center justify-between mb-3">
-                                      <div className="flex items-center gap-2">
-                                        <div className={`w-2 h-2 rounded-full ${getPriorityColor(task.priority)}`} />
-                                        <span className="text-xs font-medium text-gray-700 capitalize">
-                                          {task.priority.toLowerCase()}
+                              {/* Card Bottom Row */}
+                              <div className="flex items-center justify-between mt-3 ml-4">
+                                <div className="flex items-center gap-3">
+                                  {/* Due date */}
+                                  {task.dueDate && (
+                                    <div className={`flex items-center gap-1 ${isOverdue ? 'text-red-500' : 'text-gray-400'}`}>
+                                      <Calendar className="h-3 w-3" />
+                                      <span className={`text-xs ${isOverdue ? 'font-semibold' : ''}`}>
+                                        {format(new Date(task.dueDate), 'MMM dd')}
+                                      </span>
+                                      {isOverdue && (
+                                        <span className="text-xs bg-red-100 text-red-600 px-1 py-0 rounded font-medium">
+                                          Overdue
                                         </span>
-                                      </div>
-                                      {task.dueDate && (
-                                        <div className={`flex items-center gap-1 text-xs ${overdue ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
-                                          <Clock className="h-3 w-3" />
-                                          <span className="font-medium">
-                                            {format(new Date(task.dueDate), 'MMM dd')}
-                                          </span>
-                                          {overdue && (
-                                            <Badge className="text-xs px-1 py-0 h-4 bg-red-500 text-white ml-1">
-                                              OVERDUE
-                                            </Badge>
-                                          )}
-                                        </div>
                                       )}
                                     </div>
-                                  )
-                                })()}
-
-                                {/* Task Type and Team Badge */}
-                                <div className="flex items-center gap-1.5 mb-3">
-                                  <Badge variant="outline" className="text-xs">
-                                    {task.taskType.replace('_', ' ')}
-                                  </Badge>
-                                  {task.team && (
-                                    <Badge variant="secondary" className="text-xs">
-                                      {task.team.name}
-                                    </Badge>
                                   )}
-                                </div>
-
-                                {/* Assignees and Collaborators */}
-                                <div className="space-y-1.5">
-                                  {task.assignee && (
-                                    <div className="flex items-center gap-2">
-                                      <UserAvatar
-                                        userId={task.assignee.id}
-                                        image={task.assignee.image}
-                                        name={task.assignee.name}
-                                        email={task.assignee.email}
-                                        className="h-5 w-5"
-                                        fallbackClassName="text-xs"
-                                      />
-                                      <span className="text-xs text-muted-foreground truncate">
-                                        {task.assignee.name || task.assignee.email}
+                                  {/* Subtask count */}
+                                  {task.subtasks && task.subtasks.length > 0 && (
+                                    <div className="flex items-center gap-1 text-gray-400">
+                                      <ListTodo className="h-3 w-3" />
+                                      <span className="text-xs">
+                                        {task.subtasks.filter(s => s.status === 'COMPLETED').length}/{task.subtasks.length}
                                       </span>
                                     </div>
                                   )}
-
+                                </div>
+                                {/* Assignee avatars */}
+                                <div className="flex items-center gap-1">
+                                  {task.assignee && (
+                                    <UserAvatar
+                                      userId={task.assignee.id}
+                                      image={task.assignee.image}
+                                      name={task.assignee.name}
+                                      email={task.assignee.email}
+                                      className="h-6 w-6"
+                                      fallbackClassName="text-xs"
+                                    />
+                                  )}
                                   {task.teamMembers && task.teamMembers.length > 0 && (
-                                    <div className="flex items-center gap-1">
-                                      <Users className="h-3 w-3 text-muted-foreground" />
-                                      <div className="flex -space-x-1">
-                                        {task.teamMembers.slice(0, 3).map((member) => (
-                                          <UserAvatar
-                                            key={member.userId}
-                                            userId={member.user.id}
-                                            image={member.user.image}
-                                            name={member.user.name}
-                                            email={member.user.email}
-                                            className="h-4 w-4 border border-background"
-                                            fallbackClassName="text-xs"
-                                          />
-                                        ))}
-                                        {task.teamMembers.length > 3 && (
-                                          <div className="h-4 w-4 rounded-full bg-muted flex items-center justify-center border border-background">
-                                            <span className="text-xs">+{task.teamMembers.length - 3}</span>
-                                          </div>
-                                        )}
-                                      </div>
+                                    <div className="flex -space-x-1">
+                                      {task.teamMembers.slice(0, 3).map((member) => (
+                                        <UserAvatar
+                                          key={member.userId}
+                                          userId={member.user.id}
+                                          image={member.user.image}
+                                          name={member.user.name}
+                                          email={member.user.email}
+                                          className="h-6 w-6 border border-white"
+                                          fallbackClassName="text-xs"
+                                        />
+                                      ))}
+                                      {task.teamMembers.length > 3 && (
+                                        <div className="h-6 w-6 rounded-full bg-gray-100 flex items-center justify-center border border-white">
+                                          <span className="text-xs text-gray-500">+{task.teamMembers.length - 3}</span>
+                                        </div>
+                                      )}
                                     </div>
                                   )}
-
                                   {task.collaborators && task.collaborators.length > 0 && (
-                                    <div className="flex items-center gap-1">
-                                      <Handshake className="h-3 w-3 text-muted-foreground" />
-                                      <div className="flex -space-x-1">
-                                        {task.collaborators.slice(0, 3).map((collaborator) => (
-                                          <UserAvatar
-                                            key={collaborator.userId}
-                                            userId={collaborator.user.id}
-                                            image={collaborator.user.image}
-                                            name={collaborator.user.name}
-                                            email={collaborator.user.email}
-                                            className="h-4 w-4 border border-background"
-                                            fallbackClassName="text-xs"
-                                          />
-                                        ))}
-                                        {task.collaborators.length > 3 && (
-                                          <div className="h-4 w-4 rounded-full bg-muted flex items-center justify-center border border-background">
-                                            <span className="text-xs">+{task.collaborators.length - 3}</span>
-                                          </div>
-                                        )}
-                                      </div>
+                                    <div className="flex -space-x-1">
+                                      {task.collaborators.slice(0, 2).map((collaborator) => (
+                                        <UserAvatar
+                                          key={collaborator.userId}
+                                          userId={collaborator.user.id}
+                                          image={collaborator.user.image}
+                                          name={collaborator.user.name}
+                                          email={collaborator.user.email}
+                                          className="h-6 w-6 border border-white"
+                                          fallbackClassName="text-xs"
+                                        />
+                                      ))}
+                                      {task.collaborators.length > 2 && (
+                                        <div className="h-6 w-6 rounded-full bg-gray-100 flex items-center justify-center border border-white">
+                                          <span className="text-xs text-gray-500">+{task.collaborators.length - 2}</span>
+                                        </div>
+                                      )}
                                     </div>
                                   )}
                                 </div>
-                              </CardContent>
-                            </Card>
+                              </div>
+                            </div>
                           )
                         }}
                         </Draggable>
-                      ))}
+                        )
+                      })}
+
+                      {/* Empty column state */}
+                      {columnTasks.length === 0 && !snapshot.isDraggingOver && (
+                        <div className="border-2 border-dashed border-gray-200 bg-gray-50/50 rounded-xl flex flex-col items-center justify-center py-10 px-4 mt-1">
+                          <ListTodo className="h-6 w-6 text-gray-300 mb-2" />
+                          <p className="text-xs text-gray-400 font-medium">No tasks</p>
+                        </div>
+                      )}
 
                       {provided.placeholder}
                     </div>

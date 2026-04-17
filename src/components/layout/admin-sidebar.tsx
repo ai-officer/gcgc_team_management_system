@@ -168,25 +168,25 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
             className={cn(
               'flex items-center justify-between w-full px-3 md:px-2 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 text-left md:justify-center lg:justify-between',
               isActive
-                ? 'bg-blue-50 text-blue-700 border-l-3 border-blue-600'
-                : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                ? 'bg-slate-700 text-white border-l-3 border-white'
+                : 'text-slate-300 hover:bg-slate-700 hover:text-white'
             )}
           >
             <div className="flex items-center">
-              <item.icon 
+              <item.icon
                 className={cn(
                   'w-5 h-5 md:mr-3 mr-0',
-                  isActive ? 'text-blue-600' : 'text-gray-500'
-                )} 
+                  isActive ? 'text-white' : 'text-slate-400'
+                )}
               />
               <span className="lg:block md:hidden">{item.name}</span>
             </div>
             {hasChildren && (
               <div className="hidden md:block">
                 {isExpanded ? (
-                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                  <ChevronDown className="w-4 h-4 text-slate-400" />
                 ) : (
-                  <ChevronRight className="w-4 h-4 text-gray-400" />
+                  <ChevronRight className="w-4 h-4 text-slate-400" />
                 )}
               </div>
             )}
@@ -204,15 +204,15 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
                     className={cn(
                       'flex items-center px-3 py-2 text-sm rounded-lg transition-all duration-200',
                       childIsActive
-                        ? 'bg-blue-50 text-blue-700 font-medium border-l-2 border-blue-600'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        ? 'bg-slate-700 text-white font-medium border-l-2 border-white'
+                        : 'text-slate-400 hover:bg-slate-700 hover:text-white'
                     )}
                   >
-                    <child.icon 
+                    <child.icon
                       className={cn(
                         'w-4 h-4 mr-3',
-                        childIsActive ? 'text-blue-600' : 'text-gray-400'
-                      )} 
+                        childIsActive ? 'text-white' : 'text-slate-500'
+                      )}
                     />
                     {child.name}
                   </Link>
@@ -231,15 +231,15 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
         className={cn(
           'flex items-center px-3 md:px-2 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 md:justify-center lg:justify-start',
           isActive
-            ? 'bg-blue-50 text-blue-700 border-l-3 border-blue-600'
-            : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+            ? 'bg-slate-700 text-white border-l-3 border-white'
+            : 'text-slate-300 hover:bg-slate-700 hover:text-white'
         )}
       >
-        <item.icon 
+        <item.icon
           className={cn(
             'w-5 h-5 md:mr-3 mr-0',
-            isActive ? 'text-blue-600' : 'text-gray-500'
-          )} 
+            isActive ? 'text-white' : 'text-slate-400'
+          )}
         />
         <span className="lg:block md:hidden">{item.name}</span>
       </Link>
@@ -247,16 +247,16 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
   }
 
   return (
-    <div className={cn('flex flex-col bg-white border-r border-gray-200 shadow-sm w-64 lg:w-64 md:w-16 sm:w-16', className)}>
+    <div className={cn('flex flex-col bg-[#1e293b] border-r border-slate-700 w-64 lg:w-64 md:w-16 sm:w-16', className)}>
       {/* Logo */}
-      <div className="flex items-center px-6 md:px-4 py-6 border-b border-gray-200">
+      <div className="flex items-center px-6 md:px-4 py-6 border-b border-slate-700">
         <div className="flex items-center w-full md:justify-center">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center shadow-sm">
+          <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center flex-shrink-0">
             <div className="w-4 h-4 bg-white rounded-sm"></div>
           </div>
           <div className="ml-3 lg:block md:hidden">
-            <span className="text-lg font-bold text-gray-900">GCGC</span>
-            <div className="text-xs text-gray-500 font-medium">Admin Portal</div>
+            <span className="text-lg font-bold text-white">GCGC</span>
+            <div className="text-xs text-slate-400 font-medium">Admin Portal</div>
           </div>
         </div>
       </div>
@@ -265,13 +265,13 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
       <nav className="flex-1 px-4 md:px-2 py-6 space-y-1">
         {navigation.map((item) => renderNavigationItem(item))}
       </nav>
-      
+
       {/* Footer */}
-      <div className="px-4 md:px-2 py-4 border-t border-gray-200 bg-gray-50/50">
-        <div className="text-xs text-gray-500 text-center lg:block md:hidden">
+      <div className="px-4 md:px-2 py-4 border-t border-slate-700">
+        <div className="text-xs text-slate-400 text-center lg:block md:hidden">
           Team Management System v1.0
         </div>
-        <div className="text-xs text-gray-500 text-center lg:hidden md:block">
+        <div className="text-xs text-slate-400 text-center lg:hidden md:block">
           v1.0
         </div>
       </div>

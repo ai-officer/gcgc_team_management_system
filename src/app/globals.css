@@ -81,16 +81,31 @@
 }
 
 @layer components {
-  /* Modern glass effect */
+  /* Glass effect - simplified */
   .glass {
-    @apply bg-white/80 backdrop-blur-lg border border-white/20 shadow-xl;
+    @apply bg-white border border-gray-100 shadow-sm;
   }
-  
-  /* Enhanced card shadows */
+
+  /* Modern card - clean and professional */
   .card-modern {
-    @apply bg-gradient-to-br from-white to-slate-50/50 border-0 shadow-md hover:shadow-xl transition-all duration-300 backdrop-blur-sm;
+    @apply bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200;
   }
-  
+
+  /* Page container utility */
+  .page-container {
+    @apply p-6 space-y-6;
+  }
+
+  /* Stat card utility */
+  .stat-card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-100 p-5;
+  }
+
+  /* Section header utility */
+  .section-header {
+    @apply flex items-center justify-between mb-6;
+  }
+
   /* Improved focus styles */
   .focus-modern {
     @apply focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200;

@@ -32,7 +32,7 @@ export function AdminHeader() {
   }
 
   return (
-    <header className="bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b border-gray-200/40 shadow-sm">
+    <header className="bg-white border-b border-gray-200 shadow-sm">
       <div className="flex items-center justify-between px-6 py-4">
         {/* Page Title & Breadcrumb */}
         <div className="flex items-center space-x-4">
@@ -52,7 +52,7 @@ export function AdminHeader() {
             <Input
               type="search"
               placeholder="Search teams, users, tasks..."
-              className="pl-10 w-full bg-gray-50/50 border-gray-200 rounded-lg transition-all duration-200 focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+              className="pl-10 w-full bg-gray-50 border-gray-200 rounded-lg transition-all duration-200 focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
             />
           </div>
         </div>

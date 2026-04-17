@@ -126,7 +126,7 @@ export function Navbar() {
   }
 
   return (
-    <nav className="border-b bg-background/95 backdrop-blur-sm shadow-sm supports-[backdrop-filter]:bg-background/60">
+    <nav className="border-b border-gray-200 bg-white shadow-sm">
       <div className="flex h-16 items-center px-4 max-w-7xl mx-auto">
         {/* Logo */}
         <div className="flex items-center space-x-4">
@@ -153,10 +153,10 @@ export function Navbar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-sm',
+                  'flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200',
                   isActive
                     ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                 )}
               >
                 <Icon className="h-4 w-4" />
@@ -203,7 +203,7 @@ export function Navbar() {
 
       {/* Mobile Navigation */}
       {isMobileMenuOpen && (
-        <div className="md:hidden border-t bg-background/95 backdrop-blur-sm shadow-lg">
+        <div className="md:hidden border-t border-gray-200 bg-white shadow-sm">
           <div className="space-y-2 px-4 pb-6 pt-4">
             {navItems.map((item) => {
               const Icon = item.icon
@@ -216,7 +216,7 @@ export function Navbar() {
                     'flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200',
                     isActive
                       ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                   )}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
@@ -227,8 +227,8 @@ export function Navbar() {
             })}
             
             {/* Mobile User Info */}
-            <div className="border-t border-border pt-4 mt-4">
-              <div className="px-4 py-3 bg-muted/20 rounded-lg mb-3">
+            <div className="border-t border-gray-200 pt-4 mt-4">
+              <div className="px-4 py-3 bg-gray-50 rounded-lg mb-3">
                 <p className="font-semibold text-sm text-foreground">{session.user.name}</p>
                 <p className="text-muted-foreground text-xs">{session.user.email}</p>
               </div>

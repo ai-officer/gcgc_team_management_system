@@ -261,7 +261,7 @@ export function Sidebar({ className }: SidebarProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed left-0 top-0 z-40 h-dvh bg-background border-r border-border shadow-lg',
+          'fixed left-0 top-0 z-40 h-dvh bg-white border-r border-gray-200',
           // Always full width on mobile, respect collapse state only on desktop
           'w-64',
           isCollapsed ? 'lg:w-16' : 'lg:w-64',
@@ -274,7 +274,7 @@ export function Sidebar({ className }: SidebarProps) {
       >
         <div className="flex h-full flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-border">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200">
             <Link
               href={isAdmin ? '/admin/dashboard' : '/user/dashboard'}
               className={cn(
@@ -327,10 +327,10 @@ export function Sidebar({ className }: SidebarProps) {
                     href={item.href}
                     {...linkProps}
                     className={cn(
-                      'flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-sm group',
+                      'flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group',
                       isActive
                         ? 'bg-primary text-primary-foreground shadow-sm'
-                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
                       isCollapsed && 'lg:justify-center lg:space-x-0'
                     )}
                     onClick={() => setIsMobileOpen(false)}
@@ -352,7 +352,7 @@ export function Sidebar({ className }: SidebarProps) {
           </nav>
 
           {/* User section */}
-          <div className="border-t border-border p-4 space-y-4 shrink-0">
+          <div className="border-t border-gray-200 p-4 space-y-4 shrink-0">
             {/* Notifications */}
             <NotificationDropdown isCollapsed={isCollapsed} />
 
@@ -360,7 +360,7 @@ export function Sidebar({ className }: SidebarProps) {
             <Link
               href="/user/profile"
               className={cn(
-                'flex items-center space-x-3 p-2 rounded-lg hover:bg-accent/50 transition-colors cursor-pointer group',
+                'flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer group',
                 isCollapsed && 'lg:justify-center lg:space-x-0 lg:p-1'
               )}
               title={isCollapsed ? `${session.user.name || 'User'} - Go to Profile` : undefined}

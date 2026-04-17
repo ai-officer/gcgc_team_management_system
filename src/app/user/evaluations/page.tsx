@@ -266,7 +266,7 @@ export default function EvaluationsPage() {
       </div>
 
       {/* ── Stat Cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
 
         <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 rounded-xl hover:-translate-y-1">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-blue-600" />
@@ -351,7 +351,7 @@ export default function EvaluationsPage() {
       </div>
 
       {/* ── Filter Bar ── */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-6 py-4 flex items-center gap-4 flex-wrap">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3 flex-wrap">
         <div className="flex items-center gap-2 text-sm text-slate-500 shrink-0">
           <Filter className="h-4 w-4" />
           <span className="font-medium">Filter by:</span>

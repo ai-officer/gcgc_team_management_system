@@ -358,7 +358,7 @@ export default function MemberManagementPage() {
       </div>
 
       {/* ── Stat Cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
 
         {/* Team Members */}
         <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 rounded-xl hover:-translate-y-1">
@@ -455,10 +455,10 @@ export default function MemberManagementPage() {
       </div>
 
       {/* ── Main Two-Panel Layout ── */}
-      <div className="flex gap-5 items-stretch h-[calc(100vh-380px)] min-h-[400px]">
+      <div className="flex flex-col md:flex-row gap-5 md:items-stretch md:h-[calc(100vh-380px)] min-h-[400px]">
 
         {/* ── Left: Team Members Sidebar ── */}
-        <div className="w-[300px] shrink-0 flex flex-col">
+        <div className="w-full h-[280px] md:h-auto md:w-[300px] md:shrink-0 flex flex-col">
           <Card className="flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
 
             {/* Sidebar header */}

@@ -171,7 +171,7 @@ export default function WorkloadPage() {
       </div>
 
       {/* ── Summary Stat Cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
 
         <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 rounded-xl hover:-translate-y-1">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-blue-600" />
@@ -357,7 +357,7 @@ export default function WorkloadPage() {
                 <CardContent className="space-y-4 pt-0">
 
                   {/* Task status breakdown — 4-column mini grid */}
-                  <div className="grid grid-cols-4 gap-1.5">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                     {[
                       { label: 'To Do',      value: user.tasks.todo,        num: 'text-slate-700',   bg: 'bg-slate-50  border-slate-200' },
                       { label: 'In Progress', value: user.tasks.inProgress,  num: 'text-blue-700',    bg: 'bg-blue-50   border-blue-200'  },

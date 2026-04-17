@@ -329,7 +329,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* ── Row 2: Task KPI cards ───────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
 
         {/* Total Tasks */}
         <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4 flex items-center gap-3">
@@ -467,7 +467,7 @@ export default function AdminDashboard() {
                 Hierarchy Distribution
               </p>
               {stats.hierarchyDistribution.length > 0 ? (
-                <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
                   {stats.hierarchyDistribution.map(item => (
                     <div
                       key={item.level}

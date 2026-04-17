@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Shield, AlertCircle } from 'lucide-react'
 
 export default function AdminLoginPage() {
   const [username, setUsername] = useState('')
@@ -51,65 +51,85 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Admin Portal</CardTitle>
-          <CardDescription className="text-center">
-            Sign in to access the administrator dashboard
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                type="text"
-                placeholder="Enter your username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-                disabled={isLoading}
-              />
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-6">
+        {/* Brand Header */}
+        <div className="text-center">
+          <div className="flex justify-center mb-4">
+            <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center shadow-sm">
+              <Shield className="w-6 h-6 text-white" />
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={isLoading}
-              />
-            </div>
-            
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                'Sign In'
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900">GCGC</h1>
+          <p className="text-sm text-gray-500 mt-1">Team Management System</p>
+        </div>
+
+        <Card className="bg-white rounded-2xl shadow-md border border-gray-100">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-xl font-bold text-center text-gray-900">Admin Login</CardTitle>
+            <CardDescription className="text-center text-sm text-gray-600">
+              Sign in to access the administrator dashboard
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="px-6 pb-6">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {error && (
+                <Alert variant="destructive" className="rounded-lg">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
               )}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="username" className="text-sm font-medium text-gray-700">
+                  Username
+                </Label>
+                <Input
+                  id="username"
+                  type="text"
+                  placeholder="Enter your username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                  disabled={isLoading}
+                  className="rounded-lg border-gray-200 bg-white text-gray-900 placeholder-gray-400"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                  Password
+                </Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={isLoading}
+                  className="rounded-lg border-gray-200 bg-white text-gray-900 placeholder-gray-400"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full rounded-lg bg-blue-600 hover:bg-blue-700 font-medium"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  'Sign In'
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

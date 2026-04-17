@@ -17,15 +17,22 @@ const updateTaskSchema = z.object({
   startDate: z.string().datetime().optional(),
   progressPercentage: z.number().min(0).max(100).optional(),
   taskType: z.enum(['INDIVIDUAL', 'TEAM', 'COLLABORATION']).optional(),
-  assigneeId: z.string().nullish(), // Always current user
+  assigneeId: z.string().nullish(),
   teamMemberIds: z.array(z.string()).optional(),
   collaboratorIds: z.array(z.string()).optional(),
   assignedById: z.string().optional(),
-  // New Google Calendar-compatible fields
+  // Google Calendar-compatible fields
   location: z.string().optional(),
   meetingLink: z.string().url().optional().or(z.literal('')),
   allDay: z.boolean().optional(),
   recurrence: z.string().optional(),
+  // Work quality evaluation
+  workQuality: z.enum(['NONE', 'POOR', 'FAIR', 'GOOD', 'EXCELLENT']).optional().nullable(),
+  seniorWorkQuality: z.enum(['NONE', 'POOR', 'FAIR', 'GOOD', 'EXCELLENT']).optional().nullable(),
+  // Gravity / SLA / reminders
+  taskWeight: z.number().int().min(1).max(5).optional().nullable(),
+  slaHours: z.number().int().min(1).optional().nullable(),
+  reminderDays: z.array(z.number().int().min(1)).optional(),
 })
 
 export async function GET(
@@ -189,7 +196,35 @@ export async function PATCH(
     const isAssigner = existingTask.assignedById === session.user.id
     const isCreator = existingTask.creatorId === session.user.id
     const isAdmin = session.user.role === 'ADMIN'
+    const isLeader = session.user.role === 'LEADER'
     const canComplete = isAssigner || isCreator || isAdmin
+
+    // Leaders can extend due dates for tasks assigned to their subordinates
+    let isLeaderSubordinateOverride = false
+    if (isLeader && !isAssigner && !isCreator && !isAdmin && existingTask.assigneeId) {
+      const assignee = await prisma.user.findUnique({
+        where: { id: existingTask.assigneeId },
+        select: { reportsToId: true }
+      })
+      if (assignee?.reportsToId === session.user.id) {
+        isLeaderSubordinateOverride = true
+      }
+    }
+
+    // Check dependency blocking: task cannot move to IN_PROGRESS if blocked
+    if (updateData.status === 'IN_PROGRESS' && existingTask.status !== 'IN_PROGRESS') {
+      const blockers = await prisma.taskDependency.findMany({
+        where: { taskId: params.id },
+        include: { dependsOn: { select: { id: true, title: true, status: true } } }
+      })
+      const unfinishedBlockers = blockers.filter(b => b.dependsOn.status !== 'COMPLETED')
+      if (unfinishedBlockers.length > 0) {
+        const titles = unfinishedBlockers.map(b => `"${b.dependsOn.title}"`).join(', ')
+        return NextResponse.json({
+          error: `This task is blocked by: ${titles}. Complete those tasks first.`
+        }, { status: 400 })
+      }
+    }
 
     if (updateData.progressPercentage === 100 && !canComplete) {
       return NextResponse.json({
@@ -228,7 +263,16 @@ export async function PATCH(
       return NextResponse.json({ error: 'User role is required' }, { status: 403 })
     }
     
-    if (!canEditTask(
+    // Leader overriding due date of a subordinate's task: allow only dueDate change
+    if (isLeaderSubordinateOverride) {
+      const allowedKeys = new Set(['dueDate', 'startDate'])
+      const requestedKeys = Object.keys(updateData).filter(k => updateData[k as keyof typeof updateData] !== undefined)
+      const hasDisallowedFields = requestedKeys.some(k => !allowedKeys.has(k))
+      if (hasDisallowedFields) {
+        return NextResponse.json({ error: 'Leaders can only change the due date on subordinate tasks' }, { status: 403 })
+      }
+      // Skip canEditTask — dueDate-only override is permitted
+    } else if (!canEditTask(
       session.user.role,
       existingTask.creatorId,
       existingTask.assigneeId,
@@ -292,6 +336,17 @@ export async function PATCH(
       updateData.status = autoStatus
     }
 
+    // Resolve workQuality permission: only canComplete users may rate
+    if (updateData.workQuality !== undefined && !canComplete) {
+      delete (updateData as any).workQuality
+    }
+    // Senior override: any LEADER or ADMIN who is not the direct assigner
+    if ((updateData as any).seniorWorkQuality !== undefined) {
+      if (!isAdmin && !(isLeader && !isAssigner)) {
+        delete (updateData as any).seniorWorkQuality
+      }
+    }
+
     // Update task with transaction for related data
     const updatedTask = await prisma.$transaction(async (tx) => {
       // Prepare update data
@@ -304,6 +359,21 @@ export async function PATCH(
       // Remove arrays from task update data
       delete taskUpdateData.teamMemberIds
       delete taskUpdateData.collaboratorIds
+
+      // Set completion timestamps based on status transitions
+      const newStatus = taskUpdateData.status
+      if (newStatus === 'IN_REVIEW' && existingTask.status !== 'IN_REVIEW' && !existingTask.memberSubmittedAt) {
+        taskUpdateData.memberSubmittedAt = new Date()
+      }
+      if (newStatus === 'COMPLETED' && existingTask.status !== 'COMPLETED' && canComplete) {
+        taskUpdateData.leaderEvaluatedAt = new Date()
+      }
+
+      // Track senior evaluator
+      if (taskUpdateData.seniorWorkQuality !== undefined && taskUpdateData.seniorWorkQuality !== null) {
+        taskUpdateData.seniorEvaluatorId = session.user.id
+        taskUpdateData.seniorEvaluatedAt = new Date()
+      }
 
       // Update only this instance (next instances are spawned lazily on completion)
       await tx.task.update({
@@ -579,20 +649,20 @@ export async function PATCH(
 
         if (
           template?.recurringFrequency &&
-          template?.recurringEndDate &&
           template?.startDate &&
           existingTask.dueDate
         ) {
           const nextDate = getNextOccurrenceDate(
             template.startDate,
-            template.recurringEndDate,
+            template.recurringEndDate ?? null,   // null = indefinite
             template.recurringFrequency,
             template.recurringInterval ?? 1,
             template.recurringDaysOfWeek ?? [],
             existingTask.dueDate
           )
 
-          if (nextDate && nextDate <= template.recurringEndDate) {
+          // Accept next date if series is indefinite OR if within the end date
+          if (nextDate && (!template.recurringEndDate || nextDate <= template.recurringEndDate)) {
             // Idempotency guard: skip if this occurrence already exists
             const nextMidnight = new Date(nextDate)
             nextMidnight.setHours(0, 0, 0, 0)

@@ -116,7 +116,52 @@ export default function CalendarPage() {
   const [isTaskViewOpen, setIsTaskViewOpen] = useState(false)
   const [viewingTask, setViewingTask] = useState<any>(null)
   const [loadingTaskDetails, setLoadingTaskDetails] = useState(false)
+  const [togglingSubtaskId, setTogglingSubtaskId] = useState<string | null>(null)
   const { toast } = useToast()
+
+  const handleToggleSubtask = async (subtaskId: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'COMPLETED' ? 'TODO' : 'COMPLETED'
+    const newProgress = newStatus === 'COMPLETED' ? 100 : 0
+    setTogglingSubtaskId(subtaskId)
+    // Optimistic UI update in selectedEvent
+    setSelectedEvent(prev => {
+      if (!prev?.resource?.subtasks) return prev
+      return {
+        ...prev,
+        resource: {
+          ...prev.resource,
+          subtasks: prev.resource.subtasks.map(s =>
+            s.id === subtaskId ? { ...s, status: newStatus } : s
+          )
+        }
+      }
+    })
+    try {
+      const res = await fetch(`/api/tasks/${subtaskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus, progressPercentage: newProgress })
+      })
+      if (!res.ok) throw new Error('Failed to update subtask')
+    } catch {
+      // Revert
+      setSelectedEvent(prev => {
+        if (!prev?.resource?.subtasks) return prev
+        return {
+          ...prev,
+          resource: {
+            ...prev.resource,
+            subtasks: prev.resource.subtasks.map(s =>
+              s.id === subtaskId ? { ...s, status: currentStatus } : s
+            )
+          }
+        }
+      })
+      toast({ title: 'Error', description: 'Failed to update subtask', variant: 'destructive' })
+    } finally {
+      setTogglingSubtaskId(null)
+    }
+  }
 
   const fetchCalendarData = useCallback(async () => {
     if (!session?.user) return
@@ -709,21 +754,31 @@ export default function CalendarPage() {
                     ) : (
                       <div className="space-y-1.5 pl-1">
                         {(selectedEvent.resource.subtasks || []).map((subtask) => (
-                          <div key={subtask.id} className="flex items-center gap-2">
-                            <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center flex-shrink-0 ${
-                              subtask.status === 'COMPLETED'
-                                ? 'bg-green-500 border-green-500'
-                                : subtask.status === 'IN_PROGRESS'
-                                ? 'border-blue-400'
-                                : 'border-gray-300'
-                            }`}>
+                          <div key={subtask.id} className="flex items-center gap-2 group">
+                            <button
+                              onClick={() => handleToggleSubtask(subtask.id, subtask.status)}
+                              disabled={togglingSubtaskId === subtask.id}
+                              className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors hover:scale-110 ${
+                                subtask.status === 'COMPLETED'
+                                  ? 'bg-green-500 border-green-500'
+                                  : subtask.status === 'IN_PROGRESS'
+                                  ? 'border-blue-400 hover:bg-blue-50'
+                                  : 'border-gray-300 hover:border-green-400 hover:bg-green-50'
+                              } ${togglingSubtaskId === subtask.id ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}
+                              title={subtask.status === 'COMPLETED' ? 'Mark incomplete' : 'Mark complete'}
+                            >
                               {subtask.status === 'COMPLETED' && (
-                                <svg className="w-2 h-2 text-white" fill="none" viewBox="0 0 8 8">
+                                <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 8 8">
                                   <path d="M1 4l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                                 </svg>
                               )}
-                            </div>
-                            <span className={`text-xs flex-1 truncate ${subtask.status === 'COMPLETED' ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                              {togglingSubtaskId === subtask.id && (
+                                <div className="w-2 h-2 rounded-full border border-gray-400 animate-spin border-t-transparent" />
+                              )}
+                            </button>
+                            <span
+                              className={`text-xs flex-1 truncate ${subtask.status === 'COMPLETED' ? 'line-through text-muted-foreground' : 'text-foreground'}`}
+                            >
                               {subtask.title}
                             </span>
                             {subtask.assignee && (

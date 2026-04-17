@@ -34,7 +34,11 @@ const createTaskSchema = z.object({
   recurringFrequency: z.enum(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY']).optional(),
   recurringInterval: z.number().int().min(1).max(30).optional(),
   recurringDaysOfWeek: z.array(z.number().int().min(0).max(6)).optional(),
-  recurringEndDate: z.string().datetime().optional().nullable(),
+  recurringEndDate: z.string().datetime().optional().nullable(), // null = indefinite series
+  // Task gravity / SLA / reminders
+  taskWeight: z.number().int().min(1).max(5).optional(),
+  slaHours: z.number().int().min(1).optional().nullable(),
+  reminderDays: z.array(z.number().int().min(1)).optional().default([]),
 })
 
 const querySchema = z.object({
@@ -424,6 +428,10 @@ export async function POST(req: NextRequest) {
       recurringInterval,
       recurringDaysOfWeek,
       recurringEndDate,
+      // New fields
+      taskWeight,
+      slaHours,
+      reminderDays,
     } = createTaskSchema.parse(body)
 
     // No team membership verification needed since we're selecting from all users
@@ -461,8 +469,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Handle recurring task creation
-    if (isRecurring && recurringFrequency && recurringEndDate && finalStartDate) {
-      const endDate = new Date(recurringEndDate)
+    if (isRecurring && recurringFrequency && finalStartDate) {
+      const endDate = recurringEndDate ? new Date(recurringEndDate) : null
       const rruleString = buildRRuleString(
         recurringFrequency,
         recurringInterval || 1,
@@ -502,6 +510,9 @@ export async function POST(req: NextRequest) {
             recurringInterval: recurringInterval || 1,
             recurringDaysOfWeek: recurringDaysOfWeek || [],
             recurringEndDate: endDate,
+            taskWeight: taskWeight || null,
+            slaHours: slaHours || null,
+            reminderDays: reminderDays || [],
           },
         })
 
@@ -527,6 +538,9 @@ export async function POST(req: NextRequest) {
             recurrence: rruleString,
             isRecurring: false,
             recurringParentId: templateTask.id,
+            taskWeight: taskWeight || null,
+            slaHours: slaHours || null,
+            reminderDays: reminderDays || [],
           }
         })
 
@@ -586,12 +600,16 @@ export async function POST(req: NextRequest) {
           creatorId: session.user.id,
           teamId: null, // No longer using teams
           assignedById: assignedById || session.user.id,
-          parentId: parentId || null, // Subtask support
+          parentId: parentId || null,
           // New Google Calendar fields
           location: location || null,
           meetingLink: meetingLink || null,
           allDay: allDay || false,
           recurrence: recurrence || null,
+          // New fields
+          taskWeight: taskWeight || null,
+          slaHours: slaHours || null,
+          reminderDays: reminderDays || [],
         },
       })
 

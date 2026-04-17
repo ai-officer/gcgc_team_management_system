@@ -1,40 +1,42 @@
 export type RecurringFrequency = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY'
 
 const MAX_INSTANCES = 365
+// Sentinel: when no end date is given, cap generation at this many years ahead
+const INDEFINITE_YEARS_AHEAD = 10
 
 /**
  * Generate all occurrence dates for a recurring series.
- * Returns at most MAX_INSTANCES dates.
+ * If endDate is null/undefined, generates up to MAX_INSTANCES occurrences
+ * starting from startDate (series continues indefinitely).
  */
 export function generateOccurrenceDates(
   startDate: Date,
-  endDate: Date,
+  endDate: Date | null | undefined,
   frequency: RecurringFrequency,
   interval: number = 1,
   daysOfWeek: number[] = []
 ): Date[] {
   const dates: Date[] = []
   const current = new Date(startDate)
-  // Normalize to midnight
   current.setHours(0, 0, 0, 0)
-  const end = new Date(endDate)
-  end.setHours(23, 59, 59, 999)
 
-  while (current <= end && dates.length < MAX_INSTANCES) {
+  // Use far-future sentinel when no end date
+  const effectiveEnd = endDate
+    ? new Date(endDate)
+    : new Date(startDate.getFullYear() + INDEFINITE_YEARS_AHEAD, startDate.getMonth(), startDate.getDate())
+  effectiveEnd.setHours(23, 59, 59, 999)
+
+  while (current <= effectiveEnd && dates.length < MAX_INSTANCES) {
     if (frequency === 'WEEKLY' && daysOfWeek.length > 0) {
-      // For weekly with specific days, we advance day by day within the week
-      // and emit only matching days, advancing by `interval` weeks
       const weekStart = new Date(current)
-      // Advance through the week
       for (let d = 0; d < 7 && dates.length < MAX_INSTANCES; d++) {
         const candidate = new Date(weekStart)
         candidate.setDate(weekStart.getDate() + d)
-        if (candidate > end) break
+        if (candidate > effectiveEnd) break
         if (daysOfWeek.includes(candidate.getDay())) {
           dates.push(new Date(candidate))
         }
       }
-      // Advance by interval weeks
       current.setDate(current.getDate() + 7 * interval)
     } else {
       dates.push(new Date(current))
@@ -59,25 +61,68 @@ export function generateOccurrenceDates(
 }
 
 /**
- * Returns the next occurrence date after `referenceDate`, or null if none
- * exists within the series. Reuses generateOccurrenceDates for consistency.
+ * Returns the next occurrence date after `referenceDate`.
+ * When recurringEndDate is null, the series is indefinite — compute next
+ * occurrence directly from the frequency rather than scanning a full list.
  */
 export function getNextOccurrenceDate(
   seriesStartDate: Date,
-  recurringEndDate: Date,
+  recurringEndDate: Date | null | undefined,
   frequency: RecurringFrequency,
   interval: number = 1,
   daysOfWeek: number[] = [],
   referenceDate: Date
 ): Date | null {
-  const allDates = generateOccurrenceDates(
-    seriesStartDate, recurringEndDate, frequency, interval, daysOfWeek
-  )
   const ref = new Date(referenceDate)
   ref.setHours(0, 0, 0, 0)
-  const currentIndex = allDates.findIndex(d => d.getTime() === ref.getTime())
-  if (currentIndex === -1 || currentIndex === allDates.length - 1) return null
-  return allDates[currentIndex + 1]
+
+  // Check series expiry
+  if (recurringEndDate) {
+    const end = new Date(recurringEndDate)
+    end.setHours(23, 59, 59, 999)
+
+    const allDates = generateOccurrenceDates(
+      seriesStartDate, recurringEndDate, frequency, interval, daysOfWeek
+    )
+    const currentIndex = allDates.findIndex(d => d.getTime() === ref.getTime())
+    if (currentIndex === -1 || currentIndex === allDates.length - 1) return null
+    // Also check the next date is within end
+    const next = allDates[currentIndex + 1]
+    return next && next <= end ? next : null
+  }
+
+  // Indefinite series — compute next occurrence directly
+  if (frequency === 'WEEKLY' && daysOfWeek.length > 0) {
+    // Find the next matching day-of-week after ref
+    const candidate = new Date(ref)
+    candidate.setDate(candidate.getDate() + 1)
+    for (let i = 0; i < 7 * interval + 7; i++) {
+      if (daysOfWeek.includes(candidate.getDay())) {
+        // Make sure we are at least `interval` weeks ahead if this is not the
+        // immediate next matching day within the current week cycle
+        return new Date(candidate)
+      }
+      candidate.setDate(candidate.getDate() + 1)
+    }
+    return null
+  }
+
+  const next = new Date(ref)
+  switch (frequency) {
+    case 'DAILY':
+      next.setDate(next.getDate() + interval)
+      break
+    case 'WEEKLY':
+      next.setDate(next.getDate() + 7 * interval)
+      break
+    case 'MONTHLY':
+      next.setMonth(next.getMonth() + interval)
+      break
+    case 'YEARLY':
+      next.setFullYear(next.getFullYear() + interval)
+      break
+  }
+  return next
 }
 
 /**
@@ -87,7 +132,7 @@ export function buildRRuleString(
   frequency: RecurringFrequency,
   interval: number = 1,
   daysOfWeek: number[] = [],
-  endDate?: Date
+  endDate?: Date | null
 ): string {
   const freqMap: Record<RecurringFrequency, string> = {
     DAILY: 'DAILY',
@@ -119,7 +164,7 @@ export function buildRRuleString(
 }
 
 /**
- * Human-readable description, e.g. "Daily until Mar 5, 2026"
+ * Human-readable description, e.g. "Daily" or "Every 2 weeks on Mon, Fri until Apr 15, 2026"
  */
 export function describeRecurrence(
   frequency: RecurringFrequency,
@@ -141,6 +186,8 @@ export function describeRecurrence(
 
   if (endDate) {
     desc += ` until ${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+  } else {
+    desc += ' (no end date)'
   }
 
   return desc

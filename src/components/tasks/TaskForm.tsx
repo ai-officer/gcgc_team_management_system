@@ -93,6 +93,10 @@ const taskFormSchema = z.object({
   recurringInterval: z.number().int().min(1).max(30).optional(),
   recurringDaysOfWeek: z.array(z.number().int().min(0).max(6)).optional(),
   recurringEndDate: z.date().optional().nullable(),
+  // Weight, SLA, and reminder fields
+  taskWeight: z.number().int().min(1).max(5).optional().nullable(),
+  slaHours: z.number().int().min(1).optional().nullable(),
+  reminderDays: z.array(z.number().int().min(1)).optional().default([]),
 })
 
 type TaskFormData = z.infer<typeof taskFormSchema>
@@ -118,6 +122,7 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('')
   const [newSubtaskAssigneeId, setNewSubtaskAssigneeId] = useState('')
   const [newSubtaskDeadline, setNewSubtaskDeadline] = useState('')
+  const [recurringNoEndDate, setRecurringNoEndDate] = useState(false)
 
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskFormSchema),
@@ -146,6 +151,10 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
       recurringInterval: 1,
       recurringDaysOfWeek: [],
       recurringEndDate: null,
+      // Weight, SLA, reminder
+      taskWeight: null,
+      slaHours: null,
+      reminderDays: [],
     },
   })
 
@@ -902,6 +911,7 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
                           form.setValue('recurringFrequency', undefined)
                           form.setValue('recurringEndDate', null)
                           form.setValue('recurringDaysOfWeek', [])
+                          setRecurringNoEndDate(false)
                           form.setValue('recurringInterval', 1)
                         }
                       }}
@@ -1001,26 +1011,46 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
                       {/* Series end date */}
                       {form.watch('recurringFrequency') && (
                         <div className="space-y-2">
-                          <Label className="text-sm font-medium text-gray-700">
-                            Series end date <span className="text-xs text-red-500 font-semibold">*Required</span>
-                          </Label>
-                          <DatePicker
-                            date={form.watch('recurringEndDate') || undefined}
-                            onSelect={(date) => form.setValue('recurringEndDate', date || null)}
-                            placeholder="Select when the series ends"
-                            disabled={(date) => {
-                              const start = form.watch('startDate') || form.watch('dueDate')
-                              return start ? date <= start : date < new Date(new Date().setHours(0, 0, 0, 0))
-                            }}
-                          />
+                          <div className="flex items-center justify-between">
+                            <Label className="text-sm font-medium text-gray-700">
+                              Series end date {!recurringNoEndDate && <span className="text-xs text-gray-400 font-normal">(optional)</span>}
+                            </Label>
+                            <label className="flex items-center gap-1.5 cursor-pointer select-none text-xs text-gray-600">
+                              <input
+                                type="checkbox"
+                                className="rounded border-gray-300 w-3.5 h-3.5"
+                                checked={recurringNoEndDate}
+                                onChange={(e) => {
+                                  setRecurringNoEndDate(e.target.checked)
+                                  if (e.target.checked) form.setValue('recurringEndDate', null)
+                                }}
+                              />
+                              No end date
+                            </label>
+                          </div>
+                          {!recurringNoEndDate && (
+                            <DatePicker
+                              date={form.watch('recurringEndDate') || undefined}
+                              onSelect={(date) => form.setValue('recurringEndDate', date || null)}
+                              placeholder="Select when the series ends (or check No end date)"
+                              disabled={(date) => {
+                                const start = form.watch('startDate') || form.watch('dueDate')
+                                return start ? date <= start : date < new Date(new Date().setHours(0, 0, 0, 0))
+                              }}
+                            />
+                          )}
                         </div>
                       )}
 
                       {/* Info banner */}
-                      {form.watch('recurringFrequency') && form.watch('recurringEndDate') && (
+                      {form.watch('recurringFrequency') && (form.watch('recurringEndDate') || recurringNoEndDate) && (
                         <div className="flex items-center gap-2 p-3 rounded-lg border text-sm bg-blue-50 border-blue-200 text-blue-700">
                           <RefreshCw className="h-3.5 w-3.5 flex-shrink-0" />
-                          <span>Only the first task is created now. The next task is automatically created each time the current one is completed.</span>
+                          <span>
+                            {recurringNoEndDate
+                              ? 'This series repeats indefinitely. A new task is created each time the current one is completed.'
+                              : 'Only the first task is created now. The next task is automatically created each time the current one is completed.'}
+                          </span>
                         </div>
                       )}
                     </div>
@@ -1029,6 +1059,87 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
               )}
             </CardContent>
           </Card>
+
+          {/* Weight, SLA & Reminders */}
+          <Collapsible>
+            <Card className="border-2">
+              <CollapsibleTrigger asChild>
+                <CardHeader className="pb-3 cursor-pointer hover:bg-muted/30 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-muted rounded-full">
+                        <Settings2 className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-base">Priority Settings</CardTitle>
+                        <CardDescription>Weight, SLA target, and deadline reminders</CardDescription>
+                      </div>
+                    </div>
+                    <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform duration-200" />
+                  </div>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="space-y-5 pt-0">
+                  {/* Task Weight (1-5 stars) */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Task Weight <span className="text-xs text-muted-foreground font-normal">(1 = low gravity, 5 = critical)</span></Label>
+                    <div className="flex gap-2">
+                      {[1, 2, 3, 4, 5].map(w => (
+                        <button
+                          key={w}
+                          type="button"
+                          onClick={() => form.setValue('taskWeight', form.watch('taskWeight') === w ? null : w)}
+                          className={`w-9 h-9 rounded-lg border-2 text-sm font-bold transition-all ${form.watch('taskWeight') && form.watch('taskWeight')! >= w ? 'bg-amber-400 border-amber-500 text-white' : 'border-gray-200 text-gray-400 hover:border-amber-300'}`}
+                        >★</button>
+                      ))}
+                      {form.watch('taskWeight') && <span className="text-sm text-muted-foreground self-center">Weight: {form.watch('taskWeight')}/5</span>}
+                    </div>
+                  </div>
+
+                  {/* SLA Hours */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">SLA Target</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {[4, 8, 24, 48, 72, 168].map(h => (
+                        <button
+                          key={h}
+                          type="button"
+                          onClick={() => form.setValue('slaHours', form.watch('slaHours') === h ? null : h)}
+                          className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${form.watch('slaHours') === h ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-200 text-gray-600 hover:border-blue-300'}`}
+                        >
+                          {h < 24 ? `${h}h` : h === 168 ? '1 week' : `${h / 24}d`}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Reminder Days */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Deadline Reminders</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {[1, 3, 7, 14].map(d => {
+                        const selected = (form.watch('reminderDays') || []).includes(d)
+                        return (
+                          <button
+                            key={d}
+                            type="button"
+                            onClick={() => {
+                              const current = form.watch('reminderDays') || []
+                              form.setValue('reminderDays', selected ? current.filter(x => x !== d) : [...current, d])
+                            }}
+                            className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${selected ? 'bg-purple-600 border-purple-600 text-white' : 'border-gray-200 text-gray-600 hover:border-purple-300'}`}
+                          >
+                            {d === 1 ? '1 day before' : `${d} days before`}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
 
           {/* Editing recurring instance notice */}
           {task && task.recurringParentId && (

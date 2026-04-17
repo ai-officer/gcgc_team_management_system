@@ -20,6 +20,7 @@ import {
   MessageSquare,
   FileText,
   BarChart2,
+  Star,
 } from 'lucide-react'
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown'
 import { Button } from '@/components/ui/button'
@@ -135,6 +136,11 @@ const leaderNavItems = [
     title: 'Workload',
     href: '/user/workload',
     icon: BarChart2,
+  },
+  {
+    title: 'Evaluations',
+    href: '/user/evaluations',
+    icon: Star,
   },
   {
     title: 'TMS Chat',

@@ -58,6 +58,7 @@ import { useToast } from '@/hooks/use-toast'
 import { format, isAfter, subDays } from 'date-fns'
 import TaskForm from '@/components/tasks/TaskForm'
 import TaskViewModal from '@/components/tasks/TaskViewModal'
+import DuplicateTaskDialog from '@/components/tasks/DuplicateTaskDialog'
 
 interface Task {
   id: string
@@ -163,6 +164,8 @@ export default function TasksPage() {
   const [showTaskForm, setShowTaskForm] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [duplicatingTask, setDuplicatingTask] = useState<Task | null>(null)
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false)
+  const [pendingDuplicateTask, setPendingDuplicateTask] = useState<Task | null>(null)
   const [deletingTask, setDeletingTask] = useState<Task | null>(null)
   const [deleteScope, setDeleteScope] = useState<'single' | 'series'>('single')
   const [viewingTask, setViewingTask] = useState<Task | null>(null)
@@ -660,9 +663,16 @@ export default function TasksPage() {
   }
 
   const openDuplicateForm = (task: Task) => {
-    setDuplicatingTask(task)
+    setPendingDuplicateTask(task)
+    setShowDuplicateDialog(true)
+  }
+
+  const handleDuplicateConfirm = (filteredTask: any) => {
+    setDuplicatingTask(filteredTask)
     setEditingTask(null)
     setShowTaskForm(true)
+    setShowDuplicateDialog(false)
+    setPendingDuplicateTask(null)
   }
 
   const closeTaskForm = () => {
@@ -1091,6 +1101,16 @@ export default function TasksPage() {
           })}
         </div>
       </DragDropContext>
+
+      {/* Duplicate Field Selector Dialog */}
+      {pendingDuplicateTask && (
+        <DuplicateTaskDialog
+          open={showDuplicateDialog}
+          onOpenChange={(open) => { setShowDuplicateDialog(open); if (!open) setPendingDuplicateTask(null) }}
+          sourceTask={pendingDuplicateTask}
+          onConfirm={handleDuplicateConfirm}
+        />
+      )}
 
       {/* Task Form Dialog */}
       <TaskForm

@@ -38,9 +38,44 @@ export async function GET(req: NextRequest) {
       },
     })
 
+    // Find upcoming tasks that have reminderDays set — check today's reminders
+    const upcomingTasks = await prisma.task.findMany({
+      where: {
+        isRecurring: false,
+        status: { notIn: ['COMPLETED', 'CANCELLED'] },
+        dueDate: { gte: startOfToday },
+        assigneeId: { not: null },
+        reminderDays: { isEmpty: false },
+      },
+      select: {
+        id: true,
+        title: true,
+        dueDate: true,
+        assigneeId: true,
+        reminderDays: true,
+      },
+    })
+
     let notified = 0
+    let remindersSent = 0
     let recurringAdvanced = 0
     let recurringSkipped = 0
+
+    // Send custom reminderDays notifications for upcoming tasks
+    for (const task of upcomingTasks) {
+      if (!task.assigneeId || !task.dueDate) continue
+      const dueDate = new Date(task.dueDate)
+      dueDate.setHours(0, 0, 0, 0)
+      const daysUntilDue = Math.round((dueDate.getTime() - startOfToday.getTime()) / (1000 * 60 * 60 * 24))
+      if (task.reminderDays.includes(daysUntilDue)) {
+        try {
+          await notifyTaskOverdue(task.assigneeId, task.id, task.title, -daysUntilDue)
+          remindersSent++
+        } catch {
+          // Non-fatal
+        }
+      }
+    }
 
     for (const task of overdueTasks) {
       if (!task.assigneeId || !task.dueDate) continue
@@ -71,19 +106,18 @@ export async function GET(req: NextRequest) {
 
           if (
             template?.recurringFrequency &&
-            template?.recurringEndDate &&
             template?.startDate
           ) {
             const nextDate = getNextOccurrenceDate(
               template.startDate,
-              template.recurringEndDate,
+              template.recurringEndDate ?? null,
               template.recurringFrequency,
               template.recurringInterval ?? 1,
               (template.recurringDaysOfWeek as number[]) ?? [],
               task.dueDate
             )
 
-            if (nextDate && nextDate <= template.recurringEndDate) {
+            if (nextDate && (!template.recurringEndDate || nextDate <= template.recurringEndDate)) {
               // Idempotency guard: skip if this occurrence already exists
               const nextMidnight = new Date(nextDate)
               nextMidnight.setHours(0, 0, 0, 0)
@@ -197,6 +231,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       checked: overdueTasks.length,
       notified,
+      remindersSent,
       recurringAdvanced,
       recurringSkipped,
       timestamp: now.toISOString(),

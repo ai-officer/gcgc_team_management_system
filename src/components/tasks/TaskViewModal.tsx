@@ -99,6 +99,15 @@ interface Task {
   }
   // Recurring task support
   recurringParentId?: string | null
+  // New feature fields
+  memberSubmittedAt?: string | null
+  leaderEvaluatedAt?: string | null
+  workQuality?: string | null
+  seniorWorkQuality?: string | null
+  seniorEvaluatorId?: string | null
+  seniorEvaluatedAt?: string | null
+  taskWeight?: number | null
+  slaHours?: number | null
   subtasks?: Array<{
     id: string
     title: string
@@ -149,6 +158,36 @@ interface Comment {
   }
   reactions: CommentReaction[]
   replies: Comment[]
+}
+
+interface Dependency {
+  id: string
+  title: string
+  status: string
+  priority: string
+  dueDate?: string
+}
+
+interface Deliverable {
+  id: string
+  name: string
+  description?: string
+  isCompleted: boolean
+  completedAt?: string
+  submittedBy?: { id: string; name: string; email: string; image?: string }
+}
+
+interface Procurement {
+  id: string
+  type: 'PURCHASE_REQUEST' | 'PURCHASE_ORDER'
+  referenceNumber?: string
+  amount?: number
+  vendor?: string
+  approverName?: string
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'PROCESSED'
+  notes?: string
+  createdBy: { id: string; name: string; email: string; image?: string }
+  createdAt: string
 }
 
 interface TaskViewModalProps {
@@ -256,6 +295,36 @@ export default function TaskViewModal({
   const [localProgress, setLocalProgress] = useState(0)
   const [savingProgress, setSavingProgress] = useState(false)
 
+  // Dependencies state
+  const [dependencies, setDependencies] = useState<{ blockedBy: Dependency[]; blocking: Dependency[] }>({ blockedBy: [], blocking: [] })
+  const [loadingDeps, setLoadingDeps] = useState(false)
+  const [newDepTaskId, setNewDepTaskId] = useState('')
+  const [addingDep, setAddingDep] = useState(false)
+  const [depSearchQuery, setDepSearchQuery] = useState('')
+  const [depSearchResults, setDepSearchResults] = useState<Dependency[]>([])
+
+  // Deliverables state
+  const [deliverables, setDeliverables] = useState<Deliverable[]>([])
+  const [loadingDeliverables, setLoadingDeliverables] = useState(false)
+  const [newDeliverableName, setNewDeliverableName] = useState('')
+  const [addingDeliverable, setAddingDeliverable] = useState(false)
+  const [showAddDeliverable, setShowAddDeliverable] = useState(false)
+
+  // Procurement state
+  const [procurements, setProcurements] = useState<Procurement[]>([])
+  const [loadingProcurement, setLoadingProcurement] = useState(false)
+  const [showAddProcurement, setShowAddProcurement] = useState(false)
+  const [newProcurement, setNewProcurement] = useState({ type: 'PURCHASE_REQUEST' as 'PURCHASE_REQUEST' | 'PURCHASE_ORDER', referenceNumber: '', amount: '', vendor: '', approverName: '', notes: '' })
+  const [addingProcurement, setAddingProcurement] = useState(false)
+
+  // Work quality state
+  const [savingQuality, setSavingQuality] = useState(false)
+
+  // Due date override state
+  const [showDueDateOverride, setShowDueDateOverride] = useState(false)
+  const [newDueDate, setNewDueDate] = useState('')
+  const [savingDueDate, setSavingDueDate] = useState(false)
+
   // Load comments when task changes
   const fetchComments = async () => {
     if (!task?.id) return
@@ -322,11 +391,189 @@ export default function TaskViewModal({
     }
   }
 
+  const fetchDependencies = async () => {
+    if (!task?.id) return
+    try {
+      setLoadingDeps(true)
+      const res = await fetch(`/api/tasks/${task.id}/dependencies`)
+      if (res.ok) setDependencies(await res.json())
+    } catch (e) { console.error(e) } finally { setLoadingDeps(false) }
+  }
+
+  const fetchDeliverables = async () => {
+    if (!task?.id) return
+    try {
+      setLoadingDeliverables(true)
+      const res = await fetch(`/api/tasks/${task.id}/deliverables`)
+      if (res.ok) { const d = await res.json(); setDeliverables(d.deliverables || []) }
+    } catch (e) { console.error(e) } finally { setLoadingDeliverables(false) }
+  }
+
+  const fetchProcurements = async () => {
+    if (!task?.id) return
+    try {
+      setLoadingProcurement(true)
+      const res = await fetch(`/api/tasks/${task.id}/procurement`)
+      if (res.ok) { const d = await res.json(); setProcurements(d.procurements || []) }
+    } catch (e) { console.error(e) } finally { setLoadingProcurement(false) }
+  }
+
+  const handleAddDependency = async (dependsOnId: string) => {
+    if (!task?.id || !dependsOnId || addingDep) return
+    try {
+      setAddingDep(true)
+      const res = await fetch(`/api/tasks/${task.id}/dependencies`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dependsOnId })
+      })
+      if (res.ok) {
+        await fetchDependencies()
+        setDepSearchQuery('')
+        setDepSearchResults([])
+        toast({ title: 'Dependency added' })
+      } else {
+        const err = await res.json()
+        toast({ title: 'Error', description: err.error, variant: 'destructive' })
+      }
+    } catch (e) { console.error(e) } finally { setAddingDep(false) }
+  }
+
+  const handleRemoveDependency = async (dependsOnId: string) => {
+    if (!task?.id) return
+    const res = await fetch(`/api/tasks/${task.id}/dependencies?dependsOnId=${dependsOnId}`, { method: 'DELETE' })
+    if (res.ok) { await fetchDependencies(); toast({ title: 'Dependency removed' }) }
+  }
+
+  const handleToggleDeliverable = async (deliverable: Deliverable) => {
+    if (!task?.id) return
+    const newState = !deliverable.isCompleted
+    // Optimistic update
+    setDeliverables(prev => prev.map(d => d.id === deliverable.id ? { ...d, isCompleted: newState } : d))
+    try {
+      const res = await fetch(`/api/tasks/${task.id}/deliverables/${deliverable.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isCompleted: newState })
+      })
+      if (res.ok) {
+        const data = await res.json()
+        await fetchDeliverables()
+        if (data.autoAdvanced) {
+          toast({ title: 'All deliverables complete!', description: 'Task moved to In Review automatically.' })
+          onTaskUpdate?.()
+        }
+      } else {
+        setDeliverables(prev => prev.map(d => d.id === deliverable.id ? { ...d, isCompleted: !newState } : d))
+      }
+    } catch (e) {
+      setDeliverables(prev => prev.map(d => d.id === deliverable.id ? { ...d, isCompleted: !newState } : d))
+    }
+  }
+
+  const handleAddDeliverable = async () => {
+    if (!task?.id || !newDeliverableName.trim()) return
+    try {
+      setAddingDeliverable(true)
+      const res = await fetch(`/api/tasks/${task.id}/deliverables`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newDeliverableName.trim() })
+      })
+      if (res.ok) {
+        await fetchDeliverables()
+        setNewDeliverableName('')
+        setShowAddDeliverable(false)
+        toast({ title: 'Deliverable added' })
+      } else {
+        const err = await res.json()
+        toast({ title: 'Error', description: err.error, variant: 'destructive' })
+      }
+    } catch (e) { console.error(e) } finally { setAddingDeliverable(false) }
+  }
+
+  const handleDeleteDeliverable = async (id: string) => {
+    if (!task?.id) return
+    const res = await fetch(`/api/tasks/${task.id}/deliverables/${id}`, { method: 'DELETE' })
+    if (res.ok) { await fetchDeliverables(); toast({ title: 'Deliverable removed' }) }
+  }
+
+  const handleAddProcurement = async () => {
+    if (!task?.id) return
+    try {
+      setAddingProcurement(true)
+      const body: Record<string, any> = { type: newProcurement.type }
+      if (newProcurement.referenceNumber) body.referenceNumber = newProcurement.referenceNumber
+      if (newProcurement.amount) body.amount = parseFloat(newProcurement.amount)
+      if (newProcurement.vendor) body.vendor = newProcurement.vendor
+      if (newProcurement.approverName) body.approverName = newProcurement.approverName
+      if (newProcurement.notes) body.notes = newProcurement.notes
+      const res = await fetch(`/api/tasks/${task.id}/procurement`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+      if (res.ok) {
+        await fetchProcurements()
+        setNewProcurement({ type: 'PURCHASE_REQUEST', referenceNumber: '', amount: '', vendor: '', approverName: '', notes: '' })
+        setShowAddProcurement(false)
+        toast({ title: 'PR/PO record created' })
+      } else {
+        const err = await res.json()
+        toast({ title: 'Error', description: err.error, variant: 'destructive' })
+      }
+    } catch (e) { console.error(e) } finally { setAddingProcurement(false) }
+  }
+
+  const handleUpdateProcurementStatus = async (procId: string, status: Procurement['status']) => {
+    if (!task?.id) return
+    const res = await fetch(`/api/tasks/${task.id}/procurement/${procId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    })
+    if (res.ok) { await fetchProcurements(); toast({ title: 'Status updated' }) }
+  }
+
+  const handleSetWorkQuality = async (quality: string, isSenior = false) => {
+    if (!task?.id) return
+    try {
+      setSavingQuality(true)
+      const field = isSenior ? 'seniorWorkQuality' : 'workQuality'
+      const res = await fetch(`/api/tasks/${task.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [field]: quality })
+      })
+      if (res.ok) {
+        toast({ title: isSenior ? 'Senior override saved' : 'Work quality saved' })
+        onTaskUpdate?.()
+      } else {
+        const err = await res.json()
+        toast({ title: 'Error', description: err.error, variant: 'destructive' })
+      }
+    } catch (e) { console.error(e) } finally { setSavingQuality(false) }
+  }
+
+  const searchTasksForDependency = async (q: string) => {
+    if (!q.trim()) { setDepSearchResults([]); return }
+    try {
+      const res = await fetch(`/api/tasks?search=${encodeURIComponent(q)}&limit=10`)
+      if (res.ok) {
+        const data = await res.json()
+        setDepSearchResults((data.tasks || []).filter((t: any) => t.id !== task?.id))
+      }
+    } catch (e) { console.error(e) }
+  }
+
   useEffect(() => {
     if (open && task?.id) {
       fetchComments()
       fetchAvailableUsers()
       fetchTaskDetails()
+      fetchDependencies()
+      fetchDeliverables()
+      fetchProcurements()
       setNewComment('')
       setReplyingTo(null)
       setReplyText('')
@@ -1326,13 +1573,84 @@ export default function TaskViewModal({
 
           {/* Due Date */}
           {task.dueDate && (
-            <div className="flex items-center gap-2 text-sm">
-              <Clock className="h-4 w-4 text-gray-500" />
-              <span className="text-gray-600">Due:</span>
-              <span className="font-medium">{format(new Date(task.dueDate), 'EEEE, MMM dd, yyyy')}</span>
-              {(() => { const sot = new Date(); sot.setHours(0,0,0,0); return new Date(task.dueDate) < sot })() && task.status !== 'COMPLETED' && (
-                <Badge variant="destructive" className="ml-2">Overdue</Badge>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2 text-sm">
+                <Clock className="h-4 w-4 text-gray-500" />
+                <span className="text-gray-600">Due:</span>
+                <span className="font-medium">{format(new Date(task.dueDate), 'EEEE, MMM dd, yyyy')}</span>
+                {(() => { const sot = new Date(); sot.setHours(0,0,0,0); return new Date(task.dueDate) < sot })() && task.status !== 'COMPLETED' && (
+                  <Badge variant="destructive" className="ml-2">Overdue</Badge>
+                )}
+                {/* Leader can extend due date for assignees */}
+                {(canCompleteTask || session?.user?.role === 'LEADER') && task.status !== 'COMPLETED' && (
+                  <button
+                    onClick={() => { setShowDueDateOverride(v => !v); setNewDueDate(task.dueDate ? task.dueDate.split('T')[0] : '') }}
+                    className="text-xs text-blue-500 hover:text-blue-700 underline ml-1"
+                  >
+                    {showDueDateOverride ? 'Cancel' : 'Extend'}
+                  </button>
+                )}
+              </div>
+              {showDueDateOverride && (
+                <div className="flex items-center gap-2 ml-6">
+                  <input
+                    type="date"
+                    value={newDueDate}
+                    min={new Date().toISOString().split('T')[0]}
+                    onChange={(e) => setNewDueDate(e.target.value)}
+                    className="text-xs border rounded px-2 py-1 h-7"
+                  />
+                  <Button
+                    size="sm"
+                    className="h-7 text-xs"
+                    disabled={!newDueDate || savingDueDate}
+                    onClick={async () => {
+                      if (!newDueDate || !task.id) return
+                      setSavingDueDate(true)
+                      try {
+                        const res = await fetch(`/api/tasks/${task.id}`, {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ dueDate: new Date(newDueDate).toISOString() })
+                        })
+                        if (res.ok) {
+                          toast({ title: 'Due date updated' })
+                          setShowDueDateOverride(false)
+                          onTaskUpdate?.()
+                        } else {
+                          const err = await res.json()
+                          toast({ title: 'Error', description: err.error, variant: 'destructive' })
+                        }
+                      } catch (e) { console.error(e) } finally { setSavingDueDate(false) }
+                    }}
+                  >
+                    {savingDueDate ? 'Saving...' : <Check className="h-3 w-3" />}
+                  </Button>
+                </div>
               )}
+            </div>
+          )}
+
+          {/* SLA + Weight display */}
+          {(task.slaHours || task.taskWeight) && (
+            <div className="flex items-center gap-3 text-xs flex-wrap">
+              {task.taskWeight && (
+                <span className="flex items-center gap-1 text-amber-600">
+                  {'★'.repeat(task.taskWeight)}{'☆'.repeat(5 - task.taskWeight)}
+                  <span className="text-gray-500 ml-1">Weight {task.taskWeight}/5</span>
+                </span>
+              )}
+              {task.slaHours && (() => {
+                const createdMs = new Date(task.createdAt).getTime()
+                const slaDeadline = new Date(createdMs + task.slaHours! * 60 * 60 * 1000)
+                const breached = new Date() > slaDeadline && task.status !== 'COMPLETED'
+                const slaDays = task.slaHours! >= 168 ? `${task.slaHours! / 168}w` : task.slaHours! >= 24 ? `${task.slaHours! / 24}d` : `${task.slaHours!}h`
+                return (
+                  <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full border ${breached ? 'bg-red-50 text-red-700 border-red-200 font-semibold' : 'bg-gray-50 text-gray-600 border-gray-200'}`}>
+                    {breached ? '⚠ SLA Breached' : `SLA: ${slaDays}`}
+                  </span>
+                )
+              })()}
             </div>
           )}
 
@@ -1664,6 +1982,296 @@ export default function TaskViewModal({
               </div>
             </div>
           )}
+
+          {/* Timestamps (Completion Time vs Evaluation Time) */}
+          {(task.memberSubmittedAt || task.leaderEvaluatedAt) && (
+            <div className="border-t pt-4 space-y-2">
+              <h4 className="font-medium text-gray-900 text-sm">Timeline</h4>
+              {task.memberSubmittedAt && (
+                <div className="flex items-center gap-2 text-xs text-gray-600">
+                  <Clock className="h-3.5 w-3.5 text-yellow-500" />
+                  <span>Submitted for review:</span>
+                  <span className="font-medium">{format(new Date(task.memberSubmittedAt), 'MMM dd, yyyy HH:mm')}</span>
+                  {task.assignee && <span className="text-gray-400">by {task.assignee.name || task.assignee.email}</span>}
+                </div>
+              )}
+              {task.leaderEvaluatedAt && (
+                <div className="flex items-center gap-2 text-xs text-gray-600">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                  <span>Approved/Completed:</span>
+                  <span className="font-medium">{format(new Date(task.leaderEvaluatedAt), 'MMM dd, yyyy HH:mm')}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Work Quality Rating */}
+          {(task.status === 'IN_REVIEW' || task.status === 'COMPLETED') && (canCompleteTask || session?.user?.role === 'LEADER') && (
+            <div className="border-t pt-4 space-y-3">
+              <h4 className="font-medium text-gray-900 text-sm">Work Quality</h4>
+              {(() => {
+                const qualities = [
+                  { value: 'NONE', label: '0%', color: 'bg-gray-400' },
+                  { value: 'POOR', label: '25%', color: 'bg-red-400' },
+                  { value: 'FAIR', label: '50%', color: 'bg-yellow-400' },
+                  { value: 'GOOD', label: '75%', color: 'bg-blue-400' },
+                  { value: 'EXCELLENT', label: '100%', color: 'bg-green-500' },
+                ]
+                return (
+                  <div className="space-y-3">
+                    {/* Leader rating */}
+                    {canCompleteTask && (
+                      <div className="space-y-1">
+                        <p className="text-xs text-gray-500">Leader Rating</p>
+                        <div className="flex gap-2">
+                          {qualities.map(q => (
+                            <button
+                              key={q.value}
+                              disabled={savingQuality}
+                              onClick={() => handleSetWorkQuality(q.value, false)}
+                              className={`w-10 h-10 rounded-full text-xs font-semibold text-white transition-all border-2 ${task.workQuality === q.value ? 'border-gray-800 scale-110' : 'border-transparent opacity-70 hover:opacity-100'} ${q.color}`}
+                              title={q.value}
+                            >{q.label}</button>
+                          ))}
+                        </div>
+                        {task.workQuality && <p className="text-xs text-gray-500">Current: <span className="font-medium capitalize">{task.workQuality.toLowerCase()}</span></p>}
+                      </div>
+                    )}
+                    {/* Senior override */}
+                    {(session?.user?.role === 'ADMIN' || (session?.user?.role === 'LEADER' && !canCompleteTask)) && task.workQuality && (
+                      <div className="space-y-1">
+                        <p className="text-xs text-gray-500">Senior Leader Override</p>
+                        <div className="flex gap-2">
+                          {qualities.map(q => (
+                            <button
+                              key={q.value}
+                              disabled={savingQuality}
+                              onClick={() => handleSetWorkQuality(q.value, true)}
+                              className={`w-10 h-10 rounded-full text-xs font-semibold text-white transition-all border-2 ${task.seniorWorkQuality === q.value ? 'border-gray-800 scale-110' : 'border-transparent opacity-70 hover:opacity-100'} ${q.color}`}
+                              title={q.value}
+                            >{q.label}</button>
+                          ))}
+                        </div>
+                        {task.seniorWorkQuality && <p className="text-xs text-gray-500">Override: <span className="font-medium capitalize">{task.seniorWorkQuality.toLowerCase()}</span></p>}
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
+            </div>
+          )}
+
+          {/* Dependencies Section */}
+          <div className="border-t pt-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="font-medium text-gray-900 flex items-center gap-2 text-sm">
+                <AlertCircle className="h-4 w-4 text-orange-500" />
+                Dependencies ({dependencies.blockedBy.length} blocking this task)
+              </h4>
+              {canCompleteTask && (
+                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setDepSearchQuery(depSearchQuery ? '' : ' ')}>
+                  <Plus className="h-3 w-3 mr-1" />Add
+                </Button>
+              )}
+            </div>
+
+            {/* Blocked-by warning */}
+            {dependencies.blockedBy.some(d => d.status !== 'COMPLETED') && (
+              <div className="flex items-center gap-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                <span>This task is blocked by incomplete tasks and cannot move to In Progress until they are resolved.</span>
+              </div>
+            )}
+
+            {/* Search for dependency */}
+            {canCompleteTask && (
+              <div className="space-y-1">
+                <Input
+                  placeholder="Search tasks to add as dependency..."
+                  value={depSearchQuery}
+                  onChange={(e) => { setDepSearchQuery(e.target.value); searchTasksForDependency(e.target.value) }}
+                  className="h-7 text-xs"
+                />
+                {depSearchResults.length > 0 && (
+                  <div className="border rounded bg-white shadow-sm max-h-32 overflow-y-auto">
+                    {depSearchResults.map(t => (
+                      <button key={t.id} onClick={() => handleAddDependency(t.id)}
+                        className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 flex items-center justify-between gap-2">
+                        <span className="truncate">{t.title}</span>
+                        <span className={`text-xs px-1.5 py-0.5 rounded ${t.status === 'COMPLETED' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{t.status.replace('_', ' ')}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Blockers list */}
+            {loadingDeps ? (
+              <div className="flex justify-center py-2"><div className="animate-spin h-4 w-4 rounded-full border-b-2 border-gray-400" /></div>
+            ) : dependencies.blockedBy.length > 0 ? (
+              <div className="space-y-1">
+                {dependencies.blockedBy.map(dep => (
+                  <div key={dep.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded text-xs">
+                    {dep.status === 'COMPLETED' ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500 flex-shrink-0" /> : <Circle className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />}
+                    <span className={`flex-1 truncate ${dep.status === 'COMPLETED' ? 'line-through text-gray-400' : 'text-gray-700'}`}>{dep.title}</span>
+                    <span className={`px-1.5 py-0.5 rounded text-xs ${dep.status === 'COMPLETED' ? 'bg-green-50 text-green-700' : dep.status === 'IN_PROGRESS' ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>{dep.status.replace('_', ' ')}</span>
+                    {canCompleteTask && (
+                      <button onClick={() => handleRemoveDependency(dep.id)} className="text-gray-400 hover:text-red-500">
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-400">No blocking dependencies</p>
+            )}
+          </div>
+
+          {/* Deliverables Section */}
+          <div className="border-t pt-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="font-medium text-gray-900 flex items-center gap-2 text-sm">
+                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                Deliverables ({deliverables.filter(d => d.isCompleted).length}/{deliverables.length})
+              </h4>
+              {(canCompleteTask || session?.user?.role === 'LEADER') && (
+                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setShowAddDeliverable(v => !v)}>
+                  <Plus className="h-3 w-3 mr-1" />Add
+                </Button>
+              )}
+            </div>
+
+            {/* Progress bar */}
+            {deliverables.length > 0 && (
+              <div>
+                <Progress value={deliverables.length > 0 ? (deliverables.filter(d => d.isCompleted).length / deliverables.length) * 100 : 0} className="h-1.5" />
+              </div>
+            )}
+
+            {/* Add deliverable form */}
+            {showAddDeliverable && (
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Deliverable name..."
+                  value={newDeliverableName}
+                  onChange={(e) => setNewDeliverableName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleAddDeliverable(); if (e.key === 'Escape') setShowAddDeliverable(false) }}
+                  className="h-7 text-xs flex-1"
+                  autoFocus
+                />
+                <Button size="sm" className="h-7" onClick={handleAddDeliverable} disabled={!newDeliverableName.trim() || addingDeliverable}>
+                  {addingDeliverable ? <div className="animate-spin h-3 w-3 rounded-full border-b-2 border-white" /> : <Check className="h-3 w-3" />}
+                </Button>
+                <Button size="sm" variant="ghost" className="h-7" onClick={() => setShowAddDeliverable(false)}><X className="h-3 w-3" /></Button>
+              </div>
+            )}
+
+            {loadingDeliverables ? (
+              <div className="flex justify-center py-2"><div className="animate-spin h-4 w-4 rounded-full border-b-2 border-gray-400" /></div>
+            ) : deliverables.length > 0 ? (
+              <div className="space-y-1">
+                {deliverables.map(d => (
+                  <div key={d.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded text-xs group">
+                    <button onClick={() => handleToggleDeliverable(d)} className="flex-shrink-0">
+                      {d.isCompleted ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <Circle className="h-4 w-4 text-gray-300 hover:text-gray-500" />}
+                    </button>
+                    <span className={`flex-1 ${d.isCompleted ? 'line-through text-gray-400' : 'text-gray-700'}`}>{d.name}</span>
+                    {d.isCompleted && d.submittedBy && <span className="text-gray-400 hidden group-hover:inline">{d.submittedBy.name || d.submittedBy.email}</span>}
+                    {(canCompleteTask || session?.user?.role === 'LEADER') && (
+                      <button onClick={() => handleDeleteDeliverable(d.id)} className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-400">No deliverables defined</p>
+            )}
+          </div>
+
+          {/* PR / PO Section */}
+          <div className="border-t pt-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="font-medium text-gray-900 flex items-center gap-2 text-sm">
+                <FileText className="h-4 w-4 text-blue-500" />
+                Procurement ({procurements.length})
+              </h4>
+              <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setShowAddProcurement(v => !v)}>
+                <Plus className="h-3 w-3 mr-1" />Add PR/PO
+              </Button>
+            </div>
+
+            {/* Add form */}
+            {showAddProcurement && (
+              <div className="p-3 bg-gray-50 rounded space-y-2 text-xs">
+                <div className="flex gap-2">
+                  <button onClick={() => setNewProcurement(p => ({ ...p, type: 'PURCHASE_REQUEST' }))}
+                    className={`flex-1 py-1 rounded border text-center font-medium ${newProcurement.type === 'PURCHASE_REQUEST' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300'}`}>
+                    Purchase Request (PR)
+                  </button>
+                  <button onClick={() => setNewProcurement(p => ({ ...p, type: 'PURCHASE_ORDER' }))}
+                    className={`flex-1 py-1 rounded border text-center font-medium ${newProcurement.type === 'PURCHASE_ORDER' ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-600 border-gray-300'}`}>
+                    Purchase Order (PO)
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <Input placeholder="Ref. number" value={newProcurement.referenceNumber} onChange={e => setNewProcurement(p => ({ ...p, referenceNumber: e.target.value }))} className="h-7 text-xs" />
+                  <Input placeholder="Amount" type="number" value={newProcurement.amount} onChange={e => setNewProcurement(p => ({ ...p, amount: e.target.value }))} className="h-7 text-xs" />
+                  <Input placeholder="Vendor" value={newProcurement.vendor} onChange={e => setNewProcurement(p => ({ ...p, vendor: e.target.value }))} className="h-7 text-xs" />
+                  <Input placeholder="Approver name" value={newProcurement.approverName} onChange={e => setNewProcurement(p => ({ ...p, approverName: e.target.value }))} className="h-7 text-xs" />
+                </div>
+                <Input placeholder="Notes (optional)" value={newProcurement.notes} onChange={e => setNewProcurement(p => ({ ...p, notes: e.target.value }))} className="h-7 text-xs" />
+                <div className="flex justify-end gap-2">
+                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowAddProcurement(false)}>Cancel</Button>
+                  <Button size="sm" className="h-7 text-xs" onClick={handleAddProcurement} disabled={addingProcurement}>
+                    {addingProcurement ? 'Saving...' : 'Save'}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {loadingProcurement ? (
+              <div className="flex justify-center py-2"><div className="animate-spin h-4 w-4 rounded-full border-b-2 border-gray-400" /></div>
+            ) : procurements.length > 0 ? (
+              <div className="space-y-2">
+                {procurements.map(p => (
+                  <div key={p.id} className="p-3 bg-gray-50 rounded border text-xs space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={`px-2 py-0.5 rounded font-semibold ${p.type === 'PURCHASE_REQUEST' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                        {p.type === 'PURCHASE_REQUEST' ? 'PR' : 'PO'}
+                      </span>
+                      {p.referenceNumber && <span className="text-gray-500 font-mono">{p.referenceNumber}</span>}
+                      <span className="flex-1" />
+                      {(session?.user?.role === 'ADMIN' || session?.user?.role === 'LEADER') && (
+                        <select
+                          value={p.status}
+                          onChange={(e) => handleUpdateProcurementStatus(p.id, e.target.value as Procurement['status'])}
+                          className={`text-xs rounded px-1.5 py-0.5 border font-medium ${p.status === 'APPROVED' || p.status === 'PROCESSED' ? 'bg-green-50 text-green-700 border-green-200' : p.status === 'REJECTED' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-yellow-50 text-yellow-700 border-yellow-200'}`}
+                        >
+                          <option value="PENDING">Pending</option>
+                          <option value="APPROVED">Approved</option>
+                          <option value="REJECTED">Rejected</option>
+                          <option value="PROCESSED">Processed</option>
+                        </select>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-gray-600">
+                      {p.amount && <span>Amount: <strong>₱{p.amount.toLocaleString()}</strong></span>}
+                      {p.vendor && <span>Vendor: <strong>{p.vendor}</strong></span>}
+                      {p.approverName && <span>Approver: <strong>{p.approverName}</strong></span>}
+                    </div>
+                    {p.notes && <p className="text-gray-500 italic">{p.notes}</p>}
+                    <p className="text-gray-400">By {p.createdBy.name || p.createdBy.email} · {format(new Date(p.createdAt), 'MMM dd, yyyy')}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-400">No procurement records</p>
+            )}
+          </div>
 
           {/* Enhanced Comments Section */}
           <div className="border-t pt-6 space-y-4">

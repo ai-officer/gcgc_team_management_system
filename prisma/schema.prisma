@@ -45,16 +45,21 @@ model User {
   commentReactions   CommentReaction[]
   events             Event[]
   sessions           Session[]
-  taskCollaborators  TaskCollaborator[] @relation("TaskCollaborators")
-  taskTeamMembers    TaskTeamMember[]   @relation("TaskTeamMembers")
-  assignedTasks2     Task[]             @relation("TaskAssignedBy")
-  assignedTasks      Task[]             @relation("TaskAssignee")
-  createdTasks       Task[]             @relation("TaskCreator")
-  teamMembers        TeamMember[]
-  ossbRequests       OSSBRequest[]
-  reportsTo          User?              @relation("UserReportsTo", fields: [reportsToId], references: [id])
-  subordinates       User[]             @relation("UserReportsTo")
-  notifications      Notification[]
+  taskCollaborators      TaskCollaborator[]  @relation("TaskCollaborators")
+  taskTeamMembers        TaskTeamMember[]    @relation("TaskTeamMembers")
+  assignedTasks2         Task[]              @relation("TaskAssignedBy")
+  assignedTasks          Task[]              @relation("TaskAssignee")
+  createdTasks           Task[]              @relation("TaskCreator")
+  seniorEvaluatedTasks   Task[]              @relation("TaskSeniorEvaluator")
+  teamMembers            TeamMember[]
+  ossbRequests           OSSBRequest[]
+  reportsTo              User?               @relation("UserReportsTo", fields: [reportsToId], references: [id])
+  subordinates           User[]              @relation("UserReportsTo")
+  notifications          Notification[]
+  deliverableSubmissions TaskDeliverable[]   @relation("DeliverableSubmitter")
+  evaluationsGiven       TaskEvaluation[]    @relation("EvaluationGiven")
+  evaluationsReceived    TaskEvaluation[]    @relation("EvaluationReceived")
+  procurementsCreated    TaskProcurement[]   @relation("ProcurementCreator")
 
   @@map("users")
 }
@@ -194,13 +199,31 @@ model Task {
   recurringFrequency    RecurringFrequency?
   recurringInterval     Int?               // Every N days/weeks/months/years (default 1)
   recurringDaysOfWeek   Int[]              @default([]) // 0=Sun..6=Sat (weekly only)
-  recurringEndDate      DateTime?          // Series end date
+  recurringEndDate      DateTime?          // Series end date (optional — null = indefinite)
   recurringParentId     String?            // Set on instances; null on template
+  // Completion tracking
+  memberSubmittedAt     DateTime?          // When member moved task to IN_REVIEW
+  leaderEvaluatedAt     DateTime?          // When leader approved/completed the task
+  // Work quality evaluation
+  workQuality           WorkQuality?       // Direct leader's quality rating
+  seniorWorkQuality     WorkQuality?       // Senior leader override rating
+  seniorEvaluatorId     String?            // Who performed the senior override
+  seniorEvaluatedAt     DateTime?          // When the override was set
+  // Task gravity / SLA
+  taskWeight            Int?               // 1–5 importance/gravity score (leader-defined)
+  slaHours              Int?               // SLA target in hours (e.g. 8, 24, 48, 72)
+  // Custom notification reminders
+  reminderDays          Int[]              @default([]) // Days before deadline to send reminder
   // Relations
   parent                Task?              @relation("TaskSubtasks", fields: [parentId], references: [id], onDelete: Cascade)
   subtasks              Task[]             @relation("TaskSubtasks")
   recurringParent       Task?              @relation("RecurringInstances", fields: [recurringParentId], references: [id], onDelete: Cascade)
   recurringInstances    Task[]             @relation("RecurringInstances")
+  dependencies          TaskDependency[]   @relation("DependentTask")
+  blockedBy             TaskDependency[]   @relation("BlockerTask")
+  deliverables          TaskDeliverable[]
+  procurements          TaskProcurement[]
+  evaluations           TaskEvaluation[]
   comments              Comment[]
   events                Event[]
   collaborators         TaskCollaborator[]
@@ -209,6 +232,7 @@ model Task {
   assignee              User?              @relation("TaskAssignee", fields: [assigneeId], references: [id])
   creator               User               @relation("TaskCreator", fields: [creatorId], references: [id])
   team                  Team?              @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  seniorEvaluator       User?              @relation("TaskSeniorEvaluator", fields: [seniorEvaluatorId], references: [id])
 
   @@map("tasks")
 }
@@ -569,6 +593,97 @@ enum CalendarSyncDirection {
   TMS_TO_GOOGLE
   GOOGLE_TO_TMS
   BOTH
+}
+
+enum WorkQuality {
+  NONE      // 0%
+  POOR      // 25%
+  FAIR      // 50%
+  GOOD      // 75%
+  EXCELLENT // 100%
+}
+
+enum EvaluationPeriod {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+}
+
+enum ProcurementType {
+  PURCHASE_REQUEST
+  PURCHASE_ORDER
+}
+
+enum ProcurementStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PROCESSED
+}
+
+model TaskDependency {
+  id          String   @id @default(cuid())
+  taskId      String                  // the BLOCKED task
+  dependsOnId String                  // must complete before taskId can start
+  createdAt   DateTime @default(now())
+  task        Task     @relation("DependentTask", fields: [taskId],      references: [id], onDelete: Cascade)
+  dependsOn   Task     @relation("BlockerTask",   fields: [dependsOnId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, dependsOnId])
+  @@map("task_dependencies")
+}
+
+model TaskDeliverable {
+  id            String    @id @default(cuid())
+  taskId        String
+  name          String
+  description   String?
+  isCompleted   Boolean   @default(false)
+  completedAt   DateTime?
+  submittedById String?
+  createdAt     DateTime  @default(now())
+  task          Task      @relation(fields: [taskId],       references: [id], onDelete: Cascade)
+  submittedBy   User?     @relation("DeliverableSubmitter", fields: [submittedById], references: [id])
+
+  @@map("task_deliverables")
+}
+
+model TaskEvaluation {
+  id              String           @id @default(cuid())
+  evaluatorId     String
+  evaluateeId     String
+  period          EvaluationPeriod
+  gradientScore   Int              // 0, 25, 50, 75, or 100
+  comments        String?
+  evaluatedAt     DateTime         @default(now())
+  periodStartDate DateTime
+  periodEndDate   DateTime
+  taskId          String?          // optional link to a specific task
+  evaluator       User             @relation("EvaluationGiven",    fields: [evaluatorId], references: [id])
+  evaluatee       User             @relation("EvaluationReceived", fields: [evaluateeId], references: [id])
+  task            Task?            @relation(fields: [taskId], references: [id])
+
+  @@map("task_evaluations")
+}
+
+model TaskProcurement {
+  id              String            @id @default(cuid())
+  taskId          String
+  type            ProcurementType
+  referenceNumber String?
+  amount          Float?
+  vendor          String?
+  approverName    String?
+  status          ProcurementStatus @default(PENDING)
+  notes           String?
+  createdById     String
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  task            Task              @relation(fields: [taskId],     references: [id], onDelete: Cascade)
+  createdBy       User              @relation("ProcurementCreator", fields: [createdById], references: [id])
+
+  @@map("task_procurements")
 }
 
 model OSSBRequest {

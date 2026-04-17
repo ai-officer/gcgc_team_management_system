@@ -1,37 +1,61 @@
 'use client'
 
 import { useState } from 'react'
-import { Bell } from 'lucide-react'
+import {
+  Bell,
+  CheckSquare,
+  Edit3,
+  CheckCircle2,
+  UserPlus,
+  MessageSquare,
+  Users,
+  UserMinus,
+  Calendar,
+  CalendarCheck,
+  LogIn,
+} from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { useAdminNotifications } from '@/hooks/useAdminNotifications'
 import { formatDistanceToNow } from 'date-fns'
+import { cn } from '@/lib/utils'
 
-function getActivityDot(type: string) {
-  const colorMap: Record<string, string> = {
-    TASK_CREATED: 'bg-blue-500',
-    TASK_UPDATED: 'bg-indigo-500',
-    TASK_COMPLETED: 'bg-emerald-500',
-    TASK_ASSIGNED: 'bg-purple-500',
-    COMMENT_ADDED: 'bg-amber-500',
-    TEAM_JOINED: 'bg-teal-500',
-    TEAM_LEFT: 'bg-red-500',
-    EVENT_CREATED: 'bg-orange-500',
-    EVENT_UPDATED: 'bg-yellow-500',
-    LOGIN: 'bg-slate-500',
+interface ActivityIconConfig {
+  icon: React.ReactNode
+  bgClass: string
+}
+
+function getActivityIconConfig(type: string): ActivityIconConfig {
+  switch (type) {
+    case 'TASK_CREATED':
+      return { icon: <CheckSquare className="h-4 w-4 text-blue-600" />, bgClass: 'bg-blue-50' }
+    case 'TASK_UPDATED':
+      return { icon: <Edit3 className="h-4 w-4 text-indigo-600" />, bgClass: 'bg-indigo-50' }
+    case 'TASK_COMPLETED':
+      return { icon: <CheckCircle2 className="h-4 w-4 text-green-600" />, bgClass: 'bg-green-50' }
+    case 'TASK_ASSIGNED':
+      return { icon: <UserPlus className="h-4 w-4 text-purple-600" />, bgClass: 'bg-purple-50' }
+    case 'COMMENT_ADDED':
+      return { icon: <MessageSquare className="h-4 w-4 text-amber-600" />, bgClass: 'bg-amber-50' }
+    case 'TEAM_JOINED':
+      return { icon: <Users className="h-4 w-4 text-teal-600" />, bgClass: 'bg-teal-50' }
+    case 'TEAM_LEFT':
+      return { icon: <UserMinus className="h-4 w-4 text-red-600" />, bgClass: 'bg-red-50' }
+    case 'EVENT_CREATED':
+      return { icon: <Calendar className="h-4 w-4 text-orange-600" />, bgClass: 'bg-orange-50' }
+    case 'EVENT_UPDATED':
+      return { icon: <CalendarCheck className="h-4 w-4 text-yellow-600" />, bgClass: 'bg-yellow-50' }
+    case 'LOGIN':
+      return { icon: <LogIn className="h-4 w-4 text-slate-600" />, bgClass: 'bg-slate-50' }
+    default:
+      return { icon: <Bell className="h-4 w-4 text-gray-500" />, bgClass: 'bg-gray-50' }
   }
-  const color = colorMap[type] ?? 'bg-gray-400'
-  return <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 mt-1.5 ${color}`} />
 }
 
 export function AdminNotificationDropdown() {
@@ -64,7 +88,7 @@ export function AdminNotificationDropdown() {
           {unreadCount > 0 && (
             <Badge
               variant="destructive"
-              className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center text-xs font-semibold px-1"
+              className="absolute -top-1 -right-1 h-4 w-4 flex items-center justify-center text-xs font-semibold px-0 rounded-full"
             >
               {unreadCount > 99 ? '99+' : unreadCount}
             </Badge>
@@ -72,66 +96,84 @@ export function AdminNotificationDropdown() {
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent className="w-96" side="bottom" align="end">
-        <DropdownMenuLabel className="flex items-center justify-between py-3">
-          <span className="font-semibold text-gray-900">Notifications</span>
+      <DropdownMenuContent
+        className="w-80 max-h-96 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden p-0"
+        side="bottom"
+        align="end"
+      >
+        {/* Header */}
+        <div className="flex justify-between items-center px-4 py-3 border-b border-gray-100">
+          <span className="font-semibold text-gray-900 text-sm">Notifications</span>
           <button
             onClick={() => { setIsOpen(false); router.push('/admin/audit') }}
-            className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+            className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors cursor-pointer"
           >
             View all
           </button>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
+        </div>
 
+        {/* Body */}
         {loading ? (
-          <div className="p-4 text-center text-sm text-muted-foreground">
+          <div className="p-4 text-center text-sm text-gray-400">
             Loading...
           </div>
         ) : notifications.length === 0 ? (
-          <div className="p-8 text-center">
-            <Bell className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
-            <p className="text-sm text-muted-foreground">No recent activity</p>
+          <div className="py-10 flex flex-col items-center gap-2">
+            <Bell className="h-8 w-8 text-gray-300" />
+            <p className="text-sm text-gray-400">No recent activity</p>
           </div>
         ) : (
-          <ScrollArea className="h-[350px]">
-            {notifications.map((item) => (
-              <DropdownMenuItem
-                key={item.id}
-                className="flex items-start gap-3 px-3 py-2.5 cursor-pointer focus:bg-accent"
-                onClick={handleItemClick}
-              >
-                {getActivityDot(item.type)}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm leading-snug text-gray-800 line-clamp-2">
-                    {item.description}
-                  </p>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    {item.user && (
-                      <span className="text-xs text-muted-foreground font-medium">
-                        {item.user.name ?? item.user.email}
-                      </span>
+          <div className="max-h-72 overflow-y-auto divide-y divide-gray-100">
+            {notifications.map((item) => {
+              const iconConfig = getActivityIconConfig(item.type)
+              return (
+                <button
+                  key={item.id}
+                  className="w-full flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+                  onClick={handleItemClick}
+                >
+                  {/* Icon circle */}
+                  <div
+                    className={cn(
+                      'h-8 w-8 rounded-full flex items-center justify-center shrink-0',
+                      iconConfig.bgClass
                     )}
-                    {item.user && (
-                      <span className="text-xs text-muted-foreground">·</span>
-                    )}
-                    <span className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
-                    </span>
+                  >
+                    {iconConfig.icon}
                   </div>
-                </div>
-              </DropdownMenuItem>
-            ))}
-          </ScrollArea>
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-700 leading-snug line-clamp-2">
+                      {item.description}
+                    </p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      {item.user && (
+                        <>
+                          <span className="text-xs text-gray-500 font-medium">
+                            {item.user.name ?? item.user.email}
+                          </span>
+                          <span className="text-xs text-gray-400">·</span>
+                        </>
+                      )}
+                      <span className="text-xs text-gray-400">
+                        {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
         )}
 
-        <DropdownMenuSeparator />
-        <div className="px-3 py-2">
+        {/* Footer */}
+        <div className="border-t border-gray-100 px-4 py-2 text-center">
           <button
             onClick={() => { setIsOpen(false); router.push('/admin/audit') }}
-            className="w-full text-left text-xs text-blue-600 hover:text-blue-800 font-medium"
+            className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
           >
-            View all activity in Audit Trail →
+            View all activity in Audit Trail
           </button>
         </div>
       </DropdownMenuContent>

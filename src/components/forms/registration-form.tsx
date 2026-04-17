@@ -5,12 +5,11 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Upload, User, Crown, ChevronDown, Eye, EyeOff } from 'lucide-react'
+import { Crown, Eye, EyeOff, Check, Users } from 'lucide-react'
 import { UserFormData, OrganizationalUnit } from '@/types'
+import { cn } from '@/lib/utils'
 
 interface Leader {
   id: string
@@ -55,8 +54,16 @@ interface FieldErrors {
   jobLevel?: string
 }
 
+const STEPS = [
+  { id: 1, label: 'Personal', description: 'Your basic information' },
+  { id: 2, label: 'Contact', description: 'Contact & account details' },
+  { id: 3, label: 'Role & Org', description: 'Role and organization' },
+  { id: 4, label: 'Security', description: 'Password setup' },
+]
+
 export function RegistrationForm() {
   const router = useRouter()
+  const [currentStep, setCurrentStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -65,7 +72,7 @@ export function RegistrationForm() {
   const [leaders, setLeaders] = useState<Leader[]>([])
   const [sectionHeads, setSectionHeads] = useState<SectionHead[]>([])
   const [sectorHeads, setSectorHeads] = useState<SectorHead[]>([])
-  
+
   // Organizational structure state
   const [divisions, setDivisions] = useState<OrganizationalUnit[]>([])
   const [selectedDivision, setSelectedDivision] = useState<OrganizationalUnit | null>(null)
@@ -77,7 +84,7 @@ export function RegistrationForm() {
   const [teams, setTeams] = useState<Array<{id: string; name: string; code?: string; type: string}>>([])
   const [selectedTeam, setSelectedTeam] = useState<{id: string; name: string; code?: string; type: string} | null>(null)
 
-  
+
   // Form state
   const [formData, setFormData] = useState<UserFormData>({
     firstName: '',
@@ -107,7 +114,7 @@ export function RegistrationForm() {
     customTeam: ''
   })
   const [confirmPassword, setConfirmPassword] = useState('')
-  
+
   // UI state for custom inputs
   const [showCustomDivisionInput, setShowCustomDivisionInput] = useState(false)
   const [showCustomDepartmentInput, setShowCustomDepartmentInput] = useState(false)
@@ -260,6 +267,47 @@ export function RegistrationForm() {
     setFieldErrors(prev => ({ ...prev, [field]: error }))
   }
 
+  // Validate fields for the current step
+  const validateStep = (step: number): boolean => {
+    const errors: FieldErrors = {}
+
+    if (step === 1) {
+      errors.firstName = validateField('firstName', formData.firstName)
+      errors.lastName = validateField('lastName', formData.lastName)
+    }
+
+    if (step === 2) {
+      errors.email = validateField('email', formData.email)
+      errors.username = validateField('username', formData.username)
+      errors.contactNumber = validateField('contactNumber', formData.contactNumber)
+    }
+
+    if (step === 3) {
+      errors.positionTitle = validateField('positionTitle', formData.positionTitle)
+      if (!formData.isLeader && !formData.reportsToId) {
+        errors.reportsToId = 'Please select who you report to'
+      }
+      if (!selectedDivision) {
+        errors.division = 'Please select a division'
+      }
+      if (!formData.jobLevel) {
+        errors.jobLevel = 'Please select a job level'
+      }
+    }
+
+    if (step === 4) {
+      errors.password = validateField('password', formData.password)
+      errors.confirmPassword = validateField('confirmPassword', confirmPassword)
+    }
+
+    const newTouched: Record<string, boolean> = {}
+    Object.keys(errors).forEach(key => { newTouched[key] = true })
+    setTouched(prev => ({ ...prev, ...newTouched }))
+    setFieldErrors(prev => ({ ...prev, ...errors }))
+
+    return !Object.values(errors).some(e => e !== undefined)
+  }
+
   // Validate all required fields
   const validateAllFields = (): boolean => {
     const errors: FieldErrors = {}
@@ -307,7 +355,7 @@ export function RegistrationForm() {
   // Error message component
   const FieldError = ({ error }: { error?: string }) => {
     if (!error) return null
-    return <p className="text-sm text-destructive mt-1">{error}</p>
+    return <p className="text-sm text-red-500 mt-1">{error}</p>
   }
 
   const handleLeaderCheckboxChange = (checked: boolean) => {
@@ -329,7 +377,7 @@ export function RegistrationForm() {
     setSelectedSection(null)
     setDepartments([])
     setSections([])
-    
+
     // Reset dependent form fields
     setFormData(prev => ({
       ...prev,
@@ -406,7 +454,7 @@ export function RegistrationForm() {
     // For Real Property departments (ETII, ECLI, KPPI) that have sections
     if (department.children && department.children.length > 0) {
       setSections(department.children)
-    } 
+    }
     // For Shared Services departments that require section input
     else if (department.requiresSectionInput) {
       setShowCustomSectionInput(true)
@@ -423,7 +471,7 @@ export function RegistrationForm() {
     if (!section) return
 
     setSelectedSection(section)
-    
+
     setFormData(prev => ({
       ...prev,
       section: section.name,
@@ -514,498 +562,627 @@ export function RegistrationForm() {
     }
   }
 
+  const handleNext = () => {
+    if (validateStep(currentStep)) {
+      setError('')
+      setCurrentStep(prev => Math.min(prev + 1, STEPS.length))
+    } else {
+      setError('Please fix the errors below before continuing.')
+    }
+  }
+
+  const handleBack = () => {
+    setError('')
+    setCurrentStep(prev => Math.max(prev - 1, 1))
+  }
+
+  const progressPercent = ((currentStep - 1) / (STEPS.length - 1)) * 100
+
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <User className="w-5 h-5" />
-          User Registration Portal
-        </CardTitle>
-        <CardDescription>
-          Create your account to access the team management system
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          
-          {success && (
-            <Alert>
-              <AlertDescription>{success}</AlertDescription>
-            </Alert>
-          )}
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 max-w-2xl mx-auto">
+      {/* Step Indicator */}
+      <div className="mb-8">
+        <div className="flex items-start justify-between relative">
+          {/* Connector line */}
+          <div className="absolute top-4 left-0 right-0 h-0.5 bg-gray-100 z-0" style={{ left: '2rem', right: '2rem' }} />
+          <div
+            className="absolute top-4 h-0.5 bg-blue-500 z-0 transition-all duration-500"
+            style={{ left: '2rem', width: `calc(${progressPercent}% * (100% - 4rem) / 100)` }}
+          />
 
-          {/* Personal Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="firstName">First Name <span className="text-destructive">*</span></Label>
-              <Input
-                id="firstName"
-                type="text"
-                value={formData.firstName}
-                onChange={(e) => handleInputChange('firstName', e.target.value)}
-                onBlur={() => handleBlur('firstName')}
-                placeholder="Enter first name"
-                className={touched.firstName && fieldErrors.firstName ? 'border-destructive' : ''}
-              />
-              {touched.firstName && <FieldError error={fieldErrors.firstName} />}
-            </div>
+          {STEPS.map((step) => {
+            const isDone = currentStep > step.id
+            const isActive = currentStep === step.id
+            return (
+              <div key={step.id} className="flex flex-col items-center z-10 flex-1">
+                <div
+                  className={cn(
+                    'h-8 w-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300',
+                    isDone && 'bg-green-500 text-white',
+                    isActive && 'bg-blue-600 text-white shadow-md shadow-blue-200',
+                    !isDone && !isActive && 'bg-gray-100 text-gray-400'
+                  )}
+                >
+                  {isDone ? <Check className="h-4 w-4" /> : step.id}
+                </div>
+                <span
+                  className={cn(
+                    'text-xs mt-1.5 font-medium text-center',
+                    isActive ? 'text-blue-600' : isDone ? 'text-green-600' : 'text-gray-400'
+                  )}
+                >
+                  {step.label}
+                </span>
+              </div>
+            )
+          })}
+        </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="lastName">Last Name <span className="text-destructive">*</span></Label>
-              <Input
-                id="lastName"
-                type="text"
-                value={formData.lastName}
-                onChange={(e) => handleInputChange('lastName', e.target.value)}
-                onBlur={() => handleBlur('lastName')}
-                placeholder="Enter last name"
-                className={touched.lastName && fieldErrors.lastName ? 'border-destructive' : ''}
-              />
-              {touched.lastName && <FieldError error={fieldErrors.lastName} />}
-            </div>
-          </div>
+        {/* Thin progress bar */}
+        <div className="mt-4 h-1 bg-gray-100 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-blue-500 rounded-full transition-all duration-500"
+            style={{ width: `${((currentStep - 1) / (STEPS.length - 1)) * 100}%` }}
+          />
+        </div>
+      </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="middleName">Middle Name</Label>
-              <Input
-                id="middleName"
-                type="text"
-                value={formData.middleName}
-                onChange={(e) => handleInputChange('middleName', e.target.value)}
-                placeholder="Enter middle name"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="shortName">Short Name</Label>
-              <Input
-                id="shortName"
-                type="text"
-                value={formData.shortName}
-                onChange={(e) => handleInputChange('shortName', e.target.value)}
-                placeholder="Enter short name"
-              />
-            </div>
-          </div>
+      {/* Step title */}
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-1">
+          {STEPS[currentStep - 1].label}
+        </h2>
+        <p className="text-sm text-gray-500">{STEPS[currentStep - 1].description}</p>
+      </div>
 
-          {/* Contact Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email <span className="text-destructive">*</span></Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                onBlur={() => handleBlur('email')}
-                placeholder="Enter email address"
-                className={touched.email && fieldErrors.email ? 'border-destructive' : ''}
-              />
-              {touched.email && <FieldError error={fieldErrors.email} />}
-            </div>
+      {/* Alerts */}
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      {success && (
+        <Alert className="mb-4 border-green-200 bg-green-50">
+          <AlertDescription className="text-green-700">{success}</AlertDescription>
+        </Alert>
+      )}
 
-            <div className="space-y-2">
-              <Label htmlFor="contactNumber">Contact Number <span className="text-destructive">*</span></Label>
-              <Input
-                id="contactNumber"
-                type="tel"
-                value={formData.contactNumber}
-                onChange={(e) => handleInputChange('contactNumber', e.target.value)}
-                onBlur={() => handleBlur('contactNumber')}
-                placeholder="09XXXXXXXXX"
-                maxLength={11}
-                className={touched.contactNumber && fieldErrors.contactNumber ? 'border-destructive' : ''}
-              />
-              {touched.contactNumber && <FieldError error={fieldErrors.contactNumber} />}
-              <p className="text-xs text-muted-foreground">Format: 09XXXXXXXXX (11 digits)</p>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="username">Username <span className="text-destructive">*</span></Label>
-            <Input
-              id="username"
-              type="text"
-              value={formData.username}
-              onChange={(e) => handleInputChange('username', e.target.value)}
-              onBlur={() => handleBlur('username')}
-              placeholder="Enter username"
-              className={touched.username && fieldErrors.username ? 'border-destructive' : ''}
-            />
-            {touched.username && <FieldError error={fieldErrors.username} />}
-            <p className="text-xs text-muted-foreground">Only letters, numbers, and underscores allowed</p>
-          </div>
-
-          {/* Leadership Checkbox */}
-          <div className="flex items-center space-x-2 p-4 border rounded-lg">
-            <Checkbox
-              id="isLeader"
-              checked={formData.isLeader}
-              onCheckedChange={handleLeaderCheckboxChange}
-            />
-            <div className="grid gap-1.5 leading-none">
-              <Label
-                htmlFor="isLeader"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2"
-              >
-                <Crown className="w-4 h-4" />
-                Click if Leader
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                Check this box if you are registering as a team leader
-              </p>
-            </div>
-          </div>
-
-          {/* Reports To - Only show if not leader */}
-          {!formData.isLeader && (
-            <div className="space-y-2">
-              <Label htmlFor="reportsTo">Reports To (Leader) <span className="text-destructive">*</span></Label>
-              <Select
-                value={formData.reportsToId}
-                onValueChange={(value) => {
-                  handleInputChange('reportsToId', value)
-                  setFieldErrors(prev => ({ ...prev, reportsToId: undefined }))
-                  setTouched(prev => ({ ...prev, reportsToId: true }))
-                }}
-              >
-                <SelectTrigger className={touched.reportsToId && fieldErrors.reportsToId ? 'border-destructive' : ''}>
-                  <SelectValue placeholder="Select your leader" />
-                </SelectTrigger>
-                <SelectContent>
-                  {leaders.map((leader) => (
-                    <SelectItem key={leader.id} value={leader.id}>
-                      {leader.name || `${leader.firstName} ${leader.lastName}`.trim()} ({leader.role})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {touched.reportsToId && <FieldError error={fieldErrors.reportsToId} />}
-            </div>
-          )}
-
-          {/* Organizational Structure */}
+      <form onSubmit={handleSubmit}>
+        {/* ---- STEP 1: Personal Information ---- */}
+        {currentStep === 1 && (
           <div className="space-y-4">
-            <h3 className="text-lg font-medium">Organizational Structure</h3>
-            
-            {/* Division Dropdown */}
-            <div className="space-y-2">
-              <Label htmlFor="division">Division <span className="text-destructive">*</span></Label>
-              <Select
-                value={selectedDivision?.id || ''}
-                onValueChange={(value) => {
-                  handleDivisionChange(value)
-                  setFieldErrors(prev => ({ ...prev, division: undefined }))
-                  setTouched(prev => ({ ...prev, division: true }))
-                }}
-              >
-                <SelectTrigger className={touched.division && fieldErrors.division ? 'border-destructive' : ''}>
-                  <SelectValue placeholder="Select division" />
-                </SelectTrigger>
-                <SelectContent>
-                  {divisions.map((division) => (
-                    <SelectItem
-                      key={division.id}
-                      value={division.id}
-                      disabled={division.disabled}
-                    >
-                      {division.name} {division.code && `(${division.code})`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {touched.division && <FieldError error={fieldErrors.division} />}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label htmlFor="firstName" className="text-sm font-medium text-gray-700">
+                  First Name <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="firstName"
+                  type="text"
+                  value={formData.firstName}
+                  onChange={(e) => handleInputChange('firstName', e.target.value)}
+                  onBlur={() => handleBlur('firstName')}
+                  placeholder="Enter first name"
+                  className={touched.firstName && fieldErrors.firstName ? 'border-red-400' : ''}
+                />
+                {touched.firstName && <FieldError error={fieldErrors.firstName} />}
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="lastName" className="text-sm font-medium text-gray-700">
+                  Last Name <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="lastName"
+                  type="text"
+                  value={formData.lastName}
+                  onChange={(e) => handleInputChange('lastName', e.target.value)}
+                  onBlur={() => handleBlur('lastName')}
+                  placeholder="Enter last name"
+                  className={touched.lastName && fieldErrors.lastName ? 'border-red-400' : ''}
+                />
+                {touched.lastName && <FieldError error={fieldErrors.lastName} />}
+              </div>
             </div>
 
-            {/* Custom Division Input */}
-            {showCustomDivisionInput && (
-              <div className="space-y-2">
-                <Label htmlFor="customDivision">Custom Division Name</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label htmlFor="middleName" className="text-sm font-medium text-gray-700">Middle Name</Label>
                 <Input
-                  id="customDivision"
+                  id="middleName"
                   type="text"
-                  value={formData.customDivision}
-                  onChange={(e) => handleInputChange('customDivision', e.target.value)}
-                  placeholder="Enter custom division name"
+                  value={formData.middleName}
+                  onChange={(e) => handleInputChange('middleName', e.target.value)}
+                  placeholder="Enter middle name"
                 />
               </div>
-            )}
 
-            {/* Sector Head Dropdown (for Hotel Operations) */}
-            {showSectorHeadInput && (
-              <div className="space-y-2">
-                <Label htmlFor="sectorHeadInitials">Sector Head</Label>
-                <Select 
-                  value={formData.sectorHeadInitials} 
+              <div className="space-y-1">
+                <Label htmlFor="shortName" className="text-sm font-medium text-gray-700">Short Name</Label>
+                <Input
+                  id="shortName"
+                  type="text"
+                  value={formData.shortName}
+                  onChange={(e) => handleInputChange('shortName', e.target.value)}
+                  placeholder="Enter short name"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ---- STEP 2: Contact & Account ---- */}
+        {currentStep === 2 && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                  Email <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  onBlur={() => handleBlur('email')}
+                  placeholder="Enter email address"
+                  className={touched.email && fieldErrors.email ? 'border-red-400' : ''}
+                />
+                {touched.email && <FieldError error={fieldErrors.email} />}
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="contactNumber" className="text-sm font-medium text-gray-700">
+                  Contact Number <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="contactNumber"
+                  type="tel"
+                  value={formData.contactNumber}
+                  onChange={(e) => handleInputChange('contactNumber', e.target.value)}
+                  onBlur={() => handleBlur('contactNumber')}
+                  placeholder="09XXXXXXXXX"
+                  maxLength={11}
+                  className={touched.contactNumber && fieldErrors.contactNumber ? 'border-red-400' : ''}
+                />
+                {touched.contactNumber && <FieldError error={fieldErrors.contactNumber} />}
+                <p className="text-xs text-gray-400">Format: 09XXXXXXXXX (11 digits)</p>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="username" className="text-sm font-medium text-gray-700">
+                Username <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="username"
+                type="text"
+                value={formData.username}
+                onChange={(e) => handleInputChange('username', e.target.value)}
+                onBlur={() => handleBlur('username')}
+                placeholder="Enter username"
+                className={touched.username && fieldErrors.username ? 'border-red-400' : ''}
+              />
+              {touched.username && <FieldError error={fieldErrors.username} />}
+              <p className="text-xs text-gray-400">Only letters, numbers, and underscores allowed</p>
+            </div>
+          </div>
+        )}
+
+        {/* ---- STEP 3: Role & Organization ---- */}
+        {currentStep === 3 && (
+          <div className="space-y-4">
+            {/* Role selection cards */}
+            <div>
+              <Label className="text-sm font-medium text-gray-700 mb-2 block">Role</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleLeaderCheckboxChange(false)}
+                  className={cn(
+                    'rounded-xl border-2 p-4 cursor-pointer text-center transition-all',
+                    !formData.isLeader
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                  )}
+                >
+                  <Users className={cn('h-5 w-5 mx-auto mb-1.5', !formData.isLeader ? 'text-blue-600' : 'text-gray-400')} />
+                  <p className={cn('text-sm font-semibold', !formData.isLeader ? 'text-blue-700' : 'text-gray-600')}>Member</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Standard team member</p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleLeaderCheckboxChange(true)}
+                  className={cn(
+                    'rounded-xl border-2 p-4 cursor-pointer text-center transition-all',
+                    formData.isLeader
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                  )}
+                >
+                  <Crown className={cn('h-5 w-5 mx-auto mb-1.5', formData.isLeader ? 'text-blue-600' : 'text-gray-400')} />
+                  <p className={cn('text-sm font-semibold', formData.isLeader ? 'text-blue-700' : 'text-gray-600')}>Leader</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Team leader</p>
+                </button>
+              </div>
+            </div>
+
+            {/* Reports To - Only show if not leader */}
+            {!formData.isLeader && (
+              <div className="space-y-1">
+                <Label htmlFor="reportsTo" className="text-sm font-medium text-gray-700">
+                  Reports To (Leader) <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={formData.reportsToId}
                   onValueChange={(value) => {
-                    const selectedHead = sectorHeads.find(head => head.initials === value)
-                    handleInputChange('sectorHeadInitials', value)
-                    // Optionally set other fields based on selection
-                    if (selectedHead) {
-                      console.log('Selected sector head:', selectedHead)
-                    }
+                    handleInputChange('reportsToId', value)
+                    setFieldErrors(prev => ({ ...prev, reportsToId: undefined }))
+                    setTouched(prev => ({ ...prev, reportsToId: true }))
                   }}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select sector head" />
+                  <SelectTrigger className={touched.reportsToId && fieldErrors.reportsToId ? 'border-red-400' : ''}>
+                    <SelectValue placeholder="Select your leader" />
                   </SelectTrigger>
                   <SelectContent>
-                    {sectorHeads.map((head) => (
-                      <SelectItem key={head.id} value={head.initials}>
-                        {head.label}
+                    {leaders.map((leader) => (
+                      <SelectItem key={leader.id} value={leader.id}>
+                        {leader.name || `${leader.firstName} ${leader.lastName}`.trim()} ({leader.role})
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                {touched.reportsToId && <FieldError error={fieldErrors.reportsToId} />}
               </div>
             )}
 
-            {/* Department/Hotel/Service Dropdown */}
-            {departments.length > 0 && (
-              <div className="space-y-2">
-                <Label htmlFor="department">
-                  {selectedDivision?.name === 'Hotel Operations' ? 'Hotel' : 
-                   selectedDivision?.name === 'Shared Services - GOLI' ? 'Service Area' :
-                   selectedDivision?.name === 'CSO' ? 'Business Unit' :
-                   'Department'} *
+            {/* Position + Job Level */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label htmlFor="positionTitle" className="text-sm font-medium text-gray-700">
+                  Position Title <span className="text-red-500">*</span>
                 </Label>
-                <Select value={selectedDepartment?.id || ''} onValueChange={handleDepartmentChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
+                <Input
+                  id="positionTitle"
+                  type="text"
+                  value={formData.positionTitle}
+                  onChange={(e) => handleInputChange('positionTitle', e.target.value)}
+                  onBlur={() => handleBlur('positionTitle')}
+                  placeholder="Enter position title"
+                  className={touched.positionTitle && fieldErrors.positionTitle ? 'border-red-400' : ''}
+                />
+                {touched.positionTitle && <FieldError error={fieldErrors.positionTitle} />}
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="jobLevel" className="text-sm font-medium text-gray-700">
+                  Job Level <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={formData.jobLevel}
+                  onValueChange={(value) => {
+                    handleInputChange('jobLevel', value)
+                    setFieldErrors(prev => ({ ...prev, jobLevel: undefined }))
+                    setTouched(prev => ({ ...prev, jobLevel: true }))
+                  }}
+                >
+                  <SelectTrigger className={touched.jobLevel && fieldErrors.jobLevel ? 'border-red-400' : ''}>
+                    <SelectValue placeholder="Select job level" />
                   </SelectTrigger>
                   <SelectContent>
-                    {departments.map((department) => (
-                      <SelectItem 
-                        key={department.id} 
-                        value={department.id}
-                        disabled={department.disabled}
+                    {jobLevels.map((level) => (
+                      <SelectItem key={level.name} value={level.name}>
+                        {level.name} {level.description && `- ${level.description}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {touched.jobLevel && <FieldError error={fieldErrors.jobLevel} />}
+              </div>
+            </div>
+
+            {/* Organizational Structure */}
+            <div className="space-y-3 pt-2 border-t border-gray-100">
+              <h3 className="text-sm font-semibold text-gray-700">Organizational Structure</h3>
+
+              {/* Division Dropdown */}
+              <div className="space-y-1">
+                <Label htmlFor="division" className="text-sm font-medium text-gray-700">
+                  Division <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={selectedDivision?.id || ''}
+                  onValueChange={(value) => {
+                    handleDivisionChange(value)
+                    setFieldErrors(prev => ({ ...prev, division: undefined }))
+                    setTouched(prev => ({ ...prev, division: true }))
+                  }}
+                >
+                  <SelectTrigger className={touched.division && fieldErrors.division ? 'border-red-400' : ''}>
+                    <SelectValue placeholder="Select division" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {divisions.map((division) => (
+                      <SelectItem
+                        key={division.id}
+                        value={division.id}
+                        disabled={division.disabled}
                       >
-                        {department.name} {department.code && `(${department.code})`}
+                        {division.name} {division.code && `(${division.code})`}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                {touched.division && <FieldError error={fieldErrors.division} />}
               </div>
-            )}
 
-            {/* Custom Department Input */}
-            {showCustomDepartmentInput && (
-              <div className="space-y-2">
-                <Label htmlFor="customDepartment">Custom Department Name</Label>
-                <Input
-                  id="customDepartment"
-                  type="text"
-                  value={formData.customDepartment}
-                  onChange={(e) => handleInputChange('customDepartment', e.target.value)}
-                  placeholder="Enter custom department name"
-                />
-              </div>
-            )}
+              {/* Custom Division Input */}
+              {showCustomDivisionInput && (
+                <div className="space-y-1">
+                  <Label htmlFor="customDivision" className="text-sm font-medium text-gray-700">Custom Division Name</Label>
+                  <Input
+                    id="customDivision"
+                    type="text"
+                    value={formData.customDivision}
+                    onChange={(e) => handleInputChange('customDivision', e.target.value)}
+                    placeholder="Enter custom division name"
+                  />
+                </div>
+              )}
 
-            {/* Section Dropdown (for Real Property departments like ETII, ECLI, KPPI) */}
-            {sections.length > 0 && (
-              <div className="space-y-2">
-                <Label htmlFor="section">Section *</Label>
-                <Select value={selectedSection?.id || ''} onValueChange={handleSectionChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select section" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sections.map((section) => (
-                      <SelectItem key={section.id} value={section.id}>
-                        {section.name} {section.code && `(${section.code})`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {/* Custom Section Input */}
-            {showCustomSectionInput && (
-              <div className="space-y-2">
-                <Label htmlFor="customSection">Section Name</Label>
-                <Input
-                  id="customSection"
-                  type="text"
-                  value={formData.customSection}
-                  onChange={(e) => handleInputChange('customSection', e.target.value)}
-                  placeholder="Enter section name"
-                />
-              </div>
-            )}
-
-            {/* Team Dropdown/Input */}
-            {(selectedDepartment || selectedSection || showCustomTeamInput) && (
-              <div className="space-y-2">
-                <Label htmlFor="team">Team</Label>
-                {teams.length > 0 ? (
-                  <Select 
-                    value={formData.team} 
+              {/* Sector Head Dropdown */}
+              {showSectorHeadInput && (
+                <div className="space-y-1">
+                  <Label htmlFor="sectorHeadInitials" className="text-sm font-medium text-gray-700">Sector Head</Label>
+                  <Select
+                    value={formData.sectorHeadInitials}
                     onValueChange={(value) => {
-                      if (value === 'custom') {
-                        setShowCustomTeamInput(true)
-                        handleInputChange('team', '')
-                      } else {
-                        const selectedTeam = teams.find(team => team.name === value)
-                        setSelectedTeam(selectedTeam || null)
-                        setShowCustomTeamInput(false)
-                        handleInputChange('team', value)
+                      const selectedHead = sectorHeads.find(head => head.initials === value)
+                      handleInputChange('sectorHeadInitials', value)
+                      if (selectedHead) {
+                        console.log('Selected sector head:', selectedHead)
                       }
                     }}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select team" />
+                      <SelectValue placeholder="Select sector head" />
                     </SelectTrigger>
                     <SelectContent>
-                      {teams.map((team) => (
-                        <SelectItem key={team.id} value={team.name}>
-                          {team.name} {team.code && `(${team.code})`}
+                      {sectorHeads.map((head) => (
+                        <SelectItem key={head.id} value={head.initials}>
+                          {head.label}
                         </SelectItem>
                       ))}
-                      <SelectItem value="custom">Other - Custom Team</SelectItem>
                     </SelectContent>
                   </Select>
-                ) : (
+                </div>
+              )}
+
+              {/* Department/Hotel/Service Dropdown */}
+              {departments.length > 0 && (
+                <div className="space-y-1">
+                  <Label htmlFor="department" className="text-sm font-medium text-gray-700">
+                    {selectedDivision?.name === 'Hotel Operations' ? 'Hotel' :
+                     selectedDivision?.name === 'Shared Services - GOLI' ? 'Service Area' :
+                     selectedDivision?.name === 'CSO' ? 'Business Unit' :
+                     'Department'} *
+                  </Label>
+                  <Select value={selectedDepartment?.id || ''} onValueChange={handleDepartmentChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {departments.map((department) => (
+                        <SelectItem
+                          key={department.id}
+                          value={department.id}
+                          disabled={department.disabled}
+                        >
+                          {department.name} {department.code && `(${department.code})`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Custom Department Input */}
+              {showCustomDepartmentInput && (
+                <div className="space-y-1">
+                  <Label htmlFor="customDepartment" className="text-sm font-medium text-gray-700">Custom Department Name</Label>
                   <Input
-                    id="team"
+                    id="customDepartment"
                     type="text"
-                    value={formData.team}
-                    onChange={(e) => handleInputChange('team', e.target.value)}
-                    placeholder="Enter team label (optional)"
+                    value={formData.customDepartment}
+                    onChange={(e) => handleInputChange('customDepartment', e.target.value)}
+                    placeholder="Enter custom department name"
                   />
-                )}
-              </div>
-            )}
+                </div>
+              )}
 
-            {/* Custom Team Input */}
-            {showCustomTeamInput && (
-              <div className="space-y-2">
-                <Label htmlFor="customTeam">Custom Team Name</Label>
-                <Input
-                  id="customTeam"
-                  type="text"
-                  value={formData.customTeam}
-                  onChange={(e) => handleInputChange('customTeam', e.target.value)}
-                  placeholder="Enter custom team name"
-                />
-              </div>
-            )}
-          </div>
+              {/* Section Dropdown */}
+              {sections.length > 0 && (
+                <div className="space-y-1">
+                  <Label htmlFor="section" className="text-sm font-medium text-gray-700">Section *</Label>
+                  <Select value={selectedSection?.id || ''} onValueChange={handleSectionChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select section" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sections.map((section) => (
+                        <SelectItem key={section.id} value={section.id}>
+                          {section.name} {section.code && `(${section.code})`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
-          {/* Position Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="positionTitle">Position Title <span className="text-destructive">*</span></Label>
-              <Input
-                id="positionTitle"
-                type="text"
-                value={formData.positionTitle}
-                onChange={(e) => handleInputChange('positionTitle', e.target.value)}
-                onBlur={() => handleBlur('positionTitle')}
-                placeholder="Enter position title"
-                className={touched.positionTitle && fieldErrors.positionTitle ? 'border-destructive' : ''}
-              />
-              {touched.positionTitle && <FieldError error={fieldErrors.positionTitle} />}
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="jobLevel">Job Level <span className="text-destructive">*</span></Label>
-              <Select
-                value={formData.jobLevel}
-                onValueChange={(value) => {
-                  handleInputChange('jobLevel', value)
-                  setFieldErrors(prev => ({ ...prev, jobLevel: undefined }))
-                  setTouched(prev => ({ ...prev, jobLevel: true }))
-                }}
-              >
-                <SelectTrigger className={touched.jobLevel && fieldErrors.jobLevel ? 'border-destructive' : ''}>
-                  <SelectValue placeholder="Select job level" />
-                </SelectTrigger>
-                <SelectContent>
-                  {jobLevels.map((level) => (
-                    <SelectItem key={level.name} value={level.name}>
-                      {level.name} {level.description && `- ${level.description}`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {touched.jobLevel && <FieldError error={fieldErrors.jobLevel} />}
-            </div>
-          </div>
+              {/* Custom Section Input */}
+              {showCustomSectionInput && (
+                <div className="space-y-1">
+                  <Label htmlFor="customSection" className="text-sm font-medium text-gray-700">Section Name</Label>
+                  <Input
+                    id="customSection"
+                    type="text"
+                    value={formData.customSection}
+                    onChange={(e) => handleInputChange('customSection', e.target.value)}
+                    placeholder="Enter section name"
+                  />
+                </div>
+              )}
 
-          {/* Password */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="password">Password <span className="text-destructive">*</span></Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={formData.password}
-                  onChange={(e) => handleInputChange('password', e.target.value)}
-                  onBlur={() => handleBlur('password')}
-                  placeholder="Enter password"
-                  className={`pr-10 ${touched.password && fieldErrors.password ? 'border-destructive' : ''}`}
-                />
-                <button
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  tabIndex={-1}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-              {touched.password && <FieldError error={fieldErrors.password} />}
-              <p className="text-xs text-muted-foreground">
-                Min 6 characters with uppercase, lowercase, and number
-              </p>
-            </div>
+              {/* Team Dropdown/Input */}
+              {(selectedDepartment || selectedSection || showCustomTeamInput) && (
+                <div className="space-y-1">
+                  <Label htmlFor="team" className="text-sm font-medium text-gray-700">Team</Label>
+                  {teams.length > 0 ? (
+                    <Select
+                      value={formData.team}
+                      onValueChange={(value) => {
+                        if (value === 'custom') {
+                          setShowCustomTeamInput(true)
+                          handleInputChange('team', '')
+                        } else {
+                          const t = teams.find(team => team.name === value)
+                          setSelectedTeam(t || null)
+                          setShowCustomTeamInput(false)
+                          handleInputChange('team', value)
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select team" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {teams.map((team) => (
+                          <SelectItem key={team.id} value={team.name}>
+                            {team.name} {team.code && `(${team.code})`}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="custom">Other - Custom Team</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input
+                      id="team"
+                      type="text"
+                      value={formData.team}
+                      onChange={(e) => handleInputChange('team', e.target.value)}
+                      placeholder="Enter team label (optional)"
+                    />
+                  )}
+                </div>
+              )}
 
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password <span className="text-destructive">*</span></Label>
-              <div className="relative">
-                <Input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  value={confirmPassword}
-                  onChange={(e) => {
-                    setConfirmPassword(e.target.value)
-                    if (fieldErrors.confirmPassword) {
-                      setFieldErrors(prev => ({ ...prev, confirmPassword: undefined }))
-                    }
-                  }}
-                  onBlur={() => handleBlur('confirmPassword')}
-                  placeholder="Confirm password"
-                  className={`pr-10 ${touched.confirmPassword && fieldErrors.confirmPassword ? 'border-destructive' : ''}`}
-                />
-                <button
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  tabIndex={-1}
-                >
-                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-              {touched.confirmPassword && <FieldError error={fieldErrors.confirmPassword} />}
+              {/* Custom Team Input */}
+              {showCustomTeamInput && (
+                <div className="space-y-1">
+                  <Label htmlFor="customTeam" className="text-sm font-medium text-gray-700">Custom Team Name</Label>
+                  <Input
+                    id="customTeam"
+                    type="text"
+                    value={formData.customTeam}
+                    onChange={(e) => handleInputChange('customTeam', e.target.value)}
+                    placeholder="Enter custom team name"
+                  />
+                </div>
+              )}
             </div>
           </div>
+        )}
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Creating Account...' : 'Create Account'}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+        {/* ---- STEP 4: Security ---- */}
+        {currentStep === 4 && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                  Password <span className="text-red-500">*</span>
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={formData.password}
+                    onChange={(e) => handleInputChange('password', e.target.value)}
+                    onBlur={() => handleBlur('password')}
+                    placeholder="Enter password"
+                    className={`pr-10 ${touched.password && fieldErrors.password ? 'border-red-400' : ''}`}
+                  />
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {touched.password && <FieldError error={fieldErrors.password} />}
+                <p className="text-xs text-gray-400">
+                  Min 6 characters with uppercase, lowercase, and number
+                </p>
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
+                  Confirm Password <span className="text-red-500">*</span>
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value)
+                      if (fieldErrors.confirmPassword) {
+                        setFieldErrors(prev => ({ ...prev, confirmPassword: undefined }))
+                      }
+                    }}
+                    onBlur={() => handleBlur('confirmPassword')}
+                    placeholder="Confirm password"
+                    className={`pr-10 ${touched.confirmPassword && fieldErrors.confirmPassword ? 'border-red-400' : ''}`}
+                  />
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {touched.confirmPassword && <FieldError error={fieldErrors.confirmPassword} />}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Navigation */}
+        <div className="flex justify-between mt-8">
+          {currentStep > 1 ? (
+            <Button type="button" variant="outline" onClick={handleBack}>
+              Back
+            </Button>
+          ) : (
+            <div />
+          )}
+
+          {currentStep < STEPS.length ? (
+            <Button type="button" onClick={handleNext}>
+              Next
+            </Button>
+          ) : (
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Creating Account...' : 'Create Account'}
+            </Button>
+          )}
+        </div>
+      </form>
+    </div>
   )
 }

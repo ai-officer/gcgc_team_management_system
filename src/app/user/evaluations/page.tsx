@@ -101,7 +101,6 @@ export default function EvaluationsPage() {
   const [loading, setLoading] = useState(true)
   const [users, setUsers] = useState<User[]>([])
   const [filterPeriod, setFilterPeriod] = useState<string>('all')
-  const [filterEvaluatee, setFilterEvaluatee] = useState<string>('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [showForm, setShowForm] = useState(false)
 
@@ -122,14 +121,13 @@ export default function EvaluationsPage() {
   useEffect(() => {
     fetchEvaluations()
     if (isLeaderOrAdmin) fetchUsers()
-  }, [filterPeriod, filterEvaluatee])
+  }, [filterPeriod])
 
   const fetchEvaluations = async () => {
     try {
       setLoading(true)
       const params = new URLSearchParams()
       if (filterPeriod !== 'all') params.set('period', filterPeriod)
-      if (filterEvaluatee !== 'all') params.set('evaluateeId', filterEvaluatee)
       if (!isLeaderOrAdmin) params.set('evaluateeId', session?.user?.id || '')
       const res = await fetch(`/api/evaluations?${params}`)
       if (res.ok) {
@@ -383,26 +381,12 @@ export default function EvaluationsPage() {
           </SelectContent>
         </Select>
 
-        {isLeaderOrAdmin && (
-          <Select value={filterEvaluatee} onValueChange={setFilterEvaluatee}>
-            <SelectTrigger className="w-52 border-slate-200 bg-slate-50 rounded-lg h-9 text-sm">
-              <SelectValue placeholder="All members" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Members</SelectItem>
-              {users.map(u => (
-                <SelectItem key={u.id} value={u.id}>{u.name || u.email}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-
-        {(filterPeriod !== 'all' || filterEvaluatee !== 'all' || searchTerm) && (
+        {(filterPeriod !== 'all' || searchTerm) && (
           <Button
             variant="ghost"
             size="sm"
             className="text-slate-500 hover:text-slate-700 h-9"
-            onClick={() => { setFilterPeriod('all'); setFilterEvaluatee('all'); setSearchTerm('') }}
+            onClick={() => { setFilterPeriod('all'); setSearchTerm('') }}
           >
             <X className="h-3.5 w-3.5 mr-1.5" /> Clear filters
           </Button>
@@ -432,13 +416,13 @@ export default function EvaluationsPage() {
           </div>
           <h3 className="text-base font-semibold text-slate-600 mb-1">No evaluations found</h3>
           <p className="text-sm text-slate-400 max-w-xs">
-            {filterPeriod !== 'all' || filterEvaluatee !== 'all' || searchTerm
+            {filterPeriod !== 'all' || searchTerm
               ? 'Try adjusting your filters to see more results.'
               : isLeaderOrAdmin
               ? 'Get started by creating the first evaluation for your team.'
               : 'No evaluations have been submitted for your account yet.'}
           </p>
-          {isLeaderOrAdmin && filterPeriod === 'all' && filterEvaluatee === 'all' && !searchTerm && (
+          {isLeaderOrAdmin && filterPeriod === 'all' && !searchTerm && (
             <Button className="mt-6" onClick={() => setShowForm(true)}>
               <Plus className="h-4 w-4 mr-2" /> New Evaluation
             </Button>

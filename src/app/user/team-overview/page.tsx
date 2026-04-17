@@ -264,7 +264,6 @@ export default function TeamOverviewPage() {
         reportsToId: session?.user?.id || null
       }
       setSelectedUserForPreview(previewUser as any)
-      setShowPreview(true)
     }
   }, [newUserData, addMemberMode, showLivePreview, session?.user?.id])
 
@@ -975,7 +974,7 @@ export default function TeamOverviewPage() {
                   </div>
 
                   <div className="flex justify-between">
-                    <Button variant="outline" onClick={() => setAddMemberMode(null)}>
+                    <Button variant="outline" onClick={resetAddMemberDialog}>
                       Back
                     </Button>
                   </div>
@@ -1583,7 +1582,7 @@ export default function TeamOverviewPage() {
                         </Button>
                       )}
                       {createUserStep === 'group-setup' && (
-                        <Button variant="outline" onClick={() => setAddMemberMode(null)}>
+                        <Button variant="outline" onClick={resetAddMemberDialog}>
                           Cancel
                         </Button>
                       )}

@@ -16,10 +16,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Only leaders can access member suggestions' }, { status: 403 })
     }
 
-    // Get team members with detailed task counts by status
+    // Get team members via LeaderMembership (multi-leader hierarchy support)
     const teamMembers = await prisma.user.findMany({
       where: {
-        reportsToId: session.user.id,
+        memberOfLeaders: { some: { leaderId: session.user.id } },
         isActive: true
       },
       select: {

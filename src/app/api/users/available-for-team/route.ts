@@ -16,13 +16,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Only leaders can access this endpoint' }, { status: 403 })
     }
 
-    // Get users who are not reporting to anyone and are not the current leader
+    // Get users not already in this leader's team, excluding admins and self
+    // Multi-leader: a user can appear here even if they report to another leader
     const availableUsers = await prisma.user.findMany({
       where: {
-        reportsToId: null,
         isActive: true,
-        role: { not: 'ADMIN' }, // Don't include admins
-        id: { not: session.user.id } // Don't include self
+        role: { not: 'ADMIN' },
+        id: { not: session.user.id },
+        memberOfLeaders: { none: { leaderId: session.user.id } }
       },
       select: {
         id: true,

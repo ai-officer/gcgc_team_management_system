@@ -62,6 +62,8 @@ model User {
   procurementsCreated    TaskProcurement[]   @relation("ProcurementCreator")
   boards                 KanbanBoard[]       @relation("BoardOwner")
   boardMemberships       KanbanBoardMember[] @relation("BoardMember")
+  leadingMembers         LeaderMembership[]  @relation("LeaderMemberships")
+  memberOfLeaders        LeaderMembership[]  @relation("MemberMemberships")
 
   @@map("users")
 }
@@ -815,6 +817,18 @@ enum MIPClassification {
   MAINTENANCE
   IMPROVEMENT
   PROJECT
+}
+
+model LeaderMembership {
+  id       String   @id @default(cuid())
+  leaderId String
+  memberId String
+  joinedAt DateTime @default(now())
+  leader   User     @relation("LeaderMemberships", fields: [leaderId], references: [id], onDelete: Cascade)
+  member   User     @relation("MemberMemberships", fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([leaderId, memberId])
+  @@map("leader_memberships")
 }
 
 enum OSSBStatus {

@@ -21,10 +21,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Only leaders can access team data' }, { status: 403 })
     }
 
-    // Get team members (users who report to this leader)
+    // Get team members via LeaderMembership (supports multi-leader hierarchy)
     const teamMembers = await prisma.user.findMany({
       where: {
-        reportsToId: session.user.id,
+        memberOfLeaders: { some: { leaderId: session.user.id } },
         isActive: true
       },
       select: {
@@ -148,43 +148,52 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'User is not active' }, { status: 400 })
     }
 
-    if (user.reportsToId) {
-      return NextResponse.json({ error: 'User already reports to someone else' }, { status: 400 })
-    }
-
     if (user.id === session.user.id) {
       return NextResponse.json({ error: 'You cannot add yourself as a team member' }, { status: 400 })
     }
 
-    // Update user to report to this leader
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: { reportsToId: session.user.id },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        name: true,
-        image: true,
-        role: true,
-        hierarchyLevel: true,
-        contactNumber: true,
-        positionTitle: true,
-        isActive: true,
-        createdAt: true,
-        reportsToId: true,
-        _count: {
-          select: {
-            assignedTasks: {
-              where: {
-                status: { not: 'COMPLETED' }
+    // Check if already in this leader's team
+    const existingMembership = await prisma.leaderMembership.findUnique({
+      where: { leaderId_memberId: { leaderId: session.user.id, memberId: userId } }
+    })
+    if (existingMembership) {
+      return NextResponse.json({ error: 'User is already in your team' }, { status: 400 })
+    }
+
+    // Create LeaderMembership; also set reportsToId if user has no primary leader yet
+    const [, updatedUser] = await prisma.$transaction([
+      prisma.leaderMembership.create({
+        data: { leaderId: session.user.id, memberId: userId }
+      }),
+      prisma.user.update({
+        where: { id: userId },
+        data: { reportsToId: user.reportsToId ?? session.user.id },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          name: true,
+          image: true,
+          role: true,
+          hierarchyLevel: true,
+          contactNumber: true,
+          positionTitle: true,
+          isActive: true,
+          createdAt: true,
+          reportsToId: true,
+          _count: {
+            select: {
+              assignedTasks: {
+                where: {
+                  status: { not: 'COMPLETED' }
+                }
               }
             }
           }
         }
-      }
-    })
+      })
+    ])
 
     // Log activity
     await prisma.activity.create({

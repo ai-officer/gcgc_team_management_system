@@ -19,11 +19,11 @@ export async function GET(
 
     const { id } = params
 
-    // Get detailed team member information with tasks
+    // Get detailed team member information with tasks (multi-leader: verify via LeaderMembership)
     const teamMember = await prisma.user.findFirst({
       where: {
         id: id,
-        reportsToId: session.user.id, // Ensure this member reports to the current leader
+        memberOfLeaders: { some: { leaderId: session.user.id } },
         isActive: true
       },
       select: {
@@ -148,16 +148,12 @@ export async function PATCH(
     const { id } = params
     const body = await req.json()
 
-    // Verify the member reports to this leader
-    const existingMember = await prisma.user.findFirst({
-      where: {
-        id: id,
-        reportsToId: session.user.id,
-        isActive: true
-      }
+    // Verify the member is in this leader's team (multi-leader support)
+    const membership = await prisma.leaderMembership.findUnique({
+      where: { leaderId_memberId: { leaderId: session.user.id, memberId: id } }
     })
 
-    if (!existingMember) {
+    if (!membership) {
       return NextResponse.json({ error: 'Team member not found' }, { status: 404 })
     }
 
@@ -218,26 +214,32 @@ export async function DELETE(
 
     const { id } = params
 
-    // Verify the member reports to this leader
-    const existingMember = await prisma.user.findFirst({
-      where: {
-        id: id,
-        reportsToId: session.user.id,
-        isActive: true
-      }
+    // Verify the member is in this leader's team (multi-leader support)
+    const membership = await prisma.leaderMembership.findUnique({
+      where: { leaderId_memberId: { leaderId: session.user.id, memberId: id } },
+      include: { member: { select: { reportsToId: true } } }
     })
 
-    if (!existingMember) {
+    if (!membership) {
       return NextResponse.json({ error: 'Team member not found' }, { status: 404 })
     }
 
-    // Remove the reporting relationship (set reportsToId to null)
-    await prisma.user.update({
-      where: { id: id },
-      data: {
-        reportsToId: null
-      }
+    // Remove the LeaderMembership record
+    await prisma.leaderMembership.delete({
+      where: { leaderId_memberId: { leaderId: session.user.id, memberId: id } }
     })
+
+    // If this leader was the primary leader (reportsToId), promote next or clear it
+    if (membership.member.reportsToId === session.user.id) {
+      const nextMembership = await prisma.leaderMembership.findFirst({
+        where: { memberId: id },
+        orderBy: { joinedAt: 'asc' }
+      })
+      await prisma.user.update({
+        where: { id },
+        data: { reportsToId: nextMembership?.leaderId ?? null }
+      })
+    }
 
     return NextResponse.json({ message: 'Team member removed successfully' })
   } catch (error) {

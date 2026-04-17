@@ -199,14 +199,13 @@ export async function PATCH(
     const isLeader = session.user.role === 'LEADER'
     const canComplete = isAssigner || isCreator || isAdmin
 
-    // Leaders can extend due dates for tasks assigned to their subordinates
+    // Leaders can extend due dates for tasks assigned to their team members (multi-leader support)
     let isLeaderSubordinateOverride = false
     if (isLeader && !isAssigner && !isCreator && !isAdmin && existingTask.assigneeId) {
-      const assignee = await prisma.user.findUnique({
-        where: { id: existingTask.assigneeId },
-        select: { reportsToId: true }
+      const membership = await prisma.leaderMembership.findUnique({
+        where: { leaderId_memberId: { leaderId: session.user.id, memberId: existingTask.assigneeId } }
       })
-      if (assignee?.reportsToId === session.user.id) {
+      if (membership) {
         isLeaderSubordinateOverride = true
       }
     }

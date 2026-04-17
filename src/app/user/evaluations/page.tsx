@@ -103,6 +103,8 @@ export default function EvaluationsPage() {
   const [filterPeriod, setFilterPeriod] = useState<string>('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [showForm, setShowForm] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 10
 
   // Member detail modal
   const [viewingMember, setViewingMember] = useState<User | null>(null)
@@ -122,6 +124,8 @@ export default function EvaluationsPage() {
     fetchEvaluations()
     if (isLeaderOrAdmin) fetchUsers()
   }, [filterPeriod])
+
+  useEffect(() => { setCurrentPage(1) }, [searchTerm, filterPeriod])
 
   const fetchEvaluations = async () => {
     try {
@@ -225,6 +229,10 @@ export default function EvaluationsPage() {
         )
       })
     : evaluations
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE))
+  const safePage = Math.min(currentPage, totalPages)
+  const paginated = filtered.slice((safePage - 1) * ITEMS_PER_PAGE, safePage * ITEMS_PER_PAGE)
 
   // Member detail modal stats
   const memberAvgScore = memberEvals.length > 0
@@ -430,7 +438,7 @@ export default function EvaluationsPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {filtered.map(ev => {
+          {paginated.map(ev => {
             const opt = getScoreOption(ev.gradientScore)
             return (
               <div
@@ -513,6 +521,58 @@ export default function EvaluationsPage() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* ── Pagination ── */}
+      {!loading && filtered.length > ITEMS_PER_PAGE && (
+        <div className="flex items-center justify-between bg-white rounded-xl border border-slate-200 shadow-sm px-6 py-4">
+          <p className="text-sm text-slate-500">
+            Showing <span className="font-semibold text-slate-900">{(safePage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(safePage * ITEMS_PER_PAGE, filtered.length)}</span> of <span className="font-semibold text-slate-900">{filtered.length}</span> evaluations
+          </p>
+          <div className="flex items-center gap-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={safePage <= 1}
+              onClick={() => setCurrentPage(p => p - 1)}
+              className="border-slate-200 h-8 px-3 text-sm"
+            >
+              Previous
+            </Button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter(p => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
+              .reduce<(number | '...')[]>((acc, p, idx, arr) => {
+                if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push('...')
+                acc.push(p)
+                return acc
+              }, [])
+              .map((p, idx) =>
+                p === '...'
+                  ? <span key={`ellipsis-${idx}`} className="px-1 text-slate-400 text-sm">…</span>
+                  : <button
+                      key={p}
+                      onClick={() => setCurrentPage(p as number)}
+                      className={cn(
+                        "h-8 w-8 rounded-lg text-sm font-medium transition-all",
+                        safePage === p
+                          ? "bg-blue-600 text-white shadow-sm"
+                          : "text-slate-600 hover:bg-slate-100 border border-slate-200"
+                      )}
+                    >
+                      {p}
+                    </button>
+              )}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={safePage >= totalPages}
+              onClick={() => setCurrentPage(p => p + 1)}
+              className="border-slate-200 h-8 px-3 text-sm"
+            >
+              Next
+            </Button>
+          </div>
         </div>
       )}
 

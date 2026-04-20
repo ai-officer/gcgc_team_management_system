@@ -134,6 +134,11 @@ export default async function middleware(req: NextRequest) {
   
   // User portal access control
   if (pathname.startsWith('/user')) {
+    // Hidden features — redirect to dashboard until re-enabled
+    const hiddenRoutes = ['/user/ossb', '/user/workload', '/user/evaluations']
+    if (hiddenRoutes.some(r => pathname === r || pathname.startsWith(r + '/'))) {
+      return NextResponse.redirect(new URL('/user/dashboard', req.url))
+    }
     // Allow all authenticated users to access user portal
     return NextResponse.next()
   }

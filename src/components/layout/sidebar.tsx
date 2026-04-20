@@ -18,8 +18,11 @@ import {
   ChevronLeft,
   ChevronRight,
   MessageSquare,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   FileText,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   BarChart2,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   Star,
 } from 'lucide-react'
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown'
@@ -83,11 +86,7 @@ const userNavItems = [
     href: '/user/calendar',
     icon: Calendar,
   },
-  {
-    title: 'OSSB Requests',
-    href: '/user/ossb',
-    icon: FileText,
-  },
+  // { title: 'OSSB Requests', href: '/user/ossb', icon: FileText },
   {
     title: 'TMS Chat',
     href: process.env.NEXT_PUBLIC_TMS_CHAT_URL || 'https://tms-chat-staging.hotelsogo-ai.com',
@@ -117,11 +116,7 @@ const leaderNavItems = [
     href: '/user/calendar',
     icon: Calendar,
   },
-  {
-    title: 'OSSB Requests',
-    href: '/user/ossb',
-    icon: FileText,
-  },
+  // { title: 'OSSB Requests', href: '/user/ossb', icon: FileText },
   {
     title: 'Team Overview',
     href: '/user/team-overview',
@@ -132,16 +127,8 @@ const leaderNavItems = [
     href: '/user/member-management',
     icon: UserCheck,
   },
-  {
-    title: 'Workload',
-    href: '/user/workload',
-    icon: BarChart2,
-  },
-  {
-    title: 'Evaluations',
-    href: '/user/evaluations',
-    icon: Star,
-  },
+  // { title: 'Workload', href: '/user/workload', icon: BarChart2 },
+  // { title: 'Evaluations', href: '/user/evaluations', icon: Star },
   {
     title: 'TMS Chat',
     href: process.env.NEXT_PUBLIC_TMS_CHAT_URL || 'https://tms-chat-staging.hotelsogo-ai.com',

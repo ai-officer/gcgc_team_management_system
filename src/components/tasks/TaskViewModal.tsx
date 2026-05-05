@@ -33,7 +33,7 @@ import {
   User, Users, Handshake, Clock, MessageSquare, Send, Edit, Copy,
   Heart, ThumbsUp, Smile, Reply, Image, Paperclip, MoreHorizontal,
   AtSign, Trash2, Pencil, X, Check, FileText, Download, File,
-  Plus, ListTodo, ChevronRight, CheckCircle2, Circle, AlertCircle, RefreshCw
+  Plus, ListTodo, ChevronRight, CheckCircle2, Circle, AlertCircle, RefreshCw, RotateCcw, Eye
 } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { Progress } from '@/components/ui/progress'
@@ -294,6 +294,7 @@ export default function TaskViewModal({
   const [isEditingProgress, setIsEditingProgress] = useState(false)
   const [localProgress, setLocalProgress] = useState(0)
   const [savingProgress, setSavingProgress] = useState(false)
+  const [savingReview, setSavingReview] = useState<null | 'approve' | 'sendBack'>(null)
 
   // Dependencies state
   const [dependencies, setDependencies] = useState<{ blockedBy: Dependency[]; blocking: Dependency[] }>({ blockedBy: [], blocking: [] })
@@ -591,6 +592,47 @@ export default function TaskViewModal({
     // Use task.id as dependency to prevent re-running when task object reference changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, task?.id])
+
+  // Approve a task that's IN_REVIEW: move it to COMPLETED.
+  // Send back: bounce the task back to IN_PROGRESS for the assignee.
+  // Both are gated to canCompleteTask (creator / assignedBy / ADMIN).
+  const handleReviewDecision = async (decision: 'approve' | 'sendBack') => {
+    if (!task?.id) return
+    try {
+      setSavingReview(decision)
+      const body =
+        decision === 'approve'
+          ? { status: 'COMPLETED', progressPercentage: 100 }
+          : { status: 'IN_PROGRESS' }
+      const response = await fetch(`/api/tasks/${task.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}))
+        throw new Error(error.error || 'Failed to update task')
+      }
+      toast({
+        title: decision === 'approve' ? 'Task approved' : 'Sent back to assignee',
+        description:
+          decision === 'approve'
+            ? 'The task has been marked as completed.'
+            : 'The assignee has been asked to take another pass.',
+      })
+      onTaskUpdate?.()
+      onOpenChange(false)
+    } catch (error) {
+      console.error('Error setting review decision:', error)
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to update task',
+        variant: 'destructive',
+      })
+    } finally {
+      setSavingReview(null)
+    }
+  }
 
   // Handle progress update
   const handleProgressUpdate = async () => {
@@ -1494,6 +1536,44 @@ export default function TaskViewModal({
               {task.taskType.replace('_', ' ')}
             </Badge>
           </div>
+
+          {/* Review banner — appears for the assigner / creator / admin when a
+              task is sitting in IN_REVIEW awaiting their decision. */}
+          {task.status === 'IN_REVIEW' && canCompleteTask && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5">
+              <div className="flex items-center gap-2 text-sm text-amber-900">
+                <Eye className="h-4 w-4 shrink-0" />
+                <span>
+                  This task is awaiting your review.
+                  {task.memberSubmittedAt && (
+                    <span className="text-amber-700 ml-1">
+                      Submitted {formatDistanceToNow(new Date(task.memberSubmittedAt), { addSuffix: true })}.
+                    </span>
+                  )}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleReviewDecision('sendBack')}
+                  disabled={savingReview !== null}
+                >
+                  <RotateCcw className="h-4 w-4 mr-1.5" />
+                  {savingReview === 'sendBack' ? 'Sending…' : 'Send back'}
+                </Button>
+                <Button
+                  size="sm"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  onClick={() => handleReviewDecision('approve')}
+                  disabled={savingReview !== null}
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                  {savingReview === 'approve' ? 'Approving…' : 'Approve'}
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Progress Bar - Editable for assignees */}
           <div className="space-y-2">

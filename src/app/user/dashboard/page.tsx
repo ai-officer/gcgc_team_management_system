@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { UserAvatar } from '@/components/shared/UserAvatar'
 import { Button } from '@/components/ui/button'
 import CreateTaskButton from '@/components/tasks/CreateTaskButton'
+import { LeaderWorkloadWidget } from '@/components/dashboard/leader-workload-widget'
 import { format, formatDistanceToNow } from 'date-fns'
 import { TASK_PRIORITY_COLORS, TASK_STATUS_COLORS } from '@/constants'
 
@@ -405,6 +406,8 @@ export default function UserDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {isLeader && <LeaderWorkloadWidget />}
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Professional Recent Tasks */}

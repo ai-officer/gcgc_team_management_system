@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import {
   Plus,
+  ListChecks,
   Search,
   Filter,
   Calendar,
@@ -72,6 +73,7 @@ import { format, isAfter, subDays } from 'date-fns'
 import TaskForm from '@/components/tasks/TaskForm'
 import TaskViewModal from '@/components/tasks/TaskViewModal'
 import DuplicateTaskDialog from '@/components/tasks/DuplicateTaskDialog'
+import { BulkTaskActionsDialog } from '@/components/tasks/bulk-task-actions-dialog'
 
 interface Task {
   id: string
@@ -200,6 +202,7 @@ export default function TasksPage() {
   const [selectedTaskType, setSelectedTaskType] = useState<string>(() => searchParams.get('type') ?? '')
   const [users, setUsers] = useState<User[]>([])
   const [showTaskForm, setShowTaskForm] = useState(false)
+  const [bulkDialogOpen, setBulkDialogOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [duplicatingTask, setDuplicatingTask] = useState<Task | null>(null)
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false)
@@ -848,10 +851,16 @@ export default function TasksPage() {
             Manage your tasks and collaborations
           </p>
         </div>
-        <Button onClick={() => setShowTaskForm(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Task
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setBulkDialogOpen(true)}>
+            <ListChecks className="h-4 w-4 mr-2" />
+            Bulk
+          </Button>
+          <Button onClick={() => setShowTaskForm(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Task
+          </Button>
+        </div>
       </div>
 
       {/* Board Tab Strip */}
@@ -1343,6 +1352,19 @@ export default function TasksPage() {
         task={editingTask}
         duplicateFrom={duplicatingTask}
         onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
+      />
+
+      <BulkTaskActionsDialog
+        open={bulkDialogOpen}
+        onOpenChange={setBulkDialogOpen}
+        tasks={tasks.map(t => ({
+          id: t.id,
+          title: t.title,
+          status: t.status,
+          priority: t.priority,
+          assignee: t.assignee,
+        }))}
+        onCompleted={fetchTasks}
       />
 
       {/* Unified Task View Modal */}

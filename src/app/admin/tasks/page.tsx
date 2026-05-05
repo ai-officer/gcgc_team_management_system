@@ -137,6 +137,7 @@ export default function AdminTasksPage() {
   const { toast } = useToast()
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
@@ -181,6 +182,7 @@ export default function AdminTasksPage() {
       const data = await response.json()
       console.log('Tasks fetched:', data.tasks?.length || 0, 'tasks')
       setTasks(data.tasks || [])
+      setHasLoadedOnce(true)
     } catch (err) {
       console.error('Error fetching tasks:', err)
       setError(err instanceof Error ? err.message : 'Failed to load tasks')
@@ -443,7 +445,9 @@ export default function AdminTasksPage() {
     setEditingTask(null)
   }
 
-  if (loading) {
+  // Only block on the first load. Subsequent refetches happen in the
+  // background so an open TaskForm dialog stays mounted on alt-tab.
+  if (loading && !hasLoadedOnce) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -451,7 +455,7 @@ export default function AdminTasksPage() {
     )
   }
 
-  if (error) {
+  if (error && !hasLoadedOnce) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">

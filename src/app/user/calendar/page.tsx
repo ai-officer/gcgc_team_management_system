@@ -344,10 +344,8 @@ export default function CalendarPage() {
 
     try {
       setLoadingTaskDetails(true)
-      console.log('Fetching task details for:', taskId)
 
       const response = await fetch(`/api/tasks/${taskId}`)
-      console.log('Response status:', response.status)
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
@@ -357,7 +355,6 @@ export default function CalendarPage() {
 
       // API returns task directly, not wrapped in { task: ... }
       const task = await response.json()
-      console.log('Task data received:', task)
 
       if (!task || !task.id) {
         throw new Error('Invalid task data received')
@@ -822,7 +819,6 @@ export default function CalendarPage() {
                       e.preventDefault()
                       e.stopPropagation()
                       const taskId = selectedEvent.resource?.task?.id
-                      console.log('Button clicked, task ID:', taskId)
                       if (taskId) {
                         handleViewTaskDetails(taskId)
                       }

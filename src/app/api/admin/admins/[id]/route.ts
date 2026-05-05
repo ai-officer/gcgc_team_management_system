@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { AdminActionType } from '@prisma/client'
 import { getAdminSession } from '@/lib/auth/get-admin-session'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
+import { logAdminAction } from '@/lib/admin-audit'
 
 export async function GET(
   request: NextRequest,
@@ -116,6 +118,32 @@ export async function PUT(
       }
     })
 
+    if (isActive === false && existingAdmin.isActive) {
+      await logAdminAction({
+        request,
+        action: AdminActionType.ADMIN_DEACTIVATED,
+        description: `Deactivated admin ${existingAdmin.username}`,
+        adminId: session.sub,
+        adminUsername: session.username,
+        targetType: 'Admin',
+        targetId: existingAdmin.id,
+      })
+    } else {
+      await logAdminAction({
+        request,
+        action: AdminActionType.ADMIN_UPDATED,
+        description: `Updated admin ${existingAdmin.username}`,
+        adminId: session.sub,
+        adminUsername: session.username,
+        targetType: 'Admin',
+        targetId: existingAdmin.id,
+        metadata: {
+          changedFields: Object.keys(updateData).filter(k => k !== 'password'),
+          passwordChanged: 'password' in updateData,
+        },
+      })
+    }
+
     return NextResponse.json({ admin })
   } catch (error) {
     console.error('Error updating admin:', error)
@@ -170,6 +198,16 @@ export async function DELETE(
     // Delete the admin
     await prisma.admin.delete({
       where: { id: params.id }
+    })
+
+    await logAdminAction({
+      request,
+      action: AdminActionType.ADMIN_DELETED,
+      description: `Deleted admin ${admin.username}`,
+      adminId: session.sub,
+      adminUsername: session.username,
+      targetType: 'Admin',
+      targetId: admin.id,
     })
 
     return NextResponse.json({ message: 'Admin deleted successfully' })

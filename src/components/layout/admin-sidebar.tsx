@@ -17,7 +17,8 @@ import {
   GitBranch,
   Shield,
   CheckSquare,
-  ScrollText
+  ScrollText,
+  UserPlus
 } from 'lucide-react'
 
 interface AdminSidebarProps {
@@ -100,9 +101,19 @@ const navigation: NavigationItem[] = [
     ]
   },
   {
+    name: 'Invitations',
+    href: '/admin/invitations',
+    icon: UserPlus
+  },
+  {
     name: 'Audit Trail',
     href: '/admin/audit',
     icon: ScrollText
+  },
+  {
+    name: 'Admin Audit Log',
+    href: '/admin/audit-log',
+    icon: Shield
   },
   {
     name: 'Administrators',

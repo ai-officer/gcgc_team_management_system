@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminSession } from '@/lib/auth/get-admin-session'
 import { prisma } from '@/lib/prisma'
-import { UserRole } from '@prisma/client'
+import { UserRole, AdminActionType } from '@prisma/client'
+import { logAdminAction } from '@/lib/admin-audit'
 
 export async function GET(
   req: NextRequest,
@@ -167,6 +168,17 @@ export async function PUT(
       }
     })
 
+    await logAdminAction({
+      request: req,
+      action: AdminActionType.TEAM_UPDATED,
+      description: `Updated team "${team.name}"`,
+      adminId: session.sub,
+      adminUsername: session.username,
+      targetType: 'Team',
+      targetId: team.id,
+      metadata: { changedFields: Object.keys(updateData) },
+    })
+
     return NextResponse.json({ team })
   } catch (error) {
     console.error('Error updating team:', error)
@@ -214,8 +226,19 @@ export async function DELETE(
         where: { id: params.id },
         data: { isActive: false }
       })
-      
-      return NextResponse.json({ 
+
+      await logAdminAction({
+        request: req,
+        action: AdminActionType.TEAM_DELETED,
+        description: `Deactivated team "${team.name}" (had associated data)`,
+        adminId: session.sub,
+        adminUsername: session.username,
+        targetType: 'Team',
+        targetId: team.id,
+        metadata: { soft: true, members: team._count.members, tasks: team._count.tasks, events: team._count.events },
+      })
+
+      return NextResponse.json({
         message: 'Team deactivated successfully due to existing associated data'
       })
     } else {
@@ -223,7 +246,18 @@ export async function DELETE(
       await prisma.team.delete({
         where: { id: params.id }
       })
-      
+
+      await logAdminAction({
+        request: req,
+        action: AdminActionType.TEAM_DELETED,
+        description: `Deleted team "${team.name}"`,
+        adminId: session.sub,
+        adminUsername: session.username,
+        targetType: 'Team',
+        targetId: team.id,
+        metadata: { soft: false },
+      })
+
       return NextResponse.json({ message: 'Team deleted successfully' })
     }
   } catch (error) {

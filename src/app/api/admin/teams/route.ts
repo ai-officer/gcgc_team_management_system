@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminSession } from '@/lib/auth/get-admin-session'
 import { prisma } from '@/lib/prisma'
-import { UserRole } from '@prisma/client'
+import { UserRole, AdminActionType } from '@prisma/client'
+import { logAdminAction } from '@/lib/admin-audit'
 
 export async function GET(req: NextRequest) {
   try {
@@ -140,6 +141,16 @@ export async function POST(req: NextRequest) {
           }
         }
       }
+    })
+
+    await logAdminAction({
+      request: req,
+      action: AdminActionType.TEAM_CREATED,
+      description: `Created team "${team.name}"`,
+      adminId: session.sub,
+      adminUsername: session.username,
+      targetType: 'Team',
+      targetId: team.id,
     })
 
     return NextResponse.json({ team }, { status: 201 })

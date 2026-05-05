@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminSession } from '@/lib/auth/get-admin-session'
 import { prisma } from '@/lib/prisma'
+import { AdminActionType } from '@prisma/client'
+import { logAdminAction } from '@/lib/admin-audit'
 
 export async function GET(
   req: NextRequest,
@@ -118,6 +120,17 @@ export async function PUT(
       }
     })
 
+    await logAdminAction({
+      request: req,
+      action: AdminActionType.ORG_UNIT_UPDATED,
+      description: `Updated division "${division.name}"`,
+      adminId: session.sub,
+      adminUsername: session.username,
+      targetType: 'Division',
+      targetId: division.id,
+      metadata: { changedFields: Object.keys(updateData) },
+    })
+
     return NextResponse.json({ division })
   } catch (error) {
     console.error('Error updating division:', error)
@@ -163,8 +176,19 @@ export async function DELETE(
         where: { id: params.id },
         data: { isActive: false }
       })
-      
-      return NextResponse.json({ 
+
+      await logAdminAction({
+        request: req,
+        action: AdminActionType.ORG_UNIT_DELETED,
+        description: `Deactivated division "${division.name}" (had associated data)`,
+        adminId: session.sub,
+        adminUsername: session.username,
+        targetType: 'Division',
+        targetId: division.id,
+        metadata: { soft: true, departments: division._count.departments },
+      })
+
+      return NextResponse.json({
         message: 'Division deactivated successfully due to existing associated data'
       })
     } else {
@@ -172,7 +196,18 @@ export async function DELETE(
       await prisma.division.delete({
         where: { id: params.id }
       })
-      
+
+      await logAdminAction({
+        request: req,
+        action: AdminActionType.ORG_UNIT_DELETED,
+        description: `Deleted division "${division.name}"`,
+        adminId: session.sub,
+        adminUsername: session.username,
+        targetType: 'Division',
+        targetId: division.id,
+        metadata: { soft: false },
+      })
+
       return NextResponse.json({ message: 'Division deleted successfully' })
     }
   } catch (error) {

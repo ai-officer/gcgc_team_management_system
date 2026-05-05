@@ -1,8 +1,23 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { AdminActionType } from '@prisma/client'
+import { getAdminSession } from '@/lib/auth/get-admin-session'
+import { logAdminAction } from '@/lib/admin-audit'
 
-export async function POST() {
+export async function POST(request: NextRequest) {
+  const session = await getAdminSession(request)
+
+  if (session?.isAdmin) {
+    await logAdminAction({
+      request,
+      action: AdminActionType.ADMIN_LOGOUT,
+      description: 'Admin logged out',
+      adminId: session.sub,
+      adminUsername: session.username,
+    })
+  }
+
   const response = NextResponse.json({ success: true })
-  
+
   // Clear admin session cookie
   response.cookies.set('admin-session', '', {
     httpOnly: true,

@@ -2,20 +2,7 @@ import { NextResponse, NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { UserRole } from '@prisma/client'
 import { getCorsHeaders } from '@/lib/cors'
-
-async function verifyAdminSession(req: NextRequest): Promise<boolean> {
-  try {
-    const token = req.cookies.get('admin-session')?.value
-    if (!token) {
-      return false
-    }
-    // Simple verification - in production you'd want proper JWT verification
-    return token.length > 0
-  } catch (error) {
-    console.error('Admin session verification error:', error)
-    return false
-  }
-}
+import { verifyAdminSession } from '@/lib/auth/admin-session'
 
 async function adminMiddleware(req: NextRequest) {
   const { pathname } = req.nextUrl

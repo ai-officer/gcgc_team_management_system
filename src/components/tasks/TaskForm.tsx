@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { format } from 'date-fns'
-import { CalendarIcon, Plus, X, Users, User, Handshake, ListTodo, Trash2, ChevronDown, Settings2, RefreshCw } from 'lucide-react'
+import { CalendarIcon, Plus, X, Users, User, Handshake, ListTodo, Trash2, ChevronDown, Settings2, RefreshCw, Loader2 } from 'lucide-react'
 import { DatePicker } from '@/components/ui/date-picker'
 import { TimePicker } from '@/components/ui/time-picker'
 import { SearchableMultiSelect, SelectOption } from '@/components/ui/searchable-multi-select'
@@ -524,17 +524,29 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
     }
   }
 
+  // Intercept dialog close so users with unsaved changes get a chance to bail
+  // out instead of silently dropping their work. Only prompts when the form is
+  // actually dirty AND we're closing (not opening).
+  const handleOpenChange = (next: boolean) => {
+    if (!next && open && form.formState.isDirty && !loading) {
+      const ok = window.confirm('Discard your unsaved changes?')
+      if (!ok) return
+    }
+    onOpenChange(next)
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto z-[100]">
-        <DialogHeader>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="z-[100] flex flex-col gap-0 p-0 w-screen max-w-none h-[100dvh] sm:w-auto sm:max-w-2xl sm:h-auto sm:max-h-[90vh]">
+        <DialogHeader className="sticky top-0 z-10 bg-background border-b px-6 pt-6 pb-4">
           <DialogTitle>{task ? 'Edit Task' : duplicateFrom ? 'Duplicate Task' : 'Create New Task'}</DialogTitle>
           <DialogDescription>
             {task ? 'Update the task details below.' : duplicateFrom ? 'Review and adjust the duplicated task before saving.' : 'Fill in the details to create a new task.'}
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col flex-1 min-h-0">
+        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-8">
 
           {/* Basic Information Section */}
           <section>
@@ -1334,12 +1346,25 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
             </div>
           )}
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          </div>
+          <DialogFooter className="border-t bg-background px-6 py-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleOpenChange(false)}
+              disabled={loading}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Saving...' : task ? 'Update Task' : duplicateFrom ? 'Duplicate Task' : 'Create Task'}
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                task ? 'Update Task' : duplicateFrom ? 'Duplicate Task' : 'Create Task'
+              )}
             </Button>
           </DialogFooter>
         </form>

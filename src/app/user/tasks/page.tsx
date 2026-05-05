@@ -281,7 +281,12 @@ export default function TasksPage() {
 
   useEffect(() => {
     fetchTasks()
-  }, [session, selectedTeam, selectedUser, selectedTaskType, activeBoardId])
+    // Depend on session?.user?.id (a stable primitive) rather than the full
+    // session object — NextAuth's refetchOnWindowFocus changes the session
+    // reference on alt-tab even when identity is unchanged. The previous
+    // `[session, ...]` deps re-fired this effect, flipping `loading` to true
+    // and unmounting the TaskForm dialog (and its in-progress RHF state).
+  }, [session?.user?.id, selectedTeam, selectedUser, selectedTaskType, activeBoardId])
 
   // Refetch tasks when page becomes visible (e.g., navigating back from Calendar)
   useEffect(() => {
@@ -304,7 +309,7 @@ export default function TasksPage() {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('focus', handleFocus)
     }
-  }, [session])
+  }, [session?.user?.id])
 
   const fetchUsers = async () => {
     try {

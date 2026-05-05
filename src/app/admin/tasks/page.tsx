@@ -191,7 +191,10 @@ export default function AdminTasksPage() {
 
   useEffect(() => {
     fetchTasks()
-  }, [session, debouncedSearchTerm, selectedUser, statusFilter])
+    // session?.user?.id is a stable primitive — using full session here
+    // would re-fire on NextAuth's window-focus session refresh and could
+    // unmount any open task dialog by flipping `loading` to true.
+  }, [session?.user?.id, debouncedSearchTerm, selectedUser, statusFilter])
 
   const fetchUsers = async () => {
     try {

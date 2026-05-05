@@ -88,6 +88,16 @@ interface Task {
     email: string
     image?: string
   }
+  creator?: {
+    id: string
+    name?: string
+    email?: string
+  }
+  assignedBy?: {
+    id: string
+    name?: string
+    email?: string
+  }
   team?: {
     id: string
     name: string
@@ -247,8 +257,20 @@ export default function MemberManagementPage() {
     }
   }
 
-  const canDeleteTask = (task: Task) =>
-    session?.user?.role === 'LEADER' || session?.user?.role === 'ADMIN'
+  // Mirror the server-side canDeleteTask (src/lib/permissions.ts:161-181):
+  // ADMIN, the task creator, or a Leader who personally assigned the task.
+  // The "team leader of the team" branch is omitted on the client since
+  // teamMemberRole isn't plumbed through here; the trash icon is hidden in
+  // that case (server still allows the delete if it were attempted directly).
+  const canDeleteTask = (task: Task) => {
+    if (session?.user?.role === 'ADMIN') return true
+    if (task.creator?.id === session?.user?.id) return true
+    if (
+      session?.user?.role === 'LEADER' &&
+      task.assignedBy?.id === session?.user?.id
+    ) return true
+    return false
+  }
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {

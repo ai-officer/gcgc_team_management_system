@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Eye, EyeOff, Mail, Lock, AlertCircle } from 'lucide-react'
+import { isAllowedEmailDomain, ALLOWED_EMAIL_MESSAGE } from '@/lib/allowed-email-domains'
 
 // Field error type
 interface FieldErrors {
@@ -44,11 +45,7 @@ function SignInForm() {
         if (!value.trim()) return 'Email is required'
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
         if (!emailRegex.test(value)) return 'Please enter a valid email address'
-        const allowedDomains = ['gmail.com', 'globalofficium.com']
-        const emailDomain = value.split('@')[1]?.toLowerCase()
-        if (!allowedDomains.includes(emailDomain)) {
-          return 'Email must be @gmail.com or @globalofficium.com'
-        }
+        if (!isAllowedEmailDomain(value)) return ALLOWED_EMAIL_MESSAGE
         return undefined
       case 'password':
         if (!value) return 'Password is required'

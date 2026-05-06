@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminSession } from '@/lib/auth/get-admin-session'
 import { prisma } from '@/lib/prisma'
-import { UserRole, HierarchyLevel } from '@prisma/client'
+import { UserRole, HierarchyLevel, AdminActionType } from '@prisma/client'
+import { logAdminAction } from '@/lib/admin-audit'
 
 // Admin Settings update interface
 interface AdminSettingsUpdateData {
@@ -137,9 +138,26 @@ export async function PUT(req: NextRequest) {
       })
     }
 
-    return NextResponse.json({ 
+    await logAdminAction({
+      request: req,
+      action: AdminActionType.SETTINGS_UPDATED,
+      description: 'Updated system settings',
+      adminId: session.sub,
+      adminUsername: session.username,
+      targetType: 'AdminSettings',
+      targetId: settings.id,
+      metadata: {
+        maintenanceMode: body.maintenanceMode,
+        allowUserRegistration: body.allowUserRegistration,
+        requireEmailVerification: body.requireEmailVerification,
+        sessionTimeout: body.sessionTimeout,
+        maxLoginAttempts: body.maxLoginAttempts,
+      },
+    })
+
+    return NextResponse.json({
       settings,
-      message: 'Settings updated successfully' 
+      message: 'Settings updated successfully'
     })
   } catch (error) {
     console.error('Error updating admin settings:', error)

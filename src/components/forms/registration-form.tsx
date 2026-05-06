@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Upload, User, Crown, ChevronDown, Eye, EyeOff } from 'lucide-react'
 import { UserFormData, OrganizationalUnit } from '@/types'
+import { isAllowedEmailDomain, ALLOWED_EMAIL_MESSAGE } from '@/lib/allowed-email-domains'
 
 interface Leader {
   id: string
@@ -216,11 +217,7 @@ export function RegistrationForm() {
         if (!value.trim()) return 'Email is required'
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
         if (!emailRegex.test(value)) return 'Please enter a valid email address'
-        const allowedDomains = ['gmail.com', 'globalofficium.com']
-        const emailDomain = value.split('@')[1]?.toLowerCase()
-        if (!allowedDomains.includes(emailDomain)) {
-          return 'Email must be @gmail.com or @globalofficium.com'
-        }
+        if (!isAllowedEmailDomain(value)) return ALLOWED_EMAIL_MESSAGE
         return undefined
       case 'username':
         if (!value.trim()) return 'Username is required'
@@ -272,11 +269,6 @@ export function RegistrationForm() {
     errors.positionTitle = validateField('positionTitle', formData.positionTitle)
     errors.password = validateField('password', formData.password)
     errors.confirmPassword = validateField('confirmPassword', confirmPassword)
-
-    // Reports To is required only for non-leaders
-    if (!formData.isLeader && !formData.reportsToId) {
-      errors.reportsToId = 'Please select who you report to'
-    }
 
     if (!selectedDivision) {
       errors.division = 'Please select a division'
@@ -666,7 +658,7 @@ export function RegistrationForm() {
           {/* Reports To - Only show if not leader */}
           {!formData.isLeader && (
             <div className="space-y-2">
-              <Label htmlFor="reportsTo">Reports To (Leader) <span className="text-destructive">*</span></Label>
+              <Label htmlFor="reportsTo">Reports To (Leader) <span className="text-muted-foreground text-xs">(Optional)</span></Label>
               <Select
                 value={formData.reportsToId}
                 onValueChange={(value) => {

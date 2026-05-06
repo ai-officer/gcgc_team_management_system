@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { AdminActionType } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
+import { getAdminSession } from '@/lib/auth/get-admin-session'
+import { logAdminAction } from '@/lib/admin-audit'
 
 // Default job levels based on the hierarchy: RF1, RF2, RF3, OF1, OF2, M1, M2 (highest)
 const DEFAULT_JOB_LEVELS = [
@@ -14,6 +17,11 @@ const DEFAULT_JOB_LEVELS = [
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getAdminSession(request)
+    if (!session?.isAdmin) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     // Ensure the job_levels table exists
     await prisma.$executeRaw`
       CREATE TABLE IF NOT EXISTS "job_levels" (
@@ -46,6 +54,15 @@ export async function POST(request: NextRequest) {
         VALUES (gen_random_uuid()::text, ${jobLevel.name}, ${jobLevel.description}, ${jobLevel.order}, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       `
     }
+
+    await logAdminAction({
+      request,
+      action: AdminActionType.JOB_LEVELS_INITIALIZED,
+      description: `Initialized ${DEFAULT_JOB_LEVELS.length} default job levels`,
+      adminId: session.sub,
+      adminUsername: session.username,
+      metadata: { created: DEFAULT_JOB_LEVELS.length },
+    })
 
     return NextResponse.json({
       success: true,

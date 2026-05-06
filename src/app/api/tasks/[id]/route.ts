@@ -6,7 +6,7 @@ import { authOptions } from '@/lib/auth'
 import { canEditTask, canDeleteTask, canChangeTaskStatus } from '@/lib/permissions'
 import { autoSyncTask, deleteSyncedTask } from '@/lib/calendar-sync-helper'
 import { getNextOccurrenceDate } from '@/lib/recurring'
-import { notifyTaskAssigned, notifyTaskUpdated, notifyTaskCompleted } from '@/lib/notifications'
+import { notifyTaskAssigned, notifyTaskUpdated, notifyTaskCompleted, notifyTaskSubmittedForReview } from '@/lib/notifications'
 
 const updateTaskSchema = z.object({
   title: z.string().min(1).max(100).optional(),
@@ -541,6 +541,23 @@ export async function PATCH(
             updatedTask.title,
             assignerName
           )
+        }
+
+        // Notify the reviewer (assignedBy or creator) when a task moves into
+        // IN_REVIEW so Leaders aren't blind to work waiting on their approval.
+        if (
+          updateData.status === 'IN_REVIEW' &&
+          existingTask.status !== 'IN_REVIEW'
+        ) {
+          const reviewerId = existingTask.assignedById ?? existingTask.creatorId
+          if (reviewerId && reviewerId !== session.user.id) {
+            await notifyTaskSubmittedForReview(
+              reviewerId,
+              updatedTask.id,
+              updatedTask.title,
+              assignerName
+            )
+          }
         }
 
         // Notify assignee of other updates (status/priority changes) if they didn't make the change

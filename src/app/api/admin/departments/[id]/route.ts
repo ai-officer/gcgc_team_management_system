@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminSession } from '@/lib/auth/get-admin-session'
 import { prisma } from '@/lib/prisma'
-import { UserRole } from '@prisma/client'
+import { UserRole, AdminActionType } from '@prisma/client'
+import { logAdminAction } from '@/lib/admin-audit'
 
 export async function GET(
   req: NextRequest,
@@ -111,6 +112,17 @@ export async function PUT(
       }
     })
 
+    await logAdminAction({
+      request: req,
+      action: AdminActionType.ORG_UNIT_UPDATED,
+      description: `Updated department "${department.name}"`,
+      adminId: session.sub,
+      adminUsername: session.username,
+      targetType: 'Department',
+      targetId: department.id,
+      metadata: { changedFields: Object.keys(updateData) },
+    })
+
     return NextResponse.json({ department })
   } catch (error) {
     console.error('Error updating department:', error)
@@ -156,8 +168,19 @@ export async function DELETE(
         where: { id: params.id },
         data: { isActive: false }
       })
-      
-      return NextResponse.json({ 
+
+      await logAdminAction({
+        request: req,
+        action: AdminActionType.ORG_UNIT_DELETED,
+        description: `Deactivated department "${department.name}" (had associated data)`,
+        adminId: session.sub,
+        adminUsername: session.username,
+        targetType: 'Department',
+        targetId: department.id,
+        metadata: { soft: true, sections: department._count.sections },
+      })
+
+      return NextResponse.json({
         message: 'Department deactivated successfully due to existing associated data'
       })
     } else {
@@ -165,7 +188,18 @@ export async function DELETE(
       await prisma.department.delete({
         where: { id: params.id }
       })
-      
+
+      await logAdminAction({
+        request: req,
+        action: AdminActionType.ORG_UNIT_DELETED,
+        description: `Deleted department "${department.name}"`,
+        adminId: session.sub,
+        adminUsername: session.username,
+        targetType: 'Department',
+        targetId: department.id,
+        metadata: { soft: false },
+      })
+
       return NextResponse.json({ message: 'Department deleted successfully' })
     }
   } catch (error) {

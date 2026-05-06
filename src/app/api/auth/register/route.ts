@@ -3,18 +3,15 @@ import { prisma } from '@/lib/prisma'
 import { UserRole, HierarchyLevel } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
+import { isAllowedEmailDomain, ALLOWED_EMAIL_MESSAGE } from '@/lib/allowed-email-domains'
 
 const registerSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
   middleName: z.string().optional(),
   email: z.string().email('Invalid email address').refine(
-    (email) => {
-      const allowedDomains = ['gmail.com', 'globalofficium.com']
-      const domain = email.split('@')[1]?.toLowerCase()
-      return allowedDomains.includes(domain)
-    },
-    { message: 'Email must be @gmail.com or @globalofficium.com' }
+    isAllowedEmailDomain,
+    { message: ALLOWED_EMAIL_MESSAGE }
   ),
   username: z.string().min(3, 'Username must be at least 3 characters'),
   contactNumber: z.string().min(1, 'Contact number is required').refine(
@@ -43,15 +40,6 @@ const registerSchema = z.object({
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
-}).refine((data) => {
-  // Reports To is required for non-leaders
-  if (!data.isLeader && !data.reportsToId) {
-    return false
-  }
-  return true
-}, {
-  message: "Please select who you report to",
-  path: ["reportsToId"],
 })
 
 export async function POST(request: NextRequest) {

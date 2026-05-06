@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminSession } from '@/lib/auth/get-admin-session'
 import { prisma } from '@/lib/prisma'
-import { UserRole } from '@prisma/client'
+import { UserRole, AdminActionType } from '@prisma/client'
+import { logAdminAction } from '@/lib/admin-audit'
 
 export async function GET(
   req: NextRequest,
@@ -114,6 +115,17 @@ export async function PUT(
       }
     })
 
+    await logAdminAction({
+      request: req,
+      action: AdminActionType.ORG_UNIT_UPDATED,
+      description: `Updated section "${section.name}"`,
+      adminId: session.sub,
+      adminUsername: session.username,
+      targetType: 'Section',
+      targetId: section.id,
+      metadata: { changedFields: Object.keys(updateData) },
+    })
+
     return NextResponse.json({ section })
   } catch (error) {
     console.error('Error updating section:', error)
@@ -159,8 +171,19 @@ export async function DELETE(
         where: { id: params.id },
         data: { isActive: false }
       })
-      
-      return NextResponse.json({ 
+
+      await logAdminAction({
+        request: req,
+        action: AdminActionType.ORG_UNIT_DELETED,
+        description: `Deactivated section "${section.name}" (had associated data)`,
+        adminId: session.sub,
+        adminUsername: session.username,
+        targetType: 'Section',
+        targetId: section.id,
+        metadata: { soft: true, teamLabels: section._count.teamLabels },
+      })
+
+      return NextResponse.json({
         message: 'Section deactivated successfully due to existing associated data'
       })
     } else {
@@ -168,7 +191,18 @@ export async function DELETE(
       await prisma.section.delete({
         where: { id: params.id }
       })
-      
+
+      await logAdminAction({
+        request: req,
+        action: AdminActionType.ORG_UNIT_DELETED,
+        description: `Deleted section "${section.name}"`,
+        adminId: session.sub,
+        adminUsername: session.username,
+        targetType: 'Section',
+        targetId: section.id,
+        metadata: { soft: false },
+      })
+
       return NextResponse.json({ message: 'Section deleted successfully' })
     }
   } catch (error) {

@@ -1,12 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
+import { AdminActionType, AdminActionStatus } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { SignJWT } from 'jose'
+import { rateLimit, clearRateLimit, getClientIp } from '@/lib/rate-limit'
+import { logAdminAction } from '@/lib/admin-audit'
 
 const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET!)
 
+const LOGIN_RATE_LIMIT = {
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 attempts per window
+}
+
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request)
+    const rlKey = `admin-login:${ip}`
+    const rl = rateLimit(rlKey, LOGIN_RATE_LIMIT)
+
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Too many login attempts. Please try again later.' },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(rl.retryAfterSeconds) },
+        }
+      )
+    }
+
     const { username, password } = await request.json()
 
     if (!username || !password) {
@@ -22,6 +44,13 @@ export async function POST(request: NextRequest) {
     })
 
     if (!admin || !admin.password) {
+      await logAdminAction({
+        request,
+        action: AdminActionType.ADMIN_LOGIN_FAILED,
+        description: 'Login failed: unknown username',
+        adminUsername: username,
+        status: AdminActionStatus.FAILURE,
+      })
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }
@@ -32,6 +61,14 @@ export async function POST(request: NextRequest) {
     const isPasswordValid = await bcrypt.compare(password, admin.password)
 
     if (!isPasswordValid) {
+      await logAdminAction({
+        request,
+        action: AdminActionType.ADMIN_LOGIN_FAILED,
+        description: 'Login failed: invalid password',
+        adminId: admin.id,
+        adminUsername: admin.username,
+        status: AdminActionStatus.FAILURE,
+      })
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }
@@ -39,11 +76,31 @@ export async function POST(request: NextRequest) {
     }
 
     if (!admin.isActive) {
+      await logAdminAction({
+        request,
+        action: AdminActionType.ADMIN_LOGIN_FAILED,
+        description: 'Login failed: account deactivated',
+        adminId: admin.id,
+        adminUsername: admin.username,
+        status: AdminActionStatus.FAILURE,
+      })
       return NextResponse.json(
         { error: 'Account is deactivated' },
         { status: 401 }
       )
     }
+
+    // Successful auth — reset the IP bucket so a legitimate admin who mistyped
+    // a few times isn't locked out for the rest of the window.
+    clearRateLimit(rlKey)
+
+    await logAdminAction({
+      request,
+      action: AdminActionType.ADMIN_LOGIN,
+      description: 'Admin logged in',
+      adminId: admin.id,
+      adminUsername: admin.username,
+    })
 
     // Create JWT token
     const token = await new SignJWT({

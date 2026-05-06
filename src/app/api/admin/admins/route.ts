@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { AdminActionType } from '@prisma/client'
 import { getAdminSession } from '@/lib/auth/get-admin-session'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
+import { logAdminAction } from '@/lib/admin-audit'
 
 export async function GET(request: NextRequest) {
   try {
@@ -107,6 +109,16 @@ export async function POST(request: NextRequest) {
         updatedAt: true,
         // Never include password in responses
       }
+    })
+
+    await logAdminAction({
+      request,
+      action: AdminActionType.ADMIN_CREATED,
+      description: `Created admin account ${admin.username}`,
+      adminId: session.sub,
+      adminUsername: session.username,
+      targetType: 'Admin',
+      targetId: admin.id,
     })
 
     return NextResponse.json({ admin }, { status: 201 })

@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import {
   Plus,
+  ListChecks,
   Search,
   Filter,
   Calendar,
@@ -72,6 +73,7 @@ import { format, isAfter, subDays } from 'date-fns'
 import TaskForm from '@/components/tasks/TaskForm'
 import TaskViewModal from '@/components/tasks/TaskViewModal'
 import DuplicateTaskDialog from '@/components/tasks/DuplicateTaskDialog'
+import { BulkTaskActionsDialog } from '@/components/tasks/bulk-task-actions-dialog'
 
 interface Task {
   id: string
@@ -190,13 +192,17 @@ export default function TasksPage() {
   const router = useRouter()
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedTeam, setSelectedTeam] = useState<string>('')
-  const [selectedUser, setSelectedUser] = useState<string>('')
-  const [selectedTaskType, setSelectedTaskType] = useState<string>('')
+  // Initialize filter state from URL so /user/tasks?q=…&team=…&user=…&type=…&board=…
+  // is bookmarkable and survives the back button.
+  const [searchTerm, setSearchTerm] = useState<string>(() => searchParams.get('q') ?? '')
+  const [selectedTeam, setSelectedTeam] = useState<string>(() => searchParams.get('team') ?? '')
+  const [selectedUser, setSelectedUser] = useState<string>(() => searchParams.get('user') ?? '')
+  const [selectedTaskType, setSelectedTaskType] = useState<string>(() => searchParams.get('type') ?? '')
   const [users, setUsers] = useState<User[]>([])
   const [showTaskForm, setShowTaskForm] = useState(false)
+  const [bulkDialogOpen, setBulkDialogOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [duplicatingTask, setDuplicatingTask] = useState<Task | null>(null)
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false)
@@ -208,7 +214,7 @@ export default function TasksPage() {
 
   // Board state
   const [boards, setBoards] = useState<KanbanBoard[]>([])
-  const [activeBoardId, setActiveBoardId] = useState<string | null>(null) // null = "All Tasks"
+  const [activeBoardId, setActiveBoardId] = useState<string | null>(() => searchParams.get('board') || null) // null = "All Tasks"
   const [showCreateBoard, setShowCreateBoard] = useState(false)
   const [newBoardName, setNewBoardName] = useState('')
   const [newBoardColor, setNewBoardColor] = useState('#3B82F6')
@@ -256,8 +262,6 @@ export default function TasksPage() {
       if (selectedTaskType) params.append('taskType', selectedTaskType)
       if (activeBoardId) params.append('boardId', activeBoardId)
 
-      console.log('Fetching tasks with params:', params.toString())
-
       const response = await fetch(`/api/tasks?${params}`)
 
       if (!response.ok) {
@@ -267,8 +271,8 @@ export default function TasksPage() {
       }
 
       const data = await response.json()
-      console.log('Tasks fetched:', data.tasks?.length || 0, 'tasks')
       setTasks(data.tasks || [])
+      setHasLoadedOnce(true)
     } catch (err) {
       console.error('Error fetching tasks:', err)
       setError(err instanceof Error ? err.message : 'Failed to load tasks')
@@ -281,7 +285,12 @@ export default function TasksPage() {
 
   useEffect(() => {
     fetchTasks()
-  }, [session, selectedTeam, selectedUser, selectedTaskType, activeBoardId])
+    // Depend on session?.user?.id (a stable primitive) rather than the full
+    // session object — NextAuth's refetchOnWindowFocus changes the session
+    // reference on alt-tab even when identity is unchanged. The previous
+    // `[session, ...]` deps re-fired this effect, flipping `loading` to true
+    // and unmounting the TaskForm dialog (and its in-progress RHF state).
+  }, [session?.user?.id, selectedTeam, selectedUser, selectedTaskType, activeBoardId])
 
   // Refetch tasks when page becomes visible (e.g., navigating back from Calendar)
   useEffect(() => {
@@ -304,7 +313,20 @@ export default function TasksPage() {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('focus', handleFocus)
     }
-  }, [session])
+  }, [session?.user?.id])
+
+  // Sync filter state to the URL so views are bookmarkable / back-button-friendly.
+  // Uses replace (not push) so each keystroke doesn't create a history entry.
+  useEffect(() => {
+    const params = new URLSearchParams()
+    if (searchTerm) params.set('q', searchTerm)
+    if (selectedTeam) params.set('team', selectedTeam)
+    if (selectedUser) params.set('user', selectedUser)
+    if (selectedTaskType) params.set('type', selectedTaskType)
+    if (activeBoardId) params.set('board', activeBoardId)
+    const qs = params.toString()
+    router.replace(qs ? `/user/tasks?${qs}` : '/user/tasks', { scroll: false })
+  }, [searchTerm, selectedTeam, selectedUser, selectedTaskType, activeBoardId, router])
 
   const fetchUsers = async () => {
     try {
@@ -534,7 +556,6 @@ export default function TasksPage() {
       if (activeBoardId) {
         mainTaskData.boardId = activeBoardId
       }
-      console.log('Creating task with data:', mainTaskData)
 
       const response = await fetch('/api/tasks', {
         method: 'POST',
@@ -549,7 +570,6 @@ export default function TasksPage() {
       }
 
       const newTask = await response.json()
-      console.log('Task created successfully:', newTask)
 
       // Recurring tasks return { template, firstInstance }; regular tasks return the task directly
       const parentTaskId = newTask.id ?? newTask.firstInstance?.id
@@ -599,8 +619,6 @@ export default function TasksPage() {
     if (!editingTask) return
 
     try {
-      console.log('Updating task:', editingTask.id, 'with data:', taskData)
-
       const response = await fetch(`/api/tasks/${editingTask.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -613,8 +631,7 @@ export default function TasksPage() {
         throw new Error(errorData.error || `HTTP ${response.status}: Failed to update task`)
       }
 
-      const updatedTask = await response.json()
-      console.log('Task updated successfully:', updatedTask)
+      await response.json()
 
       // Refresh tasks to ensure we have the latest data
       await fetchTasks()
@@ -638,8 +655,6 @@ export default function TasksPage() {
     if (!deletingTask) return
 
     try {
-      console.log('Deleting task:', deletingTask.id, deletingTask.title)
-
       const url = deleteScope === 'series' && deletingTask.recurringParentId
         ? `/api/tasks/${deletingTask.id}?scope=series`
         : `/api/tasks/${deletingTask.id}`
@@ -652,7 +667,6 @@ export default function TasksPage() {
         throw new Error(errorData.error || `HTTP ${response.status}: Failed to delete task`)
       }
 
-      console.log('Task deleted successfully')
 
       // Refresh tasks to ensure we have the latest data
       await fetchTasks()
@@ -805,7 +819,10 @@ export default function TasksPage() {
     fetchTasks(false)
   }
 
-  if (loading) {
+  // Only block the page on the very first load. After that, refetches happen
+  // in the background so an open TaskForm / TaskViewModal stays mounted and
+  // keeps its in-progress data when the user alt-tabs back.
+  if (loading && !hasLoadedOnce) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -813,7 +830,7 @@ export default function TasksPage() {
     )
   }
 
-  if (error) {
+  if (error && !hasLoadedOnce) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
@@ -834,10 +851,16 @@ export default function TasksPage() {
             Manage your tasks and collaborations
           </p>
         </div>
-        <Button onClick={() => setShowTaskForm(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Task
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setBulkDialogOpen(true)}>
+            <ListChecks className="h-4 w-4 mr-2" />
+            Bulk
+          </Button>
+          <Button onClick={() => setShowTaskForm(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Task
+          </Button>
+        </div>
       </div>
 
       {/* Board Tab Strip */}
@@ -1329,6 +1352,19 @@ export default function TasksPage() {
         task={editingTask}
         duplicateFrom={duplicatingTask}
         onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
+      />
+
+      <BulkTaskActionsDialog
+        open={bulkDialogOpen}
+        onOpenChange={setBulkDialogOpen}
+        tasks={tasks.map(t => ({
+          id: t.id,
+          title: t.title,
+          status: t.status,
+          priority: t.priority,
+          assignee: t.assignee,
+        }))}
+        onCompleted={fetchTasks}
       />
 
       {/* Unified Task View Modal */}

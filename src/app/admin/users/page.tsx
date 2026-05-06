@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Search, Filter, Edit, Trash2, User, Mail, Calendar, Shield, Crown, LayoutList, LayoutGrid, KeyRound, Copy, Check, Clock, CheckSquare, X, Users, Handshake } from 'lucide-react'
+import { Plus, Search, Filter, Edit, Trash2, User, Mail, Calendar, Shield, Crown, LayoutList, LayoutGrid, KeyRound, Copy, Check, Clock, CheckSquare, X, Users, Handshake, Download, Eye, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
@@ -40,6 +40,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { Pagination, PaginationInfo } from '@/components/ui/pagination'
 import { UserRole, HierarchyLevel } from '@prisma/client'
+import { BulkUserActionsDialog } from '@/components/admin/bulk-user-actions-dialog'
 
 interface User {
   id: string
@@ -162,6 +163,25 @@ export default function AdminUsersPage() {
   const [hierarchyFilter, setHierarchyFilter] = useState<HierarchyLevel | 'all'>('all')
   const [viewMode, setViewMode] = useState<'column' | 'grid'>('grid')
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [bulkDialogOpen, setBulkDialogOpen] = useState(false)
+  const [resetLinkInfo, setResetLinkInfo] = useState<{ url: string; email: string; expiresAt: string } | null>(null)
+  const [resetLinkCopied, setResetLinkCopied] = useState(false)
+
+  const handleSendResetLink = async (user: { id: string; email: string; name: string }) => {
+    if (!confirm(`Generate a one-time password reset link for ${user.name || user.email}? Any prior unused link will be invalidated.`)) return
+    try {
+      const res = await fetch(`/api/admin/users/${user.id}/reset-link`, { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) {
+        alert(data.error ?? 'Failed to create reset link')
+        return
+      }
+      setResetLinkInfo({ url: data.resetUrl, email: data.target.email, expiresAt: data.expiresAt })
+      setResetLinkCopied(false)
+    } catch {
+      alert('Network error generating reset link')
+    }
+  }
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [pagination, setPagination] = useState({
     page: 1,
@@ -705,6 +725,25 @@ export default function AdminUsersPage() {
           <h1 className="text-2xl font-semibold text-slate-900">User Management</h1>
           <p className="text-sm font-medium text-slate-600">Manage system users, roles, and hierarchy levels</p>
         </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setBulkDialogOpen(true)}>
+            <Users className="w-4 h-4 mr-2" />
+            Bulk actions
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              const params = new URLSearchParams()
+              if (debouncedSearchTerm) params.set('search', debouncedSearchTerm)
+              if (roleFilter && roleFilter !== 'all') params.set('role', roleFilter)
+              if (hierarchyFilter && hierarchyFilter !== 'all') params.set('hierarchyLevel', hierarchyFilter)
+              const qs = params.toString()
+              window.location.href = `/api/admin/users/export${qs ? `?${qs}` : ''}`
+            }}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Export CSV
+          </Button>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button className="bg-blue-600 hover:bg-blue-700 shadow-sm">
@@ -1155,6 +1194,7 @@ export default function AdminUsersPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Filters */}
@@ -1299,9 +1339,37 @@ export default function AdminUsersPage() {
                       size="sm"
                       className="text-amber-600 hover:text-amber-700"
                       onClick={() => setResetPasswordUser(user)}
-                      title="Reset Password"
+                      title="Reset Password (set directly)"
                     >
                       <KeyRound className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-sky-600 hover:text-sky-700"
+                      title="Send password reset link (user picks their own)"
+                      onClick={() => handleSendResetLink(user)}
+                    >
+                      <Send className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-indigo-600 hover:text-indigo-700"
+                      title="Impersonate user (view system as them)"
+                      onClick={async () => {
+                        if (!confirm(`Sign in as ${user.name}? Session is limited to 30 minutes and is fully audit-logged.`)) return
+                        const res = await fetch(`/api/admin/impersonate/${user.id}`, { method: 'POST' })
+                        if (res.ok) {
+                          const data = await res.json()
+                          window.location.href = data.redirectTo ?? '/user/dashboard'
+                        } else {
+                          const err = await res.json().catch(() => ({}))
+                          alert(err.error ?? 'Failed to impersonate')
+                        }
+                      }}
+                    >
+                      <Eye className="w-4 h-4" />
                     </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
@@ -1402,9 +1470,37 @@ export default function AdminUsersPage() {
                         size="sm"
                         className="text-amber-600 hover:text-amber-700"
                         onClick={() => setResetPasswordUser(user)}
-                        title="Reset Password"
+                        title="Reset Password (set directly)"
                       >
                         <KeyRound className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-sky-600 hover:text-sky-700"
+                        title="Send password reset link (user picks their own)"
+                        onClick={() => handleSendResetLink(user)}
+                      >
+                        <Send className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-indigo-600 hover:text-indigo-700"
+                        title="Impersonate user (view system as them)"
+                        onClick={async () => {
+                          if (!confirm(`Sign in as ${user.name}? Session is limited to 30 minutes and is fully audit-logged.`)) return
+                          const res = await fetch(`/api/admin/impersonate/${user.id}`, { method: 'POST' })
+                          if (res.ok) {
+                            const data = await res.json()
+                            window.location.href = data.redirectTo ?? '/user/dashboard'
+                          } else {
+                            const err = await res.json().catch(() => ({}))
+                            alert(err.error ?? 'Failed to impersonate')
+                          }
+                        }}
+                      >
+                        <Eye className="w-4 h-4" />
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
@@ -1713,6 +1809,56 @@ export default function AdminUsersPage() {
           </div>
           <DialogFooter>
             <Button onClick={() => setShowPasswordResult(false)}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <BulkUserActionsDialog
+        open={bulkDialogOpen}
+        onOpenChange={setBulkDialogOpen}
+        onCompleted={fetchUsers}
+      />
+
+      <Dialog open={!!resetLinkInfo} onOpenChange={open => { if (!open) setResetLinkInfo(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Password reset link</DialogTitle>
+            <DialogDescription>
+              {resetLinkInfo
+                ? <>Copy this one-time link and send it to <strong>{resetLinkInfo.email}</strong>. It expires {new Date(resetLinkInfo.expiresAt).toLocaleString()}.</>
+                : null}
+            </DialogDescription>
+          </DialogHeader>
+          {resetLinkInfo && (
+            <div className="py-4">
+              <div className="flex items-center space-x-2">
+                <code className="flex-1 bg-slate-100 border border-slate-200 rounded-lg px-4 py-3 text-xs font-mono break-all select-all">
+                  {resetLinkInfo.url}
+                </code>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(resetLinkInfo.url)
+                      setResetLinkCopied(true)
+                      setTimeout(() => setResetLinkCopied(false), 2000)
+                    } catch {
+                      // ignore
+                    }
+                  }}
+                >
+                  {resetLinkCopied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                </Button>
+              </div>
+              <p className="text-xs text-slate-500 mt-3">
+                The link will not be shown again. If lost, generate a new one.
+              </p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setResetLinkInfo(null)}>Done</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

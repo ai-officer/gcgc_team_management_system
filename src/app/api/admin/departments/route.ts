@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminSession } from '@/lib/auth/get-admin-session'
 import { prisma } from '@/lib/prisma'
-import { UserRole } from '@prisma/client'
+import { UserRole, AdminActionType } from '@prisma/client'
+import { logAdminAction } from '@/lib/admin-audit'
 
 export async function GET(request: NextRequest) {
   try {
@@ -124,6 +125,17 @@ export async function POST(request: NextRequest) {
           }
         }
       }
+    })
+
+    await logAdminAction({
+      request,
+      action: AdminActionType.ORG_UNIT_CREATED,
+      description: `Created department "${department.name}"`,
+      adminId: session.sub,
+      adminUsername: session.username,
+      targetType: 'Department',
+      targetId: department.id,
+      metadata: { divisionId: department.divisionId },
     })
 
     return NextResponse.json({ department }, { status: 201 })

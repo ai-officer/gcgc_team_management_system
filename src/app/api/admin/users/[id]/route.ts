@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminSession } from '@/lib/auth/get-admin-session'
 import { prisma } from '@/lib/prisma'
-import { UserRole, HierarchyLevel } from '@prisma/client'
+import { UserRole, HierarchyLevel, AdminActionType } from '@prisma/client'
 import bcrypt from 'bcryptjs'
+import { logAdminAction } from '@/lib/admin-audit'
 
 export async function GET(
   req: NextRequest,
@@ -91,13 +92,22 @@ export async function PUT(
     const body = await req.json()
     const { name, role, hierarchyLevel, isActive, password } = body
 
+    const previous = await prisma.user.findUnique({
+      where: { id: params.id },
+      select: { id: true, role: true, isActive: true, email: true, name: true }
+    })
+
+    if (!previous) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
     const updateData: any = {}
-    
+
     if (name !== undefined) updateData.name = name
     if (role !== undefined) updateData.role = role
     if (hierarchyLevel !== undefined) updateData.hierarchyLevel = hierarchyLevel
     if (isActive !== undefined) updateData.isActive = isActive
-    
+
     if (password) {
       updateData.password = await bcrypt.hash(password, 12)
     }
@@ -115,6 +125,57 @@ export async function PUT(
         updatedAt: true
       }
     })
+
+    if (password) {
+      await logAdminAction({
+        request: req,
+        action: AdminActionType.USER_PASSWORD_RESET,
+        description: `Reset password for user ${previous.email}`,
+        adminId: session.sub,
+        adminUsername: session.username,
+        targetType: 'User',
+        targetId: previous.id,
+      })
+    }
+    if (role !== undefined && role !== previous.role) {
+      await logAdminAction({
+        request: req,
+        action: AdminActionType.USER_ROLE_CHANGED,
+        description: `Changed role of ${previous.email} from ${previous.role} to ${role}`,
+        adminId: session.sub,
+        adminUsername: session.username,
+        targetType: 'User',
+        targetId: previous.id,
+        metadata: { from: previous.role, to: role },
+      })
+    }
+    if (isActive !== undefined && isActive !== previous.isActive) {
+      await logAdminAction({
+        request: req,
+        action: AdminActionType.USER_DEACTIVATED,
+        description: `${isActive ? 'Activated' : 'Deactivated'} user ${previous.email}`,
+        adminId: session.sub,
+        adminUsername: session.username,
+        targetType: 'User',
+        targetId: previous.id,
+        metadata: { isActive },
+      })
+    }
+    // Generic update entry for any other field changes (name, hierarchyLevel)
+    if (
+      (name !== undefined && name !== previous.name) ||
+      hierarchyLevel !== undefined
+    ) {
+      await logAdminAction({
+        request: req,
+        action: AdminActionType.USER_UPDATED,
+        description: `Updated profile of ${previous.email}`,
+        adminId: session.sub,
+        adminUsername: session.username,
+        targetType: 'User',
+        targetId: previous.id,
+      })
+    }
 
     return NextResponse.json({ user })
   } catch (error) {
@@ -151,6 +212,16 @@ export async function DELETE(
     await prisma.user.update({
       where: { id: params.id },
       data: { isActive: false }
+    })
+
+    await logAdminAction({
+      request: req,
+      action: AdminActionType.USER_DEACTIVATED,
+      description: `Deactivated user ${user.email}`,
+      adminId: session.sub,
+      adminUsername: session.username,
+      targetType: 'User',
+      targetId: user.id,
     })
 
     return NextResponse.json({ message: 'User deactivated successfully' })

@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Sidebar } from '@/components/layout/sidebar'
+import { ImpersonationBanner } from '@/components/shared/impersonation-banner'
 import { UserRole } from '@prisma/client'
 
 export default function UserLayout({
@@ -58,6 +59,7 @@ export default function UserLayout({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50/30 to-indigo-50/30">
+      <ImpersonationBanner />
       <Sidebar />
       {/* Main content with dynamic margin based on sidebar state */}
       <main className={`transition-all duration-300 ease-in-out ${

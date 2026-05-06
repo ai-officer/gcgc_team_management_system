@@ -150,6 +150,27 @@ export async function notifyTaskCompleted(
 }
 
 /**
+ * Notify a Leader that one of their team members has submitted a task for review.
+ * Fired when status transitions into IN_REVIEW. Recipient is the task's
+ * assignedBy (preferred) or creator.
+ */
+export async function notifyTaskSubmittedForReview(
+  reviewerId: string,
+  taskId: string,
+  taskTitle: string,
+  submitterName: string
+) {
+  return createNotification({
+    userId: reviewerId,
+    type: 'TASK_SUBMITTED_FOR_REVIEW',
+    title: 'Task Awaiting Review',
+    message: `${submitterName} submitted "${taskTitle}" for your review.`,
+    entityId: taskId,
+    entityType: 'task',
+  })
+}
+
+/**
  * Notify assignee and their leader that a task is overdue
  */
 export async function notifyTaskOverdue(

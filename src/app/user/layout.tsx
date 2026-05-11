@@ -45,21 +45,6 @@ export default function UserLayout({
     return () => window.removeEventListener('storage', handleStorageChange)
   }, [])
 
-  // Keep a CSS variable on :root so fixed-position portals (modals) know the sidebar width.
-  // Only applies on lg+ screens where the sidebar is fixed (not an overlay).
-  useEffect(() => {
-    const update = () => {
-      const isDesktop = window.innerWidth >= 1024
-      const width = isDesktop ? (sidebarCollapsed ? '64px' : '256px') : '0px'
-      document.documentElement.style.setProperty('--sidebar-width', width)
-    }
-    update()
-    window.addEventListener('resize', update)
-    return () => {
-      window.removeEventListener('resize', update)
-      document.documentElement.style.removeProperty('--sidebar-width')
-    }
-  }, [sidebarCollapsed])
 
   if (status === 'loading') {
     return (

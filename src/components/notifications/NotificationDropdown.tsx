@@ -29,6 +29,13 @@ export function NotificationDropdown({ isCollapsed = false }: NotificationDropdo
   const { notifications, unreadCount, loading, markOneAsRead, markAllAsRead } = useNotifications()
   const [isOpen, setIsOpen] = useState(false)
 
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open)
+    if (open && unreadCount > 0) {
+      markAllAsRead()
+    }
+  }
+
   const getNotificationHref = (notification: any) => {
     if (notification.entityType !== 'task' || !notification.entityId) return null
     return `/user/tasks?taskId=${notification.entityId}`
@@ -65,7 +72,7 @@ export function NotificationDropdown({ isCollapsed = false }: NotificationDropdo
   }
 
   return (
-    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+    <DropdownMenu open={isOpen} onOpenChange={handleOpenChange}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"

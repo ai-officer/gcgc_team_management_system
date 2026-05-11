@@ -1169,11 +1169,11 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
                               key={subtask.id}
                               className="flex items-center justify-between p-3 bg-white rounded-lg border border-amber-200"
                             >
-                              <div className="flex items-center gap-3">
-                                <div className="w-2 h-2 rounded-full bg-amber-400" />
-                                <div>
-                                  <p className="text-sm font-medium">{subtask.title}</p>
-                                  <p className="text-xs text-muted-foreground">
+                              <div className="flex items-center gap-3 flex-1 min-w-0">
+                                <div className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium truncate">{subtask.title}</p>
+                                  <p className="text-xs text-muted-foreground truncate">
                                     Assigned to: {subtask.assignee?.name || subtask.assignee?.email || 'You'}
                                     {subtask.dueDate && (
                                       <span className="ml-2">• Due: {new Date(subtask.dueDate).toLocaleDateString()}</span>

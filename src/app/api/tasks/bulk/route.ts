@@ -5,7 +5,7 @@ import { Priority, TaskStatus } from '@prisma/client'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { canEditTask, canDeleteTask, canChangeTaskStatus } from '@/lib/permissions'
+import { canEditTask, canDeleteTask, canChangeTaskStatus, isTeamLeader } from '@/lib/permissions'
 import { notifyTaskCompleted, notifyTaskUpdated, notifyTaskSubmittedForReview } from '@/lib/notifications'
 
 const MAX_BATCH_SIZE = 100
@@ -132,7 +132,8 @@ export async function POST(req: NextRequest) {
               task.taskType,
               isTeamMember,
               isCollaborator,
-              teamMemberRole
+              teamMemberRole,
+              action.payload.status
             )
           ) {
             result.skipped.push({ id, reason: 'no permission to change status' })
@@ -142,14 +143,13 @@ export async function POST(req: NextRequest) {
             result.skipped.push({ id, reason: 'status already matches' })
             continue
           }
-          // Block COMPLETED unless the actor is creator/assignedBy/ADMIN —
-          // mirror the same rule as the single-task PATCH at /api/tasks/[id].
           const canComplete =
             userRole === 'ADMIN' ||
             task.creatorId === userId ||
-            task.assignedById === userId
+            task.assignedById === userId ||
+            (userRole === 'LEADER' && isTeamLeader(teamMemberRole))
           if (action.payload.status === 'COMPLETED' && !canComplete) {
-            result.skipped.push({ id, reason: 'only the assigner or creator can complete' })
+            result.skipped.push({ id, reason: 'only the assigner, creator, or team leader can complete' })
             continue
           }
 

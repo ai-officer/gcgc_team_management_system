@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { authOptions } from '@/lib/auth'
-import { canEditTask, canDeleteTask, canChangeTaskStatus } from '@/lib/permissions'
+import { canEditTask, canDeleteTask, canChangeTaskStatus, isTeamLeader } from '@/lib/permissions'
 import { autoSyncTask, deleteSyncedTask } from '@/lib/calendar-sync-helper'
 import { getNextOccurrenceDate } from '@/lib/recurring'
 import { notifyTaskAssigned, notifyTaskUpdated, notifyTaskCompleted, notifyTaskSubmittedForReview } from '@/lib/notifications'
@@ -197,7 +197,7 @@ export async function PATCH(
     const isCreator = existingTask.creatorId === session.user.id
     const isAdmin = session.user.role === 'ADMIN'
     const isLeader = session.user.role === 'LEADER'
-    const canComplete = isAssigner || isCreator || isAdmin
+    const canComplete = isAssigner || isCreator || isAdmin || (isLeader && isTeamLeader(teamMember?.role))
 
     // Leaders can extend due dates for tasks assigned to their team members (multi-leader support)
     let isLeaderSubordinateOverride = false
@@ -249,7 +249,8 @@ export async function PATCH(
         existingTask.taskType,
         isTeamMember,
         isCollaborator,
-        teamMember?.role
+        teamMember?.role,
+        updateData.status
       )) {
         return NextResponse.json({ 
           error: 'You cannot change the status of this task. Please add a comment to communicate with the task owner.' 

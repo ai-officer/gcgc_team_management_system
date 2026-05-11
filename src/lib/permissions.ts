@@ -218,26 +218,27 @@ export function canChangeTaskStatus(
   taskType: string,
   isTeamMember: boolean,
   isCollaborator: boolean,
-  teamMemberRole?: TeamMemberRole
+  teamMemberRole?: TeamMemberRole,
+  targetStatus?: string
 ): boolean {
   // Admin can change any task status
   if (userRole === 'ADMIN') return true
-  
+
   // Task creator can always change their task status
   if (taskCreatorId === userId) return true
-  
+
   // Leaders can change task status for tasks in their teams
   if (userRole === 'LEADER' && isTeamLeader(teamMemberRole)) return true
-  
+
   // For INDIVIDUAL tasks assigned directly to someone, they can change status
   if (taskType === 'INDIVIDUAL' && taskAssigneeId === userId && !isTeamMember && !isCollaborator) {
     return true
   }
-  
-  // Team members and collaborators CANNOT change task status - they should use comments
+
+  // Team members and collaborators can move tasks to any non-COMPLETED status
   if (isTeamMember || isCollaborator) {
-    return false
+    return targetStatus !== 'COMPLETED'
   }
-  
+
   return false
 }

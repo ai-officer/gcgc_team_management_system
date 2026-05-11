@@ -11,6 +11,7 @@ import { UserAvatar } from '@/components/shared/UserAvatar'
 import { Button } from '@/components/ui/button'
 import CreateTaskButton from '@/components/tasks/CreateTaskButton'
 import { LeaderWorkloadWidget } from '@/components/dashboard/leader-workload-widget'
+import { AtRiskTasksWidget } from '@/components/dashboard/at-risk-tasks-widget'
 import { format, formatDistanceToNow } from 'date-fns'
 import { TASK_PRIORITY_COLORS, TASK_STATUS_COLORS } from '@/constants'
 
@@ -408,6 +409,7 @@ export default function UserDashboard() {
       </div>
 
       {isLeader && <LeaderWorkloadWidget />}
+      {isLeader && <AtRiskTasksWidget />}
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Professional Recent Tasks */}

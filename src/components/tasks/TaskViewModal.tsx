@@ -364,7 +364,7 @@ export default function TaskViewModal({
   const fetchAvailableUsers = async () => {
     try {
       setLoadingUsers(true)
-      const response = await fetch('/api/users?limit=100&isActive=true')
+      const response = await fetch('/api/users?limit=100&isActive=true&role=MEMBER')
       if (response.ok) {
         const data = await response.json()
         setAvailableUsers(data.users || [])

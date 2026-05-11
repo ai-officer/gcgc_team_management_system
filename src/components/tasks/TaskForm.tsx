@@ -84,7 +84,7 @@ const taskFormSchema = z.object({
   endTime: z.string().optional(),
   // Subtasks
   subtasks: z.array(z.object({
-    title: z.string(),
+    title: z.string().min(1).max(100, 'Subtask title must not exceed 100 characters'),
     assigneeId: z.string(),
     dueDate: z.string().optional(),
   })).optional(),
@@ -1120,6 +1120,7 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
                               addSubtask()
                             }
                           }}
+                          maxLength={100}
                           className="flex-1"
                         />
                         <Button type="button" size="sm" onClick={addSubtask} disabled={!newSubtaskTitle.trim()}>

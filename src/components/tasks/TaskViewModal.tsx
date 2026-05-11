@@ -1863,6 +1863,7 @@ export default function TaskViewModal({
                           setNewSubtaskAssigneeId('')
                         }
                       }}
+                      maxLength={100}
                       className="flex-1"
                       autoFocus
                     />

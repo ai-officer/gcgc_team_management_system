@@ -464,10 +464,10 @@ export default function UserDashboard() {
                       'bg-emerald-500'
                     }`}></div>
 
-                    <div className="flex items-start justify-between ml-3">
-                      <div className="space-y-2 flex-1">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">
+                    <div className="flex items-start justify-between ml-3 min-w-0 overflow-hidden">
+                      <div className="space-y-2 flex-1 min-w-0">
+                        <div className="flex items-start gap-2 min-w-0">
+                          <h4 className="font-semibold text-slate-900 group-hover:text-blue-600 transition-colors break-words min-w-0">
                             {task.title}
                           </h4>
                           {index === 0 && (
@@ -776,7 +776,7 @@ export default function UserDashboard() {
             <CardContent>
               <div className="space-y-3">
                 {dashboardData.recentTasks.slice(0, 3).map((task) => (
-                  <div key={task.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/30 transition-colors">
+                  <div key={task.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/30 transition-colors min-w-0 overflow-hidden">
                     <div className={`p-1 rounded-full ${
                       task.status === 'COMPLETED' ? 'bg-green-100 dark:bg-green-900' :
                       task.status === 'IN_PROGRESS' ? 'bg-blue-100 dark:bg-blue-900' :

@@ -1489,9 +1489,9 @@ export default function TaskViewModal({
         <DialogHeader className="space-y-4 pr-8">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 space-y-2 min-w-0">
-              <div className="flex items-center gap-2 min-w-0">
-                {getTaskTypeIcon(task.taskType)}
-                <DialogTitle className="text-xl font-semibold truncate min-w-0">
+              <div className="flex items-center gap-2 overflow-hidden">
+                <span className="flex-shrink-0">{getTaskTypeIcon(task.taskType)}</span>
+                <DialogTitle className="text-xl font-semibold truncate">
                   {task.title}
                 </DialogTitle>
               </div>

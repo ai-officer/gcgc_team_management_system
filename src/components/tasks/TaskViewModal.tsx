@@ -2088,11 +2088,11 @@ export default function TaskViewModal({
               <h4 className="font-medium text-gray-900 text-sm">Work Quality</h4>
               {(() => {
                 const qualities = [
-                  { value: 'NONE', label: '0%', color: 'bg-gray-400' },
-                  { value: 'POOR', label: '25%', color: 'bg-red-400' },
-                  { value: 'FAIR', label: '50%', color: 'bg-yellow-400' },
-                  { value: 'GOOD', label: '75%', color: 'bg-blue-400' },
-                  { value: 'EXCELLENT', label: '100%', color: 'bg-green-500' },
+                  { value: 'NONE', label: '1', color: 'bg-gray-400' },
+                  { value: 'POOR', label: '2', color: 'bg-red-400' },
+                  { value: 'FAIR', label: '3', color: 'bg-yellow-400' },
+                  { value: 'GOOD', label: '4', color: 'bg-blue-400' },
+                  { value: 'EXCELLENT', label: '5', color: 'bg-green-500' },
                 ]
                 return (
                   <div className="space-y-3">

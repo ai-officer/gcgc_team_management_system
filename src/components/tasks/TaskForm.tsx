@@ -1172,8 +1172,8 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
                               <div className="flex items-center gap-3 flex-1 min-w-0">
                                 <div className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
                                 <div className="min-w-0">
-                                  <p className="text-sm font-medium truncate">{subtask.title}</p>
-                                  <p className="text-xs text-muted-foreground truncate">
+                                  <p className="text-sm font-medium break-words">{subtask.title}</p>
+                                  <p className="text-xs text-muted-foreground break-words">
                                     Assigned to: {subtask.assignee?.name || subtask.assignee?.email || 'You'}
                                     {subtask.dueDate && (
                                       <span className="ml-2">• Due: {new Date(subtask.dueDate).toLocaleDateString()}</span>

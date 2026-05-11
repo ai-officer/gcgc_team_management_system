@@ -1965,7 +1965,7 @@ export default function TaskViewModal({
                           {getSubtaskStatusIcon()}
                         </button>
                         <div className="flex-1 min-w-0">
-                          <p className={`text-sm font-medium truncate ${
+                          <p className={`text-sm font-medium break-words ${
                             subtask.status === 'COMPLETED' ? 'text-gray-500 line-through' : 'text-gray-900'
                           }`}>
                             {subtask.title}

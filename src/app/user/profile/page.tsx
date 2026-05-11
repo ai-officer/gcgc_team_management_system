@@ -327,10 +327,10 @@ export default function UserProfilePage() {
     const value = editedProfile[field] as string || ''
 
     return (
-      <div className="flex items-center justify-between p-4 rounded-none hover:bg-gray-100 transition-colors group border-0">
+      <div className="flex items-center justify-between p-4 rounded-lg hover:bg-slate-50 transition-colors group border-0">
         <div className="flex items-center gap-3 flex-1">
-          <div className="p-2 rounded-none bg-gray-300 border-0">
-            <Icon className="h-4 w-4 text-gray-700" />
+          <div className="p-2 rounded-lg bg-slate-100">
+            <Icon className="h-4 w-4 text-slate-500" />
           </div>
           <div className="flex-1">
             <Label className="text-xs text-gray-700 font-bold">{label}</Label>
@@ -339,7 +339,7 @@ export default function UserProfilePage() {
                 type={type}
                 value={value}
                 onChange={(e) => setEditedProfile(prev => ({ ...prev, [field]: e.target.value }))}
-                className="mt-1 h-9 border-0 focus:border-blue-500 rounded-none font-bold"
+                className="mt-1 h-9 rounded-lg font-medium"
                 autoFocus
               />
             ) : (
@@ -389,7 +389,10 @@ export default function UserProfilePage() {
     <div className="space-y-8 pb-8">
       {/* Hero Header with Cover - Professional */}
       <Card className="overflow-hidden border border-slate-200 rounded-xl shadow-sm">
-        <div className="h-32 sm:h-48 bg-gradient-to-br from-blue-50 via-slate-50 to-purple-50 relative">
+        <div className="h-32 sm:h-48 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 relative overflow-hidden">
+          <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+          <div className="absolute -bottom-6 -right-6 h-40 w-40 rounded-full bg-white/10" />
+          <div className="absolute -top-4 -left-4 h-24 w-24 rounded-full bg-white/10" />
         </div>
         <CardContent className="relative pb-6">
           <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4 -mt-16 sm:-mt-20">
@@ -487,7 +490,7 @@ export default function UserProfilePage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1">Department</p>
-                <p className="text-2xl font-bold text-slate-900">{profile.department || 'N/A'}</p>
+                <p className="text-2xl font-bold text-slate-900 truncate">{profile.department || 'N/A'}</p>
               </div>
               <div className="p-3 rounded-lg bg-blue-50 group-hover:bg-blue-100 transition-colors">
                 <Building2 className="h-5 w-5 text-blue-600" />
@@ -502,7 +505,7 @@ export default function UserProfilePage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1">Team</p>
-                <p className="text-2xl font-bold text-slate-900">{profile.team || 'N/A'}</p>
+                <p className="text-2xl font-bold text-slate-900 truncate">{profile.team || 'N/A'}</p>
               </div>
               <div className="p-3 rounded-lg bg-purple-50 group-hover:bg-purple-100 transition-colors">
                 <User className="h-5 w-5 text-purple-600" />
@@ -517,7 +520,7 @@ export default function UserProfilePage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1">Hierarchy Level</p>
-                <p className="text-2xl font-bold text-slate-900">{profile.hierarchyLevel || 'N/A'}</p>
+                <p className="text-2xl font-bold text-slate-900 truncate">{profile.hierarchyLevel || 'N/A'}</p>
               </div>
               <div className="p-3 rounded-lg bg-slate-100 group-hover:bg-slate-200 transition-colors">
                 <TrendingUp className="h-5 w-5 text-slate-600" />
@@ -532,7 +535,7 @@ export default function UserProfilePage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1">Job Level</p>
-                <p className="text-2xl font-bold text-slate-900">{profile.jobLevel || 'N/A'}</p>
+                <p className="text-2xl font-bold text-slate-900 truncate">{profile.jobLevel || 'N/A'}</p>
               </div>
               <div className="p-3 rounded-lg bg-amber-50 group-hover:bg-amber-100 transition-colors">
                 <Award className="h-5 w-5 text-amber-600" />
@@ -655,34 +658,34 @@ export default function UserProfilePage() {
                       <Calendar className="h-4 w-4 text-slate-600" />
                     </div>
                     <div>
-                      <Label className="text-xs text-gray-700 font-bold">Account Created</Label>
-                      <p className="font-bold text-sm mt-0.5">{format(new Date(profile.createdAt), 'PPP')}</p>
+                      <Label className="text-xs text-slate-500 font-semibold">Account Created</Label>
+                      <p className="font-semibold text-sm mt-0.5 text-slate-900">{format(new Date(profile.createdAt), 'PPP')}</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between p-4 rounded-none bg-gray-200 border-0 hover:bg-gray-300 transition-colors">
+                <div className="flex items-center justify-between p-4 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-colors">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-none bg-gray-400 border-0">
-                      <Clock className="h-4 w-4 text-white" />
+                    <div className="p-2 rounded-lg bg-slate-200">
+                      <Clock className="h-4 w-4 text-slate-600" />
                     </div>
                     <div>
-                      <Label className="text-xs text-gray-700 font-bold">Last Updated</Label>
-                      <p className="font-bold text-sm mt-0.5">{format(new Date(profile.updatedAt), 'PPP')}</p>
+                      <Label className="text-xs text-slate-500 font-semibold">Last Updated</Label>
+                      <p className="font-semibold text-sm mt-0.5 text-slate-900">{format(new Date(profile.updatedAt), 'PPP')}</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between p-4 rounded-none bg-gray-200 border-0 hover:bg-gray-300 transition-colors">
+                <div className="flex items-center justify-between p-4 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-colors">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-none bg-gray-400 border-0">
-                      <Activity className="h-4 w-4 text-white" />
+                    <div className={`p-2 rounded-lg ${profile.isActive ? 'bg-emerald-100' : 'bg-slate-100'}`}>
+                      <Activity className={`h-4 w-4 ${profile.isActive ? 'text-emerald-600' : 'text-slate-400'}`} />
                     </div>
                     <div>
-                      <Label className="text-xs text-gray-700 font-bold">Account Status</Label>
+                      <Label className="text-xs text-slate-500 font-semibold">Account Status</Label>
                       <div className="flex items-center gap-2 mt-1">
-                        <div className={`h-1.5 w-1.5 rounded-none ${profile.isActive ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'}`} />
-                        <p className="font-bold text-sm">{profile.isActive ? 'Active' : 'Inactive'}</p>
+                        <div className={`h-1.5 w-1.5 rounded-full ${profile.isActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+                        <p className="font-semibold text-sm text-slate-900">{profile.isActive ? 'Active' : 'Inactive'}</p>
                       </div>
                     </div>
                   </div>

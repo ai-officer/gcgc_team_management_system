@@ -761,11 +761,11 @@ export default function CalendarPage() {
                         <div className={`space-y-1.5 min-w-0 overflow-hidden ${depth > 0 ? 'mt-1.5 border-l-2 border-gray-100 pl-3' : 'pl-1'}`}>
                           {list.map((subtask) => (
                             <div key={subtask.id} className="min-w-0">
-                              <div className="flex items-center gap-2 group min-w-0">
+                              <div className="flex items-start gap-2 group min-w-0">
                                 <button
                                   onClick={() => handleToggleSubtask(subtask.id, subtask.status)}
                                   disabled={togglingSubtaskId === subtask.id}
-                                  className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors hover:scale-110 ${
+                                  className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors hover:scale-110 ${
                                     subtask.status === 'COMPLETED'
                                       ? 'bg-green-500 border-green-500'
                                       : subtask.status === 'IN_PROGRESS'
@@ -783,7 +783,7 @@ export default function CalendarPage() {
                                     <div className="w-2 h-2 rounded-full border border-gray-400 animate-spin border-t-transparent" />
                                   )}
                                 </button>
-                                <span className={`text-xs flex-1 truncate ${subtask.status === 'COMPLETED' ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                                <span className={`text-xs flex-1 break-all min-w-0 ${subtask.status === 'COMPLETED' ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
                                   {subtask.title}
                                 </span>
                                 {subtask.assignee && (

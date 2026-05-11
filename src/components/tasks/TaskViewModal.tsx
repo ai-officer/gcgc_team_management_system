@@ -1484,7 +1484,10 @@ export default function TaskViewModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        className="max-w-4xl max-h-[90vh] overflow-y-auto overflow-x-hidden"
+        style={{ marginLeft: 'calc(var(--sidebar-width, 0px) / 2)' } as React.CSSProperties}
+      >
         {/* Simple Header */}
         <DialogHeader className="space-y-4 pr-8">
           <div className="flex items-start justify-between gap-4">

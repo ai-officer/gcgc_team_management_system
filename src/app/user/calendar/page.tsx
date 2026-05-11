@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useSession } from 'next-auth/react'
 import { Calendar, momentLocalizer, Views } from 'react-big-calendar'
 import moment from 'moment'
@@ -52,13 +52,16 @@ interface CalendarEvent {
       priority: string
       status: string
     }
-    subtasks?: Array<{
-      id: string
-      title: string
-      status: string
-      assignee?: { id: string; name: string; email: string } | null
-    }>
+    subtasks?: NestedSubtask[]
   }
+}
+
+interface NestedSubtask {
+  id: string
+  title: string
+  status: string
+  assignee?: { id: string; name: string; email: string } | null
+  subtasks?: NestedSubtask[]
 }
 
 interface TaskDeadline {
@@ -748,62 +751,76 @@ export default function CalendarPage() {
                 {/* Subtasks Section */}
                 {selectedEvent.resource?.task && (
                   <div className="pt-2 border-t space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
-                        <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-                        Subtasks
-                        <span className="text-xs text-muted-foreground font-normal">
-                          ({(selectedEvent.resource.subtasks || []).length})
-                        </span>
-                      </p>
-                      {(selectedEvent.resource.subtasks || []).length > 0 && (
-                        <span className="text-xs text-muted-foreground">
-                          {(selectedEvent.resource.subtasks || []).filter(s => s.status === 'COMPLETED').length}/
-                          {(selectedEvent.resource.subtasks || []).length} done
-                        </span>
-                      )}
-                    </div>
-                    {(selectedEvent.resource.subtasks || []).length === 0 ? (
-                      <p className="text-xs text-muted-foreground pl-5">No subtasks</p>
-                    ) : (
-                      <div className="space-y-1.5 pl-1">
-                        {(selectedEvent.resource.subtasks || []).map((subtask) => (
-                          <div key={subtask.id} className="flex items-center gap-2 group">
-                            <button
-                              onClick={() => handleToggleSubtask(subtask.id, subtask.status)}
-                              disabled={togglingSubtaskId === subtask.id}
-                              className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors hover:scale-110 ${
-                                subtask.status === 'COMPLETED'
-                                  ? 'bg-green-500 border-green-500'
-                                  : subtask.status === 'IN_PROGRESS'
-                                  ? 'border-blue-400 hover:bg-blue-50'
-                                  : 'border-gray-300 hover:border-green-400 hover:bg-green-50'
-                              } ${togglingSubtaskId === subtask.id ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}
-                              title={subtask.status === 'COMPLETED' ? 'Mark incomplete' : 'Mark complete'}
-                            >
-                              {subtask.status === 'COMPLETED' && (
-                                <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 8 8">
-                                  <path d="M1 4l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                                </svg>
-                              )}
-                              {togglingSubtaskId === subtask.id && (
-                                <div className="w-2 h-2 rounded-full border border-gray-400 animate-spin border-t-transparent" />
-                              )}
-                            </button>
-                            <span
-                              className={`text-xs flex-1 truncate ${subtask.status === 'COMPLETED' ? 'line-through text-muted-foreground' : 'text-foreground'}`}
-                            >
-                              {subtask.title}
-                            </span>
-                            {subtask.assignee && (
-                              <span className="text-xs text-muted-foreground truncate max-w-[80px]">
-                                {subtask.assignee.name}
-                              </span>
+                    {(() => {
+                      const countAll = (list: NestedSubtask[]): number =>
+                        list.reduce((sum, s) => sum + 1 + countAll(s.subtasks || []), 0)
+                      const countDone = (list: NestedSubtask[]): number =>
+                        list.reduce((sum, s) => sum + (s.status === 'COMPLETED' ? 1 : 0) + countDone(s.subtasks || []), 0)
+
+                      const renderSubtasks = (list: NestedSubtask[], depth = 0): React.ReactNode => (
+                        <div className={`space-y-1.5 ${depth > 0 ? 'mt-1.5 border-l-2 border-gray-100 pl-3' : 'pl-1'}`}>
+                          {list.map((subtask) => (
+                            <div key={subtask.id}>
+                              <div className="flex items-center gap-2 group">
+                                <button
+                                  onClick={() => handleToggleSubtask(subtask.id, subtask.status)}
+                                  disabled={togglingSubtaskId === subtask.id}
+                                  className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors hover:scale-110 ${
+                                    subtask.status === 'COMPLETED'
+                                      ? 'bg-green-500 border-green-500'
+                                      : subtask.status === 'IN_PROGRESS'
+                                      ? 'border-blue-400 hover:bg-blue-50'
+                                      : 'border-gray-300 hover:border-green-400 hover:bg-green-50'
+                                  } ${togglingSubtaskId === subtask.id ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}
+                                  title={subtask.status === 'COMPLETED' ? 'Mark incomplete' : 'Mark complete'}
+                                >
+                                  {subtask.status === 'COMPLETED' && (
+                                    <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 8 8">
+                                      <path d="M1 4l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
+                                  )}
+                                  {togglingSubtaskId === subtask.id && (
+                                    <div className="w-2 h-2 rounded-full border border-gray-400 animate-spin border-t-transparent" />
+                                  )}
+                                </button>
+                                <span className={`text-xs flex-1 truncate ${subtask.status === 'COMPLETED' ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                                  {subtask.title}
+                                </span>
+                                {subtask.assignee && (
+                                  <span className="text-xs text-muted-foreground truncate max-w-[80px]">
+                                    {subtask.assignee.name}
+                                  </span>
+                                )}
+                              </div>
+                              {subtask.subtasks && subtask.subtasks.length > 0 && renderSubtasks(subtask.subtasks, depth + 1)}
+                            </div>
+                          ))}
+                        </div>
+                      )
+
+                      const allSubtasks = selectedEvent.resource?.subtasks || []
+                      const total = countAll(allSubtasks)
+                      const done = countDone(allSubtasks)
+
+                      return (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                              <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                              Subtasks
+                              <span className="text-xs text-muted-foreground font-normal">({total})</span>
+                            </p>
+                            {total > 0 && (
+                              <span className="text-xs text-muted-foreground">{done}/{total} done</span>
                             )}
                           </div>
-                        ))}
-                      </div>
-                    )}
+                          {total === 0
+                            ? <p className="text-xs text-muted-foreground pl-5">No subtasks</p>
+                            : renderSubtasks(allSubtasks)
+                          }
+                        </>
+                      )
+                    })()}
                   </div>
                 )}
               </div>

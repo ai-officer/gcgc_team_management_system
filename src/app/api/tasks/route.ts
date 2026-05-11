@@ -367,6 +367,28 @@ export async function GET(req: NextRequest) {
               dueDate: true,
               assignee: {
                 select: { id: true, name: true, email: true }
+              },
+              subtasks: {
+                select: {
+                  id: true,
+                  title: true,
+                  status: true,
+                  assignee: {
+                    select: { id: true, name: true, email: true }
+                  },
+                  subtasks: {
+                    select: {
+                      id: true,
+                      title: true,
+                      status: true,
+                      assignee: {
+                        select: { id: true, name: true, email: true }
+                      }
+                    },
+                    orderBy: { createdAt: 'asc' }
+                  }
+                },
+                orderBy: { createdAt: 'asc' }
               }
             },
             orderBy: { createdAt: 'asc' }

@@ -818,12 +818,13 @@ model TaskProcurement {
   id              String            @id @default(cuid())
   taskId          String
   type            ProcurementType
-  referenceNumber String?
-  amount          Float?
-  vendor          String?
-  approverName    String?
   status          ProcurementStatus @default(PENDING)
   notes           String?
+  fileUrl         String?
+  fileName        String?
+  fileSize        Int?
+  fileType        String?
+  objectKey       String?
   createdById     String
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt

@@ -2,14 +2,11 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { deleteFromOSS } from '@/lib/oss'
 import { z } from 'zod'
 
 const updateProcurementSchema = z.object({
   status: z.enum(['PENDING', 'APPROVED', 'REJECTED', 'PROCESSED']).optional(),
-  referenceNumber: z.string().max(100).optional(),
-  amount: z.number().positive().optional().nullable(),
-  vendor: z.string().max(200).optional(),
-  approverName: z.string().max(200).optional(),
   notes: z.string().max(1000).optional(),
 })
 
@@ -24,7 +21,6 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Only leaders/admins can change status
     if (session.user.role !== 'ADMIN' && session.user.role !== 'LEADER') {
       return NextResponse.json({ error: 'Only leaders and admins can update procurement records' }, { status: 403 })
     }
@@ -32,9 +28,7 @@ export async function PATCH(
     const body = await request.json()
     const data = updateProcurementSchema.parse(body)
 
-    const procurement = await prisma.taskProcurement.findUnique({
-      where: { id: params.procId }
-    })
+    const procurement = await prisma.taskProcurement.findUnique({ where: { id: params.procId } })
     if (!procurement || procurement.taskId !== params.id) {
       return NextResponse.json({ error: 'Procurement record not found' }, { status: 404 })
     }
@@ -43,8 +37,8 @@ export async function PATCH(
       where: { id: params.procId },
       data,
       include: {
-        createdBy: { select: { id: true, name: true, email: true, image: true } }
-      }
+        createdBy: { select: { id: true, name: true, email: true, image: true } },
+      },
     })
 
     return NextResponse.json({ procurement: updated })
@@ -59,7 +53,7 @@ export async function PATCH(
 
 // DELETE /api/tasks/[id]/procurement/[procId]
 export async function DELETE(
-  request: Request,
+  _request: Request,
   { params }: { params: { id: string; procId: string } }
 ) {
   try {
@@ -68,9 +62,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const procurement = await prisma.taskProcurement.findUnique({
-      where: { id: params.procId }
-    })
+    const procurement = await prisma.taskProcurement.findUnique({ where: { id: params.procId } })
     if (!procurement || procurement.taskId !== params.id) {
       return NextResponse.json({ error: 'Procurement record not found' }, { status: 404 })
     }
@@ -82,6 +74,10 @@ export async function DELETE(
 
     if (!isAuthorized) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+    }
+
+    if (procurement.objectKey) {
+      await deleteFromOSS(procurement.objectKey)
     }
 
     await prisma.taskProcurement.delete({ where: { id: params.procId } })

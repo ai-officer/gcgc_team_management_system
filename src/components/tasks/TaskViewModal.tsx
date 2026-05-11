@@ -180,12 +180,12 @@ interface Deliverable {
 interface Procurement {
   id: string
   type: 'PURCHASE_REQUEST' | 'PURCHASE_ORDER'
-  referenceNumber?: string
-  amount?: number
-  vendor?: string
-  approverName?: string
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'PROCESSED'
   notes?: string
+  fileUrl?: string
+  fileName?: string
+  fileSize?: number
+  fileType?: string
   createdBy: { id: string; name: string; email: string; image?: string }
   createdAt: string
 }
@@ -315,8 +315,9 @@ export default function TaskViewModal({
   const [procurements, setProcurements] = useState<Procurement[]>([])
   const [loadingProcurement, setLoadingProcurement] = useState(false)
   const [showAddProcurement, setShowAddProcurement] = useState(false)
-  const [newProcurement, setNewProcurement] = useState({ type: 'PURCHASE_REQUEST' as 'PURCHASE_REQUEST' | 'PURCHASE_ORDER', referenceNumber: '', amount: '', vendor: '', approverName: '', notes: '' })
+  const [newProcurement, setNewProcurement] = useState<{ type: 'PURCHASE_REQUEST' | 'PURCHASE_ORDER'; notes: string; file: File | null }>({ type: 'PURCHASE_REQUEST', notes: '', file: null })
   const [addingProcurement, setAddingProcurement] = useState(false)
+  const procurementFileRef = useRef<HTMLInputElement>(null)
 
   // Work quality state
   const [savingQuality, setSavingQuality] = useState(false)
@@ -503,22 +504,17 @@ export default function TaskViewModal({
     if (!task?.id) return
     try {
       setAddingProcurement(true)
-      const body: Record<string, any> = { type: newProcurement.type }
-      if (newProcurement.referenceNumber) body.referenceNumber = newProcurement.referenceNumber
-      if (newProcurement.amount) body.amount = parseFloat(newProcurement.amount)
-      if (newProcurement.vendor) body.vendor = newProcurement.vendor
-      if (newProcurement.approverName) body.approverName = newProcurement.approverName
-      if (newProcurement.notes) body.notes = newProcurement.notes
-      const res = await fetch(`/api/tasks/${task.id}/procurement`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      })
+      const formData = new FormData()
+      formData.append('type', newProcurement.type)
+      if (newProcurement.notes) formData.append('notes', newProcurement.notes)
+      if (newProcurement.file) formData.append('file', newProcurement.file)
+      const res = await fetch(`/api/tasks/${task.id}/procurement`, { method: 'POST', body: formData })
       if (res.ok) {
         await fetchProcurements()
-        setNewProcurement({ type: 'PURCHASE_REQUEST', referenceNumber: '', amount: '', vendor: '', approverName: '', notes: '' })
+        setNewProcurement({ type: 'PURCHASE_REQUEST', notes: '', file: null })
+        if (procurementFileRef.current) procurementFileRef.current.value = ''
         setShowAddProcurement(false)
-        toast({ title: 'PR/PO record created' })
+        toast({ title: 'PR/PO attached' })
       } else {
         const err = await res.json()
         toast({ title: 'Error', description: err.error, variant: 'destructive' })
@@ -2298,17 +2294,35 @@ export default function TaskViewModal({
                     Purchase Order (PO)
                   </button>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <Input placeholder="Ref. number" value={newProcurement.referenceNumber} onChange={e => setNewProcurement(p => ({ ...p, referenceNumber: e.target.value }))} className="h-7 text-xs" />
-                  <Input placeholder="Amount" type="number" value={newProcurement.amount} onChange={e => setNewProcurement(p => ({ ...p, amount: e.target.value }))} className="h-7 text-xs" />
-                  <Input placeholder="Vendor" value={newProcurement.vendor} onChange={e => setNewProcurement(p => ({ ...p, vendor: e.target.value }))} className="h-7 text-xs" />
-                  <Input placeholder="Approver name" value={newProcurement.approverName} onChange={e => setNewProcurement(p => ({ ...p, approverName: e.target.value }))} className="h-7 text-xs" />
+                {/* File picker */}
+                <div
+                  className="flex items-center gap-2 p-2 border border-dashed border-gray-300 rounded bg-white cursor-pointer hover:bg-gray-50"
+                  onClick={() => procurementFileRef.current?.click()}
+                >
+                  <Paperclip className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                  <span className="text-gray-500 truncate">
+                    {newProcurement.file ? newProcurement.file.name : 'Click to attach a file (PDF, DOCX, XLSX…)'}
+                  </span>
+                  {newProcurement.file && (
+                    <button
+                      className="ml-auto text-gray-400 hover:text-red-500"
+                      onClick={e => { e.stopPropagation(); setNewProcurement(p => ({ ...p, file: null })); if (procurementFileRef.current) procurementFileRef.current.value = '' }}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
                 </div>
+                <input
+                  ref={procurementFileRef}
+                  type="file"
+                  className="hidden"
+                  onChange={e => setNewProcurement(p => ({ ...p, file: e.target.files?.[0] ?? null }))}
+                />
                 <Input placeholder="Notes (optional)" value={newProcurement.notes} onChange={e => setNewProcurement(p => ({ ...p, notes: e.target.value }))} className="h-7 text-xs" />
                 <div className="flex justify-end gap-2">
-                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowAddProcurement(false)}>Cancel</Button>
+                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => { setShowAddProcurement(false); setNewProcurement({ type: 'PURCHASE_REQUEST', notes: '', file: null }); if (procurementFileRef.current) procurementFileRef.current.value = '' }}>Cancel</Button>
                   <Button size="sm" className="h-7 text-xs" onClick={handleAddProcurement} disabled={addingProcurement}>
-                    {addingProcurement ? 'Saving...' : 'Save'}
+                    {addingProcurement ? 'Uploading...' : 'Attach'}
                   </Button>
                 </div>
               </div>
@@ -2319,12 +2333,11 @@ export default function TaskViewModal({
             ) : procurements.length > 0 ? (
               <div className="space-y-2">
                 {procurements.map(p => (
-                  <div key={p.id} className="p-3 bg-gray-50 rounded border text-xs space-y-1">
+                  <div key={p.id} className="p-3 bg-gray-50 rounded border text-xs space-y-2">
                     <div className="flex items-center justify-between gap-2">
                       <span className={`px-2 py-0.5 rounded font-semibold ${p.type === 'PURCHASE_REQUEST' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
                         {p.type === 'PURCHASE_REQUEST' ? 'PR' : 'PO'}
                       </span>
-                      {p.referenceNumber && <span className="text-gray-500 font-mono">{p.referenceNumber}</span>}
                       <span className="flex-1" />
                       {(session?.user?.role === 'ADMIN' || session?.user?.role === 'LEADER') && (
                         <select
@@ -2339,11 +2352,27 @@ export default function TaskViewModal({
                         </select>
                       )}
                     </div>
-                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-gray-600">
-                      {p.amount && <span>Amount: <strong>₱{p.amount.toLocaleString()}</strong></span>}
-                      {p.vendor && <span>Vendor: <strong>{p.vendor}</strong></span>}
-                      {p.approverName && <span>Approver: <strong>{p.approverName}</strong></span>}
-                    </div>
+                    {p.fileUrl ? (
+                      <a
+                        href={p.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 p-2 bg-white border rounded hover:bg-blue-50 transition-colors"
+                      >
+                        <File className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                        <span className="flex-1 truncate text-gray-700 font-medium">{p.fileName || 'Attachment'}</span>
+                        {p.fileSize && (
+                          <span className="text-gray-400 flex-shrink-0">
+                            {p.fileSize < 1024 * 1024
+                              ? `${Math.round(p.fileSize / 1024)} KB`
+                              : `${(p.fileSize / 1024 / 1024).toFixed(1)} MB`}
+                          </span>
+                        )}
+                        <Download className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                      </a>
+                    ) : (
+                      <p className="text-gray-400 italic">No file attached</p>
+                    )}
                     {p.notes && <p className="text-gray-500 italic">{p.notes}</p>}
                     <p className="text-gray-400">By {p.createdBy.name || p.createdBy.email} · {format(new Date(p.createdAt), 'MMM dd, yyyy')}</p>
                   </div>

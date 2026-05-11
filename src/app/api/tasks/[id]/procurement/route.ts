@@ -1,21 +1,19 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { z } from 'zod'
+import { uploadToOSS } from '@/lib/oss'
 
-const createProcurementSchema = z.object({
-  type: z.enum(['PURCHASE_REQUEST', 'PURCHASE_ORDER']),
-  referenceNumber: z.string().max(100).optional(),
-  amount: z.number().positive().optional(),
-  vendor: z.string().max(200).optional(),
-  approverName: z.string().max(200).optional(),
-  notes: z.string().max(1000).optional(),
-})
+const BLOCKED_EXTENSIONS = [
+  '.exe', '.bat', '.cmd', '.sh', '.ps1', '.dll', '.so',
+  '.com', '.msi', '.vbs', '.js', '.jse', '.wsf', '.wsh',
+  '.scr', '.pif', '.reg', '.jar', '.app',
+]
+const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50 MB
 
 // GET /api/tasks/[id]/procurement
 export async function GET(
-  request: Request,
+  _request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -27,9 +25,9 @@ export async function GET(
     const procurements = await prisma.taskProcurement.findMany({
       where: { taskId: params.id },
       include: {
-        createdBy: { select: { id: true, name: true, email: true, image: true } }
+        createdBy: { select: { id: true, name: true, email: true, image: true } },
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     })
 
     return NextResponse.json({ procurements })
@@ -39,9 +37,9 @@ export async function GET(
   }
 }
 
-// POST /api/tasks/[id]/procurement
+// POST /api/tasks/[id]/procurement  (multipart/form-data)
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -50,28 +48,69 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await request.json()
-    const data = createProcurementSchema.parse(body)
-
     const task = await prisma.task.findUnique({ where: { id: params.id }, select: { id: true } })
     if (!task) return NextResponse.json({ error: 'Task not found' }, { status: 404 })
+
+    const formData = await request.formData()
+    const type = formData.get('type') as string
+    const notes = (formData.get('notes') as string) || undefined
+    const file = formData.get('file') as File | null
+
+    if (!type || !['PURCHASE_REQUEST', 'PURCHASE_ORDER'].includes(type)) {
+      return NextResponse.json({ error: 'Invalid procurement type' }, { status: 400 })
+    }
+
+    let fileFields: {
+      fileUrl?: string
+      fileName?: string
+      fileSize?: number
+      fileType?: string
+      objectKey?: string
+    } = {}
+
+    if (file) {
+      if (file.size > MAX_FILE_SIZE) {
+        return NextResponse.json({ error: 'File too large. Maximum size is 50MB.' }, { status: 400 })
+      }
+
+      const originalName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+      const extension = '.' + (originalName.split('.').pop()?.toLowerCase() || '')
+      if (BLOCKED_EXTENSIONS.includes(extension)) {
+        return NextResponse.json({ error: 'This file type is not allowed.' }, { status: 400 })
+      }
+
+      const timestamp = Date.now()
+      const sanitizedName = originalName.substring(0, 100)
+      const objectKey = `procurement/${params.id}/${timestamp}-${session.user.id}-${sanitizedName}`
+
+      const bytes = await file.arrayBuffer()
+      const buffer = Buffer.from(bytes)
+      const { url: fileUrl } = await uploadToOSS(buffer, objectKey, file.type)
+
+      fileFields = {
+        fileUrl,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        objectKey,
+      }
+    }
 
     const procurement = await prisma.taskProcurement.create({
       data: {
         taskId: params.id,
         createdById: session.user.id,
-        ...data,
+        type: type as 'PURCHASE_REQUEST' | 'PURCHASE_ORDER',
+        notes,
+        ...fileFields,
       },
       include: {
-        createdBy: { select: { id: true, name: true, email: true, image: true } }
-      }
+        createdBy: { select: { id: true, name: true, email: true, image: true } },
+      },
     })
 
     return NextResponse.json({ procurement }, { status: 201 })
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors[0].message }, { status: 400 })
-    }
     console.error('Error creating procurement:', error)
     return NextResponse.json({ error: 'Failed to create procurement' }, { status: 500 })
   }

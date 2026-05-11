@@ -333,7 +333,7 @@ export default function UserProfilePage() {
             <Icon className="h-4 w-4 text-slate-500" />
           </div>
           <div className="flex-1">
-            <Label className="text-xs text-gray-700 font-bold">{label}</Label>
+            <Label className="text-xs text-slate-500 font-medium">{label}</Label>
             {isEditing ? (
               <Input
                 type={type}
@@ -447,7 +447,7 @@ export default function UserProfilePage() {
                   )}
                 </div>
               </div>
-              <p className="text-slate-600 flex items-center justify-center sm:justify-start gap-2 font-medium">
+              <p className="text-slate-600 flex items-center justify-center sm:justify-start gap-2 font-medium mt-1">
                 <Briefcase className="h-4 w-4 text-slate-400" />
                 {profile.positionTitle || 'No position title'}
               </p>

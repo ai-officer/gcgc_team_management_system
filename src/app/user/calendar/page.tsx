@@ -758,10 +758,10 @@ export default function CalendarPage() {
                         list.reduce((sum, s) => sum + (s.status === 'COMPLETED' ? 1 : 0) + countDone(s.subtasks || []), 0)
 
                       const renderSubtasks = (list: NestedSubtask[], depth = 0): React.ReactNode => (
-                        <div className={`space-y-1.5 ${depth > 0 ? 'mt-1.5 border-l-2 border-gray-100 pl-3' : 'pl-1'}`}>
+                        <div className={`space-y-1.5 min-w-0 overflow-hidden ${depth > 0 ? 'mt-1.5 border-l-2 border-gray-100 pl-3' : 'pl-1'}`}>
                           {list.map((subtask) => (
-                            <div key={subtask.id}>
-                              <div className="flex items-center gap-2 group">
+                            <div key={subtask.id} className="min-w-0">
+                              <div className="flex items-center gap-2 group min-w-0">
                                 <button
                                   onClick={() => handleToggleSubtask(subtask.id, subtask.status)}
                                   disabled={togglingSubtaskId === subtask.id}

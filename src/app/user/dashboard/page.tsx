@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { UserAvatar } from '@/components/shared/UserAvatar'
 import { Button } from '@/components/ui/button'
 import CreateTaskButton from '@/components/tasks/CreateTaskButton'
+import TaskViewModal from '@/components/tasks/TaskViewModal'
 import { LeaderWorkloadWidget } from '@/components/dashboard/leader-workload-widget'
 import { AtRiskTasksWidget } from '@/components/dashboard/at-risk-tasks-widget'
 import { format, formatDistanceToNow } from 'date-fns'
@@ -77,6 +78,14 @@ export default function UserDashboard() {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [currentTime, setCurrentTime] = useState(new Date())
+  const [viewingTask, setViewingTask] = useState<any>(null)
+
+  const openTask = async (taskId: string) => {
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`)
+      if (res.ok) setViewingTask(await res.json())
+    } catch { /* silent — modal just won't open */ }
+  }
 
   // Live clock - update every second
   useEffect(() => {
@@ -455,7 +464,7 @@ export default function UserDashboard() {
                   <div
                     key={task.id}
                     className="group relative border border-slate-200 bg-white rounded-lg p-4 hover:shadow-md hover:border-slate-300 transition-all duration-200 cursor-pointer"
-                    onClick={() => router.push(`/user/tasks?id=${task.id}`)}
+                    onClick={() => openTask(task.id)}
                   >
                     {/* Priority indicator bar */}
                     <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-lg ${
@@ -586,7 +595,7 @@ export default function UserDashboard() {
                       isUrgent
                         ? 'bg-red-50 border-red-100 hover:border-red-200 hover:shadow-sm'
                         : 'bg-slate-50 border-slate-100 hover:border-slate-200 hover:shadow-sm'
-                    }`} onClick={() => router.push(`/user/tasks?id=${task.id}`)}>
+                    }`} onClick={() => openTask(task.id)}>
                       <div className="flex items-start justify-between mb-1.5">
                         <div className="font-semibold text-sm text-slate-800 flex-1 pr-2 break-words min-w-0">{task.title}</div>
                         {isUrgent && (
@@ -818,6 +827,12 @@ export default function UserDashboard() {
           </Card>
         </div>
       </div>
+
+      <TaskViewModal
+        open={!!viewingTask}
+        onOpenChange={(open) => { if (!open) setViewingTask(null) }}
+        task={viewingTask}
+      />
     </div>
   )
 }

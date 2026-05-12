@@ -574,7 +574,7 @@ export default function CalendarPage() {
           top: 0,
           right: 0,
           width: 320,
-          height: '100dvh',
+          height: '100vh',
           zIndex: 50,
           transform: isDaySidebarOpen ? 'translateX(0)' : 'translateX(100%)',
           transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',

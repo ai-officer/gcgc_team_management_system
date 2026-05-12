@@ -21,7 +21,6 @@ import { EVENT_TYPE_COLORS } from '@/constants'
 import CalendarSyncSettingsModal from '@/components/calendar/CalendarSyncSettingsModal'
 import CreateTaskButton from '@/components/tasks/CreateTaskButton'
 import TaskForm from '@/components/tasks/TaskForm'
-import TaskViewModal from '@/components/tasks/TaskViewModal'
 import { useCalendarSync } from '@/hooks/useCalendarSync'
 import { useToast } from '@/hooks/use-toast'
 import '@/styles/react-big-calendar.css'
@@ -117,9 +116,6 @@ export default function CalendarPage() {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false)
   const [isSyncSettingsOpen, setIsSyncSettingsOpen] = useState(false)
-  const [isTaskViewOpen, setIsTaskViewOpen] = useState(false)
-  const [viewingTask, setViewingTask] = useState<any>(null)
-  const [loadingTaskDetails, setLoadingTaskDetails] = useState(false)
   const [togglingSubtaskId, setTogglingSubtaskId] = useState<string | null>(null)
   // "+N more" overflow modal
   const [showMoreOpen, setShowMoreOpen] = useState(false)
@@ -337,50 +333,6 @@ export default function CalendarPage() {
   const handleSelectEvent = (event: CalendarEvent) => {
     setSelectedEvent(event)
     setIsEventDialogOpen(true)
-  }
-
-  const handleViewTaskDetails = async (taskId: string) => {
-    if (!taskId) {
-      console.error('No task ID provided')
-      toast({
-        title: 'Error',
-        description: 'Task ID not found',
-        variant: 'destructive'
-      })
-      return
-    }
-
-    try {
-      setLoadingTaskDetails(true)
-
-      const response = await fetch(`/api/tasks/${taskId}`)
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        console.error('API error:', errorData)
-        throw new Error(errorData.error || 'Failed to fetch task details')
-      }
-
-      // API returns task directly, not wrapped in { task: ... }
-      const task = await response.json()
-
-      if (!task || !task.id) {
-        throw new Error('Invalid task data received')
-      }
-
-      setViewingTask(task)
-      setIsEventDialogOpen(false)
-      setIsTaskViewOpen(true)
-    } catch (err) {
-      console.error('Error fetching task details:', err)
-      toast({
-        title: 'Error',
-        description: err instanceof Error ? err.message : 'Failed to load task details',
-        variant: 'destructive'
-      })
-    } finally {
-      setLoadingTaskDetails(false)
-    }
   }
 
   const handleSelectSlot = ({ start }: { start: Date }) => {
@@ -719,7 +671,7 @@ export default function CalendarPage() {
 
       {/* Event Details Dialog - Professional Design */}
       <Dialog open={isEventDialogOpen} onOpenChange={setIsEventDialogOpen}>
-        <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden">
+        <DialogContent className="sm:max-w-lg p-0 overflow-hidden max-h-[90vh] flex flex-col">
           {/* Accessibility - Visually Hidden Title & Description */}
           <DialogHeader className="sr-only">
             <DialogTitle>{selectedEvent?.title || 'Event Details'}</DialogTitle>
@@ -771,7 +723,7 @@ export default function CalendarPage() {
               </div>
 
               {/* Content Body */}
-              <div className="px-6 py-5 space-y-5">
+              <div className="px-6 py-5 space-y-5 overflow-y-auto flex-1">
                 {/* Date & Time Section */}
                 <div className="flex items-start gap-3">
                   <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 text-primary shrink-0">
@@ -920,7 +872,7 @@ export default function CalendarPage() {
                         list.reduce((sum, s) => sum + (s.status === 'COMPLETED' ? 1 : 0) + countDone(s.subtasks || []), 0)
 
                       const renderSubtasks = (list: NestedSubtask[], depth = 0): React.ReactNode => (
-                        <div className={`space-y-1.5 min-w-0 overflow-hidden ${depth > 0 ? 'mt-1.5 border-l-2 border-gray-100 pl-3' : 'pl-1'}`}>
+                        <div className={`space-y-1.5 min-w-0 ${depth > 0 ? 'mt-1.5 border-l-2 border-gray-100 pl-3' : 'pl-1'}`}>
                           {list.map((subtask) => (
                             <div key={subtask.id} className="min-w-0">
                               <div className="flex items-start gap-2 group min-w-0">
@@ -945,9 +897,12 @@ export default function CalendarPage() {
                                     <div className="w-2 h-2 rounded-full border border-gray-400 animate-spin border-t-transparent" />
                                   )}
                                 </button>
-                                <span className={`text-xs flex-1 break-all min-w-0 ${subtask.status === 'COMPLETED' ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                                <button
+                                  onClick={() => { setIsEventDialogOpen(false); router.push(`/user/tasks?taskId=${subtask.id}`) }}
+                                  className={`text-xs flex-1 text-left break-all min-w-0 hover:underline hover:text-blue-600 transition-colors ${subtask.status === 'COMPLETED' ? 'line-through text-muted-foreground' : 'text-foreground'}`}
+                                >
                                   {subtask.title}
-                                </span>
+                                </button>
                                 {subtask.assignee && (
                                   <span className="text-xs text-muted-foreground truncate max-w-[80px]">
                                     {subtask.assignee.name}
@@ -978,7 +933,7 @@ export default function CalendarPage() {
                           </div>
                           {total === 0
                             ? <p className="text-xs text-muted-foreground pl-5">No subtasks</p>
-                            : renderSubtasks(allSubtasks)
+                            : <div className="max-h-48 overflow-y-auto pr-1">{renderSubtasks(allSubtasks)}</div>
                           }
                         </>
                       )
@@ -993,24 +948,15 @@ export default function CalendarPage() {
                   <Button
                     variant="outline"
                     className="w-full"
-                    disabled={loadingTaskDetails}
-                    onClick={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
+                    onClick={() => {
                       const taskId = selectedEvent.resource?.task?.id
                       if (taskId) {
-                        handleViewTaskDetails(taskId)
+                        setIsEventDialogOpen(false)
+                        router.push(`/user/tasks?taskId=${taskId}`)
                       }
                     }}
                   >
-                    {loadingTaskDetails ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        Loading...
-                      </>
-                    ) : (
-                      'View Task Details'
-                    )}
+                    View Task Details
                   </Button>
                 </div>
               )}
@@ -1116,24 +1062,6 @@ export default function CalendarPage() {
         onSyncComplete={fetchCalendarData}
       />
 
-
-      {/* Task View Modal */}
-      <TaskViewModal
-        open={isTaskViewOpen}
-        onOpenChange={(open) => {
-          setIsTaskViewOpen(open)
-          if (!open) {
-            setViewingTask(null)
-            fetchCalendarData()
-          }
-        }}
-        task={viewingTask}
-        onEdit={() => {
-          setIsTaskViewOpen(false)
-          router.push(`/user/tasks?edit=${viewingTask?.id}`)
-        }}
-        onTaskUpdate={fetchCalendarData}
-      />
 
       {/* New Task from Day Sidebar */}
       <TaskForm

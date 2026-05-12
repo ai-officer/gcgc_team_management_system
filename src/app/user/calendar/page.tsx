@@ -588,52 +588,45 @@ export default function CalendarPage() {
             background: '#ffffff',
           }}
         >
-          {/* Header — deep slate with date hero */}
-          <div style={{ background: 'linear-gradient(160deg, #0f172a 0%, #1e293b 100%)', flexShrink: 0, padding: '20px 20px 0' }}>
-            {/* Top row: close button */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+          {/* Header — blue-600 gradient matching system card headers */}
+          <div style={{ background: 'linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)', flexShrink: 0, padding: '18px 18px 20px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
+              <div>
+                <p style={{ color: 'rgba(219,234,254,0.8)', fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 3 }}>
+                  {selectedDate ? moment(selectedDate).format('dddd') : ''}
+                </p>
+                <p style={{ color: '#ffffff', fontSize: 22, fontWeight: 700, lineHeight: 1.15, letterSpacing: '-0.02em', marginBottom: 5 }}>
+                  {selectedDate ? moment(selectedDate).format('MMMM D, YYYY') : ''}
+                </p>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.15)', borderRadius: 20, padding: '3px 10px' }}>
+                  <div style={{ width: 5, height: 5, borderRadius: '50%', background: daySidebarEvents.length > 0 ? '#bfdbfe' : 'rgba(255,255,255,0.4)' }} />
+                  <p style={{ color: '#bfdbfe', fontSize: 11, fontWeight: 600 }}>
+                    {daySidebarEvents.length === 0 ? 'No events' : `${daySidebarEvents.length} event${daySidebarEvents.length !== 1 ? 's' : ''}`}
+                  </p>
+                </div>
+              </div>
               <button
                 onClick={() => setIsDaySidebarOpen(false)}
-                style={{ color: '#94a3b8', background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 8, padding: '6px 7px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.15)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff' }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLButtonElement).style.color = '#94a3b8' }}
+                style={{ color: 'rgba(219,234,254,0.7)', background: 'rgba(255,255,255,0.12)', border: 'none', borderRadius: 8, padding: '6px 7px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', flexShrink: 0 }}
+                onMouseEnter={e => { const b = e.currentTarget as HTMLButtonElement; b.style.background = 'rgba(255,255,255,0.22)'; b.style.color = '#fff' }}
+                onMouseLeave={e => { const b = e.currentTarget as HTMLButtonElement; b.style.background = 'rgba(255,255,255,0.12)'; b.style.color = 'rgba(219,234,254,0.7)' }}
               >
                 <X style={{ width: 15, height: 15 }} />
               </button>
             </div>
-
-            {/* Date hero */}
-            <div style={{ marginBottom: 20 }}>
-              <p style={{ color: '#64748b', fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>
-                {selectedDate ? moment(selectedDate).format('dddd') : ''}
-              </p>
-              <p style={{ color: '#f1f5f9', fontSize: 26, fontWeight: 700, lineHeight: 1.1, letterSpacing: '-0.02em', marginBottom: 6 }}>
-                {selectedDate ? moment(selectedDate).format('MMMM D') : ''}
-                <span style={{ color: '#475569', fontSize: 18, fontWeight: 400, marginLeft: 6 }}>
-                  {selectedDate ? moment(selectedDate).format('YYYY') : ''}
-                </span>
-              </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <div style={{ width: 6, height: 6, borderRadius: '50%', background: daySidebarEvents.length > 0 ? '#3b82f6' : '#334155' }} />
-                <p style={{ color: '#64748b', fontSize: 12, fontWeight: 500 }}>
-                  {daySidebarEvents.length === 0 ? 'No events' : `${daySidebarEvents.length} event${daySidebarEvents.length !== 1 ? 's' : ''}`}
-                </p>
-              </div>
-            </div>
-
-            {/* Add task button */}
+            {/* Add task CTA */}
             <button
               onClick={() => setIsNewTaskFormOpen(true)}
               style={{
                 width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-                background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '10px 10px 0 0',
-                padding: '11px 0', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                transition: 'background 0.15s', letterSpacing: '-0.01em',
+                background: 'rgba(255,255,255,0.18)', color: '#ffffff', border: '1px solid rgba(255,255,255,0.25)',
+                borderRadius: 9, padding: '9px 0', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                transition: 'all 0.15s', backdropFilter: 'blur(4px)',
               }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#2563eb' }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#3b82f6' }}
+              onMouseEnter={e => { const b = e.currentTarget as HTMLButtonElement; b.style.background = 'rgba(255,255,255,0.28)'; b.style.borderColor = 'rgba(255,255,255,0.4)' }}
+              onMouseLeave={e => { const b = e.currentTarget as HTMLButtonElement; b.style.background = 'rgba(255,255,255,0.18)'; b.style.borderColor = 'rgba(255,255,255,0.25)' }}
             >
-              <Plus style={{ width: 15, height: 15 }} />
+              <Plus style={{ width: 14, height: 14 }} />
               Add task for this day
             </button>
           </div>
@@ -642,14 +635,14 @@ export default function CalendarPage() {
           <div style={{ flex: 1, overflowY: 'auto', background: '#f8fafc' }}>
             {daySidebarEvents.length === 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '0 24px', textAlign: 'center' }}>
-                <div style={{ width: 56, height: 56, borderRadius: 16, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14, border: '1px solid #e2e8f0' }}>
-                  <CalendarIcon style={{ width: 22, height: 22, color: '#94a3b8' }} />
+                <div style={{ width: 52, height: 52, borderRadius: 14, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12, border: '1px solid #dbeafe' }}>
+                  <CalendarIcon style={{ width: 20, height: 20, color: '#60a5fa' }} />
                 </div>
-                <p style={{ color: '#334155', fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Nothing scheduled</p>
-                <p style={{ color: '#94a3b8', fontSize: 12, lineHeight: 1.5 }}>Click &ldquo;Add task&rdquo; above to create something for this day</p>
+                <p style={{ color: '#1e40af', fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Nothing scheduled</p>
+                <p style={{ color: '#94a3b8', fontSize: 12, lineHeight: 1.6 }}>Use &ldquo;Add task&rdquo; above to schedule something for this day</p>
               </div>
             ) : (
-              <div style={{ padding: '12px 12px' }}>
+              <div style={{ padding: '12px' }}>
                 {daySidebarEvents.map((ev, i) => {
                   const color = ev.resource?.color || '#3b82f6'
                   const isTask = !!ev.resource?.task
@@ -669,14 +662,15 @@ export default function CalendarPage() {
                         width: '100%', textAlign: 'left', display: 'block',
                         background: '#ffffff', border: '1px solid #e2e8f0',
                         borderLeft: `3px solid ${color}`, borderRadius: 10,
-                        padding: '12px 14px', marginBottom: 8, cursor: 'pointer',
+                        padding: '11px 13px', marginBottom: 8, cursor: 'pointer',
                         transition: 'all 0.15s', animationDelay: `${i * 40}ms`,
                       }}
                       onMouseEnter={e => {
                         const el = e.currentTarget as HTMLButtonElement
-                        el.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'
-                        el.style.borderColor = color
-                        el.style.transform = 'translateY(-1px)'
+                        el.style.boxShadow = '0 2px 8px rgba(37,99,235,0.1)'
+                        el.style.borderColor = '#bfdbfe'
+                        el.style.borderLeftColor = color
+                        el.style.transform = 'translateX(-2px)'
                       }}
                       onMouseLeave={e => {
                         const el = e.currentTarget as HTMLButtonElement
@@ -688,20 +682,22 @@ export default function CalendarPage() {
                     >
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ color: '#0f172a', fontSize: 13, fontWeight: 600, marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.01em' }}>
+                          <p style={{ color: '#1e293b', fontSize: 13, fontWeight: 600, marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {ev.title.replace(/^\[.*?\]\s*/, '')}
                           </p>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
                             {isTask && meta && (
                               <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 7px', borderRadius: 5, background: meta.bg, color: meta.text }}>
                                 {meta.label}
                               </span>
                             )}
                             {!isTask && (
-                              <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 7px', borderRadius: 5, background: '#eff6ff', color: '#3b82f6' }}>Meeting</span>
+                              <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 7px', borderRadius: 5, background: '#eff6ff', color: '#2563eb' }}>Meeting</span>
                             )}
-                            {isTask && (
-                              <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>Task</span>
+                            {isTask && ev.resource?.task?.status && (
+                              <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>
+                                {ev.resource.task.status.replace('_', ' ')}
+                              </span>
                             )}
                           </div>
                         </div>

@@ -650,6 +650,17 @@
   min-height: 600px;
 }
 
+/* Square grid cells — month view */
+.rbc-month-row {
+  min-height: 140px !important;
+  flex: 1 0 140px !important;
+}
+
+.rbc-month-view {
+  flex: 1 !important;
+  min-height: 700px !important;
+}
+
 /* Multi-Day Event Styling - CRITICAL FIX */
 .fc-event {
   border-radius: 4px !important;

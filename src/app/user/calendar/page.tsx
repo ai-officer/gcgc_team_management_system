@@ -389,10 +389,19 @@ export default function CalendarPage() {
   }
 
   const handleDrillDown = (date: Date) => {
-    // Clicking the date number opens the day sidebar instead of navigating
     setSelectedDate(date)
     setIsDaySidebarOpen(true)
   }
+
+  // Custom date header — clicking the "14" label opens the sidebar
+  const DateHeaderComponent = useCallback(({ date, label }: { date: Date; label: string }) => (
+    <button
+      onClick={(e) => { e.stopPropagation(); handleDrillDown(date) }}
+      style={{ width: '100%', textAlign: 'right', padding: '4px 6px', cursor: 'pointer', fontWeight: 'inherit', fontSize: 'inherit', color: 'inherit', background: 'none', border: 'none' }}
+    >
+      {label}
+    </button>
+  ), [])
 
   const daySidebarEvents = useMemo(() => {
     if (!selectedDate) return []
@@ -586,6 +595,7 @@ export default function CalendarPage() {
           onSelectSlot={handleSelectSlot}
           onDrillDown={handleDrillDown}
           selectable
+          components={{ dateHeader: DateHeaderComponent }}
           eventPropGetter={eventStyleGetter}
           views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
           defaultView={Views.MONTH}
@@ -602,13 +612,9 @@ export default function CalendarPage() {
         />
       </div>
 
-      {/* Day Sidebar — slides in below the calendar as its own section */}
-      <div
-        className={`transition-all duration-300 ease-in-out overflow-hidden ${
-          isDaySidebarOpen ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'
-        }`}
-      >
-        <div className="border border-slate-200 bg-white rounded-xl shadow-sm overflow-hidden">
+      {/* Day Sidebar — appears below the calendar when a date is clicked */}
+      {isDaySidebarOpen && (
+      <div className="border border-slate-200 bg-white rounded-xl shadow-sm overflow-hidden">
           {/* Header */}
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-4 flex items-center justify-between">
             <div>
@@ -694,7 +700,7 @@ export default function CalendarPage() {
             )}
           </div>
         </div>
-      </div>
+      )}
 
       {/* Event Details Dialog - Professional Design */}
       <Dialog open={isEventDialogOpen} onOpenChange={setIsEventDialogOpen}>

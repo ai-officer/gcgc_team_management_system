@@ -609,7 +609,7 @@ export default function UserProfilePage() {
                 Organizational Structure
               </CardTitle>
               <CardDescription className="text-sm text-slate-600 font-medium mt-1">
-                Your position within the organizational hierarchy
+                Your position within the organizational hierarchy. Contact an administrator to request changes.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-1">

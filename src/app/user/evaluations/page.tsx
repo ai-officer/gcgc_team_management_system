@@ -137,15 +137,24 @@ export default function EvaluationsPage() {
       if (res.ok) {
         const data = await res.json()
         setEvaluations(data.evaluations || [])
+      } else {
+        toast({ title: 'Failed to load evaluations', description: 'Please try refreshing the page.', variant: 'destructive' })
       }
-    } catch (e) { console.error(e) } finally { setLoading(false) }
+    } catch (e) {
+      console.error(e)
+      toast({ title: 'Failed to load evaluations', description: 'Check your connection and try again.', variant: 'destructive' })
+    } finally { setLoading(false) }
   }
 
   const fetchUsers = async () => {
     try {
       const res = await fetch('/api/users?limit=100&isActive=true')
       if (res.ok) { const d = await res.json(); setUsers(d.users || []) }
-    } catch (e) { console.error(e) }
+      else { toast({ title: 'Failed to load team members', variant: 'destructive' }) }
+    } catch (e) {
+      console.error(e)
+      toast({ title: 'Failed to load team members', description: 'Check your connection and try again.', variant: 'destructive' })
+    }
   }
 
   const openMemberDetail = async (member: User) => {
@@ -158,8 +167,13 @@ export default function EvaluationsPage() {
       if (res.ok) {
         const data = await res.json()
         setMemberEvals(data.evaluations || [])
+      } else {
+        toast({ title: 'Failed to load member evaluations', variant: 'destructive' })
       }
-    } catch (e) { console.error(e) } finally { setLoadingMemberEvals(false) }
+    } catch (e) {
+      console.error(e)
+      toast({ title: 'Failed to load member evaluations', description: 'Check your connection and try again.', variant: 'destructive' })
+    } finally { setLoadingMemberEvals(false) }
   }
 
   const closeMemberDetail = () => {
@@ -196,9 +210,12 @@ export default function EvaluationsPage() {
         fetchEvaluations()
       } else {
         const err = await res.json()
-        toast({ title: 'Error', description: err.error, variant: 'destructive' })
+        toast({ title: 'Error', description: err.error || 'Something went wrong.', variant: 'destructive' })
       }
-    } catch (e) { console.error(e) } finally { setSubmitting(false) }
+    } catch (e) {
+      console.error(e)
+      toast({ title: 'Failed to submit evaluation', description: 'Check your connection and try again.', variant: 'destructive' })
+    } finally { setSubmitting(false) }
   }
 
   const closeForm = () => {

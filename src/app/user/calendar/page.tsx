@@ -19,7 +19,6 @@ import {
 } from '@/components/ui/dialog'
 import { EVENT_TYPE_COLORS } from '@/constants'
 import CalendarSyncSettingsModal from '@/components/calendar/CalendarSyncSettingsModal'
-import OSSBWizardForm from '@/components/ossb/OSSBWizardForm'
 import CreateTaskButton from '@/components/tasks/CreateTaskButton'
 import TaskViewModal from '@/components/tasks/TaskViewModal'
 import { useCalendarSync } from '@/hooks/useCalendarSync'
@@ -117,7 +116,6 @@ export default function CalendarPage() {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false)
   const [isSyncSettingsOpen, setIsSyncSettingsOpen] = useState(false)
-  const [isOSSBWizardOpen, setIsOSSBWizardOpen] = useState(false)
   const [isTaskViewOpen, setIsTaskViewOpen] = useState(false)
   const [viewingTask, setViewingTask] = useState<any>(null)
   const [loadingTaskDetails, setLoadingTaskDetails] = useState(false)
@@ -471,16 +469,6 @@ export default function CalendarPage() {
             onTaskCreated={fetchCalendarData}
             className="text-xs sm:text-sm px-2.5 sm:px-4"
           />
-          <Button
-            disabled
-            variant="outline"
-            className="opacity-50 cursor-not-allowed text-xs sm:text-sm px-2.5 sm:px-4"
-            title="OSSB Request feature is temporarily disabled"
-          >
-            <FileText className="h-4 w-4 shrink-0 sm:mr-2" />
-            <span className="hidden sm:inline">Create OSSB Request (Disabled)</span>
-            <span className="sm:hidden truncate">OSSB</span>
-          </Button>
           <Button
             variant="outline"
             onClick={() => setIsSyncSettingsOpen(true)}
@@ -956,12 +944,6 @@ export default function CalendarPage() {
         onSyncComplete={fetchCalendarData}
       />
 
-      {/* OSSB Wizard Form Modal */}
-      <OSSBWizardForm
-        isOpen={isOSSBWizardOpen}
-        onClose={() => setIsOSSBWizardOpen(false)}
-        onSuccess={fetchCalendarData}
-      />
 
       {/* Task View Modal */}
       <TaskViewModal

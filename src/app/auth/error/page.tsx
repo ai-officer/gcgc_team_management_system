@@ -84,7 +84,7 @@ function AuthErrorContent() {
         <div className="text-center">
           <p className="text-sm text-gray-600">
             Need help?{' '}
-            <a href="#" className="font-medium text-blue-600 hover:text-blue-500">
+            <a href="mailto:support@gcgc.com" className="font-medium text-blue-600 hover:text-blue-500">
               Contact support
             </a>
           </p>

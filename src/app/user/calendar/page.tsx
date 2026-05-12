@@ -588,61 +588,57 @@ export default function CalendarPage() {
             background: '#ffffff',
           }}
         >
-          {/* Header — blue-600 gradient matching system card headers */}
-          <div style={{ background: 'linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)', flexShrink: 0, padding: '18px 18px 20px' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
+          {/* Header — clean white, Google-style */}
+          <div style={{ background: '#ffffff', borderBottom: '1px solid #e2e8f0', flexShrink: 0, padding: '16px 16px 14px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 14 }}>
               <div>
-                <p style={{ color: 'rgba(219,234,254,0.8)', fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 3 }}>
+                <p style={{ color: '#64748b', fontSize: 11, fontWeight: 500, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 2 }}>
                   {selectedDate ? moment(selectedDate).format('dddd') : ''}
                 </p>
-                <p style={{ color: '#ffffff', fontSize: 22, fontWeight: 700, lineHeight: 1.15, letterSpacing: '-0.02em', marginBottom: 5 }}>
+                <p style={{ color: '#0f172a', fontSize: 20, fontWeight: 700, lineHeight: 1.2, letterSpacing: '-0.02em', marginBottom: 4 }}>
                   {selectedDate ? moment(selectedDate).format('MMMM D, YYYY') : ''}
                 </p>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.15)', borderRadius: 20, padding: '3px 10px' }}>
-                  <div style={{ width: 5, height: 5, borderRadius: '50%', background: daySidebarEvents.length > 0 ? '#bfdbfe' : 'rgba(255,255,255,0.4)' }} />
-                  <p style={{ color: '#bfdbfe', fontSize: 11, fontWeight: 600 }}>
-                    {daySidebarEvents.length === 0 ? 'No events' : `${daySidebarEvents.length} event${daySidebarEvents.length !== 1 ? 's' : ''}`}
-                  </p>
-                </div>
+                <p style={{ color: '#94a3b8', fontSize: 12, fontWeight: 400 }}>
+                  {daySidebarEvents.length === 0
+                    ? 'No events scheduled'
+                    : `${daySidebarEvents.length} event${daySidebarEvents.length !== 1 ? 's' : ''} scheduled`}
+                </p>
               </div>
               <button
                 onClick={() => setIsDaySidebarOpen(false)}
-                style={{ color: 'rgba(219,234,254,0.7)', background: 'rgba(255,255,255,0.12)', border: 'none', borderRadius: 8, padding: '6px 7px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', flexShrink: 0 }}
-                onMouseEnter={e => { const b = e.currentTarget as HTMLButtonElement; b.style.background = 'rgba(255,255,255,0.22)'; b.style.color = '#fff' }}
-                onMouseLeave={e => { const b = e.currentTarget as HTMLButtonElement; b.style.background = 'rgba(255,255,255,0.12)'; b.style.color = 'rgba(219,234,254,0.7)' }}
+                style={{ color: '#94a3b8', background: 'transparent', border: '1px solid #e2e8f0', borderRadius: 8, padding: '5px 6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', flexShrink: 0, marginTop: 2 }}
+                onMouseEnter={e => { const b = e.currentTarget as HTMLButtonElement; b.style.background = '#f1f5f9'; b.style.color = '#475569' }}
+                onMouseLeave={e => { const b = e.currentTarget as HTMLButtonElement; b.style.background = 'transparent'; b.style.color = '#94a3b8' }}
               >
-                <X style={{ width: 15, height: 15 }} />
+                <X style={{ width: 14, height: 14 }} />
               </button>
             </div>
-            {/* Add task CTA */}
             <button
               onClick={() => setIsNewTaskFormOpen(true)}
               style={{
-                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-                background: 'rgba(255,255,255,0.18)', color: '#ffffff', border: '1px solid rgba(255,255,255,0.25)',
-                borderRadius: 9, padding: '9px 0', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                transition: 'all 0.15s', backdropFilter: 'blur(4px)',
+                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                background: '#2563eb', color: '#ffffff', border: 'none',
+                borderRadius: 8, padding: '9px 0', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                transition: 'background 0.15s',
               }}
-              onMouseEnter={e => { const b = e.currentTarget as HTMLButtonElement; b.style.background = 'rgba(255,255,255,0.28)'; b.style.borderColor = 'rgba(255,255,255,0.4)' }}
-              onMouseLeave={e => { const b = e.currentTarget as HTMLButtonElement; b.style.background = 'rgba(255,255,255,0.18)'; b.style.borderColor = 'rgba(255,255,255,0.25)' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#1d4ed8' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#2563eb' }}
             >
               <Plus style={{ width: 14, height: 14 }} />
-              Add task for this day
+              Add task
             </button>
           </div>
 
           {/* Events list */}
-          <div style={{ flex: 1, overflowY: 'auto', background: '#f8fafc' }}>
+          <div style={{ flex: 1, overflowY: 'auto', background: '#ffffff' }}>
             {daySidebarEvents.length === 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '0 24px', textAlign: 'center' }}>
-                <div style={{ width: 52, height: 52, borderRadius: 14, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12, border: '1px solid #dbeafe' }}>
-                  <CalendarIcon style={{ width: 20, height: 20, color: '#60a5fa' }} />
-                </div>
-                <p style={{ color: '#1e40af', fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Nothing scheduled</p>
-                <p style={{ color: '#94a3b8', fontSize: 12, lineHeight: 1.6 }}>Use &ldquo;Add task&rdquo; above to schedule something for this day</p>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '0 28px', textAlign: 'center' }}>
+                <CalendarIcon style={{ width: 32, height: 32, color: '#cbd5e1', marginBottom: 12 }} />
+                <p style={{ color: '#475569', fontSize: 14, fontWeight: 600, marginBottom: 4 }}>No events</p>
+                <p style={{ color: '#94a3b8', fontSize: 13, lineHeight: 1.6 }}>Nothing scheduled for this day. Add a task to get started.</p>
               </div>
             ) : (
-              <div style={{ padding: '12px' }}>
+              <div style={{ padding: '8px' }}>
                 {daySidebarEvents.map((ev, i) => {
                   const color = ev.resource?.color || '#3b82f6'
                   const isTask = !!ev.resource?.task

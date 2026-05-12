@@ -17,11 +17,38 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (!session.user.role || session.user.role !== 'LEADER') {
-      return NextResponse.json({ error: 'Only leaders can access team data' }, { status: 403 })
+    if (!session.user.role || session.user.role === 'ADMIN') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // Get team members via LeaderMembership (supports multi-leader hierarchy)
+    // MEMBER: return teammates (people who share the same leader) + their leaders
+    if (session.user.role === 'MEMBER') {
+      const currentUser = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { memberOfLeaders: { select: { leaderId: true } } }
+      })
+      const leaderIds = currentUser?.memberOfLeaders.map(m => m.leaderId) || []
+
+      const teammates = await prisma.user.findMany({
+        where: {
+          OR: [
+            { memberOfLeaders: { some: { leaderId: { in: leaderIds } } }, id: { not: session.user.id } },
+            { id: { in: leaderIds } }
+          ],
+          isActive: true
+        },
+        select: {
+          id: true, email: true, firstName: true, lastName: true,
+          name: true, image: true, role: true, positionTitle: true,
+          isActive: true, createdAt: true, reportsToId: true,
+          _count: { select: { assignedTasks: { where: { status: { not: 'COMPLETED' } } } } }
+        },
+        orderBy: [{ name: 'asc' }, { email: 'asc' }]
+      })
+      return NextResponse.json({ members: teammates, stats: { totalMembers: teammates.length, activeTasks: 0, completedTasks: 0, overdueTasks: 0 } })
+    }
+
+    // LEADER: Get team members via LeaderMembership (supports multi-leader hierarchy)
     const teamMembers = await prisma.user.findMany({
       where: {
         memberOfLeaders: { some: { leaderId: session.user.id } },

@@ -356,10 +356,10 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('/api/users?role=MEMBER')
+      const response = await fetch('/api/user/team-members')
       if (response.ok) {
         const data = await response.json()
-        setUsers(data.users || [])
+        setUsers(data.members || [])
       }
     } catch (error) {
       console.error('Error fetching users:', error)

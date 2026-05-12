@@ -365,10 +365,10 @@ export default function TaskViewModal({
   const fetchAvailableUsers = async () => {
     try {
       setLoadingUsers(true)
-      const response = await fetch('/api/users?limit=100&isActive=true&role=MEMBER')
+      const response = await fetch('/api/user/team-members')
       if (response.ok) {
         const data = await response.json()
-        setAvailableUsers(data.users || [])
+        setAvailableUsers(data.members || [])
       }
     } catch (error) {
       console.error('Error fetching users:', error)

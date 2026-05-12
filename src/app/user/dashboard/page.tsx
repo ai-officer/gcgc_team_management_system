@@ -412,10 +412,10 @@ export default function UserDashboard() {
       {isLeader && <LeaderWorkloadWidget />}
       {isLeader && <AtRiskTasksWidget />}
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
         {/* Professional Recent Tasks */}
-        <div>
-          <Card className="border border-slate-200 bg-white shadow-sm rounded-xl">
+        <div className="h-full">
+          <Card className="border border-slate-200 bg-white shadow-sm rounded-xl h-full flex flex-col">
             <CardHeader className="pb-4 border-b border-slate-100">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
@@ -440,7 +440,7 @@ export default function UserDashboard() {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-3 flex-1">
               {dashboardData.recentTasks.length === 0 ? (
                 <div className="text-center py-12">
                   <CheckSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -549,7 +549,6 @@ export default function UserDashboard() {
 
           {/* Upcoming Deadlines */}
           <Card className="border border-slate-200 bg-white rounded-xl overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 to-amber-500" style={{position:'relative'}}></div>
             <CardHeader className="pb-3 pt-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2 text-base font-semibold text-slate-800">
@@ -558,7 +557,17 @@ export default function UserDashboard() {
                   </div>
                   Upcoming Deadlines
                 </CardTitle>
-                <span className="text-xs text-slate-500 font-medium bg-slate-100 px-2 py-0.5 rounded-full">Next 7 days</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-500 font-medium bg-slate-100 px-2 py-0.5 rounded-full">Next 7 days</span>
+                  {dashboardData.upcomingDeadlines.length > 3 && (
+                    <button
+                      onClick={() => router.push('/user/tasks')}
+                      className="text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
+                    >
+                      +{dashboardData.upcomingDeadlines.length - 3} more
+                    </button>
+                  )}
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-2 pt-0">
@@ -569,7 +578,7 @@ export default function UserDashboard() {
                   <p className="text-xs text-emerald-600 font-medium">You&apos;re all caught up!</p>
                 </div>
               ) : (
-                dashboardData.upcomingDeadlines.map((task) => {
+                dashboardData.upcomingDeadlines.slice(0, 3).map((task) => {
                   const dueDate = task.dueDate ? new Date(task.dueDate) : null
                   const isUrgent = dueDate && dueDate.getTime() - new Date().getTime() < 2 * 24 * 60 * 60 * 1000
                   return (

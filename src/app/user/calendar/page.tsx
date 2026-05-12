@@ -615,13 +615,6 @@ export default function CalendarPage() {
       </div>
 
       {/* Day Sidebar — fixed sliding drawer from right edge, independent of calendar */}
-      {/* Backdrop */}
-      {isDaySidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/20 z-40"
-          onClick={() => setIsDaySidebarOpen(false)}
-        />
-      )}
       {/* Panel */}
       <div
         style={{

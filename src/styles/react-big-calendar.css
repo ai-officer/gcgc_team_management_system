@@ -163,28 +163,7 @@
   box-shadow: 0 0 0 3px hsl(var(--primary) / 0.3) !important;
 }
 
-/* Show More Link */
-.rbc-show-more {
-  background: hsl(var(--accent));
-  color: hsl(var(--primary));
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.375rem;
-  transition: all 0.2s;
-  margin: 2px;
-  text-align: center;
-  cursor: pointer;
-  display: block;
-  border: 1px solid hsl(var(--primary) / 0.3);
-}
-
-.rbc-show-more:hover {
-  background: hsl(var(--primary));
-  color: hsl(var(--primary-foreground));
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
+/* Show More Link — styled in calendar.css (amber pill) */
 
 /* Popup Overlay */
 .rbc-overlay {
@@ -415,40 +394,19 @@
 /* Responsive Agenda */
 @media (max-width: 768px) {
   .rbc-agenda-view {
-    padding: 1rem;
-  }
-
-  .rbc-agenda-view table {
-    border-spacing: 0 10px;
-  }
-
-  .rbc-agenda-table tbody > tr {
-    display: flex;
-    flex-wrap: wrap;
-    padding: 0;
-  }
-
-  .rbc-agenda-table tbody > tr > td {
-    border-radius: 0 !important;
+    padding: 0.75rem;
   }
 
   .rbc-agenda-date-cell {
-    flex: 0 0 50%;
-    border-radius: 12px 0 0 0 !important;
-    padding: 12px 16px;
+    padding: 12px 14px;
   }
 
   .rbc-agenda-time-cell {
-    flex: 0 0 50%;
-    border-radius: 0 12px 0 0 !important;
-    padding: 12px 16px;
+    padding: 12px 12px;
   }
 
   .rbc-agenda-event-cell {
-    flex: 0 0 100%;
-    padding: 8px 12px 12px;
-    border-radius: 0 0 12px 12px !important;
-    background: white;
+    padding: 8px 10px 12px;
   }
 }
 
@@ -518,10 +476,8 @@
     font-size: 0.75rem;
   }
 
-  .rbc-month-row {
-    min-height: 60px;
-  }
 }
+
 
 /* Animation */
 @keyframes slideIn {

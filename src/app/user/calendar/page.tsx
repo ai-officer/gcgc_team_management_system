@@ -531,25 +531,23 @@ export default function CalendarPage() {
         </CardContent>
       </Card>
 
-      {/* Calendar — responsive */}
-      <div className="w-full">
-        <div style={isMobile ? {} : { minWidth: 560 }}>
+      {/* Calendar — horizontally scrollable on mobile */}
+      <div style={{ overflowX: 'auto', overflowY: 'hidden' }}>
+        <div style={{ minWidth: 620 }}>
           <Calendar
             localizer={localizer}
             events={events}
             startAccessor="start"
             endAccessor="end"
-            style={{ height: isMobile ? 580 : 900 }}
+            style={{ height: 900 }}
             onSelectEvent={handleSelectEvent}
             onSelectSlot={handleSelectSlot}
             onDrillDown={handleDrillDown}
             selectable
             components={{ dateHeader: DateHeaderComponent }}
             eventPropGetter={eventStyleGetter}
-            views={isMobile
-              ? [Views.AGENDA, Views.DAY, Views.WEEK]
-              : [Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
-            defaultView={isMobile ? Views.AGENDA : Views.MONTH}
+            views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
+            defaultView={Views.MONTH}
             popup={false}
             showMultiDayTimes
             step={30}

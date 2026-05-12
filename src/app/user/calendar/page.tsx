@@ -568,72 +568,84 @@ export default function CalendarPage() {
         </CardContent>
       </Card>
 
-      {/* Calendar + Day Sidebar */}
-      <div className="flex gap-4 items-start">
-        <div className="flex-1 min-w-0 overflow-x-auto [&_.rbc-calendar]:h-[500px] sm:[&_.rbc-calendar]:h-[700px]">
-          <Calendar
-            localizer={localizer}
-            events={events}
-            startAccessor="start"
-            endAccessor="end"
-            style={{ minHeight: 500 }}
-            onSelectEvent={handleSelectEvent}
-            onSelectSlot={handleSelectSlot}
-            selectable
-            eventPropGetter={eventStyleGetter}
-            views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
-            defaultView={Views.MONTH}
-            popup={false}
-            showMultiDayTimes
-            step={30}
-            timeslots={2}
-            doShowMoreDrillDown={false}
-            onShowMore={handleShowMore}
-            messages={{
-              showMore: (total: number) => `+${total} more`,
-              noEventsInRange: 'No events scheduled for this period. Create a task or sync with Google Calendar to see events here.'
-            }}
-          />
-        </div>
+      {/* Calendar — always full width */}
+      <div className="w-full [&_.rbc-calendar]:h-[500px] sm:[&_.rbc-calendar]:h-[700px] overflow-x-auto">
+        <Calendar
+          localizer={localizer}
+          events={events}
+          startAccessor="start"
+          endAccessor="end"
+          style={{ minHeight: 500 }}
+          onSelectEvent={handleSelectEvent}
+          onSelectSlot={handleSelectSlot}
+          selectable
+          eventPropGetter={eventStyleGetter}
+          views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
+          defaultView={Views.MONTH}
+          popup={false}
+          showMultiDayTimes
+          step={30}
+          timeslots={2}
+          doShowMoreDrillDown={false}
+          onShowMore={handleShowMore}
+          messages={{
+            showMore: (total: number) => `+${total} more`,
+            noEventsInRange: 'No events scheduled for this period. Create a task or sync with Google Calendar to see events here.'
+          }}
+        />
+      </div>
 
-        {/* Day Sidebar */}
-        <div className={`transition-all duration-300 ease-in-out flex-shrink-0 overflow-hidden ${isDaySidebarOpen ? 'w-72' : 'w-0'}`}>
-          <div className="w-72 border border-slate-200 bg-white rounded-xl shadow-md flex flex-col overflow-hidden" style={{ minHeight: 500 }}>
-            {/* Sidebar Header */}
-            <div className="bg-gradient-to-br from-blue-600 to-blue-700 px-4 py-4 flex-shrink-0">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-blue-100 text-xs font-medium uppercase tracking-wider">
-                    {selectedDate ? moment(selectedDate).format('dddd') : ''}
-                  </p>
-                  <p className="text-white text-2xl font-bold leading-tight">
-                    {selectedDate ? moment(selectedDate).format('MMMM D') : ''}
-                  </p>
-                  <p className="text-blue-200 text-xs mt-1">
-                    {daySidebarEvents.length === 0 ? 'No events' : `${daySidebarEvents.length} event${daySidebarEvents.length !== 1 ? 's' : ''}`}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setIsDaySidebarOpen(false)}
-                  className="text-blue-200 hover:text-white transition-colors p-1 rounded-md hover:bg-blue-500/30"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
+      {/* Day Sidebar — slides in below the calendar as its own section */}
+      <div
+        className={`transition-all duration-300 ease-in-out overflow-hidden ${
+          isDaySidebarOpen ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'
+        }`}
+      >
+        <div className="border border-slate-200 bg-white rounded-xl shadow-sm overflow-hidden">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-4 flex items-center justify-between">
+            <div>
+              <p className="text-blue-100 text-xs font-medium uppercase tracking-wider">
+                {selectedDate ? moment(selectedDate).format('dddd') : ''}
+              </p>
+              <p className="text-white text-xl font-bold leading-tight">
+                {selectedDate ? moment(selectedDate).format('MMMM D, YYYY') : ''}
+              </p>
+              <p className="text-blue-200 text-xs mt-0.5">
+                {daySidebarEvents.length === 0 ? 'No events' : `${daySidebarEvents.length} event${daySidebarEvents.length !== 1 ? 's' : ''}`}
+              </p>
             </div>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                className="bg-white/20 hover:bg-white/30 text-white border-0 gap-1.5 text-xs"
+                onClick={() => setIsNewTaskFormOpen(true)}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                New Task
+              </Button>
+              <button
+                onClick={() => setIsDaySidebarOpen(false)}
+                className="text-blue-200 hover:text-white transition-colors p-1.5 rounded-md hover:bg-white/20"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
 
-            {/* Events List */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-2">
-              {daySidebarEvents.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-10 text-center px-4">
-                  <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
-                    <CalendarIcon className="h-5 w-5 text-slate-400" />
-                  </div>
-                  <p className="text-sm font-medium text-slate-600">Nothing scheduled</p>
-                  <p className="text-xs text-slate-400 mt-1">Click below to add a task</p>
+          {/* Events grid */}
+          <div className="p-4">
+            {daySidebarEvents.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-10 text-center">
+                <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
+                  <CalendarIcon className="h-5 w-5 text-slate-400" />
                 </div>
-              ) : (
-                daySidebarEvents.map(ev => {
+                <p className="text-sm font-medium text-slate-600">Nothing scheduled for this day</p>
+                <p className="text-xs text-slate-400 mt-1">Click &ldquo;New Task&rdquo; above to add one</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                {daySidebarEvents.map(ev => {
                   const color = ev.resource?.color || '#3b82f6'
                   const isTask = !!ev.resource?.task
                   const priority = ev.resource?.task?.priority
@@ -647,7 +659,7 @@ export default function CalendarPage() {
                     <button
                       key={ev.id || ev.title}
                       onClick={() => { handleSelectEvent(ev); setIsDaySidebarOpen(false) }}
-                      className="w-full text-left p-3 rounded-lg border border-slate-100 hover:border-slate-200 hover:shadow-sm bg-slate-50 hover:bg-white transition-all group"
+                      className="w-full text-left p-3 rounded-lg border border-slate-100 hover:border-slate-300 hover:shadow-sm bg-slate-50 hover:bg-white transition-all group"
                     >
                       <div className="flex items-start gap-2.5">
                         <div className="w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1" style={{ backgroundColor: color }} />
@@ -662,33 +674,17 @@ export default function CalendarPage() {
                               </span>
                             )}
                             {!isTask && (
-                              <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">
-                                Meeting
-                              </span>
+                              <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">Meeting</span>
                             )}
-                            <span className="text-xs text-slate-400">
-                              {moment(ev.start).format('h:mm A')}
-                            </span>
                           </div>
                         </div>
                         <ChevronRight className="h-3.5 w-3.5 text-slate-300 group-hover:text-slate-500 flex-shrink-0 mt-0.5 transition-colors" />
                       </div>
                     </button>
                   )
-                })
-              )}
-            </div>
-
-            {/* Create Task CTA */}
-            <div className="p-3 border-t border-slate-100 flex-shrink-0">
-              <Button
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white gap-2 rounded-lg"
-                onClick={() => setIsNewTaskFormOpen(true)}
-              >
-                <Plus className="h-4 w-4" />
-                New Task for this day
-              </Button>
-            </div>
+                })}
+              </div>
+            )}
           </div>
         </div>
       </div>

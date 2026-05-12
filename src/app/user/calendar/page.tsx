@@ -388,6 +388,12 @@ export default function CalendarPage() {
     setIsDaySidebarOpen(true)
   }
 
+  const handleDrillDown = (date: Date) => {
+    // Clicking the date number opens the day sidebar instead of navigating
+    setSelectedDate(date)
+    setIsDaySidebarOpen(true)
+  }
+
   const daySidebarEvents = useMemo(() => {
     if (!selectedDate) return []
     return events.filter(ev => {
@@ -578,6 +584,7 @@ export default function CalendarPage() {
           style={{ minHeight: 500 }}
           onSelectEvent={handleSelectEvent}
           onSelectSlot={handleSelectSlot}
+          onDrillDown={handleDrillDown}
           selectable
           eventPropGetter={eventStyleGetter}
           views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}

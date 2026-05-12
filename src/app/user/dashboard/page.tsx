@@ -11,7 +11,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { UserAvatar } from '@/components/shared/UserAvatar'
 import { Button } from '@/components/ui/button'
 import CreateTaskButton from '@/components/tasks/CreateTaskButton'
-import TaskViewModal from '@/components/tasks/TaskViewModal'
 import { LeaderWorkloadWidget } from '@/components/dashboard/leader-workload-widget'
 import { AtRiskTasksWidget } from '@/components/dashboard/at-risk-tasks-widget'
 import { format, formatDistanceToNow } from 'date-fns'
@@ -78,13 +77,8 @@ export default function UserDashboard() {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [currentTime, setCurrentTime] = useState(new Date())
-  const [viewingTask, setViewingTask] = useState<any>(null)
-
-  const openTask = async (taskId: string) => {
-    try {
-      const res = await fetch(`/api/tasks/${taskId}`)
-      if (res.ok) setViewingTask(await res.json())
-    } catch { /* silent — modal just won't open */ }
+  const openTask = (taskId: string) => {
+    router.push(`/user/tasks?taskId=${taskId}`)
   }
 
   // Live clock - update every second
@@ -828,11 +822,6 @@ export default function UserDashboard() {
         </div>
       </div>
 
-      <TaskViewModal
-        open={!!viewingTask}
-        onOpenChange={(open) => { if (!open) setViewingTask(null) }}
-        task={viewingTask}
-      />
     </div>
   )
 }

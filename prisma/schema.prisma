@@ -297,6 +297,8 @@ model Task {
   reminders             Json?              // Notification reminders in JSON format
   // Subtask support
   parentId              String?            // Parent task ID for subtasks
+  cascadeOrder          Int?               // Step number in a CASCADING task (1, 2, 3…)
+  isLocked              Boolean            @default(false) // Cascading step waiting for previous step to complete
   // Recurring task support
   isRecurring           Boolean            @default(false)
   recurringFrequency    RecurringFrequency?
@@ -652,6 +654,7 @@ enum TaskType {
   INDIVIDUAL
   TEAM
   COLLABORATION
+  CASCADING
 }
 
 enum RecurringFrequency {

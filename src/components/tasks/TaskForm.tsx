@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { format } from 'date-fns'
-import { CalendarIcon, Plus, X, Users, User, Handshake, ListTodo, Trash2, ChevronDown, Settings2, RefreshCw, Loader2 } from 'lucide-react'
+import { CalendarIcon, Plus, X, Users, User, Handshake, ListTodo, Trash2, ChevronDown, Settings2, RefreshCw, Loader2, GitBranch, GripVertical } from 'lucide-react'
 import { DatePicker } from '@/components/ui/date-picker'
 import { TimePicker } from '@/components/ui/time-picker'
 import { SearchableMultiSelect, SelectOption } from '@/components/ui/searchable-multi-select'
@@ -37,7 +37,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { generateOccurrenceDates } from '@/lib/recurring'
 
 // Types
-type TaskType = 'INDIVIDUAL' | 'TEAM' | 'COLLABORATION'
+type TaskType = 'INDIVIDUAL' | 'TEAM' | 'COLLABORATION' | 'CASCADING'
 type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'
 type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
 
@@ -57,6 +57,14 @@ interface PendingSubtask {
   dueDate?: string
 }
 
+interface CascadeStep {
+  id: string // Temporary ID for UI
+  title: string
+  assigneeId: string
+  assignee?: User
+  dueDate?: string
+}
+
 
 
 const recurringFrequencyEnum = z.enum(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'])
@@ -69,7 +77,7 @@ const taskFormSchema = z.object({
   status: z.enum(['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED']),
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']),
   progressPercentage: z.number().min(0).max(100),
-  taskType: z.enum(['INDIVIDUAL', 'TEAM', 'COLLABORATION']),
+  taskType: z.enum(['INDIVIDUAL', 'TEAM', 'COLLABORATION', 'CASCADING']),
   assigneeId: z.string().nullish(), // Always current user
   teamMemberIds: z.array(z.string()).default([]),
   collaboratorIds: z.array(z.string()).default([]),
@@ -126,6 +134,12 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
   const [newSubtaskAssigneeId, setNewSubtaskAssigneeId] = useState('')
   const [newSubtaskDeadline, setNewSubtaskDeadline] = useState('')
   const [recurringNoEndDate, setRecurringNoEndDate] = useState(false)
+
+  // Cascade steps state
+  const [cascadeSteps, setCascadeSteps] = useState<CascadeStep[]>([])
+  const [newStepTitle, setNewStepTitle] = useState('')
+  const [newStepAssigneeId, setNewStepAssigneeId] = useState('')
+  const [newStepDueDate, setNewStepDueDate] = useState('')
 
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskFormSchema),
@@ -320,13 +334,21 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
         setSelectedCollaborators([])
         form.setValue('teamMemberIds', [])
         form.setValue('collaboratorIds', [])
+        setCascadeSteps([])
       } else if (taskType === 'TEAM') {
         // Only clear collaborators, keep team members (they might be pre-selected)
         setSelectedCollaborators([])
         form.setValue('collaboratorIds', [])
+        setCascadeSteps([])
       } else if (taskType === 'COLLABORATION') {
         setSelectedTeamMembers([])
         form.setValue('teamMemberIds', [])
+        setCascadeSteps([])
+      } else if (taskType === 'CASCADING') {
+        setSelectedTeamMembers([])
+        setSelectedCollaborators([])
+        form.setValue('teamMemberIds', [])
+        form.setValue('collaboratorIds', [])
       }
     }
     // For EDITING tasks: preserve the original assignee - do NOT override
@@ -414,11 +436,20 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
         }
       }
 
-      // Include subtasks in submission
+      // Include subtasks in submission (only for non-cascading tasks)
       submissionData.subtasks = pendingSubtasks.map(s => ({
         title: s.title,
         assigneeId: s.assigneeId,
       }))
+
+      // Include cascade steps for CASCADING tasks
+      if (data.taskType === 'CASCADING') {
+        ;(submissionData as any).cascadeSteps = cascadeSteps.map(s => ({
+          title: s.title,
+          assigneeId: s.assigneeId || null,
+          dueDate: s.dueDate ? new Date(s.dueDate).toISOString() : null,
+        }))
+      }
 
       // Strip null/undefined recurring fields when not recurring so they
       // never reach the API validation (recurringEndDate: null fails datetime check)
@@ -436,6 +467,7 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
       onOpenChange(false)
       form.reset()
       setPendingSubtasks([])
+      setCascadeSteps([])
     } catch (error) {
       console.error('Error submitting task:', error)
     } finally {
@@ -496,11 +528,32 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
     setPendingSubtasks(pendingSubtasks.filter(s => s.id !== id))
   }
 
+  const addCascadeStep = () => {
+    if (!newStepTitle.trim()) return
+    const assigneeId = newStepAssigneeId || ''
+    const assignee = assigneeId ? users.find(u => u.id === assigneeId) : undefined
+    setCascadeSteps([...cascadeSteps, {
+      id: `step-${Date.now()}`,
+      title: newStepTitle.trim(),
+      assigneeId,
+      assignee,
+      dueDate: newStepDueDate || undefined,
+    }])
+    setNewStepTitle('')
+    setNewStepAssigneeId('')
+    setNewStepDueDate('')
+  }
+
+  const removeCascadeStep = (id: string) => {
+    setCascadeSteps(cascadeSteps.filter(s => s.id !== id))
+  }
+
   const getTaskTypeIcon = (type: TaskType) => {
     switch (type) {
       case 'INDIVIDUAL': return <User className="h-4 w-4" />
       case 'TEAM': return <Users className="h-4 w-4" />
       case 'COLLABORATION': return <Handshake className="h-4 w-4" />
+      case 'CASCADING': return <GitBranch className="h-4 w-4" />
       default: return <User className="h-4 w-4" />
     }
   }
@@ -976,13 +1029,13 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
           <section>
             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">Task Type</h3>
             <div className="flex rounded-lg border divide-x overflow-hidden mb-4">
-              {(['INDIVIDUAL', 'TEAM', 'COLLABORATION'] as const).map(type => (
+              {(['INDIVIDUAL', 'TEAM', 'COLLABORATION', 'CASCADING'] as const).map(type => (
                 <button key={type} type="button"
                   onClick={() => form.setValue('taskType', type)}
-                  className={cn('flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors',
+                  className={cn('flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium transition-colors',
                     taskType === type ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted')}>
                   {getTaskTypeIcon(type)}
-                  <span className="capitalize">{type.toLowerCase()}</span>
+                  <span className="capitalize hidden sm:inline">{type.toLowerCase()}</span>
                 </button>
               ))}
             </div>
@@ -1075,10 +1128,127 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
                 </CardContent>
               </Card>
             )}
+
+            {taskType === 'CASCADING' && (
+              <Card className="border-2 border-indigo-200 bg-indigo-50/50">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-indigo-100 rounded-full">
+                      <GitBranch className="h-5 w-5 text-indigo-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-base text-indigo-900">Cascading Task</CardTitle>
+                      <CardDescription className="text-indigo-700">
+                        Steps must be completed in order. Each step unlocks the next one automatically.
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Add step form */}
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Step title..."
+                        value={newStepTitle}
+                        onChange={(e) => setNewStepTitle(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCascadeStep() } }}
+                        maxLength={200}
+                        className="flex-1"
+                      />
+                      <Button type="button" size="sm" onClick={addCascadeStep} disabled={!newStepTitle.trim()}>
+                        <Plus className="h-4 w-4 mr-1" /> Add Step
+                      </Button>
+                    </div>
+                    {newStepTitle.trim() && (
+                      <div className="flex gap-2 pl-1">
+                        <Select value={newStepAssigneeId} onValueChange={setNewStepAssigneeId}>
+                          <SelectTrigger className="h-8 text-xs w-[160px]">
+                            <SelectValue placeholder="Assign to..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={session?.user?.id || 'self'}>Myself</SelectItem>
+                            {users.filter(u => u.id !== session?.user?.id).map((user) => (
+                              <SelectItem key={user.id} value={user.id}>
+                                <div className="flex items-center gap-2">
+                                  <Avatar className="h-5 w-5"><AvatarFallback className="text-xs">{(user.name || user.email)?.[0]?.toUpperCase()}</AvatarFallback></Avatar>
+                                  {user.name || user.email}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <DatePicker
+                          date={newStepDueDate ? new Date(newStepDueDate) : undefined}
+                          onSelect={d => setNewStepDueDate(d ? format(d, 'yyyy-MM-dd') : '')}
+                          placeholder="Due date (optional)"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Steps list */}
+                  {cascadeSteps.length > 0 ? (
+                    <div className="space-y-2">
+                      <Label className="text-sm text-indigo-800">
+                        {cascadeSteps.length} step{cascadeSteps.length !== 1 ? 's' : ''} — completed in order
+                      </Label>
+                      <div className="space-y-2">
+                        {cascadeSteps.map((step, index) => (
+                          <div
+                            key={step.id}
+                            className="flex items-center gap-3 p-3 bg-white rounded-lg border border-indigo-200"
+                          >
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <GripVertical className="h-4 w-4 text-indigo-300" />
+                              <div className="h-6 w-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                                {index + 1}
+                              </div>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{step.title}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {step.assignee?.name || step.assignee?.email || 'Unassigned'}
+                                {step.dueDate && <span className="ml-2">· Due {new Date(step.dueDate).toLocaleDateString()}</span>}
+                              </p>
+                            </div>
+                            {index > 0 && (
+                              <Badge variant="outline" className="text-xs text-indigo-600 border-indigo-300 flex-shrink-0">
+                                Locked
+                              </Badge>
+                            )}
+                            {index === 0 && (
+                              <Badge className="text-xs bg-indigo-100 text-indigo-700 hover:bg-indigo-100 flex-shrink-0">
+                                First
+                              </Badge>
+                            )}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeCascadeStep(step.id)}
+                              className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 text-indigo-600">
+                      <GitBranch className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No steps added yet</p>
+                      <p className="text-xs text-muted-foreground">Add at least 2 steps to create a cascading task</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </section>
 
-          {/* Subtasks Section - Collapsible (only for new tasks) */}
-          {!task && (
+          {/* Subtasks Section - Collapsible (only for new non-cascading tasks) */}
+          {!task && taskType !== 'CASCADING' && (
             <Collapsible>
               <Card className="border-2 border-amber-200 bg-amber-50/50">
                 <CollapsibleTrigger asChild>

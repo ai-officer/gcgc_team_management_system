@@ -6,17 +6,17 @@ import { authOptions } from '@/lib/auth'
 import { canEditTask, canDeleteTask, canChangeTaskStatus, isTeamLeader } from '@/lib/permissions'
 import { autoSyncTask, deleteSyncedTask } from '@/lib/calendar-sync-helper'
 import { getNextOccurrenceDate } from '@/lib/recurring'
-import { notifyTaskAssigned, notifyTaskUpdated, notifyTaskCompleted, notifyTaskSubmittedForReview } from '@/lib/notifications'
+import { notifyTaskAssigned, notifyTaskUpdated, notifyTaskCompleted, notifyTaskSubmittedForReview, notifySubtaskAssigned } from '@/lib/notifications'
 
 const updateTaskSchema = z.object({
   title: z.string().min(1).max(100).optional(),
   description: z.string().optional(),
-  status: z.enum(['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED']).optional(),
+  status: z.enum(['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED', 'CANCELLED']).optional(),
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional(),
   dueDate: z.string().datetime().optional(),
   startDate: z.string().datetime().optional(),
   progressPercentage: z.number().min(0).max(100).optional(),
-  taskType: z.enum(['INDIVIDUAL', 'TEAM', 'COLLABORATION']).optional(),
+  taskType: z.enum(['INDIVIDUAL', 'TEAM', 'COLLABORATION', 'CASCADING']).optional(),
   assigneeId: z.string().nullish(),
   teamMemberIds: z.array(z.string()).optional(),
   collaboratorIds: z.array(z.string()).optional(),
@@ -98,7 +98,7 @@ export async function GET(
               select: { id: true, name: true, email: true, image: true }
             }
           },
-          orderBy: { createdAt: 'asc' }
+          orderBy: [{ cascadeOrder: 'asc' }, { createdAt: 'asc' }]
         },
         parent: {
           select: { id: true, title: true }
@@ -115,13 +115,23 @@ export async function GET(
 
     // Check if user has access to this task
     if (session.user.role !== 'ADMIN') {
-      // For tasks without teams, check if user is creator, assignee, or collaborator
+      // For tasks without teams, check if user is creator, assignee, collaborator,
+      // or has an unlocked cascade step on this parent task
       if (!task.teamId) {
-        const hasAccess = task.creatorId === session.user.id || 
+        const hasDirectAccess = task.creatorId === session.user.id ||
                          task.assigneeId === session.user.id ||
                          task.teamMembers?.some(tm => tm.userId === session.user.id) ||
                          task.collaborators?.some(c => c.userId === session.user.id)
-        
+
+        let hasAccess = hasDirectAccess
+        if (!hasAccess && task.taskType === 'CASCADING') {
+          // Check if user has an unlocked step on this parent
+          const unlockedStep = await prisma.task.findFirst({
+            where: { parentId: task.id, assigneeId: session.user.id, isLocked: false }
+          })
+          hasAccess = !!unlockedStep
+        }
+
         if (!hasAccess) {
           return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
         }
@@ -472,7 +482,7 @@ export async function PATCH(
       // Get all subtasks of the parent
       const allSubtasks = await prisma.task.findMany({
         where: { parentId: existingTask.parentId },
-        select: { status: true }
+        select: { status: true, cascadeOrder: true, isLocked: true }
       })
 
       // Calculate progress based on subtask statuses
@@ -504,11 +514,81 @@ export async function PATCH(
           subtasks: {
             include: {
               assignee: { select: { id: true, name: true, email: true, image: true } }
-            }
+            },
+            orderBy: [{ cascadeOrder: 'asc' }, { createdAt: 'asc' }]
           }
         }
       })
     }
+
+    // --- Cascade unlock: when a cascade step completes, unlock the next step ---
+    if (
+      updateData.status === 'COMPLETED' &&
+      existingTask.status !== 'COMPLETED' &&
+      existingTask.cascadeOrder !== null &&
+      existingTask.parentId
+    ) {
+      try {
+        const nextStep = await prisma.task.findFirst({
+          where: {
+            parentId: existingTask.parentId,
+            cascadeOrder: (existingTask.cascadeOrder ?? 0) + 1,
+            isLocked: true,
+          },
+          select: { id: true, title: true, assigneeId: true }
+        })
+
+        if (nextStep) {
+          await prisma.task.update({
+            where: { id: nextStep.id },
+            data: { isLocked: false }
+          })
+
+          // Notify the next step's assignee that their step is now unlocked
+          if (nextStep.assigneeId && nextStep.assigneeId !== session.user.id) {
+            try {
+              const parentTask = await prisma.task.findUnique({
+                where: { id: existingTask.parentId },
+                select: { title: true }
+              })
+              const assignerName = session.user.name || session.user.email || 'Someone'
+              await notifySubtaskAssigned(
+                nextStep.assigneeId,
+                nextStep.id,
+                nextStep.title,
+                parentTask?.title || 'Cascading Task',
+                assignerName
+              )
+            } catch (notifErr) {
+              console.error('Error notifying cascade step unlock:', notifErr)
+            }
+          }
+        }
+      } catch (cascadeErr) {
+        console.error('Error unlocking next cascade step:', cascadeErr)
+      }
+    }
+
+    // --- Cascade cancel: when a cascade step is cancelled, cancel all subsequent locked steps ---
+    if (
+      updateData.status === 'CANCELLED' &&
+      existingTask.cascadeOrder !== null &&
+      existingTask.parentId
+    ) {
+      try {
+        await prisma.task.updateMany({
+          where: {
+            parentId: existingTask.parentId,
+            cascadeOrder: { gt: existingTask.cascadeOrder ?? 0 },
+            isLocked: true,
+          },
+          data: { status: 'CANCELLED' }
+        })
+      } catch (cascadeErr) {
+        console.error('Error cancelling subsequent cascade steps:', cascadeErr)
+      }
+    }
+    // --- End cascade unlock ---
 
     // Send notifications for relevant changes
     if (updatedTask) {

@@ -25,6 +25,7 @@ import {
   Copy,
   UserPlus,
   Settings2,
+  GitBranch,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -84,7 +85,7 @@ interface Task {
   startDate?: string
   status: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'
   progressPercentage: number
-  taskType: 'INDIVIDUAL' | 'TEAM' | 'COLLABORATION'
+  taskType: 'INDIVIDUAL' | 'TEAM' | 'COLLABORATION' | 'CASCADING'
   parentId?: string | null
   boardId?: string | null
   // Google Calendar fields
@@ -518,6 +519,7 @@ export default function TasksPage() {
       case 'INDIVIDUAL': return <User className="h-3 w-3" />
       case 'TEAM': return <Users className="h-3 w-3" />
       case 'COLLABORATION': return <Handshake className="h-3 w-3" />
+      case 'CASCADING': return <GitBranch className="h-3 w-3" />
       default: return <User className="h-3 w-3" />
     }
   }
@@ -999,6 +1001,12 @@ export default function TasksPage() {
               <div className="flex items-center gap-2">
                 <Handshake className="h-4 w-4" />
                 <span>Collaboration</span>
+              </div>
+            </SelectItem>
+            <SelectItem value="CASCADING">
+              <div className="flex items-center gap-2">
+                <GitBranch className="h-4 w-4" />
+                <span>Cascading</span>
               </div>
             </SelectItem>
           </SelectContent>

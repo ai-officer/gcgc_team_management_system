@@ -9,6 +9,13 @@ import { autoSyncTask } from '@/lib/calendar-sync-helper'
 import { notifyTaskAssigned, notifySubtaskAssigned } from '@/lib/notifications'
 import { generateOccurrenceDates, buildRRuleString } from '@/lib/recurring'
 
+const cascadeStepSchema = z.object({
+  title: z.string().min(1).max(200),
+  description: z.string().optional(),
+  assigneeId: z.string().optional().nullable(),
+  dueDate: z.string().datetime().optional().nullable(),
+})
+
 const createTaskSchema = z.object({
   title: z.string().min(1).max(100),
   description: z.string().optional(),
@@ -17,7 +24,9 @@ const createTaskSchema = z.object({
   startDate: z.string().datetime().optional(),
   status: z.enum(['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED', 'CANCELLED']).optional(),
   progressPercentage: z.number().min(0).max(100).optional(),
-  taskType: z.enum(['INDIVIDUAL', 'TEAM', 'COLLABORATION']),
+  taskType: z.enum(['INDIVIDUAL', 'TEAM', 'COLLABORATION', 'CASCADING']),
+  // Cascading task steps
+  cascadeSteps: z.array(cascadeStepSchema).optional().default([]),
   assigneeId: z.string().nullish(), // Always current user
   teamMemberIds: z.array(z.string()).default([]),
   collaboratorIds: z.array(z.string()).default([]),
@@ -142,12 +151,13 @@ export async function GET(req: NextRequest) {
             { collaborators: { some: { userId: session.user.id } } },
           ]
         },
-        // Parent tasks where a subtask is assigned to this user
+        // Parent tasks where a non-locked subtask is assigned to this user
         // (ensures the user can see and act on their subtask via the parent card)
+        // isLocked: false ensures locked cascade steps don't reveal the parent prematurely
         {
           AND: [
             { parentId: null },
-            { subtasks: { some: { assigneeId: session.user.id } } }
+            { subtasks: { some: { assigneeId: session.user.id, isLocked: false } } }
           ]
         }
       ]
@@ -365,14 +375,18 @@ export async function GET(req: NextRequest) {
               priority: true,
               progressPercentage: true,
               dueDate: true,
+              cascadeOrder: true,
+              isLocked: true,
               assignee: {
-                select: { id: true, name: true, email: true }
+                select: { id: true, name: true, email: true, image: true }
               },
               subtasks: {
                 select: {
                   id: true,
                   title: true,
                   status: true,
+                  cascadeOrder: true,
+                  isLocked: true,
                   assignee: {
                     select: { id: true, name: true, email: true }
                   },
@@ -381,17 +395,19 @@ export async function GET(req: NextRequest) {
                       id: true,
                       title: true,
                       status: true,
+                      cascadeOrder: true,
+                      isLocked: true,
                       assignee: {
                         select: { id: true, name: true, email: true }
                       }
                     },
-                    orderBy: { createdAt: 'asc' }
+                    orderBy: { cascadeOrder: 'asc' }
                   }
                 },
-                orderBy: { createdAt: 'asc' }
+                orderBy: { cascadeOrder: 'asc' }
               }
             },
-            orderBy: { createdAt: 'asc' }
+            orderBy: [{ cascadeOrder: 'asc' }, { createdAt: 'asc' }]
           }
         },
         orderBy: { createdAt: 'desc' },
@@ -450,6 +466,7 @@ export async function POST(req: NextRequest) {
       collaboratorIds,
       assignedById,
       parentId,
+      cascadeSteps,
       // New Google Calendar fields
       location,
       meetingLink,
@@ -674,6 +691,32 @@ export async function POST(req: NextRequest) {
         })
       }
 
+      // Create cascade steps for CASCADING tasks
+      if (taskType === 'CASCADING' && cascadeSteps.length > 0) {
+        for (let i = 0; i < cascadeSteps.length; i++) {
+          const step = cascadeSteps[i]
+          const stepOrder = i + 1
+          await tx.task.create({
+            data: {
+              title: step.title,
+              description: step.description || null,
+              priority,
+              status: 'TODO',
+              progressPercentage: 0,
+              taskType: 'INDIVIDUAL',
+              dueDate: step.dueDate ? new Date(step.dueDate) : finalDueDate,
+              startDate: step.dueDate ? new Date(step.dueDate) : finalStartDate,
+              assigneeId: step.assigneeId || null,
+              creatorId: session.user.id,
+              assignedById: session.user.id,
+              parentId: newTask.id,
+              cascadeOrder: stepOrder,
+              isLocked: stepOrder > 1, // first step is unlocked, rest are locked
+            },
+          })
+        }
+      }
+
       // Return task with all relations
       return await tx.task.findUnique({
         where: { id: newTask.id },
@@ -822,6 +865,30 @@ export async function POST(req: NextRequest) {
         } catch (notificationError) {
           console.error('Error sending notification to', userId, ':', notificationError)
           // Don't fail the task creation if notification fails
+        }
+      }
+
+      // For cascading tasks, notify the first step's assignee
+      if (taskType === 'CASCADING' && cascadeSteps.length > 0) {
+        const firstStep = cascadeSteps[0]
+        if (firstStep.assigneeId && firstStep.assigneeId !== session.user.id) {
+          try {
+            const firstStepTask = await prisma.task.findFirst({
+              where: { parentId: task.id, cascadeOrder: 1 },
+              select: { id: true }
+            })
+            if (firstStepTask) {
+              await notifySubtaskAssigned(
+                firstStep.assigneeId,
+                firstStepTask.id,
+                firstStep.title,
+                title,
+                assignerName
+              )
+            }
+          } catch (notificationError) {
+            console.error('Error sending cascade step 1 notification:', notificationError)
+          }
         }
       }
     }

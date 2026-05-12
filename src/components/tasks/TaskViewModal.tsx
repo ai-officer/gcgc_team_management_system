@@ -33,7 +33,7 @@ import {
   User, Users, Handshake, Clock, MessageSquare, Send, Edit, Copy,
   Heart, ThumbsUp, Smile, Reply, Image, Paperclip, MoreHorizontal,
   AtSign, Trash2, Pencil, X, Check, FileText, Download, File,
-  Plus, ListTodo, ChevronRight, CheckCircle2, Circle, AlertCircle, RefreshCw, RotateCcw, Eye
+  Plus, ListTodo, ChevronRight, CheckCircle2, Circle, AlertCircle, RefreshCw, RotateCcw, Eye, GitBranch, Lock
 } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { Progress } from '@/components/ui/progress'
@@ -47,7 +47,7 @@ interface Task {
   startDate?: string
   status: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'
   progressPercentage: number
-  taskType: 'INDIVIDUAL' | 'TEAM' | 'COLLABORATION'
+  taskType: 'INDIVIDUAL' | 'TEAM' | 'COLLABORATION' | 'CASCADING'
   // Google Calendar fields
   location?: string
   meetingLink?: string
@@ -115,6 +115,8 @@ interface Task {
     priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
     progressPercentage: number
     dueDate?: string
+    cascadeOrder?: number | null
+    isLocked?: boolean
     assignee?: {
       id: string
       name: string
@@ -1112,6 +1114,7 @@ export default function TaskViewModal({
       case 'INDIVIDUAL': return <User className="h-4 w-4" />
       case 'TEAM': return <Users className="h-4 w-4" />
       case 'COLLABORATION': return <Handshake className="h-4 w-4" />
+      case 'CASCADING': return <GitBranch className="h-4 w-4" />
       default: return <User className="h-4 w-4" />
     }
   }
@@ -1943,23 +1946,36 @@ export default function TaskViewModal({
                       }
                     }
 
+                    const isCascadeStep = subtask.cascadeOrder != null
+                    const isLocked = subtask.isLocked === true
+
                     return (
                       <div
                         key={subtask.id}
-                        className={`flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors ${onSubtaskClick ? 'cursor-pointer' : ''}`}
-                        onClick={() => onSubtaskClick?.(subtask.id)}
+                        className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
+                          isLocked
+                            ? 'bg-slate-50 border border-slate-200 opacity-60'
+                            : `bg-gray-50 hover:bg-gray-100 ${onSubtaskClick ? 'cursor-pointer' : ''}`
+                        }`}
+                        onClick={() => !isLocked && onSubtaskClick?.(subtask.id)}
                       >
-                        {/* Checkable status icon */}
-                        <button
-                          className="flex-shrink-0 focus:outline-none hover:scale-110 transition-transform"
-                          title={subtask.status === 'COMPLETED' ? 'Mark as incomplete' : 'Mark as complete'}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleToggleSubtaskCompletion(subtask)
-                          }}
-                        >
-                          {getSubtaskStatusIcon()}
-                        </button>
+                        {/* Step number badge (cascade) or checkable icon */}
+                        {isCascadeStep ? (
+                          <div className="flex-shrink-0 h-6 w-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold">
+                            {subtask.cascadeOrder}
+                          </div>
+                        ) : (
+                          <button
+                            className="flex-shrink-0 focus:outline-none hover:scale-110 transition-transform"
+                            title={subtask.status === 'COMPLETED' ? 'Mark as incomplete' : 'Mark as complete'}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleToggleSubtaskCompletion(subtask)
+                            }}
+                          >
+                            {getSubtaskStatusIcon()}
+                          </button>
+                        )}
                         <div className="flex-1 min-w-0">
                           <p className={`text-sm font-medium break-words ${
                             subtask.status === 'COMPLETED' ? 'text-gray-500 line-through' : 'text-gray-900'
@@ -1967,17 +1983,19 @@ export default function TaskViewModal({
                             {subtask.title}
                           </p>
                           <div className="flex items-center gap-2 mt-1">
-                            <Badge
-                              variant="outline"
-                              className={`text-xs ${
-                                subtask.priority === 'URGENT' ? 'text-red-600 border-red-200' :
-                                subtask.priority === 'HIGH' ? 'text-orange-600 border-orange-200' :
-                                subtask.priority === 'MEDIUM' ? 'text-yellow-600 border-yellow-200' :
-                                'text-green-600 border-green-200'
-                              }`}
-                            >
-                              {subtask.priority}
-                            </Badge>
+                            {!isCascadeStep && (
+                              <Badge
+                                variant="outline"
+                                className={`text-xs ${
+                                  subtask.priority === 'URGENT' ? 'text-red-600 border-red-200' :
+                                  subtask.priority === 'HIGH' ? 'text-orange-600 border-orange-200' :
+                                  subtask.priority === 'MEDIUM' ? 'text-yellow-600 border-yellow-200' :
+                                  'text-green-600 border-green-200'
+                                }`}
+                              >
+                                {subtask.priority}
+                              </Badge>
+                            )}
                             {subtask.dueDate && (
                               <span className="text-xs text-gray-500">
                                 Due {format(new Date(subtask.dueDate), 'MMM dd')}
@@ -1985,17 +2003,21 @@ export default function TaskViewModal({
                             )}
                           </div>
                         </div>
-                        {subtask.assignee && (
-                          <UserAvatar
-                            userId={subtask.assignee.id}
-                            image={subtask.assignee.image}
-                            name={subtask.assignee.name}
-                            email={subtask.assignee.email}
-                            className="h-6 w-6"
-                            fallbackClassName="text-xs"
-                          />
+                        {isLocked ? (
+                          <Lock className="h-4 w-4 text-slate-400 flex-shrink-0" />
+                        ) : (
+                          subtask.assignee && (
+                            <UserAvatar
+                              userId={subtask.assignee.id}
+                              image={subtask.assignee.image}
+                              name={subtask.assignee.name}
+                              email={subtask.assignee.email}
+                              className="h-6 w-6"
+                              fallbackClassName="text-xs"
+                            />
+                          )
                         )}
-                        <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                        {!isLocked && <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0" />}
                       </div>
                     )
                   })}

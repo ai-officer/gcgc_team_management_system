@@ -11,7 +11,7 @@ export const priorityEnum = z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT'], {
   invalid_type_error: 'Invalid priority'
 })
 
-export const taskTypeEnum = z.enum(['INDIVIDUAL', 'TEAM', 'COLLABORATION'], {
+export const taskTypeEnum = z.enum(['INDIVIDUAL', 'TEAM', 'COLLABORATION', 'CASCADING'], {
   required_error: 'Task type is required',
   invalid_type_error: 'Invalid task type'
 })
@@ -269,6 +269,19 @@ export const createTaskSchema = z.object({
     {
       message: 'Collaboration tasks cannot have team members (use collaborators instead)',
       path: ['teamMemberIds']
+    }
+  )
+  .refine(
+    (data) => {
+      // CASCADING tasks should not have team members or collaborators (steps carry their own assignees)
+      if (data.taskType === 'CASCADING') {
+        return data.teamMemberIds.length === 0 && data.collaboratorIds.length === 0
+      }
+      return true
+    },
+    {
+      message: 'Cascading tasks use steps with individual assignees, not team members or collaborators',
+      path: ['taskType']
     }
   )
   .refine(

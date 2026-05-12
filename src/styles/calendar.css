@@ -899,3 +899,56 @@
 .fc-event:active {
   animation: eventPulse 0.3s ease-in-out !important;
 }
+
+/* ── Mobile responsive overrides (react-big-calendar) ── */
+@media (max-width: 767px) {
+  /* Toolbar: stack nav + label above view buttons */
+  .rbc-toolbar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+
+  .rbc-toolbar-label {
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+    text-align: center !important;
+    padding: 0 !important;
+  }
+
+  .rbc-btn-group {
+    display: flex !important;
+    justify-content: center !important;
+  }
+
+  .rbc-btn-group button {
+    font-size: 0.75rem !important;
+    padding: 5px 10px !important;
+  }
+
+  /* Agenda view — more readable on small screens */
+  .rbc-agenda-view table {
+    font-size: 0.8rem !important;
+  }
+
+  .rbc-agenda-date-cell,
+  .rbc-agenda-time-cell {
+    white-space: nowrap !important;
+    padding: 6px 8px !important;
+  }
+
+  .rbc-agenda-event-cell {
+    padding: 6px 8px !important;
+  }
+
+  /* Event text smaller on mobile */
+  .rbc-event-content {
+    font-size: 0.72rem !important;
+  }
+
+  /* Month view date numbers */
+  .rbc-date-cell {
+    font-size: 0.75rem !important;
+    padding: 2px 4px !important;
+  }
+}

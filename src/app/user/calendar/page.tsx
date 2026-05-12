@@ -124,6 +124,15 @@ export default function CalendarPage() {
   const [isNewTaskFormOpen, setIsNewTaskFormOpen] = useState(false)
   const [portalMounted, setPortalMounted] = useState(false)
   useEffect(() => { setPortalMounted(true) }, [])
+
+  // Mobile detection
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
   const { toast } = useToast()
 
   const handleToggleSubtask = async (subtaskId: string, currentStatus: string) => {
@@ -522,23 +531,25 @@ export default function CalendarPage() {
         </CardContent>
       </Card>
 
-      {/* Calendar — always full width */}
-      <div className="w-full overflow-x-auto">
-        <div style={{ minWidth: 560 }}>
+      {/* Calendar — responsive */}
+      <div className="w-full">
+        <div style={isMobile ? {} : { minWidth: 560 }}>
           <Calendar
             localizer={localizer}
             events={events}
             startAccessor="start"
             endAccessor="end"
-            style={{ height: 900 }}
+            style={{ height: isMobile ? 580 : 900 }}
             onSelectEvent={handleSelectEvent}
             onSelectSlot={handleSelectSlot}
             onDrillDown={handleDrillDown}
             selectable
             components={{ dateHeader: DateHeaderComponent }}
             eventPropGetter={eventStyleGetter}
-            views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
-            defaultView={Views.MONTH}
+            views={isMobile
+              ? [Views.AGENDA, Views.DAY, Views.WEEK]
+              : [Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
+            defaultView={isMobile ? Views.AGENDA : Views.MONTH}
             popup={false}
             showMultiDayTimes
             step={30}
@@ -558,18 +569,21 @@ export default function CalendarPage() {
         <div
           style={{
             position: 'fixed',
-            top: 0,
+            top: isMobile ? 'auto' : 0,
+            bottom: isMobile ? 0 : 'auto',
             right: 0,
-            width: 340,
-            height: '100vh',
+            left: isMobile ? 0 : 'auto',
+            width: isMobile ? '100%' : 340,
+            height: isMobile ? '80vh' : '100vh',
             zIndex: 9999,
-            transform: isDaySidebarOpen ? 'translateX(0)' : 'translateX(100%)',
+            transform: isDaySidebarOpen ? 'translateY(0) translateX(0)' : isMobile ? 'translateY(100%)' : 'translateX(100%)',
             transition: 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
-            boxShadow: isDaySidebarOpen ? '-12px 0 40px rgba(0,0,0,0.15)' : 'none',
+            boxShadow: isDaySidebarOpen ? (isMobile ? '0 -12px 40px rgba(0,0,0,0.15)' : '-12px 0 40px rgba(0,0,0,0.15)') : 'none',
             background: '#ffffff',
+            borderRadius: isMobile ? '16px 16px 0 0' : 0,
           }}
         >
           {/* Header — clean white, Google-style */}

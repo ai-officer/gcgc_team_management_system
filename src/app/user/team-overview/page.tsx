@@ -181,7 +181,7 @@ export default function TeamOverviewPage() {
   // Redirect if not a leader
   useEffect(() => {
     if (session?.user?.role !== 'LEADER') {
-      window.location.href = '/user/dashboard'
+      router.push('/user/dashboard')
       return
     }
   }, [session])

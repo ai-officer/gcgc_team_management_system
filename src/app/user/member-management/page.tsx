@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import {
   UserCheck,
@@ -148,6 +149,7 @@ type StatusFilter = 'all' | 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'
 
 export default function MemberManagementPage() {
   const { data: session } = useSession()
+  const router = useRouter()
   const { toast } = useToast()
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
   const [teams, setTeams] = useState<Team[]>([])
@@ -167,7 +169,7 @@ export default function MemberManagementPage() {
 
   useEffect(() => {
     if (session?.user?.role !== 'LEADER') {
-      window.location.href = '/user/dashboard'
+      router.push('/user/dashboard')
     }
   }, [session])
 

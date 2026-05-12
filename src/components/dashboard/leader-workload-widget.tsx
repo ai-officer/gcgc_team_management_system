@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { AlertTriangle, ArrowRight, Loader2, Users } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -26,6 +27,7 @@ interface WorkloadEntry {
 }
 
 export function LeaderWorkloadWidget() {
+  const router = useRouter()
   const [rows, setRows] = useState<WorkloadEntry[] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -98,7 +100,7 @@ export function LeaderWorkloadWidget() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => { window.location.href = '/user/member-management' }}
+            onClick={() => router.push('/user/member-management')}
           >
             Manage <ArrowRight className="h-4 w-4 ml-1" />
           </Button>

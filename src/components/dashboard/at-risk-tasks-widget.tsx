@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { AlertTriangle, ArrowRight, Clock, Loader2 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -28,6 +29,7 @@ const statusLabel: Record<string, string> = {
 }
 
 export function AtRiskTasksWidget() {
+  const router = useRouter()
   const [tasks, setTasks] = useState<AtRiskTask[] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -89,7 +91,7 @@ export function AtRiskTasksWidget() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => { window.location.href = '/user/tasks' }}
+            onClick={() => router.push('/user/tasks')}
           >
             View all <ArrowRight className="h-4 w-4 ml-1" />
           </Button>

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { Calendar, momentLocalizer, Views } from 'react-big-calendar'
 import moment from 'moment'
@@ -108,6 +109,7 @@ interface TaskDeadline {
 }
 
 export default function CalendarPage() {
+  const router = useRouter()
   const { data: session } = useSession()
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [loading, setLoading] = useState(true)
@@ -975,7 +977,7 @@ export default function CalendarPage() {
         onEdit={() => {
           // Close modal and optionally navigate to tasks page for editing
           setIsTaskViewOpen(false)
-          window.location.href = `/user/tasks?edit=${viewingTask?.id}`
+          router.push(`/user/tasks?edit=${viewingTask?.id}`)
         }}
         onTaskUpdate={fetchCalendarData}
       />

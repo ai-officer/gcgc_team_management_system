@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { Calendar, CheckSquare, Clock, Users, AlertCircle, ArrowRight, Star, Zap, Target, Activity, Award, BarChart3, Calendar as CalendarIcon, RefreshCw, Plus } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -71,6 +72,7 @@ interface DashboardData {
 
 export default function UserDashboard() {
   const { data: session } = useSession()
+  const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -245,7 +247,7 @@ export default function UserDashboard() {
         {/* Active Tasks Card */}
         <Card
           className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl hover:-translate-y-1"
-          onClick={() => window.location.href = '/user/tasks'}
+          onClick={() => router.push('/user/tasks')}
         >
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-blue-600"></div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -276,7 +278,7 @@ export default function UserDashboard() {
         {/* Completed Tasks Card */}
         <Card
           className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl hover:-translate-y-1"
-          onClick={() => window.location.href = '/user/tasks?status=completed'}
+          onClick={() => router.push('/user/tasks?status=completed')}
         >
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-emerald-600"></div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -296,7 +298,6 @@ export default function UserDashboard() {
             </div>
             <div className="flex items-center justify-between pt-2 border-t border-slate-100">
               <span className="text-xs text-slate-500">This month</span>
-              <span className="text-xs text-emerald-600 font-semibold">+{Math.floor(Math.random() * 15 + 5)} from last</span>
             </div>
           </CardContent>
         </Card>
@@ -305,7 +306,7 @@ export default function UserDashboard() {
         {isLeader && (
           <Card
             className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl hover:-translate-y-1"
-            onClick={() => window.location.href = '/user/team-overview'}
+            onClick={() => router.push('/user/team-overview')}
           >
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-purple-600"></div>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -351,7 +352,7 @@ export default function UserDashboard() {
               ? 'border-red-200 bg-red-50 hover:shadow-lg cursor-pointer hover:-translate-y-1'
               : 'border-slate-200 bg-white hover:shadow-md'
           }`}
-          onClick={() => dashboardData.stats.overdueTasks > 0 && (window.location.href = '/user/tasks?status=overdue')}
+          onClick={() => dashboardData.stats.overdueTasks > 0 && (router.push('/user/tasks?status=overdue'))}
         >
           <div className={`absolute top-0 left-0 w-full h-1 ${
             dashboardData.stats.overdueTasks > 0
@@ -431,7 +432,7 @@ export default function UserDashboard() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => window.location.href = '/user/tasks'}
+                  onClick={() => router.push('/user/tasks')}
                   className="text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                 >
                   View All
@@ -444,7 +445,7 @@ export default function UserDashboard() {
                 <div className="text-center py-12">
                   <CheckSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground mb-2">No recent tasks found</p>
-                  <Button size="sm" onClick={() => window.location.href = '/user/tasks'}>
+                  <Button size="sm" onClick={() => router.push('/user/tasks')}>
                     <Plus className="h-4 w-4 mr-2" />
                     Create Your First Task
                   </Button>
@@ -454,7 +455,7 @@ export default function UserDashboard() {
                   <div
                     key={task.id}
                     className="group relative border border-slate-200 bg-white rounded-lg p-4 hover:shadow-md hover:border-slate-300 transition-all duration-200 cursor-pointer"
-                    onClick={() => window.location.href = `/user/tasks?id=${task.id}`}
+                    onClick={() => router.push(`/user/tasks?id=${task.id}`)}
                   >
                     {/* Priority indicator bar */}
                     <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-lg ${
@@ -546,59 +547,55 @@ export default function UserDashboard() {
         {/* Flat Design Sidebar - Blue Theme */}
         <div className="space-y-4">
 
-          {/* Flat Design Upcoming Deadlines - Blue Theme */}
-          <Card className="border-0 rounded-none">
-            <CardHeader className="pb-4 bg-blue-400">
+          {/* Upcoming Deadlines */}
+          <Card className="border border-slate-200 bg-white rounded-xl overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 to-amber-500" style={{position:'relative'}}></div>
+            <CardHeader className="pb-3 pt-4">
               <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2 text-lg font-bold text-white">
-                    <div className="p-2 bg-blue-500 rounded-none">
-                      <Clock className="h-4 w-4 text-white" />
-                    </div>
-                    Upcoming Deadlines
-                  </CardTitle>
-                  <CardDescription className="mt-1.5 text-sm font-bold text-blue-100">
-                    Next 7 days
-                  </CardDescription>
-                </div>
+                <CardTitle className="flex items-center gap-2 text-base font-semibold text-slate-800">
+                  <div className="p-2 bg-orange-50 rounded-lg">
+                    <Clock className="h-4 w-4 text-orange-600" />
+                  </div>
+                  Upcoming Deadlines
+                </CardTitle>
+                <span className="text-xs text-slate-500 font-medium bg-slate-100 px-2 py-0.5 rounded-full">Next 7 days</span>
               </div>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-2 pt-0">
               {dashboardData.upcomingDeadlines.length === 0 ? (
                 <div className="text-center py-6">
-                  <CalendarIcon className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground mb-1">No upcoming deadlines</p>
-                  <p className="text-xs text-green-600 font-medium">You're all caught up! 🎉</p>
+                  <CalendarIcon className="h-8 w-8 text-slate-300 mx-auto mb-2" />
+                  <p className="text-sm text-slate-500 mb-1">No upcoming deadlines</p>
+                  <p className="text-xs text-emerald-600 font-medium">You&apos;re all caught up!</p>
                 </div>
               ) : (
                 dashboardData.upcomingDeadlines.map((task) => {
                   const dueDate = task.dueDate ? new Date(task.dueDate) : null
                   const isUrgent = dueDate && dueDate.getTime() - new Date().getTime() < 2 * 24 * 60 * 60 * 1000
                   return (
-                    <div key={task.id} className={`p-3 rounded-none border-0 transition-colors cursor-pointer ${
-                      isUrgent ? 'bg-red-100 hover:bg-red-200' : 'bg-gray-50 hover:bg-gray-100'
-                    }`} onClick={() => window.location.href = `/user/tasks?id=${task.id}`}>
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="font-bold text-sm flex-1 pr-2">{task.title}</div>
+                    <div key={task.id} className={`p-3 rounded-lg border transition-all cursor-pointer ${
+                      isUrgent
+                        ? 'bg-red-50 border-red-100 hover:border-red-200 hover:shadow-sm'
+                        : 'bg-slate-50 border-slate-100 hover:border-slate-200 hover:shadow-sm'
+                    }`} onClick={() => router.push(`/user/tasks?id=${task.id}`)}>
+                      <div className="flex items-start justify-between mb-1.5">
+                        <div className="font-semibold text-sm text-slate-800 flex-1 pr-2 break-words min-w-0">{task.title}</div>
                         {isUrgent && (
-                          <Badge variant="destructive" className="text-xs bg-red-500 text-white border-0 font-bold rounded-none">
+                          <Badge variant="destructive" className="text-xs bg-red-500 text-white border-0 font-semibold flex-shrink-0">
                             Urgent
                           </Badge>
                         )}
                       </div>
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-gray-600 font-bold">{task.team?.name || 'Personal'}</span>
+                        <Badge className={`text-xs ${getPriorityColor(task.priority)} border font-medium`}>
+                          {task.priority}
+                        </Badge>
                         {dueDate && (
-                          <div className={`flex items-center gap-1 ${isUrgent ? 'text-red-600 font-bold' : 'text-gray-600 font-bold'}`}>
+                          <div className={`flex items-center gap-1 ${isUrgent ? 'text-red-600 font-semibold' : 'text-slate-500'}`}>
                             <Clock className="h-3 w-3" />
-                            {format(dueDate, 'MMM dd')} ({formatDistanceToNow(dueDate, { addSuffix: false })})
+                            {format(dueDate, 'MMM dd')}
                           </div>
                         )}
-                      </div>
-                      <div className="mt-2">
-                        <Badge className={`text-xs ${getPriorityColor(task.priority)} border font-medium`}>
-                          {task.priority} Priority
-                        </Badge>
                       </div>
                     </div>
                   )
@@ -607,102 +604,102 @@ export default function UserDashboard() {
             </CardContent>
           </Card>
 
-          {/* Flat Design Quick Actions - Blue Theme */}
-          <Card className="border-0 rounded-none">
-            <CardHeader className="pb-4 bg-blue-500">
-              <CardTitle className="flex items-center gap-2 text-lg font-bold text-white">
-                <div className="p-2 bg-blue-600 rounded-none">
-                  <Zap className="h-4 w-4 text-white" />
+          {/* Quick Actions */}
+          <Card className="border border-slate-200 bg-white rounded-xl overflow-hidden">
+            <CardHeader className="pb-3 pt-4">
+              <CardTitle className="flex items-center gap-2 text-base font-semibold text-slate-800">
+                <div className="p-2 bg-blue-50 rounded-lg">
+                  <Zap className="h-4 w-4 text-blue-600" />
                 </div>
                 Quick Actions
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-1.5 pt-0">
               <Button
-                onClick={() => window.location.href = '/user/tasks'}
-                className="w-full justify-start h-auto p-3 border-0 rounded-none bg-gray-50 hover:bg-blue-50"
+                onClick={() => router.push('/user/tasks')}
+                className="w-full justify-start h-auto p-3 rounded-lg bg-slate-50 hover:bg-blue-50 border border-transparent hover:border-blue-100 transition-all"
                 variant="ghost"
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-500 rounded-none">
-                    <CheckSquare className="h-4 w-4 text-white" />
+                  <div className="p-1.5 bg-blue-100 rounded-md">
+                    <CheckSquare className="h-3.5 w-3.5 text-blue-600" />
                   </div>
                   <div className="text-left">
-                    <div className="font-bold text-sm">Manage Tasks</div>
-                    <div className="text-xs text-gray-600 font-bold">Create and track progress</div>
+                    <div className="font-semibold text-sm text-slate-800">Manage Tasks</div>
+                    <div className="text-xs text-slate-500">Create and track progress</div>
                   </div>
                 </div>
-                <ArrowRight className="h-4 w-4 ml-auto" />
+                <ArrowRight className="h-4 w-4 ml-auto text-slate-400" />
               </Button>
 
               <Button
-                onClick={() => window.location.href = '/user/calendar'}
-                className="w-full justify-start h-auto p-3 border-0 rounded-none bg-gray-50 hover:bg-blue-50"
+                onClick={() => router.push('/user/calendar')}
+                className="w-full justify-start h-auto p-3 rounded-lg bg-slate-50 hover:bg-blue-50 border border-transparent hover:border-blue-100 transition-all"
                 variant="ghost"
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-500 rounded-none">
-                    <CalendarIcon className="h-4 w-4 text-white" />
+                  <div className="p-1.5 bg-blue-100 rounded-md">
+                    <CalendarIcon className="h-3.5 w-3.5 text-blue-600" />
                   </div>
                   <div className="text-left">
-                    <div className="font-bold text-sm">View Calendar</div>
-                    <div className="text-xs text-gray-600 font-bold">Check your schedule</div>
+                    <div className="font-semibold text-sm text-slate-800">View Calendar</div>
+                    <div className="text-xs text-slate-500">Check your schedule</div>
                   </div>
                 </div>
-                <ArrowRight className="h-4 w-4 ml-auto" />
+                <ArrowRight className="h-4 w-4 ml-auto text-slate-400" />
               </Button>
 
               <Button
-                onClick={() => window.location.href = '/user/profile'}
-                className="w-full justify-start h-auto p-3 border-0 rounded-none bg-gray-50 hover:bg-blue-50"
+                onClick={() => router.push('/user/profile')}
+                className="w-full justify-start h-auto p-3 rounded-lg bg-slate-50 hover:bg-blue-50 border border-transparent hover:border-blue-100 transition-all"
                 variant="ghost"
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-500 rounded-none">
-                    <Users className="h-4 w-4 text-white" />
+                  <div className="p-1.5 bg-blue-100 rounded-md">
+                    <Users className="h-3.5 w-3.5 text-blue-600" />
                   </div>
                   <div className="text-left">
-                    <div className="font-bold text-sm">View Profile</div>
-                    <div className="text-xs text-gray-600 font-bold">Manage your account</div>
+                    <div className="font-semibold text-sm text-slate-800">View Profile</div>
+                    <div className="text-xs text-slate-500">Manage your account</div>
                   </div>
                 </div>
-                <ArrowRight className="h-4 w-4 ml-auto" />
+                <ArrowRight className="h-4 w-4 ml-auto text-slate-400" />
               </Button>
 
               {isLeader && (
                 <>
                   <Button
-                    onClick={() => window.location.href = '/user/team-overview'}
-                    className="w-full justify-start h-auto p-3 border-0 rounded-none bg-gray-50 hover:bg-blue-50"
+                    onClick={() => router.push('/user/team-overview')}
+                    className="w-full justify-start h-auto p-3 rounded-lg bg-slate-50 hover:bg-blue-50 border border-transparent hover:border-blue-100 transition-all"
                     variant="ghost"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-blue-500 rounded-none">
-                        <Users className="h-4 w-4 text-white" />
+                      <div className="p-1.5 bg-purple-100 rounded-md">
+                        <Users className="h-3.5 w-3.5 text-purple-600" />
                       </div>
                       <div className="text-left">
-                        <div className="font-bold text-sm">Team Overview</div>
-                        <div className="text-xs text-gray-600 font-bold">Monitor team progress</div>
+                        <div className="font-semibold text-sm text-slate-800">Team Overview</div>
+                        <div className="text-xs text-slate-500">Monitor team progress</div>
                       </div>
                     </div>
-                    <ArrowRight className="h-4 w-4 ml-auto" />
+                    <ArrowRight className="h-4 w-4 ml-auto text-slate-400" />
                   </Button>
 
                   <Button
-                    onClick={() => window.location.href = '/user/member-management'}
-                    className="w-full justify-start h-auto p-3 border-0 rounded-none bg-gray-50 hover:bg-blue-50"
+                    onClick={() => router.push('/user/member-management')}
+                    className="w-full justify-start h-auto p-3 rounded-lg bg-slate-50 hover:bg-blue-50 border border-transparent hover:border-blue-100 transition-all"
                     variant="ghost"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-blue-500 rounded-none">
-                        <Target className="h-4 w-4 text-white" />
+                      <div className="p-1.5 bg-emerald-100 rounded-md">
+                        <Target className="h-3.5 w-3.5 text-emerald-600" />
                       </div>
                       <div className="text-left">
-                        <div className="font-bold text-sm">Assign Tasks</div>
-                        <div className="text-xs text-gray-600 font-bold">Delegate to team</div>
+                        <div className="font-semibold text-sm text-slate-800">Assign Tasks</div>
+                        <div className="text-xs text-slate-500">Delegate to team</div>
                       </div>
                     </div>
-                    <ArrowRight className="h-4 w-4 ml-auto" />
+                    <ArrowRight className="h-4 w-4 ml-auto text-slate-400" />
                   </Button>
                 </>
               )}

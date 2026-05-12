@@ -745,16 +745,16 @@
 .rbc-show-more {
   display: inline-flex !important;
   align-items: center !important;
-  font-size: 0.7rem !important;
+  font-size: 0.72rem !important;
   font-weight: 600 !important;
   color: #4f46e5 !important;
   background: #eef2ff !important;
   border: 1px solid #c7d2fe !important;
   border-radius: 999px !important;
-  padding: 1px 8px !important;
-  margin: 1px 2px !important;
+  padding: 3px 10px !important;
+  margin: 3px 4px !important;
   cursor: pointer !important;
-  line-height: 1.6 !important;
+  line-height: 1.5 !important;
   text-decoration: none !important;
   transition: background 0.15s, color 0.15s !important;
   white-space: nowrap !important;
@@ -764,6 +764,11 @@
   background: #c7d2fe !important;
   color: #3730a3 !important;
   text-decoration: none !important;
+}
+
+/* Give the row that holds the +N more link a little breathing room */
+.rbc-row-segment {
+  padding: 1px 3px !important;
 }
 
 /* Today Cell Highlighting */

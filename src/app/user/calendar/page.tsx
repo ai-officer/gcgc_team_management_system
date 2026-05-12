@@ -530,7 +530,7 @@ export default function CalendarPage() {
             events={events}
             startAccessor="start"
             endAccessor="end"
-            style={{ height: 700 }}
+            style={{ height: 900 }}
             onSelectEvent={handleSelectEvent}
             onSelectSlot={handleSelectSlot}
             onDrillDown={handleDrillDown}

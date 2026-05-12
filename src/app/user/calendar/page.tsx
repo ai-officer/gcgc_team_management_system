@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { Calendar, momentLocalizer, Views } from 'react-big-calendar'
@@ -125,6 +126,8 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [isDaySidebarOpen, setIsDaySidebarOpen] = useState(false)
   const [isNewTaskFormOpen, setIsNewTaskFormOpen] = useState(false)
+  const [portalMounted, setPortalMounted] = useState(false)
+  useEffect(() => { setPortalMounted(true) }, [])
   const { toast } = useToast()
 
   const handleToggleSubtask = async (subtaskId: string, currentStatus: string) => {
@@ -566,108 +569,153 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      {/* Day Sidebar — fixed sliding drawer from right edge, independent of calendar */}
-      {/* Panel */}
-      <div
-        style={{
-          position: 'fixed',
-          top: 0,
-          right: 0,
-          width: 320,
-          height: '100vh',
-          zIndex: 50,
-          transform: isDaySidebarOpen ? 'translateX(0)' : 'translateX(100%)',
-          transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          background: 'white',
-          boxShadow: '-8px 0 30px rgba(0,0,0,0.12)',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-        }}
-      >
-        {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-4 flex-shrink-0">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <p className="text-blue-100 text-xs font-medium uppercase tracking-wider">
+      {/* Day Sidebar — rendered via portal at document.body to avoid stacking context issues */}
+      {portalMounted && createPortal(
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            right: 0,
+            width: 340,
+            height: '100vh',
+            zIndex: 9999,
+            transform: isDaySidebarOpen ? 'translateX(0)' : 'translateX(100%)',
+            transition: 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            boxShadow: isDaySidebarOpen ? '-12px 0 40px rgba(0,0,0,0.15)' : 'none',
+            background: '#ffffff',
+          }}
+        >
+          {/* Header — deep slate with date hero */}
+          <div style={{ background: 'linear-gradient(160deg, #0f172a 0%, #1e293b 100%)', flexShrink: 0, padding: '20px 20px 0' }}>
+            {/* Top row: close button */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+              <button
+                onClick={() => setIsDaySidebarOpen(false)}
+                style={{ color: '#94a3b8', background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 8, padding: '6px 7px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.15)'; (e.currentTarget as HTMLButtonElement).style.color = '#fff' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLButtonElement).style.color = '#94a3b8' }}
+              >
+                <X style={{ width: 15, height: 15 }} />
+              </button>
+            </div>
+
+            {/* Date hero */}
+            <div style={{ marginBottom: 20 }}>
+              <p style={{ color: '#64748b', fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>
                 {selectedDate ? moment(selectedDate).format('dddd') : ''}
               </p>
-              <p className="text-white text-lg font-bold leading-tight">
-                {selectedDate ? moment(selectedDate).format('MMMM D, YYYY') : ''}
+              <p style={{ color: '#f1f5f9', fontSize: 26, fontWeight: 700, lineHeight: 1.1, letterSpacing: '-0.02em', marginBottom: 6 }}>
+                {selectedDate ? moment(selectedDate).format('MMMM D') : ''}
+                <span style={{ color: '#475569', fontSize: 18, fontWeight: 400, marginLeft: 6 }}>
+                  {selectedDate ? moment(selectedDate).format('YYYY') : ''}
+                </span>
               </p>
-              <p className="text-blue-200 text-xs mt-0.5">
-                {daySidebarEvents.length === 0 ? 'No events' : `${daySidebarEvents.length} event${daySidebarEvents.length !== 1 ? 's' : ''}`}
-              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: daySidebarEvents.length > 0 ? '#3b82f6' : '#334155' }} />
+                <p style={{ color: '#64748b', fontSize: 12, fontWeight: 500 }}>
+                  {daySidebarEvents.length === 0 ? 'No events' : `${daySidebarEvents.length} event${daySidebarEvents.length !== 1 ? 's' : ''}`}
+                </p>
+              </div>
             </div>
+
+            {/* Add task button */}
             <button
-              onClick={() => setIsDaySidebarOpen(false)}
-              className="text-blue-200 hover:text-white transition-colors p-1.5 rounded-md hover:bg-white/20 flex-shrink-0"
+              onClick={() => setIsNewTaskFormOpen(true)}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+                background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '10px 10px 0 0',
+                padding: '11px 0', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                transition: 'background 0.15s', letterSpacing: '-0.01em',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#2563eb' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#3b82f6' }}
             >
-              <X className="h-4 w-4" />
+              <Plus style={{ width: 15, height: 15 }} />
+              Add task for this day
             </button>
           </div>
-          <Button
-            size="sm"
-            className="mt-3 w-full bg-white/20 hover:bg-white/30 text-white border-0 gap-1.5 text-xs"
-            onClick={() => setIsNewTaskFormOpen(true)}
-          >
-            <Plus className="h-3.5 w-3.5" />
-            New Task
-          </Button>
-        </div>
 
-        {/* Events list — scrollable */}
-        <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
-          {daySidebarEvents.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center px-4">
-              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mb-2">
-                <CalendarIcon className="h-4 w-4 text-slate-400" />
+          {/* Events list */}
+          <div style={{ flex: 1, overflowY: 'auto', background: '#f8fafc' }}>
+            {daySidebarEvents.length === 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '0 24px', textAlign: 'center' }}>
+                <div style={{ width: 56, height: 56, borderRadius: 16, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14, border: '1px solid #e2e8f0' }}>
+                  <CalendarIcon style={{ width: 22, height: 22, color: '#94a3b8' }} />
+                </div>
+                <p style={{ color: '#334155', fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Nothing scheduled</p>
+                <p style={{ color: '#94a3b8', fontSize: 12, lineHeight: 1.5 }}>Click &ldquo;Add task&rdquo; above to create something for this day</p>
               </div>
-              <p className="text-sm font-medium text-slate-600">Nothing scheduled</p>
-              <p className="text-xs text-slate-400 mt-0.5">Add a task using the button above</p>
-            </div>
-          ) : (
-            daySidebarEvents.map(ev => {
-              const color = ev.resource?.color || '#3b82f6'
-              const isTask = !!ev.resource?.task
-              const priority = ev.resource?.task?.priority
-              const priorityColors: Record<string, string> = {
-                URGENT: 'bg-red-100 text-red-700',
-                HIGH: 'bg-orange-100 text-orange-700',
-                MEDIUM: 'bg-yellow-100 text-yellow-700',
-                LOW: 'bg-green-100 text-green-700',
-              }
-              return (
-                <button
-                  key={ev.id || ev.title}
-                  onClick={() => { handleSelectEvent(ev); setIsDaySidebarOpen(false) }}
-                  className="w-full text-left px-4 py-3.5 hover:bg-slate-50 transition-colors group"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1.5" style={{ backgroundColor: color }} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-800 truncate group-hover:text-blue-700 transition-colors">
-                        {ev.title.replace(/^\[.*?\]\s*/, '')}
-                      </p>
-                      <div className="flex items-center gap-1.5 mt-1">
-                        {isTask && priority && (
-                          <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${priorityColors[priority] || 'bg-slate-100 text-slate-600'}`}>
-                            {priority}
-                          </span>
-                        )}
-                        {!isTask && (
-                          <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">Meeting</span>
-                        )}
+            ) : (
+              <div style={{ padding: '12px 12px' }}>
+                {daySidebarEvents.map((ev, i) => {
+                  const color = ev.resource?.color || '#3b82f6'
+                  const isTask = !!ev.resource?.task
+                  const priority = ev.resource?.task?.priority
+                  const priorityMeta: Record<string, { bg: string; text: string; label: string }> = {
+                    URGENT: { bg: '#fef2f2', text: '#dc2626', label: 'Urgent' },
+                    HIGH:   { bg: '#fff7ed', text: '#ea580c', label: 'High' },
+                    MEDIUM: { bg: '#fffbeb', text: '#d97706', label: 'Medium' },
+                    LOW:    { bg: '#f0fdf4', text: '#16a34a', label: 'Low' },
+                  }
+                  const meta = priority ? priorityMeta[priority] : null
+                  return (
+                    <button
+                      key={ev.id || ev.title}
+                      onClick={() => { handleSelectEvent(ev); setIsDaySidebarOpen(false) }}
+                      style={{
+                        width: '100%', textAlign: 'left', display: 'block',
+                        background: '#ffffff', border: '1px solid #e2e8f0',
+                        borderLeft: `3px solid ${color}`, borderRadius: 10,
+                        padding: '12px 14px', marginBottom: 8, cursor: 'pointer',
+                        transition: 'all 0.15s', animationDelay: `${i * 40}ms`,
+                      }}
+                      onMouseEnter={e => {
+                        const el = e.currentTarget as HTMLButtonElement
+                        el.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'
+                        el.style.borderColor = color
+                        el.style.transform = 'translateY(-1px)'
+                      }}
+                      onMouseLeave={e => {
+                        const el = e.currentTarget as HTMLButtonElement
+                        el.style.boxShadow = 'none'
+                        el.style.borderColor = '#e2e8f0'
+                        el.style.borderLeftColor = color
+                        el.style.transform = 'none'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ color: '#0f172a', fontSize: 13, fontWeight: 600, marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.01em' }}>
+                            {ev.title.replace(/^\[.*?\]\s*/, '')}
+                          </p>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                            {isTask && meta && (
+                              <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 7px', borderRadius: 5, background: meta.bg, color: meta.text }}>
+                                {meta.label}
+                              </span>
+                            )}
+                            {!isTask && (
+                              <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 7px', borderRadius: 5, background: '#eff6ff', color: '#3b82f6' }}>Meeting</span>
+                            )}
+                            {isTask && (
+                              <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>Task</span>
+                            )}
+                          </div>
+                        </div>
+                        <ChevronRight style={{ width: 14, height: 14, color: '#cbd5e1', flexShrink: 0, marginTop: 2 }} />
                       </div>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-slate-500 flex-shrink-0 mt-0.5 transition-colors" />
-                  </div>
-                </button>
-              )
-            })
-          )}
-        </div>
-      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* Event Details Dialog - Professional Design */}
       <Dialog open={isEventDialogOpen} onOpenChange={setIsEventDialogOpen}>

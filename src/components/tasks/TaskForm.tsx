@@ -109,9 +109,10 @@ interface TaskFormProps {
   duplicateFrom?: any // Source task to duplicate (creates a new task pre-filled from this)
   onSubmit: (data: TaskFormData) => Promise<void>
   preSelectedMemberId?: string // Pre-selected team member for assignment
+  initialDueDate?: Date // Pre-fill the due date when creating a new task
 }
 
-export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSubmit, preSelectedMemberId }: TaskFormProps) {
+export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSubmit, preSelectedMemberId, initialDueDate }: TaskFormProps) {
   const { data: session } = useSession()
   const [loading, setLoading] = useState(false)
   const [users, setUsers] = useState<User[]>([])
@@ -284,6 +285,7 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
           startDate: undefined,
           startTime: '',
           endTime: '',
+          dueDate: initialDueDate || undefined,
           // Recurring task fields
           isRecurring: false,
           recurringFrequency: undefined,

@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react'
 import { Calendar, momentLocalizer, Views } from 'react-big-calendar'
 import moment from 'moment'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
-import { Calendar as CalendarIcon, AlertCircle, Settings, Wifi, WifiOff, RefreshCw, FileText, Clock, Users, User, Tag, CheckCircle2, AlertTriangle, Flag, X, ChevronRight } from 'lucide-react'
+import { Calendar as CalendarIcon, AlertCircle, Settings, Wifi, WifiOff, RefreshCw, FileText, Clock, Users, User, Tag, CheckCircle2, AlertTriangle, Flag, X, ChevronRight, Plus } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -20,6 +20,7 @@ import {
 import { EVENT_TYPE_COLORS } from '@/constants'
 import CalendarSyncSettingsModal from '@/components/calendar/CalendarSyncSettingsModal'
 import CreateTaskButton from '@/components/tasks/CreateTaskButton'
+import TaskForm from '@/components/tasks/TaskForm'
 import TaskViewModal from '@/components/tasks/TaskViewModal'
 import { useCalendarSync } from '@/hooks/useCalendarSync'
 import { useToast } from '@/hooks/use-toast'
@@ -124,6 +125,10 @@ export default function CalendarPage() {
   const [showMoreOpen, setShowMoreOpen] = useState(false)
   const [showMoreDate, setShowMoreDate] = useState<Date | null>(null)
   const [showMoreEvents, setShowMoreEvents] = useState<CalendarEvent[]>([])
+  // Day sidebar
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const [isDaySidebarOpen, setIsDaySidebarOpen] = useState(false)
+  const [isNewTaskFormOpen, setIsNewTaskFormOpen] = useState(false)
   const { toast } = useToast()
 
   const handleToggleSubtask = async (subtaskId: string, currentStatus: string) => {
@@ -378,6 +383,49 @@ export default function CalendarPage() {
     }
   }
 
+  const handleSelectSlot = ({ start }: { start: Date }) => {
+    setSelectedDate(start)
+    setIsDaySidebarOpen(true)
+  }
+
+  const daySidebarEvents = useMemo(() => {
+    if (!selectedDate) return []
+    return events.filter(ev => {
+      const evStart = new Date(ev.start)
+      const evEnd = new Date(ev.end)
+      const day = new Date(selectedDate)
+      day.setHours(0, 0, 0, 0)
+      const dayEnd = new Date(day); dayEnd.setHours(23, 59, 59, 999)
+      return evStart <= dayEnd && evEnd >= day
+    })
+  }, [events, selectedDate])
+
+  const handleNewTaskSubmit = async (data: any) => {
+    try {
+      const { subtasks, ...taskData } = data
+      const res = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(taskData),
+      })
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error || 'Failed to create task')
+      if (subtasks?.length > 0) {
+        await Promise.all(subtasks.map((s: any) => fetch('/api/tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: s.title, parentId: result.id, priority: taskData.priority, taskType: 'INDIVIDUAL', assigneeId: s.assigneeId, dueDate: s.dueDate ? new Date(s.dueDate).toISOString() : undefined }),
+        })))
+      }
+      toast({ title: 'Task created successfully' })
+      setIsNewTaskFormOpen(false)
+      fetchCalendarData()
+    } catch (err) {
+      toast({ title: 'Error', description: err instanceof Error ? err.message : 'Failed to create task', variant: 'destructive' })
+      throw err
+    }
+  }
+
   const handleShowMore = (moreEvents: CalendarEvent[], date: Date) => {
     setShowMoreEvents(moreEvents)
     setShowMoreDate(date)
@@ -520,29 +568,129 @@ export default function CalendarPage() {
         </CardContent>
       </Card>
 
-      {/* Calendar */}
-      <div className="w-full [&_.rbc-calendar]:h-[500px] sm:[&_.rbc-calendar]:h-[700px] overflow-x-auto">
-        <Calendar
-          localizer={localizer}
-          events={events}
-          startAccessor="start"
-          endAccessor="end"
-          style={{ minHeight: 500 }}
-          onSelectEvent={handleSelectEvent}
-          eventPropGetter={eventStyleGetter}
-          views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
-          defaultView={Views.MONTH}
-          popup={false}
-          showMultiDayTimes
-          step={30}
-          timeslots={2}
-          doShowMoreDrillDown={false}
-          onShowMore={handleShowMore}
-          messages={{
-            showMore: (total: number) => `+${total} more`,
-            noEventsInRange: 'No events scheduled for this period. Create a task or sync with Google Calendar to see events here.'
-          }}
-        />
+      {/* Calendar + Day Sidebar */}
+      <div className="flex gap-4 items-start">
+        <div className="flex-1 min-w-0 overflow-x-auto [&_.rbc-calendar]:h-[500px] sm:[&_.rbc-calendar]:h-[700px]">
+          <Calendar
+            localizer={localizer}
+            events={events}
+            startAccessor="start"
+            endAccessor="end"
+            style={{ minHeight: 500 }}
+            onSelectEvent={handleSelectEvent}
+            onSelectSlot={handleSelectSlot}
+            selectable
+            eventPropGetter={eventStyleGetter}
+            views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
+            defaultView={Views.MONTH}
+            popup={false}
+            showMultiDayTimes
+            step={30}
+            timeslots={2}
+            doShowMoreDrillDown={false}
+            onShowMore={handleShowMore}
+            messages={{
+              showMore: (total: number) => `+${total} more`,
+              noEventsInRange: 'No events scheduled for this period. Create a task or sync with Google Calendar to see events here.'
+            }}
+          />
+        </div>
+
+        {/* Day Sidebar */}
+        <div className={`transition-all duration-300 ease-in-out flex-shrink-0 overflow-hidden ${isDaySidebarOpen ? 'w-72' : 'w-0'}`}>
+          <div className="w-72 border border-slate-200 bg-white rounded-xl shadow-md flex flex-col overflow-hidden" style={{ minHeight: 500 }}>
+            {/* Sidebar Header */}
+            <div className="bg-gradient-to-br from-blue-600 to-blue-700 px-4 py-4 flex-shrink-0">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-blue-100 text-xs font-medium uppercase tracking-wider">
+                    {selectedDate ? moment(selectedDate).format('dddd') : ''}
+                  </p>
+                  <p className="text-white text-2xl font-bold leading-tight">
+                    {selectedDate ? moment(selectedDate).format('MMMM D') : ''}
+                  </p>
+                  <p className="text-blue-200 text-xs mt-1">
+                    {daySidebarEvents.length === 0 ? 'No events' : `${daySidebarEvents.length} event${daySidebarEvents.length !== 1 ? 's' : ''}`}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsDaySidebarOpen(false)}
+                  className="text-blue-200 hover:text-white transition-colors p-1 rounded-md hover:bg-blue-500/30"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Events List */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+              {daySidebarEvents.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-10 text-center px-4">
+                  <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
+                    <CalendarIcon className="h-5 w-5 text-slate-400" />
+                  </div>
+                  <p className="text-sm font-medium text-slate-600">Nothing scheduled</p>
+                  <p className="text-xs text-slate-400 mt-1">Click below to add a task</p>
+                </div>
+              ) : (
+                daySidebarEvents.map(ev => {
+                  const color = ev.resource?.color || '#3b82f6'
+                  const isTask = !!ev.resource?.task
+                  const priority = ev.resource?.task?.priority
+                  const priorityColors: Record<string, string> = {
+                    URGENT: 'bg-red-100 text-red-700',
+                    HIGH: 'bg-orange-100 text-orange-700',
+                    MEDIUM: 'bg-yellow-100 text-yellow-700',
+                    LOW: 'bg-green-100 text-green-700',
+                  }
+                  return (
+                    <button
+                      key={ev.id || ev.title}
+                      onClick={() => { handleSelectEvent(ev); setIsDaySidebarOpen(false) }}
+                      className="w-full text-left p-3 rounded-lg border border-slate-100 hover:border-slate-200 hover:shadow-sm bg-slate-50 hover:bg-white transition-all group"
+                    >
+                      <div className="flex items-start gap-2.5">
+                        <div className="w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1" style={{ backgroundColor: color }} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-slate-800 truncate group-hover:text-blue-700 transition-colors">
+                            {ev.title.replace(/^\[.*?\]\s*/, '')}
+                          </p>
+                          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                            {isTask && priority && (
+                              <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${priorityColors[priority] || 'bg-slate-100 text-slate-600'}`}>
+                                {priority}
+                              </span>
+                            )}
+                            {!isTask && (
+                              <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">
+                                Meeting
+                              </span>
+                            )}
+                            <span className="text-xs text-slate-400">
+                              {moment(ev.start).format('h:mm A')}
+                            </span>
+                          </div>
+                        </div>
+                        <ChevronRight className="h-3.5 w-3.5 text-slate-300 group-hover:text-slate-500 flex-shrink-0 mt-0.5 transition-colors" />
+                      </div>
+                    </button>
+                  )
+                })
+              )}
+            </div>
+
+            {/* Create Task CTA */}
+            <div className="p-3 border-t border-slate-100 flex-shrink-0">
+              <Button
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white gap-2 rounded-lg"
+                onClick={() => setIsNewTaskFormOpen(true)}
+              >
+                <Plus className="h-4 w-4" />
+                New Task for this day
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Event Details Dialog - Professional Design */}
@@ -957,11 +1105,18 @@ export default function CalendarPage() {
         }}
         task={viewingTask}
         onEdit={() => {
-          // Close modal and optionally navigate to tasks page for editing
           setIsTaskViewOpen(false)
           router.push(`/user/tasks?edit=${viewingTask?.id}`)
         }}
         onTaskUpdate={fetchCalendarData}
+      />
+
+      {/* New Task from Day Sidebar */}
+      <TaskForm
+        open={isNewTaskFormOpen}
+        onOpenChange={setIsNewTaskFormOpen}
+        onSubmit={handleNewTaskSubmit}
+        initialDueDate={selectedDate ?? undefined}
       />
     </div>
   )

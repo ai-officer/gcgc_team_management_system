@@ -212,6 +212,7 @@ export default function TasksPage() {
   const [deleteScope, setDeleteScope] = useState<'single' | 'series'>('single')
   const [viewingTask, setViewingTask] = useState<Task | null>(null)
   const [showViewModal, setShowViewModal] = useState(false)
+  const [taskHistory, setTaskHistory] = useState<Task[]>([])
 
   // Board state
   const [boards, setBoards] = useState<KanbanBoard[]>([])
@@ -776,11 +777,25 @@ export default function TasksPage() {
       const response = await fetch(`/api/tasks/${subtaskId}`)
       if (response.ok) {
         const subtask = await response.json()
+        // Push current task onto history before navigating into subtask
+        if (viewingTask) {
+          setTaskHistory(prev => [...prev, viewingTask])
+        }
         setViewingTask(subtask)
       }
     } catch (err) {
       console.error('Error fetching subtask:', err)
     }
+  }
+
+  // Go back to the previous task in the navigation history
+  const handleGoBack = () => {
+    setTaskHistory(prev => {
+      const history = [...prev]
+      const parent = history.pop()
+      if (parent) setViewingTask(parent)
+      return history
+    })
   }
 
   // Helper function to open edit modal (called from view modal)
@@ -817,6 +832,7 @@ export default function TasksPage() {
   const closeViewModal = () => {
     setShowViewModal(false)
     setViewingTask(null)
+    setTaskHistory([])
     // Refresh tasks in background to reflect any changes made in the modal
     fetchTasks(false)
   }
@@ -1384,6 +1400,7 @@ export default function TasksPage() {
         onDuplicate={(task) => { setShowViewModal(false); openDuplicateForm(task as Task) }}
         onTaskUpdate={() => fetchTasks(false)}
         onSubtaskClick={handleSubtaskClick}
+        onBack={taskHistory.length > 0 ? handleGoBack : undefined}
       />
 
       {/* Delete Confirmation Dialog */}

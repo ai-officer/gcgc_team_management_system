@@ -33,7 +33,7 @@ import {
   User, Users, Handshake, Clock, MessageSquare, Send, Edit, Copy,
   Heart, ThumbsUp, Smile, Reply, Image, Paperclip, MoreHorizontal,
   AtSign, Trash2, Pencil, X, Check, FileText, Download, File,
-  Plus, ListTodo, ChevronRight, CheckCircle2, Circle, AlertCircle, RefreshCw, RotateCcw, Eye, GitBranch, Lock
+  Plus, ListTodo, ChevronRight, ChevronLeft, CheckCircle2, Circle, AlertCircle, RefreshCw, RotateCcw, Eye, GitBranch, Lock
 } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { Progress } from '@/components/ui/progress'
@@ -200,6 +200,7 @@ interface TaskViewModalProps {
   onDuplicate?: (task: Task) => void
   onTaskUpdate?: () => void | Promise<void>
   onSubtaskClick?: (subtaskId: string) => void
+  onBack?: () => void
 }
 
 const REACTION_EMOJIS = ['👍', '❤️', '😄', '😮', '😢', '😡']
@@ -246,7 +247,8 @@ export default function TaskViewModal({
   onEdit,
   onDuplicate,
   onTaskUpdate,
-  onSubtaskClick
+  onSubtaskClick,
+  onBack,
 }: TaskViewModalProps) {
   const { data: session } = useSession()
   const { toast } = useToast()
@@ -1490,6 +1492,16 @@ export default function TaskViewModal({
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         {/* Simple Header */}
         <DialogHeader className="space-y-4 pr-8 overflow-hidden">
+          {/* Back button — shown when navigated into a subtask */}
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors w-fit -mb-1"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Back to parent task
+            </button>
+          )}
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 space-y-2 min-w-0">
               <div className="flex items-start gap-2 min-w-0">

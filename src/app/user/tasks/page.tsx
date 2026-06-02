@@ -445,11 +445,19 @@ export default function TasksPage() {
       return
     }
 
+    // Reflect the new column in the task's progress so an In Progress / In Review
+    // card doesn't sit at 0%. Only bumps the value up — never lowers a higher one.
+    const STATUS_PROGRESS_FLOOR: Record<string, number> = {
+      TODO: 0, IN_PROGRESS: 10, IN_REVIEW: 90, COMPLETED: 100,
+    }
+    const floor = STATUS_PROGRESS_FLOOR[newStatus] ?? 0
+    const newProgress = Math.max(taskBeingMoved.progressPercentage || 0, floor)
+
     // Optimistically update the UI
     setTasks(prev =>
       prev.map(task =>
         task.id === draggableId
-          ? { ...task, status: newStatus }
+          ? { ...task, status: newStatus, progressPercentage: newProgress }
           : task
       )
     )
@@ -458,7 +466,7 @@ export default function TasksPage() {
       const response = await fetch(`/api/tasks/${draggableId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify({ status: newStatus, progressPercentage: newProgress })
       })
 
       if (!response.ok) {

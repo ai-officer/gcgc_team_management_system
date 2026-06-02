@@ -1164,7 +1164,10 @@ export default function TaskViewModal({
   const isTaskCreator = task?.creator?.id === session?.user?.id
   const isTaskAssignee = task?.assignee?.id === session?.user?.id
   const isTaskAssigner = task?.assignedBy?.id === session?.user?.id
-  const canCompleteTask = isTaskCreator || isTaskAssigner || session?.user?.role === 'ADMIN'
+  // The designated Team Leader (a TEAM task's assignee) can finalize the task and
+  // review/complete its members' subtasks — same as the creator/assigner/admin.
+  const isTeamLeaderOfTask = task?.taskType === 'TEAM' && isTaskAssignee
+  const canCompleteTask = isTaskCreator || isTaskAssigner || isTeamLeaderOfTask || session?.user?.role === 'ADMIN'
   const isTaskTeamMember = task?.teamMembers?.some(tm => tm.user.id === session?.user?.id)
   const isTaskCollaborator = task?.collaborators?.some(c => c.user.id === session?.user?.id)
 

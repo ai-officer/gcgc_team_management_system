@@ -204,6 +204,8 @@ export async function PATCH(
         team: true,
         teamMembers: true,
         collaborators: true,
+        // Parent's leader/creator can finalize this subtask (review → done)
+        parent: { select: { assigneeId: true, creatorId: true } },
       }
     })
 
@@ -232,7 +234,14 @@ export async function PATCH(
     const isCreator = existingTask.creatorId === session.user.id
     const isAdmin = session.user.role === 'ADMIN'
     const isLeader = session.user.role === 'LEADER'
-    const canComplete = isAssigner || isCreator || isAdmin || (isLeader && isTeamLeader(teamMember?.role))
+    // The designated Team Leader (the TEAM task's assignee) and the leader/creator
+    // of a subtask's parent can finalize (review → mark done).
+    const isTeamTaskLeader = existingTask.taskType === 'TEAM' && existingTask.assigneeId === session.user.id
+    const isParentLeader = !!existingTask.parent && (
+      existingTask.parent.assigneeId === session.user.id ||
+      existingTask.parent.creatorId === session.user.id
+    )
+    const canComplete = isAssigner || isCreator || isAdmin || (isLeader && isTeamLeader(teamMember?.role)) || isTeamTaskLeader || isParentLeader
 
     // Leaders can extend due dates for tasks assigned to their team members (multi-leader support)
     let isLeaderSubordinateOverride = false
@@ -276,7 +285,10 @@ export async function PATCH(
         return NextResponse.json({ error: 'User role is required' }, { status: 403 })
       }
       
-      if (!canChangeTaskStatus(
+      // Finishers (creator / assigner / admin / team leader / parent leader) can
+      // move the task to any status, including COMPLETED. Everyone else is
+      // governed by canChangeTaskStatus (which caps them below COMPLETED).
+      if (!canComplete && !canChangeTaskStatus(
         session.user.role,
         existingTask.creatorId,
         existingTask.assigneeId,
@@ -287,8 +299,8 @@ export async function PATCH(
         teamMember?.role,
         updateData.status
       )) {
-        return NextResponse.json({ 
-          error: 'You cannot change the status of this task. Please add a comment to communicate with the task owner.' 
+        return NextResponse.json({
+          error: 'You cannot change the status of this task. Please add a comment to communicate with the task owner.'
         }, { status: 403 })
       }
     }
@@ -307,7 +319,7 @@ export async function PATCH(
         return NextResponse.json({ error: 'Leaders can only change the due date on subordinate tasks' }, { status: 403 })
       }
       // Skip canEditTask — dueDate-only override is permitted
-    } else if (!canEditTask(
+    } else if (!canComplete && !canEditTask(
       session.user.role,
       existingTask.creatorId,
       existingTask.assigneeId,

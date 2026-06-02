@@ -727,11 +727,26 @@ export default function TaskViewModal({
     }
   }
 
-  // Toggle subtask completion: COMPLETED (100%) <-> TODO (0%)
+  // Toggle subtask completion.
+  // - The creator/assigner/admin (canCompleteTask) can finalize: COMPLETED (100%) <-> TODO.
+  // - Anyone else (the member doing the work) submits for review: IN_REVIEW (90%) <-> TODO.
+  //   They never set COMPLETED directly — the leader/creator reviews and marks it done.
   const handleToggleSubtaskCompletion = async (subtask: NonNullable<Task['subtasks']>[number]) => {
-    const isCompleted = subtask.status === 'COMPLETED'
-    const newStatus = isCompleted ? 'TODO' : 'COMPLETED'
-    const newProgress = isCompleted ? 0 : 100
+    let newStatus: 'TODO' | 'IN_REVIEW' | 'COMPLETED'
+    let newProgress: number
+    let successMessage: string
+
+    if (canCompleteTask) {
+      const isCompleted = subtask.status === 'COMPLETED'
+      newStatus = isCompleted ? 'TODO' : 'COMPLETED'
+      newProgress = isCompleted ? 0 : 100
+      successMessage = isCompleted ? 'Subtask reopened' : 'Subtask marked complete'
+    } else {
+      const submitted = subtask.status === 'IN_REVIEW'
+      newStatus = submitted ? 'TODO' : 'IN_REVIEW'
+      newProgress = submitted ? 0 : 90
+      successMessage = submitted ? 'Submission withdrawn' : 'Submitted for review'
+    }
 
     // Optimistic update
     setLocalSubtasks(prev =>
@@ -750,6 +765,7 @@ export default function TaskViewModal({
       if (!response.ok) {
         throw new Error('Failed to update subtask')
       }
+      toast({ title: successMessage })
       onTaskUpdate?.()
     } catch (error) {
       // Revert optimistic update on failure
@@ -1979,7 +1995,11 @@ export default function TaskViewModal({
                         ) : (
                           <button
                             className="flex-shrink-0 focus:outline-none hover:scale-110 transition-transform"
-                            title={subtask.status === 'COMPLETED' ? 'Mark as incomplete' : 'Mark as complete'}
+                            title={
+                              canCompleteTask
+                                ? (subtask.status === 'COMPLETED' ? 'Mark as incomplete' : 'Mark as complete')
+                                : (subtask.status === 'IN_REVIEW' ? 'Withdraw submission' : 'Submit for review')
+                            }
                             onClick={(e) => {
                               e.stopPropagation()
                               handleToggleSubtaskCompletion(subtask)

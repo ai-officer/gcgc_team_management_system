@@ -135,6 +135,28 @@ export async function GET(
           hasAccess = !!subtaskForUser
         }
 
+        // Anyone who can access the PARENT task can view its subtasks. This lets
+        // the parent's owner/leader (its assignee) and team members open a member's
+        // subtask — not only the subtask's own assignee.
+        if (!hasAccess && task.parentId) {
+          const parent = await prisma.task.findUnique({
+            where: { id: task.parentId },
+            select: {
+              creatorId: true,
+              assigneeId: true,
+              teamMembers: { select: { userId: true } },
+              collaborators: { select: { userId: true } },
+            }
+          })
+          if (parent) {
+            hasAccess =
+              parent.creatorId === session.user.id ||
+              parent.assigneeId === session.user.id ||
+              parent.teamMembers.some(tm => tm.userId === session.user.id) ||
+              parent.collaborators.some(c => c.userId === session.user.id)
+          }
+        }
+
         if (!hasAccess) {
           return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
         }

@@ -235,6 +235,14 @@ export function canChangeTaskStatus(
     return true
   }
 
+  // The task assignee — including the designated Team Leader of a TEAM task —
+  // can move their task between non-completed statuses, e.g. submit it for
+  // review (IN_REVIEW). Final completion (COMPLETED) stays with the
+  // creator/assigner/admin, who review the work and mark it done.
+  if (taskAssigneeId === userId) {
+    return targetStatus !== 'COMPLETED'
+  }
+
   // Team members and collaborators can move tasks to any non-COMPLETED status
   if (isTeamMember || isCollaborator) {
     return targetStatus !== 'COMPLETED'

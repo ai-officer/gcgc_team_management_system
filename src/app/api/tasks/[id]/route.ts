@@ -124,12 +124,15 @@ export async function GET(
                          task.collaborators?.some(c => c.userId === session.user.id)
 
         let hasAccess = hasDirectAccess
-        if (!hasAccess && task.taskType === 'CASCADING') {
-          // Check if user has an unlocked step on this parent
-          const unlockedStep = await prisma.task.findFirst({
+        if (!hasAccess) {
+          // A user assigned an unlocked subtask of this parent can view the
+          // parent (so they can see and work on their subtask). This matches the
+          // list query in /api/tasks, which surfaces the parent to any subtask
+          // assignee — applies to regular subtasks as well as cascade steps.
+          const subtaskForUser = await prisma.task.findFirst({
             where: { parentId: task.id, assigneeId: session.user.id, isLocked: false }
           })
-          hasAccess = !!unlockedStep
+          hasAccess = !!subtaskForUser
         }
 
         if (!hasAccess) {

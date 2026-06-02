@@ -925,18 +925,52 @@ export default function MemberManagementPage() {
           open={isCreateTaskDialogOpen}
           preSelectedMemberId={selectedMember || undefined}
           onOpenChange={(open) => setIsCreateTaskDialogOpen(open)}
-          onSubmit={async (data) => {
+          onSubmit={async (data: any) => {
             try {
+              // POST /api/tasks does not handle a `subtasks` array — it would be
+              // silently dropped. Create the parent task first, then create each
+              // subtask separately with parentId (same pattern as /user/tasks).
+              const { subtasks, ...mainTaskData } = data
+
               const response = await fetch('/api/tasks', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data),
+                body: JSON.stringify(mainTaskData),
               })
               if (!response.ok) {
                 const errorData = await response.json()
                 throw new Error(errorData.error || 'Failed to create task')
               }
-              toast({ title: 'Success', description: 'Task assigned successfully' })
+
+              const newTask = await response.json()
+              // Recurring tasks return { firstInstance }; regular tasks return the task directly
+              const parentTaskId = newTask.id ?? newTask.firstInstance?.id
+
+              if (subtasks && subtasks.length > 0 && parentTaskId) {
+                await Promise.all(
+                  subtasks.map((subtask: { title: string; assigneeId: string }) =>
+                    fetch('/api/tasks', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        title: subtask.title,
+                        parentId: parentTaskId,
+                        priority: mainTaskData.priority,
+                        taskType: 'INDIVIDUAL',
+                        assigneeId: subtask.assigneeId,
+                      }),
+                    })
+                  )
+                )
+              }
+
+              const subtaskCount = subtasks?.length || 0
+              toast({
+                title: 'Success',
+                description: subtaskCount > 0
+                  ? `Task assigned with ${subtaskCount} subtask${subtaskCount !== 1 ? 's' : ''}`
+                  : 'Task assigned successfully',
+              })
               setIsCreateTaskDialogOpen(false)
               fetchData()
               fetchMemberSuggestions()

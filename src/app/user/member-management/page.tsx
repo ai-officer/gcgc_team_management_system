@@ -211,26 +211,20 @@ export default function MemberManagementPage() {
       setTeamMembers(members)
       setTeams(teamsData.teams || [])
 
+      // Fetch the whole team's task set once: tasks the leader is involved in
+      // plus every managed member's tasks (team tasks, individual tasks, each
+      // with its subtasks). All per-member / aggregate narrowing happens
+      // client-side in `filteredTasks`, so a member's involvement via team
+      // membership or subtasks is surfaced — not only tasks where they are the
+      // direct assignee. (Recent tasks are returned first; very large teams may
+      // exceed the 100-task page — see filteredTasks note.)
       const taskParams = new URLSearchParams()
       taskParams.append('limit', '100')
-      if (selectedMember) {
-        taskParams.append('assigneeId', selectedMember)
-      } else {
-        // "All Team Tasks" aggregate: include every managed member's tasks,
-        // including ones a member created for themselves.
-        taskParams.append('includeManagedMembers', 'true')
-      }
+      taskParams.append('includeManagedMembers', 'true')
       const tasksResponse = await fetch('/api/tasks?' + taskParams.toString())
       if (!tasksResponse.ok) throw new Error('Failed to fetch tasks')
       const tasksData = await tasksResponse.json()
-      let filteredTasks = tasksData.tasks || []
-      if (!selectedMember && members.length > 0) {
-        const memberIds = members.map((m: any) => m.id)
-        filteredTasks = filteredTasks.filter((task: any) =>
-          task.assigneeId && memberIds.includes(task.assigneeId)
-        )
-      }
-      setTasks(filteredTasks)
+      setTasks(tasksData.tasks || [])
     } catch (err) {
       console.error('Error fetching data:', err)
       setError('Failed to load data')
@@ -239,7 +233,8 @@ export default function MemberManagementPage() {
     }
   }
 
-  useEffect(() => { fetchData() }, [session, selectedMember])
+  // Fetch once per session; member selection narrows client-side (see filteredTasks)
+  useEffect(() => { fetchData() }, [session])
   useEffect(() => {
     if (session?.user?.role === 'LEADER') fetchMemberSuggestions()
   }, [session])
@@ -306,10 +301,29 @@ export default function MemberManagementPage() {
     member.email.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
   )
 
+  // A member is "involved" in a task if they're the direct assignee, a team
+  // member, a collaborator, or the assignee of one of its subtasks. This is why
+  // a leader-owned TEAM task with subtasks delegated to a member still shows up
+  // under that member (and in the team view) instead of being hidden.
+  const taskInvolvesMember = (task: any, memberId: string): boolean =>
+    task.assignee?.id === memberId ||
+    (task.teamMembers?.some((tm: any) => (tm.user?.id ?? tm.userId) === memberId) ?? false) ||
+    (task.collaborators?.some((c: any) => (c.user?.id ?? c.userId) === memberId) ?? false) ||
+    (task.subtasks?.some((s: any) => s.assignee?.id === memberId) ?? false)
+
+  const teamMemberIdSet = teamMembers.map(m => m.id)
+
   const filteredTasks = tasks
     .filter(task => {
-      if (selectedMember) return task.assignee?.id === selectedMember
-      return task.assignee?.id !== session?.user?.id
+      if (selectedMember) return taskInvolvesMember(task, selectedMember)
+      // "All Team Tasks": any task a managed member is involved in, plus the
+      // team / collaboration tasks the leader leads. The leader's own personal
+      // (individual) tasks are excluded.
+      return (
+        teamMemberIdSet.some(id => taskInvolvesMember(task, id)) ||
+        task.taskType === 'TEAM' ||
+        task.taskType === 'COLLABORATION'
+      )
     })
     .filter(task => statusFilter === 'all' || task.status === statusFilter)
 

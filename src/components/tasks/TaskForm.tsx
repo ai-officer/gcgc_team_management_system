@@ -271,7 +271,22 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
         if (duplicateFrom.collaborators) {
           setSelectedCollaborators(duplicateFrom.collaborators.map((c: any) => c.user ?? c))
         }
-        setPendingSubtasks([])
+        // Carry over subtasks when duplicating. DuplicateTaskDialog includes the
+        // source subtasks when the "Subtasks" option is checked; without loading
+        // them into pendingSubtasks they'd be silently dropped on submit.
+        if (Array.isArray(duplicateFrom.subtasks) && duplicateFrom.subtasks.length > 0) {
+          setPendingSubtasks(
+            duplicateFrom.subtasks.map((s: any, i: number) => ({
+              id: `dup-${i}-${s.id ?? s.title}`,
+              title: s.title,
+              assigneeId: s.assignee?.id ?? s.assigneeId ?? '',
+              assignee: s.assignee,
+              dueDate: s.dueDate || undefined,
+            }))
+          )
+        } else {
+          setPendingSubtasks([])
+        }
         setNewSubtaskTitle('')
         setNewSubtaskAssigneeId('')
         setNewSubtaskDeadline('')

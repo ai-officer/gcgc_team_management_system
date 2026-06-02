@@ -1102,16 +1102,48 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
                     <div>
                       <CardTitle className="text-base text-purple-900">Team Task</CardTitle>
                       <CardDescription className="text-purple-700">
-                        You are the team leader. Select members to join this task.
+                        Choose who leads the task and add the members.
                       </CardDescription>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Team Leader (assignee/owner) — defaults to you, but you can hand it to a member */}
+                  <div className="space-y-2">
+                    <Label className="text-base">Team Leader</Label>
+                    <Select
+                      value={form.watch('assigneeId') || session?.user?.id || ''}
+                      onValueChange={(val) => {
+                        form.setValue('assigneeId', val)
+                        // The chosen leader shouldn't also be listed as a member
+                        removeTeamMember(val)
+                      }}
+                    >
+                      <SelectTrigger className="h-11">
+                        <SelectValue placeholder="Select the team leader" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {session?.user?.id && (
+                          <SelectItem value={session.user.id}>
+                            Myself ({session.user.name || session.user.email})
+                          </SelectItem>
+                        )}
+                        {users.filter(u => u.id !== session?.user?.id).map((user) => (
+                          <SelectItem key={user.id} value={user.id}>
+                            {user.name || user.email}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-purple-700/80">
+                      The leader owns the task; everyone added below is a member.
+                    </p>
+                  </div>
+
                   <div className="space-y-2">
                     <Label className="text-base">Team Members</Label>
                     <SearchableMultiSelect
-                      options={users.filter(u => u.id !== session?.user?.id) as SelectOption[]}
+                      options={users.filter(u => u.id !== (form.watch('assigneeId') || session?.user?.id)) as SelectOption[]}
                       selected={selectedTeamMembers as SelectOption[]}
                       onSelect={(user) => addTeamMember(user as User)}
                       onRemove={removeTeamMember}

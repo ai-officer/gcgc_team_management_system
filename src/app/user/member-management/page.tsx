@@ -213,7 +213,13 @@ export default function MemberManagementPage() {
 
       const taskParams = new URLSearchParams()
       taskParams.append('limit', '100')
-      if (selectedMember) taskParams.append('assigneeId', selectedMember)
+      if (selectedMember) {
+        taskParams.append('assigneeId', selectedMember)
+      } else {
+        // "All Team Tasks" aggregate: include every managed member's tasks,
+        // including ones a member created for themselves.
+        taskParams.append('includeManagedMembers', 'true')
+      }
       const tasksResponse = await fetch('/api/tasks?' + taskParams.toString())
       if (!tasksResponse.ok) throw new Error('Failed to fetch tasks')
       const tasksData = await tasksResponse.json()

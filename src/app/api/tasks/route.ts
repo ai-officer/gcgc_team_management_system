@@ -65,6 +65,7 @@ const querySchema = z.object({
   parentId: z.string().optional(), // Filter subtasks by parent task
   includeSubtasks: z.string().optional(), // Include subtasks in results (default: false)
   boardId: z.string().optional(), // Filter by board ('none' = unassigned)
+  includeManagedMembers: z.string().optional(), // Leader: also include tasks assigned to managed members (Member Management aggregate)
 })
 
 export async function GET(req: NextRequest) {
@@ -97,11 +98,26 @@ export async function GET(req: NextRequest) {
       parentId,
       includeSubtasks,
       boardId,
+      includeManagedMembers,
     } = querySchema.parse(Object.fromEntries(searchParams))
 
     const pageNum = parseInt(page)
     const limitNum = Math.min(parseInt(limit), 100)
     const skip = (pageNum - 1) * limitNum
+
+    // A leader explicitly viewing one of their managed members' tasks (e.g. the
+    // Member Management panel, which requests ?assigneeId=<member>) should see
+    // ALL of that member's tasks — not only the ones the leader personally
+    // participates in. This is scoped to a confirmed leader↔member relationship
+    // so it does not widen what the leader sees on their own task board.
+    let leaderViewingManagedMember = false
+    if (assigneeId && session.user.role === 'LEADER' && assigneeId !== session.user.id) {
+      const membership = await prisma.leaderMembership.findUnique({
+        where: { leaderId_memberId: { leaderId: session.user.id, memberId: assigneeId } },
+        select: { memberId: true },
+      })
+      leaderViewingManagedMember = !!membership
+    }
 
     // Build where clause based on user role
     let where: any = {
@@ -118,49 +134,73 @@ export async function GET(req: NextRequest) {
 
     // Admin can see all tasks, others see tasks they're involved in
     if (session.user.role !== 'ADMIN') {
-      // Get user's teams
-      const userTeams = await prisma.teamMember.findMany({
-        where: { userId: session.user.id },
-        select: { teamId: true }
-      })
-      
-      // Include tasks where user is:
-      // 1. Part of a team (teamId in userTeams) 
-      // 2. Assignee (individual/collaboration tasks)
-      // 3. Creator of the task
-      // 4. Team member or collaborator
-      const teamIds = userTeams.map(tm => tm.teamId)
-      
       // Enforce top-level only at the where level to prevent subtasks from leaking through OR
       if (includeSubtasks !== 'true' && !parentId) {
         where.parentId = null
       }
 
-      // For non-admins, show:
-      // 1. Top-level tasks they're involved in (parentId = null)
-      // 2. Parent tasks that have a subtask assigned to this user
-      //    (subtasks are shown inline on the parent card, never as standalone cards)
-      where.OR = [
-        // Top-level tasks where user is involved
-        {
-          OR: [
-            ...(teamIds.length > 0 ? [{ teamId: { in: teamIds } }] : []),
-            { assigneeId: session.user.id },
-            { creatorId: session.user.id },
-            { teamMembers: { some: { userId: session.user.id } } },
-            { collaborators: { some: { userId: session.user.id } } },
-          ]
-        },
-        // Parent tasks where a non-locked subtask is assigned to this user
-        // (ensures the user can see and act on their subtask via the parent card)
-        // isLocked: false ensures locked cascade steps don't reveal the parent prematurely
-        {
-          AND: [
-            { parentId: null },
-            { subtasks: { some: { assigneeId: session.user.id, isLocked: false } } }
-          ]
+      if (leaderViewingManagedMember) {
+        // Leader is explicitly viewing a managed member's tasks: do not apply the
+        // "involved in" restriction. The assigneeId filter applied below scopes
+        // results to that member, so this returns all of the member's tasks.
+      } else {
+        // Get user's teams
+        const userTeams = await prisma.teamMember.findMany({
+          where: { userId: session.user.id },
+          select: { teamId: true }
+        })
+
+        // Include tasks where user is:
+        // 1. Part of a team (teamId in userTeams)
+        // 2. Assignee (individual/collaboration tasks)
+        // 3. Creator of the task
+        // 4. Team member or collaborator
+        const teamIds = userTeams.map(tm => tm.teamId)
+
+        // When a leader requests their team aggregate (Member Management's
+        // "All Team Tasks" view passes includeManagedMembers=true), also surface
+        // tasks assigned to any managed member — including ones the member
+        // created themselves. Gated by the explicit param so the leader's own
+        // task board (which omits it) is unaffected.
+        let managedMemberClause: any[] = []
+        if (includeManagedMembers === 'true' && session.user.role === 'LEADER') {
+          const memberships = await prisma.leaderMembership.findMany({
+            where: { leaderId: session.user.id },
+            select: { memberId: true },
+          })
+          const managedMemberIds = memberships.map(m => m.memberId)
+          if (managedMemberIds.length > 0) {
+            managedMemberClause = [{ assigneeId: { in: managedMemberIds } }]
+          }
         }
-      ]
+
+        // For non-admins, show:
+        // 1. Top-level tasks they're involved in (parentId = null)
+        // 2. Parent tasks that have a subtask assigned to this user
+        //    (subtasks are shown inline on the parent card, never as standalone cards)
+        where.OR = [
+          // Top-level tasks where user is involved
+          {
+            OR: [
+              ...(teamIds.length > 0 ? [{ teamId: { in: teamIds } }] : []),
+              ...managedMemberClause,
+              { assigneeId: session.user.id },
+              { creatorId: session.user.id },
+              { teamMembers: { some: { userId: session.user.id } } },
+              { collaborators: { some: { userId: session.user.id } } },
+            ]
+          },
+          // Parent tasks where a non-locked subtask is assigned to this user
+          // (ensures the user can see and act on their subtask via the parent card)
+          // isLocked: false ensures locked cascade steps don't reveal the parent prematurely
+          {
+            AND: [
+              { parentId: null },
+              { subtasks: { some: { assigneeId: session.user.id, isLocked: false } } }
+            ]
+          }
+        ]
+      }
     } else {
       // For admins: by default only show top-level tasks unless includeSubtasks is true
       if (includeSubtasks !== 'true' && !parentId) {

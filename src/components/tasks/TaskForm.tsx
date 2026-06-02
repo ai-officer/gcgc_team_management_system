@@ -276,19 +276,20 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
         setNewSubtaskAssigneeId('')
         setNewSubtaskDeadline('')
       } else {
-        // Set defaults for new task based on current user
-        const initialTaskType = preSelectedMemberId ? 'TEAM' : 'INDIVIDUAL'
-        const initialTeamMemberIds = preSelectedMemberId ? [preSelectedMemberId] : []
-
+        // Set defaults for a new task.
+        // When a member is pre-selected (the "Assign Task to member" flow from
+        // Member Management / Team Overview), create an INDIVIDUAL task assigned
+        // directly TO that member — the leader is the assigner, not the assignee.
+        // Otherwise default to an INDIVIDUAL task assigned to the current user.
         form.reset({
           title: '',
           description: '',
           status: 'TODO',
           priority: 'MEDIUM',
           progressPercentage: 0,
-          taskType: initialTaskType,
-          assigneeId: session?.user?.id || null, // Always current user
-          teamMemberIds: initialTeamMemberIds,
+          taskType: 'INDIVIDUAL',
+          assigneeId: preSelectedMemberId || session?.user?.id || null,
+          teamMemberIds: [],
           collaboratorIds: [],
           assignedById: session?.user?.id,
           // New Google Calendar fields
@@ -325,8 +326,14 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
   // Handle task type changes and set appropriate defaults
   useEffect(() => {
     if (!task && !duplicateFrom && session?.user?.id && open) { // Only for brand-new tasks
-      // For NEW tasks only: Always assign to current user regardless of task type
-      form.setValue('assigneeId', session.user.id)
+      // For NEW tasks: an INDIVIDUAL task created via the "assign to member" flow
+      // (preSelectedMemberId) is assigned TO that member. In every other case —
+      // no pre-selected member, or a TEAM/COLLABORATION task where the creator is
+      // the leader/primary assignee — it is assigned to the current user.
+      form.setValue(
+        'assigneeId',
+        taskType === 'INDIVIDUAL' && preSelectedMemberId ? preSelectedMemberId : session.user.id
+      )
 
       // Clear selections when changing task types (but preserve pre-selected members on first open)
       if (taskType === 'INDIVIDUAL') {
@@ -352,7 +359,7 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
       }
     }
     // For EDITING tasks: preserve the original assignee - do NOT override
-  }, [taskType, session?.user?.id, task, form, open])
+  }, [taskType, session?.user?.id, task, form, open, preSelectedMemberId])
 
   // When recurring is on, auto-populate dueDate from startDate so the
   // user doesn't have to fill in a redundant "Deadline" field.
@@ -368,15 +375,17 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
     }
   }, [isRecurring, watchedStartDate])
 
-  // Ensure pre-selected member is set after users are loaded - ONLY ONCE
+  // If the leader switches a pre-selected-member task to TEAM, seed that member
+  // as a team member. For the default INDIVIDUAL flow the member is the assignee
+  // (not a team member), so we deliberately do NOT inject them here.
   useEffect(() => {
-    if (open && !task && preSelectedMemberId && users.length > 0 && selectedTeamMembers.length === 0) {
+    if (open && !task && preSelectedMemberId && taskType === 'TEAM' && users.length > 0 && selectedTeamMembers.length === 0) {
       const preSelectedUser = users.find(u => u.id === preSelectedMemberId)
       if (preSelectedUser) {
         setSelectedTeamMembers([preSelectedUser])
       }
     }
-  }, [open, task, preSelectedMemberId, users.length])
+  }, [open, task, preSelectedMemberId, taskType, users.length])
 
   const fetchUsers = async () => {
     try {
@@ -1041,23 +1050,32 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
             </div>
 
             {/* Task Type Specific Fields */}
-            {taskType === 'INDIVIDUAL' && (
-              <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 bg-blue-100 rounded-full">
-                    <User className="h-4 w-4 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-blue-900">
-                      Individual Task
-                    </p>
-                    <p className="text-sm text-blue-700 mt-1">
-                      This task is assigned to you automatically. Perfect for personal work items.
-                    </p>
+            {taskType === 'INDIVIDUAL' && (() => {
+              const assigneeId = form.watch('assigneeId')
+              const assignedTo =
+                assigneeId && assigneeId !== session?.user?.id
+                  ? users.find(u => u.id === assigneeId)
+                  : null
+              return (
+                <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-blue-100 rounded-full">
+                      <User className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-blue-900">
+                        Individual Task
+                      </p>
+                      <p className="text-sm text-blue-700 mt-1">
+                        {assignedTo
+                          ? `This task will be assigned to ${assignedTo.name || assignedTo.email}.`
+                          : 'This task is assigned to you automatically. Perfect for personal work items.'}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )
+            })()}
 
             {taskType === 'TEAM' && (
               <Card className="border-2 border-purple-200 bg-purple-50/50">

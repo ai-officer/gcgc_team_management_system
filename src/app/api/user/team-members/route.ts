@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
           id: true, email: true, firstName: true, lastName: true,
           name: true, image: true, role: true, positionTitle: true,
           isActive: true, createdAt: true, reportsToId: true,
-          _count: { select: { assignedTasks: { where: { status: { not: 'COMPLETED' } } } } }
+          _count: { select: { assignedTasks: { where: { status: { notIn: ['COMPLETED', 'CANCELLED'] } } } } }
         },
         orderBy: [{ name: 'asc' }, { email: 'asc' }]
       })
@@ -72,7 +72,7 @@ export async function GET(req: NextRequest) {
           select: {
             assignedTasks: {
               where: {
-                status: { not: 'COMPLETED' }
+                status: { notIn: ['COMPLETED', 'CANCELLED'] }
               }
             }
           }
@@ -92,7 +92,7 @@ export async function GET(req: NextRequest) {
       prisma.task.count({
         where: {
           assigneeId: { in: memberIds },
-          status: { not: 'COMPLETED' }
+          status: { notIn: ['COMPLETED', 'CANCELLED'] }
         }
       }),
       
@@ -112,7 +112,7 @@ export async function GET(req: NextRequest) {
         where: {
           assigneeId: { in: memberIds },
           dueDate: { lt: (() => { const d = new Date(); d.setHours(0,0,0,0); return d })() },
-          status: { not: 'COMPLETED' }
+          status: { notIn: ['COMPLETED', 'CANCELLED'] }
         }
       })
     ])
@@ -213,7 +213,7 @@ export async function POST(req: NextRequest) {
             select: {
               assignedTasks: {
                 where: {
-                  status: { not: 'COMPLETED' }
+                  status: { notIn: ['COMPLETED', 'CANCELLED'] }
                 }
               }
             }

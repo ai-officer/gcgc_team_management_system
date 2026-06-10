@@ -84,18 +84,49 @@ export default function TeamsPage() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Users className="h-6 w-6" /> My Teams
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Spin up a team for a project, add members, and give each its own task board.
-          </p>
+      {/* Header — refined hero (matches dashboard) */}
+      <div
+        className="relative overflow-hidden rounded-2xl border border-slate-200/70 shadow-sm mb-6 motion-safe:animate-slide-up"
+        style={{ animationFillMode: 'backwards' }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-slate-50" />
+        <div className="pointer-events-none absolute -top-24 -right-12 h-64 w-64 rounded-full bg-blue-200/30 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 -left-10 h-56 w-56 rounded-full bg-indigo-200/20 blur-3xl" />
+        <div className="relative backdrop-blur-[2px] p-6 sm:p-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2.5">
+                <span className="grid place-items-center w-9 h-9 rounded-xl bg-blue-600 text-white shadow-sm">
+                  <Users className="h-5 w-5" />
+                </span>
+                <h1 className="text-[1.75rem] font-bold text-slate-900 tracking-tight leading-none">My Teams</h1>
+              </div>
+              <p className="text-sm text-slate-600 max-w-xl">
+                Spin up a team for a project, add members, and give each its own task board.
+              </p>
+              {teams.length > 0 && (
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-slate-500 pt-1">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Users className="h-4 w-4 text-slate-400" />
+                    <span className="font-medium tabular-nums">{teams.length}</span> {teams.length === 1 ? 'team' : 'teams'}
+                  </span>
+                  {teams.filter(t => myRole(t) === 'LEADER').length > 0 && (
+                    <>
+                      <span className="h-4 w-px bg-slate-300/70 hidden sm:block" />
+                      <span className="inline-flex items-center gap-1.5">
+                        <CheckSquare className="h-4 w-4 text-slate-400" />
+                        <span className="font-medium tabular-nums">{teams.filter(t => myRole(t) === 'LEADER').length}</span> leading
+                      </span>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+            <Button onClick={() => setShowCreate(true)} className="shrink-0 self-start sm:self-auto shadow-sm">
+              <Plus className="h-4 w-4 mr-2" /> New Team
+            </Button>
+          </div>
         </div>
-        <Button onClick={() => setShowCreate(true)}>
-          <Plus className="h-4 w-4 mr-2" /> New Team
-        </Button>
       </div>
 
       {loading ? (
@@ -103,22 +134,29 @@ export default function TeamsPage() {
           <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading teams…
         </div>
       ) : teams.length === 0 ? (
-        <div className="text-center py-20 border border-dashed rounded-xl">
-          <Users className="h-10 w-10 mx-auto text-muted-foreground/40" />
-          <p className="mt-3 text-muted-foreground">You&apos;re not in any team yet.</p>
-          <Button className="mt-4" onClick={() => setShowCreate(true)}>
+        <div className="relative overflow-hidden text-center py-20 border border-dashed border-slate-300 rounded-2xl bg-gradient-to-br from-slate-50 to-white">
+          <div className="grid place-items-center w-14 h-14 mx-auto rounded-2xl bg-blue-50 text-blue-500">
+            <Users className="h-7 w-7" />
+          </div>
+          <p className="mt-4 font-semibold text-slate-700">You&apos;re not in any team yet</p>
+          <p className="mt-1 text-sm text-slate-500 max-w-sm mx-auto">Create a team to give your project its own members and task board.</p>
+          <Button className="mt-5 shadow-sm" onClick={() => setShowCreate(true)}>
             <Plus className="h-4 w-4 mr-2" /> Create your first team
           </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {teams.map(team => {
+          {teams.map((team, i) => {
             const role = myRole(team)
             const memberCount = team._count?.members ?? team.members.length
             const taskCount = team._count?.tasks ?? 0
             const dotColor = team.board?.color || '#3B82F6'
             return (
-              <Card key={team.id} className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300 rounded-xl">
+              <Card
+                key={team.id}
+                className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300 rounded-xl motion-safe:animate-slide-up"
+                style={{ animationDelay: `${Math.min(i, 8) * 55}ms`, animationFillMode: 'backwards' }}
+              >
                 {/* board-color top accent */}
                 <div className="absolute top-0 left-0 w-full h-1" style={{ backgroundColor: dotColor }} />
                 <CardContent className="p-4 pt-5 space-y-3.5">

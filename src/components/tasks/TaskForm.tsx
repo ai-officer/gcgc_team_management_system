@@ -294,6 +294,8 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
         setNewSubtaskAssigneeId('')
         setNewSubtaskDeadline('')
       } else {
+        // Reset to the team-scoped people list each time the form opens fresh.
+        setShowAllUsers(false)
         // Set defaults for a new task.
         // When a member is pre-selected (the "Assign Task to member" flow from
         // Member Management / Team Overview), create an INDIVIDUAL task assigned

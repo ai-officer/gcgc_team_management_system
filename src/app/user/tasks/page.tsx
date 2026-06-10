@@ -404,9 +404,9 @@ export default function TasksPage() {
     }
   }
 
-  const deleteBoard = async (boardId: string) => {
+  const deleteBoard = async (boardId: string): Promise<boolean> => {
     const board = boards.find(b => b.id === boardId)
-    if (!board) return
+    if (!board) return false
     try {
       const res = await fetch(`/api/boards/${boardId}`, { method: 'DELETE' })
       if (res.ok) {
@@ -414,9 +414,15 @@ export default function TasksPage() {
         if (activeBoardId === boardId) setActiveBoardId(null)
         toast({ title: `Board "${board.name}" deleted. Tasks moved to All Tasks.` })
         fetchTasks(false)
+        return true
       }
+      const err = await res.json().catch(() => ({}))
+      toast({ title: 'Could not delete board', description: err.error, variant: 'destructive' })
+      return false
     } catch (e) {
       console.error('Error deleting board:', e)
+      toast({ title: 'Could not delete board', variant: 'destructive' })
+      return false
     }
   }
 
@@ -1507,9 +1513,9 @@ export default function TasksPage() {
         onConfirm={async () => {
           if (!boardPendingDelete) return
           setDeletingBoard(true)
-          await deleteBoard(boardPendingDelete.id)
+          const ok = await deleteBoard(boardPendingDelete.id)
           setDeletingBoard(false)
-          setBoardPendingDelete(null)
+          if (ok) setBoardPendingDelete(null)
         }}
       />
 

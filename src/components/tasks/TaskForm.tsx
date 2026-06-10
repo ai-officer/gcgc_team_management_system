@@ -118,15 +118,18 @@ interface TaskFormProps {
   onSubmit: (data: TaskFormData) => Promise<void>
   preSelectedMemberId?: string // Pre-selected team member for assignment
   initialDueDate?: Date // Pre-fill the due date when creating a new task
+  boardContext?: { boardId: string; boardName: string; teamId: string | null } | null // active board the task will be created on
+  initialStatus?: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' // preset status (per-column quick-add)
 }
 
-export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSubmit, preSelectedMemberId, initialDueDate }: TaskFormProps) {
+export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSubmit, preSelectedMemberId, initialDueDate, boardContext, initialStatus }: TaskFormProps) {
   const { data: session } = useSession()
   const [loading, setLoading] = useState(false)
   const [users, setUsers] = useState<User[]>([])
   const [selectedTeamMembers, setSelectedTeamMembers] = useState<User[]>([])
   const [selectedCollaborators, setSelectedCollaborators] = useState<User[]>([])
   const [moreOptionsOpen, setMoreOptionsOpen] = useState(false)
+  const [showAllUsers, setShowAllUsers] = useState(false)
 
   // Subtask state
   const [pendingSubtasks, setPendingSubtasks] = useState<PendingSubtask[]>([])
@@ -181,12 +184,12 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
   // Track previous open state to only initialize once per open
   const prevOpenRef = useRef(false)
 
-  // Fetch users when dialog opens
+  // Fetch users when dialog opens, or when the team-scope toggle changes
   useEffect(() => {
     if (open) {
       fetchUsers()
     }
-  }, [open])
+  }, [open, showAllUsers, boardContext?.teamId])
 
   // Initialize form when dialog opens - ONLY ONCE per open (when transitioning from closed to open)
   useEffect(() => {
@@ -291,6 +294,8 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
         setNewSubtaskAssigneeId('')
         setNewSubtaskDeadline('')
       } else {
+        // Reset to the team-scoped people list each time the form opens fresh.
+        setShowAllUsers(false)
         // Set defaults for a new task.
         // When a member is pre-selected (the "Assign Task to member" flow from
         // Member Management / Team Overview), create an INDIVIDUAL task assigned
@@ -299,7 +304,7 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
         form.reset({
           title: '',
           description: '',
-          status: 'TODO',
+          status: initialStatus || 'TODO',
           priority: 'MEDIUM',
           progressPercentage: 0,
           taskType: 'INDIVIDUAL',
@@ -404,6 +409,21 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
 
   const fetchUsers = async () => {
     try {
+      const teamId = boardContext?.teamId
+      if (teamId && !showAllUsers) {
+        const response = await fetch(`/api/user/teams/${teamId}/members`)
+        if (response.ok) {
+          const data = await response.json()
+          setUsers((data.members || []).map((m: any) => ({
+            id: m.user.id,
+            name: m.user.name ?? undefined,
+            email: m.user.email,
+            image: m.user.image ?? undefined,
+            role: m.user.role,
+          })))
+          return
+        }
+      }
       const response = await fetch('/api/user/team-members')
       if (response.ok) {
         const data = await response.json()
@@ -622,6 +642,9 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
           <DialogDescription>
             {task ? 'Update the task details below.' : duplicateFrom ? 'Review and adjust the duplicated task before saving.' : 'Fill in the details to create a new task.'}
           </DialogDescription>
+          {!task && boardContext?.boardName && (
+            <p className="text-xs text-muted-foreground mt-1">Creating on: <span className="font-medium text-foreground">{boardContext.boardName}</span></p>
+          )}
         </DialogHeader>
 
         <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col flex-1 min-h-0">
@@ -1063,6 +1086,16 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
                 </button>
               ))}
             </div>
+
+            {/* People-scope toggle — only when in a team board context */}
+            {boardContext?.teamId && (
+              <div className="flex items-center justify-end gap-2 mb-2">
+                <span className="text-xs text-muted-foreground">{showAllUsers ? 'Showing all users' : 'Showing team members only'}</span>
+                <button type="button" className="text-xs text-blue-600 hover:underline" onClick={() => setShowAllUsers(v => !v)}>
+                  {showAllUsers ? 'Show team only' : 'Show all users'}
+                </button>
+              </div>
+            )}
 
             {/* Task Type Specific Fields */}
             {taskType === 'INDIVIDUAL' && (() => {

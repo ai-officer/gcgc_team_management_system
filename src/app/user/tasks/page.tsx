@@ -27,6 +27,9 @@ import {
   UserPlus,
   Settings2,
   GitBranch,
+  MessageSquare,
+  Star,
+  Video,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -97,6 +100,8 @@ interface Task {
   reminders?: any
   // Recurring task
   recurringParentId?: string | null
+  taskWeight?: number | null
+  slaHours?: number | null
   assignee?: {
     id: string
     name: string
@@ -205,6 +210,7 @@ export default function TasksPage() {
   const [selectedTaskType, setSelectedTaskType] = useState<string>(() => searchParams.get('type') ?? '')
   const [users, setUsers] = useState<User[]>([])
   const [showTaskForm, setShowTaskForm] = useState(false)
+  const [quickAddStatus, setQuickAddStatus] = useState<'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' | undefined>(undefined)
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [duplicatingTask, setDuplicatingTask] = useState<Task | null>(null)
@@ -561,6 +567,27 @@ export default function TasksPage() {
     })
   }
 
+  const dueDateAccent = (task: Task): string => {
+    if (!task.dueDate || task.status === 'COMPLETED') return ''
+    const due = new Date(task.dueDate)
+    const now = new Date()
+    const days = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    if (days < 0) return 'border-l-4 border-l-red-500'
+    if (days <= 1) return 'border-l-4 border-l-orange-500'
+    if (days <= 3) return 'border-l-4 border-l-amber-400'
+    if (days <= 7) return 'border-l-4 border-l-yellow-300'
+    return ''
+  }
+
+  const getRecurrenceLabel = (recurrence?: string): string => {
+    if (!recurrence) return 'Repeats'
+    const upper = recurrence.toUpperCase()
+    if (upper.includes('FREQ=DAILY')) return 'Daily'
+    if (upper.includes('FREQ=WEEKLY')) return 'Weekly'
+    if (upper.includes('FREQ=MONTHLY')) return 'Monthly'
+    return 'Repeats'
+  }
+
   const handleCreateTask = async (taskData: any) => {
     try {
       // Extract subtasks from data
@@ -837,6 +864,7 @@ export default function TasksPage() {
     setShowTaskForm(false)
     setEditingTask(null)
     setDuplicatingTask(null)
+    setQuickAddStatus(undefined)
   }
 
   const closeViewModal = () => {
@@ -868,6 +896,11 @@ export default function TasksPage() {
       </div>
     )
   }
+
+  const activeBoard = activeBoardId ? boards.find(b => b.id === activeBoardId) : undefined
+  const boardContext = activeBoard
+    ? { boardId: activeBoard.id, boardName: activeBoard.name, teamId: activeBoard.team?.id ?? null }
+    : null
 
   return (
     <div className="space-y-6">
@@ -986,13 +1019,14 @@ export default function TasksPage() {
           )
         })}
 
-        {/* New Board button */}
+        {/* New Board button — personal board (team boards are created from the Teams page) */}
         <button
           onClick={() => setShowCreateBoard(true)}
+          title="Create a personal board (just for you, or share it with people you pick). To create a team with its own shared board, use the Teams page."
           className="flex items-center gap-1 px-3 py-2 text-sm text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors whitespace-nowrap ml-1"
         >
           <Plus className="h-4 w-4" />
-          New Board
+          New personal board
         </button>
       </div>
 
@@ -1074,11 +1108,17 @@ export default function TasksPage() {
             return (
               <div key={status} className="min-w-0 space-y-4">
                 <div className={`p-3 rounded-lg ${config.color} shadow-sm`}>
-                  <h3 className={`font-semibold ${config.textColor} flex items-center justify-between text-sm`}>
-                    {config.title}
-                    <Badge variant="secondary" className="ml-2 text-xs">
-                      {columnTasks.length}
-                    </Badge>
+                  <h3 className={`font-semibold ${config.textColor} flex items-center text-sm`}>
+                    <span>{config.title}</span>
+                    <Badge variant="secondary" className="ml-2 text-xs">{columnTasks.length}</Badge>
+                    <button
+                      type="button"
+                      title={`Add task to ${config.title}`}
+                      onClick={() => { setQuickAddStatus(status as 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'); setShowTaskForm(true) }}
+                      className="ml-auto p-1 rounded hover:bg-black/10 transition-colors"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
                   </h3>
                 </div>
 
@@ -1110,7 +1150,7 @@ export default function TasksPage() {
                                   : canDrag ? 'hover:shadow-md hover:-translate-y-1 shadow-sm' : 'shadow-sm'
                               } bg-white border border-gray-200 rounded-lg ${
                                 !canDrag ? 'opacity-90' : ''
-                              }`}
+                              } ${dueDateAccent(task)}`}
                               onClick={(e) => {
                                 // Only open edit if not dragging and clicked on card content
                                 if (!snapshot.isDragging) {
@@ -1286,6 +1326,48 @@ export default function TasksPage() {
                                   )
                                 })()}
 
+                                {/* High-signal chips */}
+                                {((task._count?.comments ?? 0) > 0 || task.taskWeight || task.slaHours || task.recurrence || task.recurringParentId || task.meetingLink) && (
+                                  <div className="flex items-center gap-2 flex-wrap mb-3 text-muted-foreground">
+                                    {(task._count?.comments ?? 0) > 0 && (
+                                      <span className="inline-flex items-center gap-0.5 text-[10px]">
+                                        <MessageSquare className="h-3 w-3" />
+                                        {task._count!.comments}
+                                      </span>
+                                    )}
+                                    {task.taskWeight != null && (
+                                      <span className="inline-flex items-center gap-0.5 text-[10px]" title="Importance/weight">
+                                        <Star className="h-3 w-3" />
+                                        {task.taskWeight}
+                                      </span>
+                                    )}
+                                    {task.slaHours != null && (
+                                      <span className="inline-flex items-center gap-0.5 text-[10px]" title="SLA target">
+                                        <Clock className="h-3 w-3" />
+                                        {task.slaHours}h
+                                      </span>
+                                    )}
+                                    {(task.recurrence || task.recurringParentId) && (
+                                      <span className="inline-flex items-center gap-0.5 text-[10px]">
+                                        <RefreshCw className="h-3 w-3" />
+                                        {getRecurrenceLabel(task.recurrence)}
+                                      </span>
+                                    )}
+                                    {task.meetingLink && (
+                                      <a
+                                        href={task.meetingLink}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={(e) => e.stopPropagation()}
+                                        title="Join meeting"
+                                        className="inline-flex items-center gap-0.5 text-[10px] hover:text-foreground transition-colors"
+                                      >
+                                        <Video className="h-3 w-3" />
+                                      </a>
+                                    )}
+                                  </div>
+                                )}
+
                                 {/* Task Type and Team Badge */}
                                 <div className="flex items-center gap-1.5 mb-3">
                                   <Badge variant="outline" className="text-xs">
@@ -1372,6 +1454,14 @@ export default function TasksPage() {
                       ))}
 
                       {provided.placeholder}
+
+                      {columnTasks.length === 0 && !snapshot.isDraggingOver && (
+                        <div className="flex flex-col items-center justify-center py-10 text-center text-gray-300 select-none pointer-events-none">
+                          <ListTodo className="h-8 w-8 mb-2" />
+                          <p className="text-xs font-medium">No tasks</p>
+                          <p className="text-[10px]">Drag here or use +</p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </Droppable>
@@ -1398,6 +1488,8 @@ export default function TasksPage() {
         task={editingTask}
         duplicateFrom={duplicatingTask}
         onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
+        boardContext={boardContext}
+        initialStatus={quickAddStatus}
       />
 
       <BulkTaskActionsDialog

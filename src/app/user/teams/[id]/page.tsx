@@ -41,6 +41,8 @@ export default function TeamDetailPage() {
   const [userQuery, setUserQuery] = useState('')
   const [busyUserId, setBusyUserId] = useState<string | null>(null)
 
+  const [showLeave, setShowLeave] = useState(false)
+
   const fetchTeam = useCallback(async () => {
     try {
       const res = await fetch(`/api/user/teams/${id}`)
@@ -178,6 +180,25 @@ export default function TeamDetailPage() {
     }
   }
 
+  const leaveTeam = async () => {
+    if (!team || !session?.user?.id) return
+    try {
+      const res = await fetch(`/api/user/teams/${team.id}/members/${session.user.id}`, { method: 'DELETE' })
+      if (res.ok) {
+        toast({ title: 'You left the team' })
+        router.push('/user/teams')
+      } else {
+        const err = await res.json().catch(() => ({}))
+        toast({ title: 'Could not leave team', description: err.error, variant: 'destructive' })
+      }
+    } catch {
+      toast({ title: 'Could not leave team', variant: 'destructive' })
+    }
+  }
+
+  const myMembership = team ? team.members.find(m => m.userId === session?.user?.id) : undefined
+  const canLeave = !!myMembership && !canManage
+
   if (loading) {
     return <div className="flex items-center justify-center py-20 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading…</div>
   }
@@ -206,6 +227,9 @@ export default function TeamDetailPage() {
             <Link href={`/user/tasks?board=${team.board.id}`}>
               <Button variant="outline" size="sm"><LayoutGrid className="h-4 w-4 mr-2" /> Open board</Button>
             </Link>
+          )}
+          {canLeave && (
+            <Button variant="outline" size="sm" onClick={() => setShowLeave(true)}>Leave team</Button>
           )}
           {canManage && (
             <>
@@ -311,40 +335,60 @@ export default function TeamDetailPage() {
               <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input className="pl-9" placeholder="Search by name or email…" value={userQuery} onChange={e => setUserQuery(e.target.value)} />
             </div>
-            <ul className="max-h-72 overflow-y-auto divide-y">
-              {allUsers
-                .filter(u => !team.members.some(m => m.userId === u.id))
-                .filter(u => {
-                  const q = userQuery.trim().toLowerCase()
-                  if (!q) return true
-                  return (u.name || '').toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
-                })
-                .slice(0, 50)
-                .map(u => (
-                  <li key={u.id} className="flex items-center gap-3 py-2">
-                    <Avatar className="h-7 w-7">
-                      <AvatarImage src={u.image || undefined} />
-                      <AvatarFallback>{(u.name || u.email)[0]?.toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm truncate">{u.name || u.email}</p>
-                      <p className="text-xs text-muted-foreground truncate">{u.email}</p>
-                    </div>
-                    <Button size="sm" variant="outline" disabled={busyUserId === u.id} onClick={() => addMember(u.id)}>
-                      {busyUserId === u.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
-                    </Button>
-                  </li>
-                ))}
-              {allUsers.filter(u => !team.members.some(m => m.userId === u.id)).length === 0 && (
-                <li className="py-6 text-center text-sm text-muted-foreground">No users available to add.</li>
-              )}
-            </ul>
+            {(() => {
+              const available = allUsers.filter(u => !team.members.some(m => m.userId === u.id))
+              const q = userQuery.trim().toLowerCase()
+              const matches = available.filter(u =>
+                !q || (u.name || '').toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
+              )
+              return (
+                <ul className="max-h-72 overflow-y-auto divide-y">
+                  {matches.slice(0, 50).map(u => (
+                    <li key={u.id} className="flex items-center gap-3 py-2">
+                      <Avatar className="h-7 w-7">
+                        <AvatarImage src={u.image || undefined} />
+                        <AvatarFallback>{(u.name || u.email)[0]?.toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm truncate">{u.name || u.email}</p>
+                        <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                      </div>
+                      <Button size="sm" variant="outline" disabled={busyUserId === u.id} onClick={() => addMember(u.id)}>
+                        {busyUserId === u.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
+                      </Button>
+                    </li>
+                  ))}
+                  {available.length === 0 && (
+                    <li className="py-6 text-center text-sm text-muted-foreground">No users available to add.</li>
+                  )}
+                  {available.length > 0 && matches.length === 0 && (
+                    <li className="py-6 text-center text-sm text-muted-foreground">No users match &quot;{userQuery}&quot;.</li>
+                  )}
+                </ul>
+              )
+            })()}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAdd(false)}>Done</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <AlertDialog open={showLeave} onOpenChange={setShowLeave}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Leave this team?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You&apos;ll lose access to its board. You can be re-added by a team leader later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); leaveTeam() }}>
+              Leave team
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -82,6 +82,11 @@ const userNavItems = [
     icon: CheckSquare,
   },
   {
+    title: 'Teams',
+    href: '/user/teams',
+    icon: Users,
+  },
+  {
     title: 'Calendar',
     href: '/user/calendar',
     icon: Calendar,
@@ -110,6 +115,11 @@ const leaderNavItems = [
     title: 'Tasks',
     href: '/user/tasks',
     icon: CheckSquare,
+  },
+  {
+    title: 'Teams',
+    href: '/user/teams',
+    icon: Users,
   },
   {
     title: 'Calendar',

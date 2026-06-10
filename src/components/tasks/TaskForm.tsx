@@ -683,14 +683,14 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
               {/* Priority — always shown, segmented buttons */}
               <div className="space-y-2">
                 <Label className="text-base">Priority Level</Label>
-                <div className="flex rounded-lg border divide-x overflow-hidden">
+                <div className="flex flex-wrap sm:flex-nowrap rounded-lg border divide-x overflow-hidden">
                   {(['LOW', 'MEDIUM', 'HIGH', 'URGENT'] as const).map(p => {
                     const labels = { LOW: 'Low', MEDIUM: 'Medium', HIGH: 'High', URGENT: 'Urgent' }
                     const activeColors = { LOW: 'bg-green-100 text-green-800', MEDIUM: 'bg-yellow-100 text-yellow-800', HIGH: 'bg-orange-100 text-orange-800', URGENT: 'bg-red-100 text-red-800' }
                     const active = form.watch('priority') === p
                     return (
                       <button key={p} type="button" onClick={() => form.setValue('priority', p as Priority)}
-                        className={cn('flex-1 px-3 py-2 text-xs font-medium transition-colors',
+                        className={cn('flex-1 min-w-0 px-2 sm:px-3 py-2 text-[11px] sm:text-xs font-medium transition-colors',
                           active ? activeColors[p] : 'bg-background text-muted-foreground hover:bg-muted')}>
                         {labels[p]}
                       </button>
@@ -710,14 +710,14 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
               {/* Status segmented buttons */}
               <div className="space-y-2">
                 <Label className="text-base">Task Status</Label>
-                <div className="flex rounded-lg border divide-x overflow-hidden">
+                <div className="flex flex-wrap sm:flex-nowrap rounded-lg border divide-x overflow-hidden">
                   {(['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED'] as const).map(s => {
                     const labels = { TODO: 'To Do', IN_PROGRESS: 'In Progress', IN_REVIEW: 'In Review', COMPLETED: 'Completed' }
                     const activeColors = { TODO: 'bg-gray-100 text-gray-800', IN_PROGRESS: 'bg-blue-100 text-blue-800', IN_REVIEW: 'bg-purple-100 text-purple-800', COMPLETED: 'bg-green-100 text-green-800' }
                     const active = form.watch('status') === s
                     return (
                       <button key={s} type="button" onClick={() => form.setValue('status', s as TaskStatus)}
-                        className={cn('flex-1 px-3 py-2 text-xs font-medium transition-colors',
+                        className={cn('flex-1 min-w-0 px-2 sm:px-3 py-2 text-[11px] sm:text-xs font-medium transition-colors',
                           active ? activeColors[s] : 'bg-background text-muted-foreground hover:bg-muted')}>
                         {labels[s]}
                       </button>
@@ -765,7 +765,7 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6">
                   {/* Start Date */}
                   <div className="space-y-3">
                     <Label htmlFor="startDate" className="text-sm font-medium flex items-center gap-2">
@@ -1075,14 +1075,14 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
           {/* Task Type — compact segmented toggle */}
           <section>
             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">Task Type</h3>
-            <div className="flex rounded-lg border divide-x overflow-hidden mb-4">
+            <div className="flex flex-wrap sm:flex-nowrap rounded-lg border divide-x overflow-hidden mb-4">
               {(['INDIVIDUAL', 'TEAM', 'COLLABORATION', 'CASCADING'] as const).map(type => (
                 <button key={type} type="button"
                   onClick={() => form.setValue('taskType', type)}
-                  className={cn('flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium transition-colors',
+                  className={cn('flex-1 basis-[50%] sm:basis-0 min-w-0 flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-3 py-2.5 text-[11px] sm:text-xs font-medium transition-colors',
                     taskType === type ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted')}>
                   {getTaskTypeIcon(type)}
-                  <span className="capitalize hidden sm:inline">{type.toLowerCase()}</span>
+                  <span className="capitalize truncate">{type.toLowerCase()}</span>
                 </button>
               ))}
             </div>
@@ -1560,7 +1560,7 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
 
                   <Separator />
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6">
                     {/* Location */}
                     <div className="space-y-3">
                       <Label htmlFor="location" className="text-sm font-medium flex items-center gap-2">

@@ -82,7 +82,7 @@ export default function TeamsPage() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <Users className="h-6 w-6" /> My Teams
@@ -150,7 +150,7 @@ export default function TeamsPage() {
       )}
 
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create a team</DialogTitle>
             <DialogDescription>A team gets its own task board automatically. You become its first leader.</DialogDescription>

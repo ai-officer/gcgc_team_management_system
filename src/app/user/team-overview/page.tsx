@@ -1048,7 +1048,7 @@ export default function TeamOverviewPage() {
                             }`}>
                               {index + 1}
                             </div>
-                            <span className={`text-xs ${isActive ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
+                            <span className={`hidden sm:inline text-xs ${isActive ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
                               {stepNames[index]}
                             </span>
                             {index < 3 && <div className="w-8 h-px bg-gray-300 mx-1" />}
@@ -2455,7 +2455,7 @@ export default function TeamOverviewPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-slate-100 rounded-lg"
+                        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-slate-100 rounded-lg"
                       >
                         <MoreHorizontal className="h-4 w-4 text-slate-600" />
                       </Button>

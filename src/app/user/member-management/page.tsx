@@ -762,7 +762,7 @@ export default function MemberManagementPage() {
                               <DropdownMenuTrigger asChild>
                                 <Button
                                   variant="ghost" size="icon"
-                                  className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 rounded-lg"
+                                  className="h-7 w-7 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0 rounded-lg"
                                   onClick={e => e.stopPropagation()}
                                 >
                                   <MoreHorizontal className="h-4 w-4 text-slate-400" />
@@ -845,7 +845,7 @@ export default function MemberManagementPage() {
 
               ) : (
                 /* Kanban Board */
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">
                   {kanbanColumns.map((column) => {
                     const columnTasks = filteredTasks.filter(task => task.status === column.id)
                     const Icon = column.icon
@@ -876,7 +876,7 @@ export default function MemberManagementPage() {
                                   <h4 className="text-sm font-semibold text-slate-900 line-clamp-2 flex-1 leading-snug">{task.title}</h4>
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 shrink-0 rounded-lg" onClick={e => e.stopPropagation()}>
+                                      <Button variant="ghost" size="icon" className="h-6 w-6 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shrink-0 rounded-lg" onClick={e => e.stopPropagation()}>
                                         <MoreHorizontal className="h-3 w-3 text-slate-400" />
                                       </Button>
                                     </DropdownMenuTrigger>

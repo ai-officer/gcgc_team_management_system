@@ -18,6 +18,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { useToast } from '@/hooks/use-toast'
+import { ConfirmDeleteDialog } from '@/components/shared/ConfirmDeleteDialog'
 import type { Team, SelectableUser } from '@/types/team'
 
 export default function TeamDetailPage() {
@@ -217,12 +218,12 @@ export default function TeamDetailPage() {
         <ArrowLeft className="h-4 w-4 mr-1" /> Back to Teams
       </Link>
 
-      <div className="flex items-start justify-between gap-4 mb-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-6">
         <div className="flex items-center gap-3 min-w-0">
           <span className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: team.board?.color || '#3B82F6' }} />
           <h1 className="text-2xl font-bold truncate">{team.name}</h1>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex flex-wrap items-center gap-2 justify-end">
           {team.board && (
             <Link href={`/user/tasks?board=${team.board.id}`}>
               <Button variant="outline" size="sm"><LayoutGrid className="h-4 w-4 mr-2" /> Open board</Button>
@@ -292,7 +293,7 @@ export default function TeamDetailPage() {
       </section>
 
       <Dialog open={showRename} onOpenChange={setShowRename}>
-        <DialogContent>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Rename team</DialogTitle>
           </DialogHeader>
@@ -307,25 +308,19 @@ export default function TeamDetailPage() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={showDelete} onOpenChange={setShowDelete}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete this team?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This permanently deletes the team, its board, and all tasks on that board. This cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={(e) => { e.preventDefault(); deleteTeam() }} disabled={deleting} className="bg-red-600 hover:bg-red-700">
-              {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}Delete team
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDeleteDialog
+        open={showDelete}
+        onOpenChange={setShowDelete}
+        title="Delete this team?"
+        description="This permanently deletes the team, its board, and all tasks on that board. This cannot be undone."
+        confirmationText={team.name}
+        confirmLabel="Delete team"
+        loading={deleting}
+        onConfirm={deleteTeam}
+      />
 
       <Dialog open={showAdd} onOpenChange={setShowAdd}>
-        <DialogContent>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add a member</DialogTitle>
             <DialogDescription>Add an existing user to this team. They keep their own profile — you only set their team role.</DialogDescription>

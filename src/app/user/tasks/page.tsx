@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { ConfirmDeleteDialog } from '@/components/shared/ConfirmDeleteDialog'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import {
   Plus,
@@ -226,6 +227,8 @@ export default function TasksPage() {
   const [boards, setBoards] = useState<KanbanBoard[]>([])
   const [activeBoardId, setActiveBoardId] = useState<string | null>(() => searchParams.get('board') || null) // null = "All Tasks"
   const [showCreateBoard, setShowCreateBoard] = useState(false)
+  const [boardPendingDelete, setBoardPendingDelete] = useState<KanbanBoard | null>(null)
+  const [deletingBoard, setDeletingBoard] = useState(false)
   const [newBoardName, setNewBoardName] = useState('')
   const [newBoardColor, setNewBoardColor] = useState('#3B82F6')
   const [newBoardDescription, setNewBoardDescription] = useState('')
@@ -401,9 +404,9 @@ export default function TasksPage() {
     }
   }
 
-  const deleteBoard = async (boardId: string) => {
+  const deleteBoard = async (boardId: string): Promise<boolean> => {
     const board = boards.find(b => b.id === boardId)
-    if (!board) return
+    if (!board) return false
     try {
       const res = await fetch(`/api/boards/${boardId}`, { method: 'DELETE' })
       if (res.ok) {
@@ -411,9 +414,15 @@ export default function TasksPage() {
         if (activeBoardId === boardId) setActiveBoardId(null)
         toast({ title: `Board "${board.name}" deleted. Tasks moved to All Tasks.` })
         fetchTasks(false)
+        return true
       }
+      const err = await res.json().catch(() => ({}))
+      toast({ title: 'Could not delete board', description: err.error, variant: 'destructive' })
+      return false
     } catch (e) {
       console.error('Error deleting board:', e)
+      toast({ title: 'Could not delete board', variant: 'destructive' })
+      return false
     }
   }
 
@@ -905,19 +914,19 @@ export default function TasksPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
         <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Tasks</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Tasks</h1>
           <p className="text-muted-foreground">
             Manage your tasks and collaborations
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => setBulkDialogOpen(true)}>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Button variant="outline" className="flex-1 sm:flex-none" onClick={() => setBulkDialogOpen(true)}>
             <ListChecks className="h-4 w-4 mr-2" />
             Bulk
           </Button>
-          <Button onClick={() => setShowTaskForm(true)}>
+          <Button className="flex-1 sm:flex-none" onClick={() => setShowTaskForm(true)}>
             <Plus className="h-4 w-4 mr-2" />
             New Task
           </Button>
@@ -930,7 +939,7 @@ export default function TasksPage() {
         <button
           onClick={() => setActiveBoardId(null)}
           className={cn(
-            'flex items-center gap-1.5 px-4 py-2 rounded-t-lg text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px',
+            'shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-t-lg text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px',
             activeBoardId === null
               ? 'border-blue-600 text-blue-700 bg-blue-50/50'
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100'
@@ -946,7 +955,7 @@ export default function TasksPage() {
           const isTeamBoard = !!board.team
           const memberCount = board.members?.length ?? 0
           return (
-            <div key={board.id} className="relative group flex items-center">
+            <div key={board.id} className="relative group flex items-center shrink-0">
               <button
                 onClick={() => setActiveBoardId(board.id)}
                 className={cn(
@@ -989,7 +998,7 @@ export default function TasksPage() {
               {isTeamBoard ? (
                 <Link
                   href={`/user/teams/${board.team!.id}`}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-gray-200 transition-all"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:bg-gray-200 transition-all"
                   title="Manage team"
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -998,7 +1007,7 @@ export default function TasksPage() {
               ) : isOwner ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-gray-200 transition-all">
+                    <button className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:bg-gray-200 transition-all">
                       <MoreHorizontal className="h-3.5 w-3.5 text-gray-500" />
                     </button>
                   </DropdownMenuTrigger>
@@ -1009,7 +1018,7 @@ export default function TasksPage() {
                     }}>
                       <Settings2 className="h-4 w-4 mr-2" /> Edit Board
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="text-red-600" onClick={() => deleteBoard(board.id)}>
+                    <DropdownMenuItem className="text-red-600" onClick={() => setBoardPendingDelete(board)}>
                       <Trash2 className="h-4 w-4 mr-2" /> Delete
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -1023,7 +1032,7 @@ export default function TasksPage() {
         <button
           onClick={() => setShowCreateBoard(true)}
           title="Create a personal board (just for you, or share it with people you pick). To create a team with its own shared board, use the Teams page."
-          className="flex items-center gap-1 px-3 py-2 text-sm text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors whitespace-nowrap ml-1"
+          className="shrink-0 flex items-center gap-1 px-3 py-2 text-sm text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors whitespace-nowrap ml-1"
         >
           <Plus className="h-4 w-4" />
           New personal board
@@ -1031,8 +1040,8 @@ export default function TasksPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-4 items-center flex-wrap">
-        <div className="relative flex-1 max-w-full sm:max-w-md">
+      <div className="flex flex-wrap gap-2 sm:gap-4 items-center">
+        <div className="relative w-full sm:max-w-md sm:flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search tasks by title, description, or users..."
@@ -1049,10 +1058,11 @@ export default function TasksPage() {
           placeholder="Filter by user"
           allLabel="All users"
           maxDisplayed={10}
+          className="w-full sm:w-[200px]"
         />
 
         <Select value={selectedTaskType || "all"} onValueChange={(value) => setSelectedTaskType(value === "all" ? "" : value)}>
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-full sm:w-[200px]">
             <SelectValue placeholder="Filter by task type" />
           </SelectTrigger>
           <SelectContent>
@@ -1088,6 +1098,7 @@ export default function TasksPage() {
           <Button
             variant="outline"
             size="sm"
+            className="w-full sm:w-auto"
             onClick={() => {
               setSelectedUser('')
               setSelectedTaskType('')
@@ -1101,7 +1112,7 @@ export default function TasksPage() {
 
       {/* Kanban Board */}
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 min-h-[700px]">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 min-h-[700px]">
           {Object.entries(COLUMN_CONFIG).map(([status, config]) => {
             const columnTasks = getTasksByStatus(status as Task['status'])
 
@@ -1490,6 +1501,24 @@ export default function TasksPage() {
         onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
         boardContext={boardContext}
         initialStatus={quickAddStatus}
+      />
+
+      {/* Type-to-confirm board deletion */}
+      <ConfirmDeleteDialog
+        open={!!boardPendingDelete}
+        onOpenChange={(o) => { if (!o) setBoardPendingDelete(null) }}
+        title="Delete board?"
+        description={`This deletes the board "${boardPendingDelete?.name ?? ''}". Its tasks are kept and moved to All Tasks.`}
+        confirmationText={boardPendingDelete?.name ?? ''}
+        confirmLabel="Delete board"
+        loading={deletingBoard}
+        onConfirm={async () => {
+          if (!boardPendingDelete) return
+          setDeletingBoard(true)
+          const ok = await deleteBoard(boardPendingDelete.id)
+          setDeletingBoard(false)
+          if (ok) setBoardPendingDelete(null)
+        }}
       />
 
       <BulkTaskActionsDialog

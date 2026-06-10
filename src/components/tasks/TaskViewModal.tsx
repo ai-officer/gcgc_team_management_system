@@ -2314,7 +2314,7 @@ export default function TaskViewModal({
                     <span className={`flex-1 ${d.isCompleted ? 'line-through text-gray-400' : 'text-gray-700'}`}>{d.name}</span>
                     {d.isCompleted && d.submittedBy && <span className="text-gray-400 hidden group-hover:inline">{d.submittedBy.name || d.submittedBy.email}</span>}
                     {(canCompleteTask || session?.user?.role === 'LEADER') && (
-                      <button onClick={() => handleDeleteDeliverable(d.id)} className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => handleDeleteDeliverable(d.id)} className="text-gray-300 hover:text-red-500 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                         <X className="h-3 w-3" />
                       </button>
                     )}

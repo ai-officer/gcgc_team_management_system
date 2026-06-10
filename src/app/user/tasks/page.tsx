@@ -205,6 +205,7 @@ export default function TasksPage() {
   const [selectedTaskType, setSelectedTaskType] = useState<string>(() => searchParams.get('type') ?? '')
   const [users, setUsers] = useState<User[]>([])
   const [showTaskForm, setShowTaskForm] = useState(false)
+  const [quickAddStatus, setQuickAddStatus] = useState<'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' | undefined>(undefined)
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [duplicatingTask, setDuplicatingTask] = useState<Task | null>(null)
@@ -837,6 +838,7 @@ export default function TasksPage() {
     setShowTaskForm(false)
     setEditingTask(null)
     setDuplicatingTask(null)
+    setQuickAddStatus(undefined)
   }
 
   const closeViewModal = () => {
@@ -868,6 +870,11 @@ export default function TasksPage() {
       </div>
     )
   }
+
+  const activeBoard = activeBoardId ? boards.find(b => b.id === activeBoardId) : undefined
+  const boardContext = activeBoard
+    ? { boardId: activeBoard.id, boardName: activeBoard.name, teamId: activeBoard.team?.id ?? null }
+    : null
 
   return (
     <div className="space-y-6">
@@ -1074,11 +1081,17 @@ export default function TasksPage() {
             return (
               <div key={status} className="min-w-0 space-y-4">
                 <div className={`p-3 rounded-lg ${config.color} shadow-sm`}>
-                  <h3 className={`font-semibold ${config.textColor} flex items-center justify-between text-sm`}>
-                    {config.title}
-                    <Badge variant="secondary" className="ml-2 text-xs">
-                      {columnTasks.length}
-                    </Badge>
+                  <h3 className={`font-semibold ${config.textColor} flex items-center text-sm`}>
+                    <span>{config.title}</span>
+                    <Badge variant="secondary" className="ml-2 text-xs">{columnTasks.length}</Badge>
+                    <button
+                      type="button"
+                      title={`Add task to ${config.title}`}
+                      onClick={() => { setQuickAddStatus(status as 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'); setShowTaskForm(true) }}
+                      className="ml-auto p-1 rounded hover:bg-black/10 transition-colors"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
                   </h3>
                 </div>
 
@@ -1398,6 +1411,8 @@ export default function TasksPage() {
         task={editingTask}
         duplicateFrom={duplicatingTask}
         onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
+        boardContext={boardContext}
+        initialStatus={quickAddStatus}
       />
 
       <BulkTaskActionsDialog

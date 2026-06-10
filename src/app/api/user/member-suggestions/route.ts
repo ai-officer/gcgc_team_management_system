@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
         reportsToId: true,
         assignedTasks: {
           where: {
-            status: { not: 'COMPLETED' }
+            status: { notIn: ['COMPLETED', 'CANCELLED'] }
           },
           select: {
             id: true,

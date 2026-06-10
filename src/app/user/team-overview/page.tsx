@@ -2089,9 +2089,16 @@ export default function TeamOverviewPage() {
       {/* My Project Teams */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-blue-600" />
+          <div className="flex items-center gap-2.5">
+            <span className="grid place-items-center w-8 h-8 rounded-lg bg-blue-50 text-blue-600">
+              <Users className="h-4 w-4" />
+            </span>
             <h2 className="text-lg font-semibold text-slate-900">My Project Teams</h2>
+            {projectTeams.length > 0 && (
+              <span className="grid place-items-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">
+                {projectTeams.length}
+              </span>
+            )}
           </div>
           <Link href="/user/teams">
             <Button variant="outline" size="sm" className="gap-1.5">
@@ -2119,18 +2126,24 @@ export default function TeamOverviewPage() {
               const taskCount = team._count?.tasks ?? 0
               const dotColor = team.board?.color || '#3B82F6'
               return (
-                <Card key={team.id} className="border border-slate-200 bg-white hover:shadow-md transition-all duration-200 rounded-xl">
-                  <CardContent className="p-4 space-y-3">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span
-                        className="shrink-0 w-3 h-3 rounded-full"
-                        style={{ backgroundColor: dotColor }}
-                      />
-                      <span className="font-semibold text-slate-900 truncate text-sm">{team.name}</span>
+                <Card key={team.id} className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300 rounded-xl">
+                  {/* board-color top accent */}
+                  <div className="absolute top-0 left-0 w-full h-1" style={{ backgroundColor: dotColor }} />
+                  <CardContent className="p-4 pt-5 space-y-3.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span
+                          className="shrink-0 grid place-items-center w-9 h-9 rounded-lg text-white font-bold text-sm shadow-sm"
+                          style={{ backgroundColor: dotColor }}
+                        >
+                          {team.name?.[0]?.toUpperCase() || 'T'}
+                        </span>
+                        <span className="font-semibold text-slate-900 truncate text-sm">{team.name}</span>
+                      </div>
                       {myRole && (
                         <Badge
                           variant="outline"
-                          className={`ml-auto shrink-0 text-xs rounded-md ${
+                          className={`shrink-0 text-[10px] rounded-md ${
                             myRole === 'LEADER'
                               ? 'border-blue-300 text-blue-700 bg-blue-50'
                               : 'border-slate-300 text-slate-600 bg-slate-50'
@@ -2140,20 +2153,47 @@ export default function TeamOverviewPage() {
                         </Badge>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-slate-500">
-                      <span>{memberCount} {memberCount === 1 ? 'member' : 'members'}</span>
-                      <span>·</span>
-                      <span>{taskCount} {taskCount === 1 ? 'task' : 'tasks'}</span>
+
+                    {/* member avatar stack + task count */}
+                    <div className="flex items-center justify-between">
+                      {memberCount > 0 ? (
+                        <div className="flex -space-x-2">
+                          {team.members.slice(0, 4).map(m => (
+                            <Avatar key={m.userId} className="h-7 w-7 ring-2 ring-white">
+                              <AvatarImage src={m.user.image || undefined} className="object-cover" />
+                              <AvatarFallback className="text-[10px] bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
+                                {(m.user.name || m.user.email)?.[0]?.toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                          ))}
+                          {memberCount > 4 && (
+                            <span className="grid place-items-center h-7 w-7 rounded-full bg-slate-100 text-slate-600 text-[10px] font-medium ring-2 ring-white">
+                              +{memberCount - 4}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-slate-400">No members</span>
+                      )}
+                      <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+                        <CheckSquare className="h-3.5 w-3.5 text-slate-400" />
+                        <span>{taskCount} {taskCount === 1 ? 'task' : 'tasks'}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
-                      <Link href={`/user/teams/${team.id}`}>
-                        <Button variant="outline" size="sm" className="h-7 text-xs">
+
+                    <div className="flex items-center gap-2 pt-2.5 border-t border-slate-100">
+                      <Link href={`/user/teams/${team.id}`} className="flex-1">
+                        <Button variant="outline" size="sm" className="h-7 text-xs w-full">
                           Manage
                         </Button>
                       </Link>
                       {team.board && (
-                        <Link href={`/user/tasks?board=${team.board.id}`}>
-                          <Button variant="outline" size="sm" className="h-7 text-xs">
+                        <Link href={`/user/tasks?board=${team.board.id}`} className="flex-1">
+                          <Button
+                            size="sm"
+                            className="h-7 text-xs w-full text-white border-0 hover:opacity-90"
+                            style={{ backgroundColor: dotColor }}
+                          >
                             Open board
                           </Button>
                         </Link>
@@ -2455,11 +2495,14 @@ export default function TeamOverviewPage() {
                 )}>
                   <div className="relative">
                     <Avatar className={cn(
-                      "ring-2 ring-slate-200 group-hover:ring-blue-400 transition-all rounded-lg",
+                      "rounded-full shadow-md ring-2 ring-white ring-offset-2 ring-offset-slate-100 group-hover:ring-offset-blue-200 transition-all duration-300",
                       viewMode === 'grid' ? "h-20 w-20" : "h-12 w-12"
                     )}>
-                      <AvatarImage src={member.image || undefined} />
-                      <AvatarFallback className="bg-blue-100 text-blue-700 font-bold rounded-lg">
+                      <AvatarImage src={member.image || undefined} className="object-cover" />
+                      <AvatarFallback className={cn(
+                        "rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-semibold tracking-wide",
+                        viewMode === 'grid' ? "text-xl" : "text-sm"
+                      )}>
                         {member.name
                           ? member.name.split(' ').map(n => n[0]).join('').slice(0, 2)
                           : member.email?.[0]?.toUpperCase()
@@ -2467,9 +2510,9 @@ export default function TeamOverviewPage() {
                       </AvatarFallback>
                     </Avatar>
                     <div className={cn(
-                      "absolute rounded-full border-2 border-white",
+                      "absolute rounded-full border-2 border-white shadow-sm",
                       member.isActive ? "bg-emerald-500" : "bg-slate-400",
-                      viewMode === 'grid' ? "w-5 h-5 -bottom-1 -right-1" : "w-3 h-3 -bottom-0.5 -right-0.5"
+                      viewMode === 'grid' ? "w-5 h-5 bottom-1 right-1" : "w-3 h-3 bottom-0 right-0"
                     )} />
                   </div>
 

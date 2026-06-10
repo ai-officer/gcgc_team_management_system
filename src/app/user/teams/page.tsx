@@ -150,7 +150,7 @@ export default function TeamsPage() {
       )}
 
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create a team</DialogTitle>
             <DialogDescription>A team gets its own task board automatically. You become its first leader.</DialogDescription>

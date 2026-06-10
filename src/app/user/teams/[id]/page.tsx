@@ -293,7 +293,7 @@ export default function TeamDetailPage() {
       </section>
 
       <Dialog open={showRename} onOpenChange={setShowRename}>
-        <DialogContent>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Rename team</DialogTitle>
           </DialogHeader>
@@ -320,7 +320,7 @@ export default function TeamDetailPage() {
       />
 
       <Dialog open={showAdd} onOpenChange={setShowAdd}>
-        <DialogContent>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add a member</DialogTitle>
             <DialogDescription>Add an existing user to this team. They keep their own profile — you only set their team role.</DialogDescription>

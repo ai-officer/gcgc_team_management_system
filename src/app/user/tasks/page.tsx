@@ -998,7 +998,7 @@ export default function TasksPage() {
               {isTeamBoard ? (
                 <Link
                   href={`/user/teams/${board.team!.id}`}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-gray-200 transition-all"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:bg-gray-200 transition-all"
                   title="Manage team"
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -1007,7 +1007,7 @@ export default function TasksPage() {
               ) : isOwner ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-gray-200 transition-all">
+                    <button className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:bg-gray-200 transition-all">
                       <MoreHorizontal className="h-3.5 w-3.5 text-gray-500" />
                     </button>
                   </DropdownMenuTrigger>

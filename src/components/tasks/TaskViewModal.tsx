@@ -711,6 +711,8 @@ export default function TaskViewModal({
         })
         // Notify parent to refresh
         onTaskUpdate?.()
+        // Refresh so the parent switches to subtask-derived progress consistently.
+        fetchTaskDetails()
       } else {
         const error = await response.json()
         throw new Error(error.error || 'Failed to create subtask')
@@ -767,6 +769,9 @@ export default function TaskViewModal({
       }
       toast({ title: successMessage })
       onTaskUpdate?.()
+      // Refresh so the parent's server-rolled-up progress (% + bar) stays in
+      // sync with the subtask completion caption.
+      fetchTaskDetails()
     } catch (error) {
       // Revert optimistic update on failure
       setLocalSubtasks(prev =>

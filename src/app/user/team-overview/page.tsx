@@ -24,7 +24,8 @@ import {
   Building2,
   TrendingUp,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ChevronDown
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -108,6 +109,7 @@ export default function TeamOverviewPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [projectTeams, setProjectTeams] = useState<ProjectTeam[]>([])
+  const [showAllTeams, setShowAllTeams] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
@@ -2120,7 +2122,7 @@ export default function TeamOverviewPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {projectTeams.map(team => {
+            {(showAllTeams ? projectTeams : projectTeams.slice(0, 6)).map(team => {
               const myRole = team.members.find(m => m.userId === session?.user?.id)?.role
               const memberCount = team._count?.members ?? team.members.length
               const taskCount = team._count?.tasks ?? 0
@@ -2203,6 +2205,20 @@ export default function TeamOverviewPage() {
                 </Card>
               )
             })}
+          </div>
+        )}
+
+        {projectTeams.length > 6 && (
+          <div className="flex justify-center pt-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5 text-slate-600 hover:text-slate-900"
+              onClick={() => setShowAllTeams(v => !v)}
+            >
+              {showAllTeams ? 'Show less' : `View all ${projectTeams.length} teams`}
+              <ChevronDown className={`h-4 w-4 transition-transform ${showAllTeams ? 'rotate-180' : ''}`} />
+            </Button>
           </div>
         )}
       </div>

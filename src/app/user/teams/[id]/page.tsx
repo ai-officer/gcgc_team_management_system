@@ -18,6 +18,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { useToast } from '@/hooks/use-toast'
+import { ConfirmDeleteDialog } from '@/components/shared/ConfirmDeleteDialog'
 import type { Team, SelectableUser } from '@/types/team'
 
 export default function TeamDetailPage() {
@@ -307,22 +308,16 @@ export default function TeamDetailPage() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={showDelete} onOpenChange={setShowDelete}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete this team?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This permanently deletes the team, its board, and all tasks on that board. This cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={(e) => { e.preventDefault(); deleteTeam() }} disabled={deleting} className="bg-red-600 hover:bg-red-700">
-              {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}Delete team
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDeleteDialog
+        open={showDelete}
+        onOpenChange={setShowDelete}
+        title="Delete this team?"
+        description="This permanently deletes the team, its board, and all tasks on that board. This cannot be undone."
+        confirmationText={team.name}
+        confirmLabel="Delete team"
+        loading={deleting}
+        onConfirm={deleteTeam}
+      />
 
       <Dialog open={showAdd} onOpenChange={setShowAdd}>
         <DialogContent>

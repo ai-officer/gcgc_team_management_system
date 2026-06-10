@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { ConfirmDeleteDialog } from '@/components/shared/ConfirmDeleteDialog'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import {
   Plus,
@@ -226,6 +227,8 @@ export default function TasksPage() {
   const [boards, setBoards] = useState<KanbanBoard[]>([])
   const [activeBoardId, setActiveBoardId] = useState<string | null>(() => searchParams.get('board') || null) // null = "All Tasks"
   const [showCreateBoard, setShowCreateBoard] = useState(false)
+  const [boardPendingDelete, setBoardPendingDelete] = useState<KanbanBoard | null>(null)
+  const [deletingBoard, setDeletingBoard] = useState(false)
   const [newBoardName, setNewBoardName] = useState('')
   const [newBoardColor, setNewBoardColor] = useState('#3B82F6')
   const [newBoardDescription, setNewBoardDescription] = useState('')
@@ -1009,7 +1012,7 @@ export default function TasksPage() {
                     }}>
                       <Settings2 className="h-4 w-4 mr-2" /> Edit Board
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="text-red-600" onClick={() => deleteBoard(board.id)}>
+                    <DropdownMenuItem className="text-red-600" onClick={() => setBoardPendingDelete(board)}>
                       <Trash2 className="h-4 w-4 mr-2" /> Delete
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -1490,6 +1493,24 @@ export default function TasksPage() {
         onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
         boardContext={boardContext}
         initialStatus={quickAddStatus}
+      />
+
+      {/* Type-to-confirm board deletion */}
+      <ConfirmDeleteDialog
+        open={!!boardPendingDelete}
+        onOpenChange={(o) => { if (!o) setBoardPendingDelete(null) }}
+        title="Delete board?"
+        description={`This deletes the board "${boardPendingDelete?.name ?? ''}". Its tasks are kept and moved to All Tasks.`}
+        confirmationText={boardPendingDelete?.name ?? ''}
+        confirmLabel="Delete board"
+        loading={deletingBoard}
+        onConfirm={async () => {
+          if (!boardPendingDelete) return
+          setDeletingBoard(true)
+          await deleteBoard(boardPendingDelete.id)
+          setDeletingBoard(false)
+          setBoardPendingDelete(null)
+        }}
       />
 
       <BulkTaskActionsDialog

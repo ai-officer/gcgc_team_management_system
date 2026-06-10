@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import {
-  UserCheck,
   Plus,
   Search,
   Filter,
@@ -24,6 +23,8 @@ import {
   ArrowRight,
   ArrowUpDown,
   Loader2,
+  X,
+  ChevronsUpDown,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -51,6 +52,11 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -167,10 +173,10 @@ export default function MemberManagementPage() {
   const [error, setError] = useState<string | null>(null)
   const [deletingTask, setDeletingTask] = useState<Task | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [selectedMember, setSelectedMember] = useState<string>('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
-  const [viewMode, setViewMode] = useState<ViewMode>('list')
+  const [viewMode, setViewMode] = useState<ViewMode>('kanban')
+  const [pickerOpen, setPickerOpen] = useState(false)
   const [isCreateTaskDialogOpen, setIsCreateTaskDialogOpen] = useState(false)
   const [viewingTask, setViewingTask] = useState<Task | null>(null)
   const [memberSuggestions, setMemberSuggestions] = useState<MemberWithStats[]>([])
@@ -185,13 +191,6 @@ export default function MemberManagementPage() {
       router.push('/user/dashboard')
     }
   }, [session])
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm)
-    }, 500)
-    return () => clearTimeout(timer)
-  }, [searchTerm])
 
   const fetchMemberSuggestions = async () => {
     if (!session?.user || session.user.role !== 'LEADER') return
@@ -308,11 +307,14 @@ export default function MemberManagementPage() {
     }
   }
 
+  // The member picker filters live on `searchTerm` (small list; instant beats debounce).
   const filteredMembers = teamMembers.filter(member =>
-    !debouncedSearchTerm ||
-    member.name?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-    member.email.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+    !searchTerm ||
+    member.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    member.email.toLowerCase().includes(searchTerm.toLowerCase())
   )
+
+  const selectedMemberObj = teamMembers.find(m => m.id === selectedMember)
 
   // Per-member, server-computed stats (overdue/urgent/workload). Authoritative
   // per member — these can differ from the panel's teamStats, which derive from
@@ -641,171 +643,142 @@ export default function MemberManagementPage() {
 
       </div>
 
-      {/* ── Main Two-Panel Layout ── */}
-      <div className="flex flex-col md:flex-row gap-5 md:items-stretch md:h-[calc(100vh-380px)] min-h-[400px]">
+      {/* ── Member workspace ── */}
+      <div className="flex flex-col gap-4 md:h-[calc(100vh-340px)] min-h-[520px]">
 
-        {/* ── Left: Team Members Sidebar ── */}
-        <div className="w-full h-[280px] md:h-auto md:w-[300px] md:shrink-0 flex flex-col">
-          <Card className="flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-
-            {/* Sidebar header */}
-            <div className="px-5 pt-5 pb-4 border-b border-slate-100 shrink-0">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 bg-blue-50 rounded-lg">
-                    <UserCheck className="h-4 w-4 text-blue-600" />
-                  </div>
-                  <div>
-                    <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Team Members</h2>
-                  </div>
-                </div>
-                <span className="inline-flex items-center justify-center h-6 min-w-[24px] px-2 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">
-                  {teamMembers.length}
-                </span>
-              </div>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-                <Input
-                  placeholder="Search members..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 border-slate-200 rounded-lg bg-slate-50 focus:bg-white text-sm h-9"
-                />
-              </div>
-              <div className="flex items-center justify-between mt-3">
-                <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wide">Sort</span>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1.5 text-slate-600 hover:text-slate-900">
-                      <ArrowUpDown className="h-3.5 w-3.5" />
-                      {memberSort === 'alerts' ? 'At-risk first'
-                        : memberSort === 'workload' ? 'Busiest first'
-                        : memberSort === 'tasks' ? 'Most tasks'
-                        : 'Name (A–Z)'}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="rounded-lg">
-                    <DropdownMenuLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Sort members by</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuRadioGroup value={memberSort} onValueChange={(v) => setMemberSort(v as MemberSort)}>
-                      <DropdownMenuRadioItem value="alerts">At-risk first</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="workload">Busiest first</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="tasks">Most tasks</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="name">Name (A–Z)</DropdownMenuRadioItem>
-                    </DropdownMenuRadioGroup>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-
-            {/* Scrollable member list */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-1">
-
-              {/* All Members row */}
-              <button
-                className={cn(
-                  "w-full text-left rounded-lg border transition-all px-3 py-2.5 flex items-center gap-3",
-                  !selectedMember
-                    ? 'bg-blue-50 border-blue-200 shadow-sm'
-                    : 'bg-white border-transparent hover:bg-slate-50 hover:border-slate-200'
-                )}
-                onClick={() => setSelectedMember('')}
+        {/* Member search — pick a member to open their board */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 shrink-0">
+          <Popover open={pickerOpen} onOpenChange={(o) => { setPickerOpen(o); if (o) setSearchTerm('') }}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={pickerOpen}
+                className="w-full sm:w-[380px] justify-between h-11 rounded-xl border-slate-200 bg-white px-3 font-normal hover:bg-slate-50"
               >
-                <div className={cn("h-8 w-8 rounded-full flex items-center justify-center shrink-0", !selectedMember ? 'bg-blue-100' : 'bg-slate-100')}>
-                  <Users className={cn("h-4 w-4", !selectedMember ? 'text-blue-600' : 'text-slate-500')} />
+                {selectedMemberObj ? (
+                  <span className="flex items-center gap-2.5 min-w-0">
+                    <Avatar className="h-7 w-7 shrink-0">
+                      <AvatarImage src={selectedMemberObj.image} />
+                      <AvatarFallback className="bg-blue-100 text-blue-700 text-[11px] font-bold">
+                        {(selectedMemberObj.name || selectedMemberObj.email).split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="font-medium text-slate-900 truncate">{selectedMemberObj.name || selectedMemberObj.email}</span>
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2 text-slate-500 min-w-0">
+                    <Search className="h-4 w-4 shrink-0" />
+                    <span className="truncate">Search a member to open their board…</span>
+                  </span>
+                )}
+                <ChevronsUpDown className="h-4 w-4 text-slate-400 shrink-0 ml-2" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" sideOffset={4} className="p-0 w-[var(--radix-popover-trigger-width)] min-w-[280px] max-w-[calc(100vw-2rem)] rounded-xl overflow-hidden z-[200]">
+              <div className="p-2 border-b border-slate-100">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                  <Input
+                    autoFocus
+                    placeholder="Type a name…"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-8 h-9 border-slate-200 text-sm"
+                  />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-1.5">
-                    <p className={cn("text-sm font-semibold", !selectedMember ? 'text-blue-900' : 'text-slate-700')}>All Members</p>
-                    <span className="text-[11px] text-slate-400 shrink-0 tabular-nums">{teamStats.totalTasks} {teamStats.totalTasks === 1 ? 'task' : 'tasks'}</span>
-                  </div>
-                  <p className="text-xs text-slate-400">{teamStats.totalMembers} members</p>
-                </div>
-              </button>
+              </div>
+              <div className="max-h-[320px] overflow-y-auto p-1.5 space-y-0.5">
+                {/* All team tasks */}
+                <button
+                  className={cn(
+                    "w-full text-left rounded-lg px-2.5 py-2 flex items-center gap-2.5 transition-colors",
+                    !selectedMember ? "bg-blue-50" : "hover:bg-slate-50"
+                  )}
+                  onClick={() => { setSelectedMember(''); setPickerOpen(false) }}
+                >
+                  <span className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                    <Users className="h-4 w-4 text-slate-500" />
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-sm font-semibold text-slate-700">All team tasks</span>
+                    <span className="block text-xs text-slate-400">{teamStats.totalMembers} members · {teamStats.totalTasks} tasks</span>
+                  </span>
+                </button>
 
-              {sortedMembers.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-10 text-center">
-                  <Users className="h-8 w-8 text-slate-200 mb-2" />
-                  <p className="text-sm text-slate-400">
-                    {searchTerm ? 'No members match' : 'No members found'}
-                  </p>
-                </div>
-              ) : (
-                sortedMembers.map((member) => {
-                  const stats = memberSuggestions.find(s => s.id === member.id)
-                  const workload = stats?.workloadPercentage ?? 0
-                  const totalTasks = stats?.taskCounts?.total ?? member._count?.assignedTasks ?? 0
-                  const overdue = stats?.overdueTasks ?? 0
-                  const urgent = stats?.priorityCounts?.urgent ?? 0
-                  const isSelected = selectedMember === member.id
-                  const initials = member.name
-                    ? member.name.split(' ').map(n => n[0]).join('').slice(0, 2)
-                    : member.email[0].toUpperCase()
-                  return (
-                    <button
-                      key={member.id}
-                      className={cn(
-                        "w-full text-left rounded-lg border transition-all px-3 py-2.5 flex items-center gap-3",
-                        isSelected
-                          ? 'bg-blue-50 border-blue-200 shadow-sm'
-                          : 'bg-white border-transparent hover:bg-slate-50 hover:border-slate-200'
-                      )}
-                      onClick={() => setSelectedMember(isSelected ? '' : member.id)}
-                    >
-                      <Avatar className="h-8 w-8 shrink-0">
-                        <AvatarImage src={member.image} />
-                        <AvatarFallback className={cn("text-xs font-bold", isSelected ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600")}>
-                          {initials}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-1.5">
-                          <p className={cn("text-sm font-semibold truncate", isSelected ? "text-blue-900" : "text-slate-800")}>
-                            {member.name || 'Unnamed User'}
-                          </p>
-                          <span className={cn(
-                            "text-[11px] font-semibold shrink-0 tabular-nums",
-                            workload >= 80 ? "text-red-500" : workload >= 50 ? "text-amber-500" : "text-emerald-600"
-                          )}>
-                            {workload}%
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1.5">
-                          <div className="h-1.5 flex-1 rounded-full bg-slate-100 overflow-hidden">
-                            <div
-                              className={cn("h-full rounded-full transition-all", workload >= 80 ? "bg-red-400" : workload >= 50 ? "bg-amber-400" : "bg-emerald-400")}
-                              style={{ width: `${Math.min(workload, 100)}%` }}
-                            />
-                          </div>
-                          <span className="text-[11px] text-slate-400 shrink-0 tabular-nums">
-                            {totalTasks} {totalTasks === 1 ? 'task' : 'tasks'}
-                          </span>
-                        </div>
-                        {(overdue > 0 || urgent > 0) && (
-                          <div className="flex items-center gap-1.5 mt-1.5">
-                            {overdue > 0 && (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5">
-                                <AlertTriangle className="h-3 w-3" /> {overdue} overdue
-                              </span>
-                            )}
-                            {urgent > 0 && (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5">
-                                <AlertCircle className="h-3 w-3" /> {urgent} urgent
-                              </span>
-                            )}
-                          </div>
+                {sortedMembers.length === 0 ? (
+                  <div className="py-8 text-center text-sm text-slate-400">No members match</div>
+                ) : (
+                  sortedMembers.map((member) => {
+                    const stats = memberSuggestions.find(s => s.id === member.id)
+                    const workload = stats?.workloadPercentage ?? 0
+                    const overdue = stats?.overdueTasks ?? 0
+                    const urgent = stats?.priorityCounts?.urgent ?? 0
+                    const isSelected = selectedMember === member.id
+                    const initials = member.name
+                      ? member.name.split(' ').map(n => n[0]).join('').slice(0, 2)
+                      : member.email[0].toUpperCase()
+                    return (
+                      <button
+                        key={member.id}
+                        className={cn(
+                          "w-full text-left rounded-lg px-2.5 py-2 flex items-center gap-2.5 transition-colors",
+                          isSelected ? "bg-blue-50" : "hover:bg-slate-50"
                         )}
-                      </div>
-                    </button>
-                  )
-                })
-              )}
-            </div>
-          </Card>
-        </div>
+                        onClick={() => { setSelectedMember(member.id); setPickerOpen(false) }}
+                      >
+                        <Avatar className="h-8 w-8 shrink-0">
+                          <AvatarImage src={member.image} />
+                          <AvatarFallback className={cn("text-xs font-bold", isSelected ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600")}>
+                            {initials}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className={cn("text-sm font-semibold truncate", isSelected ? "text-blue-900" : "text-slate-800")}>
+                              {member.name || 'Unnamed User'}
+                            </span>
+                            <span className={cn(
+                              "text-[11px] font-semibold shrink-0 tabular-nums",
+                              workload >= 80 ? "text-red-500" : workload >= 50 ? "text-amber-500" : "text-emerald-600"
+                            )}>
+                              {workload}%
+                            </span>
+                          </div>
+                          {(overdue > 0 || urgent > 0) && (
+                            <div className="flex items-center gap-1.5 mt-1">
+                              {overdue > 0 && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5">
+                                  <AlertTriangle className="h-3 w-3" /> {overdue} overdue
+                                </span>
+                              )}
+                              {urgent > 0 && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5">
+                                  <AlertCircle className="h-3 w-3" /> {urgent} urgent
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    )
+                  })
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
 
-        {/* ── Right: Task Panel ── */}
-        <div className="flex-1 min-w-0 flex flex-col gap-4">
+          {selectedMember && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 px-3 text-slate-500 hover:text-slate-900 gap-1.5 self-start sm:self-auto"
+              onClick={() => setSelectedMember('')}
+            >
+              <X className="h-3.5 w-3.5" /> Back to all team tasks
+            </Button>
+          )}
+        </div>
 
           {/* Selected Member Profile Strip */}
           {selectedMember && (() => {
@@ -1174,7 +1147,6 @@ export default function MemberManagementPage() {
               )}
             </div>
           </Card>
-        </div>
       </div>
 
       {/* ── Assign Task ── */}

@@ -24,12 +24,10 @@ import {
   Building2,
   TrendingUp,
   ChevronLeft,
-  ChevronRight,
-  ChevronDown
+  ChevronRight
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import type { Team as ProjectTeam } from '@/types/team'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -108,8 +106,6 @@ export default function TeamOverviewPage() {
   const [teamStats, setTeamStats] = useState<TeamStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [projectTeams, setProjectTeams] = useState<ProjectTeam[]>([])
-  const [showAllTeams, setShowAllTeams] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
@@ -246,15 +242,6 @@ export default function TeamOverviewPage() {
   useEffect(() => {
     fetchTeamData()
   }, [session])
-
-  // Fetch real project teams from the Teams feature
-  useEffect(() => {
-    if (!session?.user) return
-    fetch('/api/user/teams')
-      .then(r => r.ok ? r.json() : { teams: [] })
-      .then(d => setProjectTeams(d.teams || []))
-      .catch(() => {})
-  }, [session?.user])
 
   // Fetch organizational data when create mode is selected
   useEffect(() => {
@@ -2086,141 +2073,6 @@ export default function TeamOverviewPage() {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* My Project Teams */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <span className="grid place-items-center w-8 h-8 rounded-lg bg-blue-50 text-blue-600">
-              <Users className="h-4 w-4" />
-            </span>
-            <h2 className="text-lg font-semibold text-slate-900">My Project Teams</h2>
-            {projectTeams.length > 0 && (
-              <span className="grid place-items-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">
-                {projectTeams.length}
-              </span>
-            )}
-          </div>
-          <Link href="/user/teams">
-            <Button variant="outline" size="sm" className="gap-1.5">
-              Manage teams
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </Link>
-        </div>
-
-        {projectTeams.length === 0 ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
-            <Users className="h-10 w-10 mx-auto mb-3 text-slate-300" />
-            <p className="text-sm text-muted-foreground">
-              You haven&apos;t created or joined any project teams yet.{' '}
-              <Link href="/user/teams" className="text-blue-600 hover:underline font-medium">
-                Create one
-              </Link>
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {(showAllTeams ? projectTeams : projectTeams.slice(0, 6)).map(team => {
-              const myRole = team.members.find(m => m.userId === session?.user?.id)?.role
-              const memberCount = team._count?.members ?? team.members.length
-              const taskCount = team._count?.tasks ?? 0
-              const dotColor = team.board?.color || '#3B82F6'
-              return (
-                <Card key={team.id} className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300 rounded-xl">
-                  {/* board-color top accent */}
-                  <div className="absolute top-0 left-0 w-full h-1" style={{ backgroundColor: dotColor }} />
-                  <CardContent className="p-4 pt-5 space-y-3.5">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <span
-                          className="shrink-0 grid place-items-center w-9 h-9 rounded-lg text-white font-bold text-sm shadow-sm"
-                          style={{ backgroundColor: dotColor }}
-                        >
-                          {team.name?.[0]?.toUpperCase() || 'T'}
-                        </span>
-                        <span className="font-semibold text-slate-900 truncate text-sm">{team.name}</span>
-                      </div>
-                      {myRole && (
-                        <Badge
-                          variant="outline"
-                          className={`shrink-0 text-[10px] rounded-md ${
-                            myRole === 'LEADER'
-                              ? 'border-blue-300 text-blue-700 bg-blue-50'
-                              : 'border-slate-300 text-slate-600 bg-slate-50'
-                          }`}
-                        >
-                          {myRole}
-                        </Badge>
-                      )}
-                    </div>
-
-                    {/* member avatar stack + task count */}
-                    <div className="flex items-center justify-between">
-                      {memberCount > 0 ? (
-                        <div className="flex -space-x-2">
-                          {team.members.slice(0, 4).map(m => (
-                            <Avatar key={m.userId} className="h-7 w-7 ring-2 ring-white">
-                              <AvatarImage src={m.user.image || undefined} className="object-cover" />
-                              <AvatarFallback className="text-[10px] bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
-                                {(m.user.name || m.user.email)?.[0]?.toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                          ))}
-                          {memberCount > 4 && (
-                            <span className="grid place-items-center h-7 w-7 rounded-full bg-slate-100 text-slate-600 text-[10px] font-medium ring-2 ring-white">
-                              +{memberCount - 4}
-                            </span>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-xs text-slate-400">No members</span>
-                      )}
-                      <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-                        <CheckSquare className="h-3.5 w-3.5 text-slate-400" />
-                        <span>{taskCount} {taskCount === 1 ? 'task' : 'tasks'}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 pt-2.5 border-t border-slate-100">
-                      <Link href={`/user/teams/${team.id}`} className="flex-1">
-                        <Button variant="outline" size="sm" className="h-7 text-xs w-full">
-                          Manage
-                        </Button>
-                      </Link>
-                      {team.board && (
-                        <Link href={`/user/tasks?board=${team.board.id}`} className="flex-1">
-                          <Button
-                            size="sm"
-                            className="h-7 text-xs w-full text-white border-0 hover:opacity-90"
-                            style={{ backgroundColor: dotColor }}
-                          >
-                            Open board
-                          </Button>
-                        </Link>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
-        )}
-
-        {projectTeams.length > 6 && (
-          <div className="flex justify-center pt-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-1.5 text-slate-600 hover:text-slate-900"
-              onClick={() => setShowAllTeams(v => !v)}
-            >
-              {showAllTeams ? 'Show less' : `View all ${projectTeams.length} teams`}
-              <ChevronDown className={`h-4 w-4 transition-transform ${showAllTeams ? 'rotate-180' : ''}`} />
-            </Button>
-          </div>
-        )}
       </div>
 
       {/* Team Stats — people-centric */}

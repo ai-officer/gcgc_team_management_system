@@ -1019,13 +1019,14 @@ export default function TasksPage() {
           )
         })}
 
-        {/* New Board button */}
+        {/* New Board button — personal board (team boards are created from the Teams page) */}
         <button
           onClick={() => setShowCreateBoard(true)}
+          title="Create a personal board (just for you, or share it with people you pick). To create a team with its own shared board, use the Teams page."
           className="flex items-center gap-1 px-3 py-2 text-sm text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors whitespace-nowrap ml-1"
         >
           <Plus className="h-4 w-4" />
-          New Board
+          New personal board
         </button>
       </div>
 

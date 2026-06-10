@@ -41,7 +41,7 @@ export async function PATCH(
     const member = await prisma.teamMember.update({
       where: { userId_teamId: { userId: params.userId, teamId: params.id } },
       data: { role },
-      include: { user: { select: { id: true, name: true, email: true, image: true, role: true } } },
+      include: { user: { select: { id: true, name: true, email: true, image: true, role: true, positionTitle: true } } },
     })
     return NextResponse.json({ member })
   } catch (error) {

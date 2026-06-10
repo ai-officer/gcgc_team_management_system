@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { z } from 'zod'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { authOptions } from '@/lib/auth'
 import { canManageTeam } from '@/lib/team-permissions'
@@ -66,6 +67,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     })
     return NextResponse.json({ member }, { status: 201 })
   } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return NextResponse.json({ error: 'User is already a team member' }, { status: 409 })
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Invalid input', details: error.errors }, { status: 400 })
     }

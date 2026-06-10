@@ -4,10 +4,12 @@ import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, LayoutGrid, Loader2, Pencil, Trash2, Users } from 'lucide-react'
+import { ArrowLeft, LayoutGrid, Loader2, Pencil, Trash2, Users, UserPlus, Crown, X, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog'
@@ -16,7 +18,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { useToast } from '@/hooks/use-toast'
-import type { Team } from '@/types/team'
+import type { Team, SelectableUser } from '@/types/team'
 
 export default function TeamDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -33,6 +35,11 @@ export default function TeamDetailPage() {
   const [saving, setSaving] = useState(false)
   const [showDelete, setShowDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
+
+  const [showAdd, setShowAdd] = useState(false)
+  const [allUsers, setAllUsers] = useState<SelectableUser[]>([])
+  const [userQuery, setUserQuery] = useState('')
+  const [busyUserId, setBusyUserId] = useState<string | null>(null)
 
   const fetchTeam = useCallback(async () => {
     try {
@@ -99,6 +106,78 @@ export default function TeamDetailPage() {
     }
   }
 
+  const loadUsers = async () => {
+    try {
+      const res = await fetch('/api/users')
+      if (res.ok) {
+        const data = await res.json()
+        setAllUsers(data.users || [])
+      }
+    } catch (e) {
+      console.error('Error loading users:', e)
+    }
+  }
+
+  const openAddDialog = () => { setUserQuery(''); setShowAdd(true); if (allUsers.length === 0) loadUsers() }
+
+  const addMember = async (userId: string) => {
+    if (!team) return
+    setBusyUserId(userId)
+    try {
+      const res = await fetch(`/api/user/teams/${team.id}/members`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, role: 'MEMBER' }),
+      })
+      if (res.ok) {
+        await fetchTeam()
+        toast({ title: 'Member added' })
+      } else {
+        const err = await res.json().catch(() => ({}))
+        toast({ title: 'Could not add member', description: err.error, variant: 'destructive' })
+      }
+    } finally {
+      setBusyUserId(null)
+    }
+  }
+
+  const setRole = async (userId: string, role: 'LEADER' | 'MEMBER') => {
+    if (!team) return
+    setBusyUserId(userId)
+    try {
+      const res = await fetch(`/api/user/teams/${team.id}/members/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role }),
+      })
+      if (res.ok) {
+        await fetchTeam()
+      } else {
+        const err = await res.json().catch(() => ({}))
+        toast({ title: 'Could not change role', description: err.error, variant: 'destructive' })
+      }
+    } finally {
+      setBusyUserId(null)
+    }
+  }
+
+  const removeMember = async (userId: string) => {
+    if (!team) return
+    setBusyUserId(userId)
+    try {
+      const res = await fetch(`/api/user/teams/${team.id}/members/${userId}`, { method: 'DELETE' })
+      if (res.ok) {
+        await fetchTeam()
+        toast({ title: 'Member removed' })
+      } else {
+        const err = await res.json().catch(() => ({}))
+        toast({ title: 'Could not remove member', description: err.error, variant: 'destructive' })
+      }
+    } finally {
+      setBusyUserId(null)
+    }
+  }
+
   if (loading) {
     return <div className="flex items-center justify-center py-20 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading…</div>
   }
@@ -141,10 +220,51 @@ export default function TeamDetailPage() {
         </div>
       </div>
 
-      {/* Members section is added in Task 4 — placeholder anchor */}
       <section id="team-members" className="border rounded-xl p-4">
-        <h2 className="font-semibold flex items-center gap-2 mb-3"><Users className="h-4 w-4" /> Members</h2>
-        <p className="text-sm text-muted-foreground">Member management added in Task 4.</p>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold flex items-center gap-2"><Users className="h-4 w-4" /> Members ({team.members.length})</h2>
+          {canManage && (
+            <Button size="sm" variant="outline" onClick={openAddDialog}><UserPlus className="h-4 w-4 mr-2" /> Add member</Button>
+          )}
+        </div>
+        <ul className="divide-y">
+          {team.members.map(m => {
+            const isSelf = m.userId === session?.user?.id
+            const leaderCount = team.members.filter(x => x.role === 'LEADER').length
+            const isLastLeader = m.role === 'LEADER' && leaderCount === 1
+            return (
+              <li key={m.userId} className="flex items-center gap-3 py-2.5">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={m.user.image || undefined} />
+                  <AvatarFallback>{(m.user.name || m.user.email)[0]?.toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate">{m.user.name || m.user.email}{isSelf && <span className="text-muted-foreground"> (you)</span>}</p>
+                  <p className="text-xs text-muted-foreground truncate">{m.user.email}</p>
+                </div>
+                <Badge variant={m.role === 'LEADER' ? 'default' : 'secondary'} className="text-[10px] flex items-center gap-1">
+                  {m.role === 'LEADER' && <Crown className="h-3 w-3" />}{m.role === 'LEADER' ? 'Leader' : 'Member'}
+                </Badge>
+                {canManage && (
+                  <div className="flex items-center gap-1">
+                    {m.role === 'MEMBER' ? (
+                      <Button size="sm" variant="ghost" disabled={busyUserId === m.userId} onClick={() => setRole(m.userId, 'LEADER')} title="Make leader">
+                        {busyUserId === m.userId ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crown className="h-4 w-4" />}
+                      </Button>
+                    ) : (
+                      <Button size="sm" variant="ghost" disabled={busyUserId === m.userId || isLastLeader} onClick={() => setRole(m.userId, 'MEMBER')} title={isLastLeader ? 'A team needs at least one leader' : 'Demote to member'}>
+                        {busyUserId === m.userId ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crown className="h-4 w-4 opacity-40" />}
+                      </Button>
+                    )}
+                    <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700" disabled={busyUserId === m.userId || isLastLeader} onClick={() => removeMember(m.userId)} title={isLastLeader ? 'A team needs at least one leader' : 'Remove from team'}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </li>
+            )
+          })}
+        </ul>
       </section>
 
       <Dialog open={showRename} onOpenChange={setShowRename}>
@@ -179,6 +299,52 @@ export default function TeamDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={showAdd} onOpenChange={setShowAdd}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add a member</DialogTitle>
+            <DialogDescription>Add an existing user to this team. They keep their own profile — you only set their team role.</DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <div className="relative mb-3">
+              <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input className="pl-9" placeholder="Search by name or email…" value={userQuery} onChange={e => setUserQuery(e.target.value)} />
+            </div>
+            <ul className="max-h-72 overflow-y-auto divide-y">
+              {allUsers
+                .filter(u => !team.members.some(m => m.userId === u.id))
+                .filter(u => {
+                  const q = userQuery.trim().toLowerCase()
+                  if (!q) return true
+                  return (u.name || '').toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
+                })
+                .slice(0, 50)
+                .map(u => (
+                  <li key={u.id} className="flex items-center gap-3 py-2">
+                    <Avatar className="h-7 w-7">
+                      <AvatarImage src={u.image || undefined} />
+                      <AvatarFallback>{(u.name || u.email)[0]?.toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm truncate">{u.name || u.email}</p>
+                      <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                    </div>
+                    <Button size="sm" variant="outline" disabled={busyUserId === u.id} onClick={() => addMember(u.id)}>
+                      {busyUserId === u.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
+                    </Button>
+                  </li>
+                ))}
+              {allUsers.filter(u => !team.members.some(m => m.userId === u.id)).length === 0 && (
+                <li className="py-6 text-center text-sm text-muted-foreground">No users available to add.</li>
+              )}
+            </ul>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAdd(false)}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

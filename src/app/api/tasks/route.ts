@@ -8,6 +8,7 @@ import { PERMISSIONS } from '@/constants'
 import { autoSyncTask } from '@/lib/calendar-sync-helper'
 import { notifyTaskAssigned, notifySubtaskAssigned } from '@/lib/notifications'
 import { generateOccurrenceDates, buildRRuleString } from '@/lib/recurring'
+import { resolveTeamBoardLink } from '@/lib/team-board'
 
 const cascadeStepSchema = z.object({
   title: z.string().min(1).max(200),
@@ -541,6 +542,11 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // If this task targets a team board, derive its teamId from the board so
+    // team-scoped queries work. boardId is canonical (sent by the board switcher);
+    // personal boards / no board yield teamId = null. Additive: teamId was always null here.
+    const link = await resolveTeamBoardLink({ boardId: boardId ?? null })
+
     // Auto-set startDate if not provided but dueDate is (for calendar display)
     const finalDueDate = dueDate ? new Date(dueDate) : null
     const finalStartDate = startDate
@@ -621,7 +627,7 @@ export async function POST(req: NextRequest) {
             startDate: occurrences[0],
             assigneeId: assigneeId || session.user.id,
             creatorId: session.user.id,
-            teamId: null as string | null,
+            teamId: link.teamId,
             assignedById: assignedById || session.user.id,
             location: location || null,
             meetingLink: meetingLink || null,
@@ -632,7 +638,7 @@ export async function POST(req: NextRequest) {
             taskWeight: taskWeight || null,
             slaHours: slaHours || null,
             reminderDays: reminderDays || [],
-            boardId: boardId || null,
+            boardId: link.boardId,
           }
         })
 
@@ -690,7 +696,7 @@ export async function POST(req: NextRequest) {
           startDate: finalStartDate,
           assigneeId: assigneeId || session.user.id, // Default to current user
           creatorId: session.user.id,
-          teamId: null, // No longer using teams
+          teamId: link.teamId, // set when created on a team board
           assignedById: assignedById || session.user.id,
           parentId: parentId || null,
           // New Google Calendar fields
@@ -702,7 +708,7 @@ export async function POST(req: NextRequest) {
           taskWeight: taskWeight || null,
           slaHours: slaHours || null,
           reminderDays: reminderDays || [],
-          boardId: boardId || null,
+          boardId: link.boardId,
         },
       })
 

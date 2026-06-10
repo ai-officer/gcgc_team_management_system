@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useSearchParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import {
   Plus,
@@ -175,6 +176,7 @@ interface KanbanBoard {
   owner?: BoardMemberUser
   members: { userId: string; user: BoardMemberUser }[]
   _count: { tasks: number }
+  team?: { id: string; name: string } | null
 }
 
 const COLUMN_CONFIG = {
@@ -908,6 +910,7 @@ export default function TasksPage() {
         {/* Board tabs */}
         {boards.map(board => {
           const isOwner = board.ownerId === session?.user?.id
+          const isTeamBoard = !!board.team
           const memberCount = board.members?.length ?? 0
           return (
             <div key={board.id} className="relative group flex items-center">
@@ -942,13 +945,24 @@ export default function TasksPage() {
                     )}
                   </div>
                 )}
-                {/* Shared-to-me badge */}
-                {!isOwner && (
+                {/* Team or shared badge */}
+                {isTeamBoard ? (
+                  <span className="ml-1 text-[10px] bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded-full font-medium leading-none">team</span>
+                ) : !isOwner ? (
                   <span className="ml-1 text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full font-medium leading-none">shared</span>
-                )}
+                ) : null}
               </button>
-              {/* Board actions menu — only owner can edit/delete */}
-              {isOwner && (
+              {/* Team boards are managed on the team page; personal boards keep owner edit/delete */}
+              {isTeamBoard ? (
+                <Link
+                  href={`/user/teams/${board.team!.id}`}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-gray-200 transition-all"
+                  title="Manage team"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Settings2 className="h-3.5 w-3.5 text-gray-500" />
+                </Link>
+              ) : isOwner ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-gray-200 transition-all">
@@ -967,7 +981,7 @@ export default function TasksPage() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              )}
+              ) : null}
             </div>
           )
         })}

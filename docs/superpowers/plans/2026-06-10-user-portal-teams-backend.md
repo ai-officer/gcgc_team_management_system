@@ -543,7 +543,12 @@ const teamInclude = {
 async function loadTeamForAuth(teamId: string) {
   return prisma.team.findUnique({
     where: { id: teamId },
-    select: { id: true, ownerId: true, members: { select: { userId: true, role: true } } },
+    select: {
+      id: true,
+      ownerId: true,
+      board: { select: { id: true } },
+      members: { select: { userId: true, role: true } },
+    },
   })
 }
 
@@ -581,12 +586,19 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         ...(data.name !== undefined ? { name: data.name } : {}),
         ...(data.description !== undefined ? { description: data.description } : {}),
         // Mirror name/color onto the team's board so the switcher tab matches.
-        board: {
-          update: {
-            ...(data.name !== undefined ? { name: data.name } : {}),
-            ...(data.color !== undefined ? { color: data.color } : {}),
-          },
-        },
+        // Guarded: admin-created teams may have no board, and a nested update of a
+        // missing relation throws. Only update the board when one exists and a
+        // board-relevant field changed.
+        ...(team.board && (data.name !== undefined || data.color !== undefined)
+          ? {
+              board: {
+                update: {
+                  ...(data.name !== undefined ? { name: data.name } : {}),
+                  ...(data.color !== undefined ? { color: data.color } : {}),
+                },
+              },
+            }
+          : {}),
       },
       include: teamInclude,
     })
@@ -1007,64 +1019,94 @@ git commit -m "fix(teams): personal board routes refuse team boards (managed via
 
 ---
 
-## Task 10: Reconcile `boardId`↔`teamId` on task creation
+## Task 10: Derive task `teamId` from the team board on creation
 
 **Files:**
 - Modify: `src/app/api/tasks/route.ts` (POST handler)
 
-When a task is created on a team board (the switcher sends `boardId`), set its `teamId` from the board so team-scoped queries work, without callers having to send both.
+**Context (read before editing — verified against the current handler):** `createTaskSchema` (lines 19-53) has **no `teamId` field** — only `boardId`. The POST handler destructures `boardId` (line 525) and every `prisma.task.create` call hardcodes `teamId: null` (with the comment "No longer using teams" / "// No longer using teams"). There are **three** create calls:
+1. Recurring **template** (data block starting ~line 582, `teamId: null` at ~line 593) — a hidden template; **leave it `teamId: null`**.
+2. Recurring **first instance** (data block ~line 613, `teamId: null` at ~line 624, `boardId: boardId || null` at ~line 635) — **set teamId here**.
+3. Non-recurring **main task** (data block ~line 682, `teamId: null` at ~line 693, `boardId: boardId || null` at ~line 705) — **set teamId here**.
+
+Because `teamId` is currently always `null` from this route, this change is purely additive — it cannot regress existing task creation. (TEAM/COLLABORATION task types use `TaskTeamMember`/`TaskCollaborator` join rows, not `Task.teamId`, so they are unaffected.)
 
 - [ ] **Step 1: Import the resolver**
 
-In `src/app/api/tasks/route.ts`, add to the imports near the top (after the existing `@/lib/...` imports, e.g. after line 10):
+In `src/app/api/tasks/route.ts`, add after the existing helper imports (the import block ends around line 10, e.g. after `import { generateOccurrenceDates, buildRRuleString } from '@/lib/recurring'`):
 
 ```ts
 import { resolveTeamBoardLink } from '@/lib/team-board'
 ```
 
-- [ ] **Step 2: Locate the task-create data assembly**
+- [ ] **Step 2: Compute the link once, after assignee verification**
 
-In the `POST` handler, find where the new task's `data` object is built for `prisma.task.create(...)` (search for `prisma.task.create` and the object containing `boardId`). Identify the variables holding the parsed `boardId` and `teamId` (from `createTaskSchema`/the request).
-
-- [ ] **Step 3: Resolve the pair immediately before the create**
-
-Directly above the `prisma.task.create({ data: { ... } })` call in `POST`, insert:
+In the `POST` handler, find the assignee-verification block that ends near line 542 (the closing `}` of `if (assigneeId) { ... }`). Immediately **after** it (and before the `// Auto-set startDate` comment at ~line 544), insert:
 
 ```ts
-    // Keep team boards and team-scoped queries consistent: if the task targets a team
-    // board, derive its teamId (and vice-versa). boardId is canonical (sent by the switcher).
-    const link = await resolveTeamBoardLink({
-      boardId: validatedData.boardId ?? null,
-      teamId: (validatedData as { teamId?: string | null }).teamId ?? null,
-    })
+    // If this task targets a team board, derive its teamId from the board so
+    // team-scoped queries work. boardId is canonical (sent by the board switcher);
+    // personal boards / no board yield teamId = null. Additive: teamId was always null here.
+    const link = await resolveTeamBoardLink({ boardId: boardId ?? null })
 ```
 
-> Replace `validatedData` with the actual name of the parsed-body variable in this handler (it is the result of `createTaskSchema.parse(...)`). If the handler names the board field differently, use that name.
+- [ ] **Step 3: Set `teamId`/`boardId` from `link` on the recurring first instance**
 
-Then in the `data` object passed to `prisma.task.create`, set the board/team fields from `link` instead of the raw input — i.e. ensure the data includes:
+In the recurring first-instance create (data block ~line 613-636), replace:
 
 ```ts
-        boardId: link.boardId,
-        teamId: link.teamId,
+            teamId: null as string | null,
+```
+with:
+```ts
+            teamId: link.teamId,
+```
+and replace:
+```ts
+            boardId: boardId || null,
+```
+with:
+```ts
+            boardId: link.boardId,
 ```
 
-(replacing any existing `boardId: validatedData.boardId` / `teamId: ...` assignments in that `data` object).
+(Leave the **template** create's `teamId: null` at ~line 593 unchanged — the template has no board and stays team-less.)
 
-- [ ] **Step 4: Verify types compile**
+- [ ] **Step 4: Set `teamId`/`boardId` from `link` on the non-recurring main task**
+
+In the main create (data block ~line 682-706), replace:
+
+```ts
+          teamId: null, // No longer using teams
+```
+with:
+```ts
+          teamId: link.teamId, // set when created on a team board
+```
+and replace:
+```ts
+          boardId: boardId || null,
+```
+with:
+```ts
+          boardId: link.boardId,
+```
+
+- [ ] **Step 5: Verify types compile**
 
 Run: `npm run type-check`
-Expected: PASS.
+Expected: PASS. (`link.teamId`/`link.boardId` are `string | null`, matching the `Task.teamId`/`Task.boardId` optional columns.)
 
-- [ ] **Step 5: Manual smoke test**
+- [ ] **Step 6: Manual smoke test**
 
-Create a task on a team board via the existing tasks UI or:
+Create a task on a team board:
 ```bash
 curl -s -X POST http://localhost:3000/api/tasks -H 'Content-Type: application/json' -b "$SESSION_COOKIE" \
   -d "{\"title\":\"Team board task\",\"priority\":\"MEDIUM\",\"taskType\":\"INDIVIDUAL\",\"boardId\":\"$TEAM_BOARD_ID\"}" | head -c 300
 ```
-Expected: created task whose `teamId` equals the team that owns `$TEAM_BOARD_ID` (verify in `db:studio`). A task created on a **personal** board has `teamId: null`.
+Expected: created task whose `teamId` equals the team that owns `$TEAM_BOARD_ID` (verify in `db:studio`). A task created on a **personal** board (or with no `boardId`) still has `teamId: null`.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git add src/app/api/tasks/route.ts
@@ -1150,3 +1192,4 @@ git commit -m "chore(teams): backend verification fixups"
 - **Placeholder scan:** none. The one "replace `validatedData` with the actual parsed-body variable name" instruction in Task 10 is a deliberate bind-to-real-code step (the handler's variable name must be read at execution), with exact surrounding code given.
 - **Type consistency:** composite key `userId_teamId` matches `@@unique([userId, teamId])`; `canManageTeam`/`wouldLeaveTeamLeaderless`/`resolveTeamBoardLink` signatures are used exactly as defined; `teamInclude`/`memberInclude` shapes are consistent across routes.
 - **Out of scope (Plan 2):** "My Teams" page, team-management dialog (add/remove/promote/demote UI), member by-team task view, switcher "Manage team" affordance + nav entry.
+- **Known intentional gap until Plan 2:** the existing board switcher shows an edit/delete dropdown to a board's `ownerId` (the team creator). After Task 9, those actions return `409` for team boards. So between Plan 1 and Plan 2 the creator sees edit/delete buttons on team-board tabs that error if used. Plan 2 hides/repoints them ("Manage team"). This is deliberate, not a regression — personal boards are unaffected.

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { Calendar, CheckSquare, Clock, Users, AlertCircle, ArrowRight, Star, Zap, Target, Activity, Award, BarChart3, Calendar as CalendarIcon, RefreshCw, Plus } from 'lucide-react'
+import { CheckSquare, Clock, Users, AlertCircle, ArrowRight, Star, Zap, Target, Activity, Award, Calendar as CalendarIcon, RefreshCw, Plus } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
@@ -196,36 +196,40 @@ export default function UserDashboard() {
   const isLeader = session?.user?.role === 'LEADER'
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Professional Header with Subtle Styling */}
-      <div className="relative overflow-hidden">
-        {/* Subtle background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-slate-50 to-purple-50 opacity-60"></div>
-        <div className="relative backdrop-blur-sm bg-white/40 border border-slate-200/60 rounded-xl shadow-sm p-4 sm:p-8">
+    <div className="space-y-6">
+      {/* Header — refined hero (same white-card family, cleaner palette + depth) */}
+      <div
+        className="relative overflow-hidden rounded-2xl border border-slate-200/70 shadow-sm motion-safe:animate-slide-up"
+        style={{ animationFillMode: 'backwards' }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-slate-50" />
+        <div className="pointer-events-none absolute -top-24 -right-12 h-64 w-64 rounded-full bg-blue-200/30 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 -left-10 h-56 w-56 rounded-full bg-indigo-200/20 blur-3xl" />
+        <div className="relative backdrop-blur-[2px] p-6 sm:p-8">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div className="space-y-3">
               <div className="flex items-center gap-3">
-                <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+                <h1 className="text-[1.75rem] sm:text-[2rem] font-bold text-slate-900 tracking-tight leading-none">
                   {getGreeting()}, {session?.user?.name?.split(' ')[0] || 'User'}
                 </h1>
                 <span className="text-2xl">👋</span>
               </div>
-              <p className="text-slate-600 text-sm sm:text-base font-medium max-w-2xl">
+              <p className="text-slate-600 text-sm sm:text-base max-w-2xl">
                 {isLeader
                   ? "Monitor your team's progress and stay on top of your tasks."
                   : "Focus on what matters. Here's your productivity snapshot."
                 }
               </p>
-              <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-sm text-slate-500">
-                <div className="flex items-center gap-2">
-                  <CalendarIcon className="h-4 w-4" />
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-500 pt-1">
+                <span className="inline-flex items-center gap-2">
+                  <CalendarIcon className="h-4 w-4 text-slate-400" />
                   <span className="font-medium">{format(currentTime, 'EEEE, MMMM do')}</span>
-                </div>
-                <div className="h-4 w-px bg-slate-300 hidden sm:block"></div>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
+                </span>
+                <span className="h-4 w-px bg-slate-300/70 hidden sm:block" />
+                <span className="inline-flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-slate-400" />
                   <span className="font-medium tabular-nums">{format(currentTime, 'h:mm:ss a')}</span>
-                </div>
+                </span>
               </div>
             </div>
             <div className="flex gap-2 sm:gap-3">
@@ -234,7 +238,7 @@ export default function UserDashboard() {
                 size="sm"
                 onClick={refreshDashboard}
                 disabled={loading}
-                className="flex-1 sm:flex-none border-slate-300 bg-white hover:bg-slate-50 text-slate-700 shadow-sm transition-all duration-200 hover:shadow-md"
+                className="flex-1 sm:flex-none border-slate-300 bg-white/70 hover:bg-white text-slate-700 shadow-sm transition-all duration-200 hover:shadow-md"
               >
                 <RefreshCw className={`h-4 w-4 sm:mr-2 ${loading ? 'animate-spin' : ''}`} />
                 <span className="hidden sm:inline">Refresh</span>
@@ -246,7 +250,10 @@ export default function UserDashboard() {
       </div>
 
       {/* Professional Stats Cards */}
-      <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 ${isLeader ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}>
+      <div
+        className={`grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 motion-safe:animate-slide-up ${isLeader ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}
+        style={{ animationDelay: '80ms', animationFillMode: 'backwards' }}
+      >
         {/* Active Tasks Card */}
         <Card
           className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl hover:-translate-y-1"
@@ -415,7 +422,10 @@ export default function UserDashboard() {
       {isLeader && <LeaderWorkloadWidget />}
       {isLeader && <AtRiskTasksWidget />}
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+      <div
+        className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start motion-safe:animate-slide-up"
+        style={{ animationDelay: '160ms', animationFillMode: 'backwards' }}
+      >
         {/* Professional Recent Tasks */}
         <div className="h-full">
           <Card className="border border-slate-200 bg-white shadow-sm rounded-xl h-full flex flex-col">
@@ -715,108 +725,6 @@ export default function UserDashboard() {
                   </Button>
                 </>
               )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* Performance Insights Section */}
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Productivity Overview */}
-        <div className="flex-1 min-w-0">
-          <Card className="card-modern h-full">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <div className="p-2 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900 dark:to-purple-900 rounded-lg">
-                  <BarChart3 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                </div>
-                Productivity Overview
-              </CardTitle>
-              <CardDescription>
-                Your performance this month
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Task Completion Rate</span>
-                  <span className="text-sm font-medium">{calculateTaskCompletionRate()}%</span>
-                </div>
-                <Progress value={calculateTaskCompletionRate()} className="h-2" />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 pt-4">
-                <div className="text-center p-3 bg-green-50 dark:bg-green-950 rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">{dashboardData.stats.myCompletedTasks}</div>
-                  <div className="text-xs text-green-700 dark:text-green-400">Completed</div>
-                </div>
-                <div className="text-center p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">{dashboardData.stats.myTasks}</div>
-                  <div className="text-xs text-blue-700 dark:text-blue-400">In Progress</div>
-                </div>
-              </div>
-
-              {calculateTaskCompletionRate() >= 80 && (
-                <div className="flex items-center gap-2 p-3 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                  <Star className="h-4 w-4 text-yellow-600" />
-                  <span className="text-sm text-yellow-800 dark:text-yellow-200 font-medium">
-                    Outstanding performance! Keep it up! 🌟
-                  </span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Recent Activity */}
-        <div className="flex-1 min-w-0">
-          <Card className="card-modern h-full">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <div className="p-2 bg-gradient-to-r from-green-100 to-blue-100 dark:from-green-900 dark:to-blue-900 rounded-lg">
-                  <Activity className="h-4 w-4 text-green-600 dark:text-green-400" />
-                </div>
-                Recent Activity
-              </CardTitle>
-              <CardDescription>
-                Your latest actions
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {dashboardData.recentTasks.slice(0, 3).map((task) => (
-                  <div key={task.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/30 transition-colors min-w-0 overflow-hidden">
-                    <div className={`p-1 rounded-full ${
-                      task.status === 'COMPLETED' ? 'bg-green-100 dark:bg-green-900' :
-                      task.status === 'IN_PROGRESS' ? 'bg-blue-100 dark:bg-blue-900' :
-                      'bg-gray-100 dark:bg-gray-800'
-                    }`}>
-                      {task.status === 'COMPLETED' ? (
-                        <Award className="h-3 w-3 text-green-600" />
-                      ) : task.status === 'IN_PROGRESS' ? (
-                        <Activity className="h-3 w-3 text-blue-600" />
-                      ) : (
-                        <Clock className="h-3 w-3 text-gray-600" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{task.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {task.status === 'COMPLETED' ? 'Completed' :
-                         task.status === 'IN_PROGRESS' ? 'Working on' : 'Started'} •
-                        {formatDistanceToNow(new Date(task.updatedAt), { addSuffix: true })}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-
-                {dashboardData.recentTasks.length === 0 && (
-                  <div className="text-center py-4">
-                    <Activity className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">No recent activity</p>
-                  </div>
-                )}
-              </div>
             </CardContent>
           </Card>
         </div>

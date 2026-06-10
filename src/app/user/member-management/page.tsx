@@ -22,6 +22,8 @@ import {
   ListTodo,
   Eye,
   ArrowRight,
+  ArrowUpDown,
+  Loader2,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -35,7 +37,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-  DropdownMenuLabel
+  DropdownMenuLabel,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
 } from '@/components/ui/dropdown-menu'
 import {
   Select,
@@ -146,6 +153,8 @@ interface MemberWithStats {
 
 type ViewMode = 'list' | 'kanban'
 type StatusFilter = 'all' | 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'
+type MemberSort = 'alerts' | 'workload' | 'tasks' | 'name'
+type TaskSort = 'dueDate' | 'priority' | 'updated' | 'progress'
 
 export default function MemberManagementPage() {
   const { data: session } = useSession()
@@ -166,6 +175,10 @@ export default function MemberManagementPage() {
   const [viewingTask, setViewingTask] = useState<Task | null>(null)
   const [memberSuggestions, setMemberSuggestions] = useState<MemberWithStats[]>([])
   const [suggestionsLoading, setSuggestionsLoading] = useState(false)
+  const [memberSort, setMemberSort] = useState<MemberSort>('alerts')
+  const [taskSearch, setTaskSearch] = useState('')
+  const [taskSort, setTaskSort] = useState<TaskSort>('dueDate')
+  const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null)
 
   useEffect(() => {
     if (session?.user?.role !== 'LEADER') {
@@ -301,6 +314,32 @@ export default function MemberManagementPage() {
     member.email.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
   )
 
+  // Per-member, server-computed stats (overdue/urgent/workload). Authoritative
+  // per member — these can differ from the panel's teamStats, which derive from
+  // the client-filtered task set. Used for the sidebar health badges + sorting.
+  const statsFor = (memberId: string) => memberSuggestions.find(s => s.id === memberId)
+  const alertScoreFor = (memberId: string) => {
+    const s = statsFor(memberId)
+    return (s?.overdueTasks ?? 0) * 10 + (s?.priorityCounts?.urgent ?? 0)
+  }
+
+  const sortedMembers = [...filteredMembers].sort((a, b) => {
+    switch (memberSort) {
+      case 'workload':
+        return (statsFor(b.id)?.workloadPercentage ?? 0) - (statsFor(a.id)?.workloadPercentage ?? 0)
+      case 'tasks':
+        return (statsFor(b.id)?.taskCounts?.total ?? 0) - (statsFor(a.id)?.taskCounts?.total ?? 0)
+      case 'name':
+        return (a.name || a.email).localeCompare(b.name || b.email)
+      case 'alerts':
+      default: {
+        const diff = alertScoreFor(b.id) - alertScoreFor(a.id)
+        // Tie-break by workload so the list stays stable/meaningful when no alerts
+        return diff !== 0 ? diff : (statsFor(b.id)?.workloadPercentage ?? 0) - (statsFor(a.id)?.workloadPercentage ?? 0)
+      }
+    }
+  })
+
   // A member is "involved" in a task if they're the direct assignee, a team
   // member, a collaborator, or the assignee of one of its subtasks. This is why
   // a leader-owned TEAM task with subtasks delegated to a member still shows up
@@ -312,6 +351,8 @@ export default function MemberManagementPage() {
     (task.subtasks?.some((s: any) => s.assignee?.id === memberId) ?? false)
 
   const teamMemberIdSet = teamMembers.map(m => m.id)
+
+  const PRIORITY_RANK: Record<string, number> = { URGENT: 0, HIGH: 1, MEDIUM: 2, LOW: 3 }
 
   const filteredTasks = tasks
     .filter(task => {
@@ -326,6 +367,108 @@ export default function MemberManagementPage() {
       )
     })
     .filter(task => statusFilter === 'all' || task.status === statusFilter)
+    .filter(task => {
+      const q = taskSearch.trim().toLowerCase()
+      if (!q) return true
+      return (
+        task.title.toLowerCase().includes(q) ||
+        (task.description?.toLowerCase().includes(q) ?? false) ||
+        (task.assignee?.name?.toLowerCase().includes(q) ?? false)
+      )
+    })
+    .sort((a, b) => {
+      switch (taskSort) {
+        case 'priority':
+          return (PRIORITY_RANK[a.priority] ?? 9) - (PRIORITY_RANK[b.priority] ?? 9)
+        case 'progress':
+          return (b.progressPercentage ?? 0) - (a.progressPercentage ?? 0)
+        case 'updated':
+          return new Date(b.updatedAt ?? b.createdAt).getTime() - new Date(a.updatedAt ?? a.createdAt).getTime()
+        case 'dueDate':
+        default: {
+          // Tasks with a due date first (soonest → latest); undated last.
+          if (!a.dueDate && !b.dueDate) return 0
+          if (!a.dueDate) return 1
+          if (!b.dueDate) return -1
+          return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+        }
+      }
+    })
+
+  // Inline status change from the task menu. Server enforces who may move a task
+  // (canChangeTaskStatus + dependency blocks) — we attempt and surface its error.
+  // Optimistic local update with rollback so a single click feels instant.
+  const changeTaskStatus = async (task: Task, status: Task['status']) => {
+    if (task.status === status) return
+    const prev = task.status
+    setUpdatingTaskId(task.id)
+    setTasks(curr => curr.map(t => (t.id === task.id ? { ...t, status } : t)))
+    try {
+      const res = await fetch(`/api/tasks/${task.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || 'Failed to update status')
+      }
+      // Reconcile with the server's updated task so derived fields stay accurate
+      // (e.g. progressPercentage on completion, updatedAt for the "recently
+      // updated" sort). Merge over the existing row to keep any fields the
+      // response may omit. Falls back to the optimistic status if parsing fails.
+      const updated = await res.json().catch(() => null)
+      if (updated && updated.id) {
+        setTasks(curr => curr.map(t => (t.id === task.id ? { ...t, ...updated } : t)))
+      }
+      // Refresh per-member health badges (overdue/urgent) in the background.
+      fetchMemberSuggestions()
+      toast({ title: 'Status updated', description: `Moved to ${status.replace(/_/g, ' ').toLowerCase()}` })
+    } catch (e) {
+      setTasks(curr => curr.map(t => (t.id === task.id ? { ...t, status: prev } : t)))
+      toast({
+        title: 'Could not update status',
+        description: e instanceof Error ? e.message : 'Please try again',
+        variant: 'destructive',
+      })
+    } finally {
+      setUpdatingTaskId(null)
+    }
+  }
+
+  const STATUS_OPTIONS: { value: Task['status']; label: string; dot: string }[] = [
+    { value: 'TODO', label: 'To Do', dot: 'bg-slate-300' },
+    { value: 'IN_PROGRESS', label: 'In Progress', dot: 'bg-blue-400' },
+    { value: 'IN_REVIEW', label: 'In Review', dot: 'bg-amber-400' },
+    { value: 'COMPLETED', label: 'Completed', dot: 'bg-emerald-400' },
+  ]
+
+  // Shared "Move to ▸" status submenu for the task action menus (list + kanban).
+  const statusSubmenu = (task: Task) => (
+    <DropdownMenuSub>
+      <DropdownMenuSubTrigger>
+        {updatingTaskId === task.id
+          ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          : <ArrowRight className="h-4 w-4 mr-2" />}
+        Move to
+      </DropdownMenuSubTrigger>
+      <DropdownMenuSubContent>
+        {STATUS_OPTIONS.map(opt => (
+          <DropdownMenuItem
+            key={opt.value}
+            disabled={updatingTaskId === task.id || task.status === opt.value}
+            onClick={(e) => { e.stopPropagation(); changeTaskStatus(task, opt.value) }}
+          >
+            <span className={cn('h-2 w-2 rounded-full mr-2', opt.dot)} />
+            {opt.label}
+            {task.status === opt.value && (
+              <span className="ml-auto pl-3 text-[10px] uppercase tracking-wide text-slate-400">current</span>
+            )}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuSubContent>
+    </DropdownMenuSub>
+  )
 
   const teamStats = {
     totalMembers: teamMembers.length,
@@ -529,6 +672,30 @@ export default function MemberManagementPage() {
                   className="pl-9 border-slate-200 rounded-lg bg-slate-50 focus:bg-white text-sm h-9"
                 />
               </div>
+              <div className="flex items-center justify-between mt-3">
+                <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wide">Sort</span>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1.5 text-slate-600 hover:text-slate-900">
+                      <ArrowUpDown className="h-3.5 w-3.5" />
+                      {memberSort === 'alerts' ? 'At-risk first'
+                        : memberSort === 'workload' ? 'Busiest first'
+                        : memberSort === 'tasks' ? 'Most tasks'
+                        : 'Name (A–Z)'}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="rounded-lg">
+                    <DropdownMenuLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Sort members by</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuRadioGroup value={memberSort} onValueChange={(v) => setMemberSort(v as MemberSort)}>
+                      <DropdownMenuRadioItem value="alerts">At-risk first</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="workload">Busiest first</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="tasks">Most tasks</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="name">Name (A–Z)</DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
 
             {/* Scrollable member list */}
@@ -556,7 +723,7 @@ export default function MemberManagementPage() {
                 </div>
               </button>
 
-              {filteredMembers.length === 0 ? (
+              {sortedMembers.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 text-center">
                   <Users className="h-8 w-8 text-slate-200 mb-2" />
                   <p className="text-sm text-slate-400">
@@ -564,10 +731,12 @@ export default function MemberManagementPage() {
                   </p>
                 </div>
               ) : (
-                filteredMembers.map((member) => {
+                sortedMembers.map((member) => {
                   const stats = memberSuggestions.find(s => s.id === member.id)
                   const workload = stats?.workloadPercentage ?? 0
                   const totalTasks = stats?.taskCounts?.total ?? member._count?.assignedTasks ?? 0
+                  const overdue = stats?.overdueTasks ?? 0
+                  const urgent = stats?.priorityCounts?.urgent ?? 0
                   const isSelected = selectedMember === member.id
                   const initials = member.name
                     ? member.name.split(' ').map(n => n[0]).join('').slice(0, 2)
@@ -612,6 +781,20 @@ export default function MemberManagementPage() {
                             {totalTasks} {totalTasks === 1 ? 'task' : 'tasks'}
                           </span>
                         </div>
+                        {(overdue > 0 || urgent > 0) && (
+                          <div className="flex items-center gap-1.5 mt-1.5">
+                            {overdue > 0 && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5">
+                                <AlertTriangle className="h-3 w-3" /> {overdue} overdue
+                              </span>
+                            )}
+                            {urgent > 0 && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5">
+                                <AlertCircle className="h-3 w-3" /> {urgent} urgent
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </button>
                   )
@@ -669,52 +852,91 @@ export default function MemberManagementPage() {
           <Card className="flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
 
             {/* Task Panel Header */}
-            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/40 flex items-center justify-between gap-4 shrink-0">
-              <div>
-                <h2 className="text-base font-semibold text-slate-900">
-                  {selectedMember
-                    ? `${teamMembers.find(m => m.id === selectedMember)?.name || 'Member'}'s Tasks`
-                    : 'All Team Tasks'
-                  }
-                </h2>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  {filteredTasks.length} task{filteredTasks.length !== 1 ? 's' : ''}
-                  {statusFilter !== 'all' ? ` · ${statusFilter.replace(/_/g, ' ')}` : ' · all statuses'}
-                </p>
+            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/40 flex flex-col gap-3 shrink-0">
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <h2 className="text-base font-semibold text-slate-900 truncate">
+                    {selectedMember
+                      ? `${teamMembers.find(m => m.id === selectedMember)?.name || 'Member'}'s Tasks`
+                      : 'All Team Tasks'
+                    }
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {filteredTasks.length} task{filteredTasks.length !== 1 ? 's' : ''}
+                    {statusFilter !== 'all' ? ` · ${statusFilter.replace(/_/g, ' ')}` : ' · all statuses'}
+                    {taskSearch.trim() ? ' · filtered' : ''}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <Select value={statusFilter} onValueChange={(value: StatusFilter) => setStatusFilter(value)}>
+                    <SelectTrigger className="w-[140px] border-slate-200 rounded-lg bg-white text-sm h-9">
+                      <div className="flex items-center gap-2">
+                        <Filter className="h-3.5 w-3.5 text-slate-400" />
+                        <SelectValue placeholder="All Status" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="TODO">To Do</SelectItem>
+                      <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                      <SelectItem value="IN_REVIEW">In Review</SelectItem>
+                      <SelectItem value="COMPLETED">Completed</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="icon" className="rounded-lg border-slate-200 bg-white h-9 w-9">
+                        <MoreHorizontal className="h-4 w-4 text-slate-500" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="rounded-lg">
+                      <DropdownMenuLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wide">View Mode</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setViewMode('list')}>
+                        <ListTodo className="h-4 w-4 mr-2" /> List View
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setViewMode('kanban')}>
+                        <BarChart3 className="h-4 w-4 mr-2" /> Kanban Board
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
-                <Select value={statusFilter} onValueChange={(value: StatusFilter) => setStatusFilter(value)}>
-                  <SelectTrigger className="w-[150px] border-slate-200 rounded-lg bg-white text-sm h-9">
-                    <div className="flex items-center gap-2">
-                      <Filter className="h-3.5 w-3.5 text-slate-400" />
-                      <SelectValue placeholder="All Status" />
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="TODO">To Do</SelectItem>
-                    <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                    <SelectItem value="IN_REVIEW">In Review</SelectItem>
-                    <SelectItem value="COMPLETED">Completed</SelectItem>
-                  </SelectContent>
-                </Select>
-
+              {/* Search + sort row */}
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1 min-w-0">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                  <Input
+                    placeholder="Search these tasks..."
+                    value={taskSearch}
+                    onChange={(e) => setTaskSearch(e.target.value)}
+                    className="pl-9 border-slate-200 rounded-lg bg-white text-sm h-9"
+                  />
+                </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon" className="rounded-lg border-slate-200 bg-white h-9 w-9">
-                      <MoreHorizontal className="h-4 w-4 text-slate-500" />
+                    <Button variant="outline" size="sm" className="h-9 px-3 gap-1.5 border-slate-200 bg-white text-slate-600 shrink-0">
+                      <ArrowUpDown className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">
+                        {taskSort === 'dueDate' ? 'Due date'
+                          : taskSort === 'priority' ? 'Priority'
+                          : taskSort === 'updated' ? 'Recently updated'
+                          : 'Progress'}
+                      </span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="rounded-lg">
-                    <DropdownMenuLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wide">View Mode</DropdownMenuLabel>
+                    <DropdownMenuLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Sort tasks by</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setViewMode('list')}>
-                      <ListTodo className="h-4 w-4 mr-2" /> List View
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setViewMode('kanban')}>
-                      <BarChart3 className="h-4 w-4 mr-2" /> Kanban Board
-                    </DropdownMenuItem>
+                    <DropdownMenuRadioGroup value={taskSort} onValueChange={(v) => setTaskSort(v as TaskSort)}>
+                      <DropdownMenuRadioItem value="dueDate">Due date (soonest)</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="priority">Priority (urgent first)</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="updated">Recently updated</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="progress">Progress (high first)</DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -729,17 +951,25 @@ export default function MemberManagementPage() {
                   </div>
                   <h3 className="text-base font-semibold text-slate-600 mb-1">No tasks found</h3>
                   <p className="text-sm text-slate-400 mb-6 max-w-xs">
-                    {selectedMember
+                    {taskSearch.trim()
+                      ? `No tasks match "${taskSearch.trim()}"`
+                      : selectedMember
                       ? 'This member has no assigned tasks yet'
                       : statusFilter !== 'all'
                       ? `No tasks with status "${statusFilter.replace(/_/g, ' ')}"`
                       : 'No tasks have been assigned to team members yet'
                     }
                   </p>
-                  <Button onClick={() => setIsCreateTaskDialogOpen(true)} size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    {selectedMember ? 'Assign First Task' : 'Create First Task'}
-                  </Button>
+                  {taskSearch.trim() ? (
+                    <Button onClick={() => setTaskSearch('')} size="sm" variant="outline">
+                      Clear search
+                    </Button>
+                  ) : (
+                    <Button onClick={() => setIsCreateTaskDialogOpen(true)} size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      {selectedMember ? 'Assign First Task' : 'Create First Task'}
+                    </Button>
+                  )}
                 </div>
 
               ) : viewMode === 'list' ? (
@@ -782,6 +1012,8 @@ export default function MemberManagementPage() {
                                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setViewingTask(task) }}>
                                   <Eye className="h-4 w-4 mr-2" /> View Details
                                 </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                {statusSubmenu(task)}
                                 {canDeleteTask(task) && (
                                   <>
                                     <DropdownMenuSeparator />
@@ -894,6 +1126,8 @@ export default function MemberManagementPage() {
                                       <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setViewingTask(task) }}>
                                         <Eye className="h-4 w-4 mr-2" /> View
                                       </DropdownMenuItem>
+                                      <DropdownMenuSeparator />
+                                      {statusSubmenu(task)}
                                       {canDeleteTask(task) && (
                                         <>
                                           <DropdownMenuSeparator />

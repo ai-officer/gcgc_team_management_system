@@ -1453,6 +1453,14 @@ export default function TasksPage() {
                       ))}
 
                       {provided.placeholder}
+
+                      {columnTasks.length === 0 && !snapshot.isDraggingOver && (
+                        <div className="flex flex-col items-center justify-center py-10 text-center text-gray-300 select-none pointer-events-none">
+                          <ListTodo className="h-8 w-8 mb-2" />
+                          <p className="text-xs font-medium">No tasks</p>
+                          <p className="text-[10px]">Drag here or use +</p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </Droppable>

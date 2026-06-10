@@ -40,25 +40,29 @@ export async function POST(req: NextRequest) {
   try {
     const { name, description, color } = createTeamSchema.parse(await req.json())
 
-    const team = await prisma.team.create({
-      data: {
-        name,
-        description,
-        ownerId: session.user.id,
-        members: { create: { userId: session.user.id, role: 'LEADER' } },
-        board: { create: { name, color, ownerId: session.user.id } },
-      },
-      include: teamInclude,
-    })
+    const team = await prisma.$transaction(async (tx) => {
+      const created = await tx.team.create({
+        data: {
+          name,
+          description,
+          ownerId: session.user.id,
+          members: { create: { userId: session.user.id, role: 'LEADER' } },
+          board: { create: { name, color, ownerId: session.user.id } },
+        },
+        include: teamInclude,
+      })
 
-    await prisma.activity.create({
-      data: {
-        type: 'TEAM_JOINED',
-        description: `Created team: ${name}`,
-        userId: session.user.id,
-        entityId: team.id,
-        entityType: 'team',
-      },
+      await tx.activity.create({
+        data: {
+          type: 'TEAM_JOINED',
+          description: `Created team: ${name}`,
+          userId: session.user.id,
+          entityId: created.id,
+          entityType: 'team',
+        },
+      })
+
+      return created
     })
 
     return NextResponse.json({ team }, { status: 201 })

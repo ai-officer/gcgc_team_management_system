@@ -8,6 +8,7 @@ import { PERMISSIONS } from '@/constants'
 import { autoSyncTask } from '@/lib/calendar-sync-helper'
 import { notifyTaskAssigned, notifySubtaskAssigned } from '@/lib/notifications'
 import { generateOccurrenceDates, buildRRuleString } from '@/lib/recurring'
+import { resolveTeamBoardLink } from '@/lib/team-board'
 
 const cascadeStepSchema = z.object({
   title: z.string().min(1).max(200),
@@ -525,8 +526,6 @@ export async function POST(req: NextRequest) {
       boardId,
     } = createTaskSchema.parse(body)
 
-    // No team membership verification needed since we're selecting from all users
-
     // Verify assignee exists (if provided)
     if (assigneeId) {
       const assignee = await prisma.user.findUnique({
@@ -537,6 +536,26 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(
           { error: 'Assignee not found' },
           { status: 400 }
+        )
+      }
+    }
+
+    // If this task targets a team board, derive its teamId from the board so
+    // team-scoped queries work. boardId is canonical (sent by the board switcher);
+    // personal boards / no board yield teamId = null. Additive: teamId was always null here.
+    const link = await resolveTeamBoardLink({ boardId: boardId ?? null })
+
+    // Authorization: if the task targets a team board, the creator must be a member of
+    // that team (any role). Admins bypass. Prevents planting tasks on teams you're not in.
+    if (link.teamId && session.user.role !== 'ADMIN') {
+      const membership = await prisma.teamMember.findFirst({
+        where: { teamId: link.teamId, userId: session.user.id },
+        select: { id: true },
+      })
+      if (!membership) {
+        return NextResponse.json(
+          { error: 'You are not a member of this team' },
+          { status: 403 }
         )
       }
     }
@@ -621,7 +640,7 @@ export async function POST(req: NextRequest) {
             startDate: occurrences[0],
             assigneeId: assigneeId || session.user.id,
             creatorId: session.user.id,
-            teamId: null as string | null,
+            teamId: link.teamId,
             assignedById: assignedById || session.user.id,
             location: location || null,
             meetingLink: meetingLink || null,
@@ -632,7 +651,7 @@ export async function POST(req: NextRequest) {
             taskWeight: taskWeight || null,
             slaHours: slaHours || null,
             reminderDays: reminderDays || [],
-            boardId: boardId || null,
+            boardId: link.boardId,
           }
         })
 
@@ -690,7 +709,7 @@ export async function POST(req: NextRequest) {
           startDate: finalStartDate,
           assigneeId: assigneeId || session.user.id, // Default to current user
           creatorId: session.user.id,
-          teamId: null, // No longer using teams
+          teamId: link.teamId, // set when created on a team board
           assignedById: assignedById || session.user.id,
           parentId: parentId || null,
           // New Google Calendar fields
@@ -702,7 +721,7 @@ export async function POST(req: NextRequest) {
           taskWeight: taskWeight || null,
           slaHours: slaHours || null,
           reminderDays: reminderDays || [],
-          boardId: boardId || null,
+          boardId: link.boardId,
         },
       })
 

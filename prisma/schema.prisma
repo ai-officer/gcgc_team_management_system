@@ -61,6 +61,7 @@ model User {
   evaluationsReceived    TaskEvaluation[]    @relation("EvaluationReceived")
   procurementsCreated    TaskProcurement[]   @relation("ProcurementCreator")
   boards                 KanbanBoard[]       @relation("BoardOwner")
+  ownedTeams             Team[]              @relation("TeamOwner")
   boardMemberships       KanbanBoardMember[] @relation("BoardMember")
   leadingMembers         LeaderMembership[]  @relation("LeaderMemberships")
   memberOfLeaders        LeaderMembership[]  @relation("MemberMemberships")
@@ -219,11 +220,14 @@ model Team {
   name        String
   description String?
   isActive    Boolean      @default(true)
+  ownerId     String?      // creator-of-record (nullable: existing admin-created teams stay null)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   events      Event[]
   tasks       Task[]
   members     TeamMember[]
+  owner       User?        @relation("TeamOwner", fields: [ownerId], references: [id])
+  board       KanbanBoard? @relation("TeamBoard")
 
   @@map("teams")
 }
@@ -247,10 +251,12 @@ model KanbanBoard {
   description String?
   color       String   @default("#3B82F6")
   ownerId     String
+  teamId      String?  @unique // non-null => this is a team board (one board per team)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   owner   User                @relation("BoardOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  team    Team?               @relation("TeamBoard", fields: [teamId], references: [id], onDelete: Cascade)
   tasks   Task[]
   members KanbanBoardMember[]
 

@@ -181,9 +181,19 @@ export default function TeamDetailPage() {
   }
 
   const leaveTeam = async () => {
-    if (!session?.user?.id) return
-    await removeMember(session.user.id)
-    router.push('/user/teams')
+    if (!team || !session?.user?.id) return
+    try {
+      const res = await fetch(`/api/user/teams/${team.id}/members/${session.user.id}`, { method: 'DELETE' })
+      if (res.ok) {
+        toast({ title: 'You left the team' })
+        router.push('/user/teams')
+      } else {
+        const err = await res.json().catch(() => ({}))
+        toast({ title: 'Could not leave team', description: err.error, variant: 'destructive' })
+      }
+    } catch {
+      toast({ title: 'Could not leave team', variant: 'destructive' })
+    }
   }
 
   const myMembership = team ? team.members.find(m => m.userId === session?.user?.id) : undefined

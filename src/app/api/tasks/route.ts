@@ -526,8 +526,6 @@ export async function POST(req: NextRequest) {
       boardId,
     } = createTaskSchema.parse(body)
 
-    // No team membership verification needed since we're selecting from all users
-
     // Verify assignee exists (if provided)
     if (assigneeId) {
       const assignee = await prisma.user.findUnique({
@@ -546,6 +544,21 @@ export async function POST(req: NextRequest) {
     // team-scoped queries work. boardId is canonical (sent by the board switcher);
     // personal boards / no board yield teamId = null. Additive: teamId was always null here.
     const link = await resolveTeamBoardLink({ boardId: boardId ?? null })
+
+    // Authorization: if the task targets a team board, the creator must be a member of
+    // that team (any role). Admins bypass. Prevents planting tasks on teams you're not in.
+    if (link.teamId && session.user.role !== 'ADMIN') {
+      const membership = await prisma.teamMember.findFirst({
+        where: { teamId: link.teamId, userId: session.user.id },
+        select: { id: true },
+      })
+      if (!membership) {
+        return NextResponse.json(
+          { error: 'You are not a member of this team' },
+          { status: 403 }
+        )
+      }
+    }
 
     // Auto-set startDate if not provided but dueDate is (for calendar display)
     const finalDueDate = dueDate ? new Date(dueDate) : null

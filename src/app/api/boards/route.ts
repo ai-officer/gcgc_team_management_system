@@ -29,11 +29,14 @@ export async function GET() {
       OR: [
         { ownerId: session.user.id },
         { members: { some: { userId: session.user.id } } },
+        // Team boards: visible to every member of the owning team.
+        { team: { members: { some: { userId: session.user.id } } } },
       ],
     },
     include: {
       ...memberInclude,
       owner: { select: { id: true, name: true, email: true, image: true } },
+      team: { select: { id: true, name: true } },
     },
     orderBy: { createdAt: 'asc' },
   })

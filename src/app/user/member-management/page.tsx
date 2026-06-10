@@ -513,7 +513,7 @@ export default function MemberManagementPage() {
                     <UserCheck className="h-4 w-4 text-blue-600" />
                   </div>
                   <div>
-                    <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Team</h2>
+                    <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Team Members</h2>
                   </div>
                 </div>
                 <span className="inline-flex items-center justify-center h-6 min-w-[24px] px-2 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">
@@ -548,9 +548,9 @@ export default function MemberManagementPage() {
                   <Users className={cn("h-4 w-4", !selectedMember ? 'text-blue-600' : 'text-slate-500')} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-1">
+                  <div className="flex items-center justify-between gap-1.5">
                     <p className={cn("text-sm font-semibold", !selectedMember ? 'text-blue-900' : 'text-slate-700')}>All Members</p>
-                    <span className="text-xs text-slate-400 shrink-0">{teamStats.totalTasks}t</span>
+                    <span className="text-[11px] text-slate-400 shrink-0 tabular-nums">{teamStats.totalTasks} {teamStats.totalTasks === 1 ? 'task' : 'tasks'}</span>
                   </div>
                   <p className="text-xs text-slate-400">{teamStats.totalMembers} members</p>
                 </div>
@@ -590,17 +590,27 @@ export default function MemberManagementPage() {
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-1">
+                        <div className="flex items-center justify-between gap-1.5">
                           <p className={cn("text-sm font-semibold truncate", isSelected ? "text-blue-900" : "text-slate-800")}>
                             {member.name || 'Unnamed User'}
                           </p>
-                          <span className="text-xs text-slate-400 shrink-0">{totalTasks}t</span>
+                          <span className={cn(
+                            "text-[11px] font-semibold shrink-0 tabular-nums",
+                            workload >= 80 ? "text-red-500" : workload >= 50 ? "text-amber-500" : "text-emerald-600"
+                          )}>
+                            {workload}%
+                          </span>
                         </div>
-                        <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden mt-1">
-                          <div
-                            className={cn("h-full rounded-full transition-all", workload >= 80 ? "bg-red-400" : workload >= 50 ? "bg-amber-400" : "bg-emerald-400")}
-                            style={{ width: `${Math.min(workload, 100)}%` }}
-                          />
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <div className="h-1.5 flex-1 rounded-full bg-slate-100 overflow-hidden">
+                            <div
+                              className={cn("h-full rounded-full transition-all", workload >= 80 ? "bg-red-400" : workload >= 50 ? "bg-amber-400" : "bg-emerald-400")}
+                              style={{ width: `${Math.min(workload, 100)}%` }}
+                            />
+                          </div>
+                          <span className="text-[11px] text-slate-400 shrink-0 tabular-nums">
+                            {totalTasks} {totalTasks === 1 ? 'task' : 'tasks'}
+                          </span>
                         </div>
                       </div>
                     </button>

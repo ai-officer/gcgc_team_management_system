@@ -576,17 +576,18 @@ export default function TasksPage() {
     })
   }
 
-  const dueDateAccent = (task: Task): string => {
-    if (!task.dueDate || task.status === 'COMPLETED') return ''
-    const due = new Date(task.dueDate)
-    const now = new Date()
-    const days = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-    if (days < 0) return 'border-l-4 border-l-red-500'
-    if (days <= 1) return 'border-l-4 border-l-orange-500'
-    if (days <= 3) return 'border-l-4 border-l-amber-400'
-    if (days <= 7) return 'border-l-4 border-l-yellow-300'
-    return ''
+  // Distinct badge styling per task type so Cascading/Team/Collaboration read at a glance.
+  const getTaskTypeBadgeClass = (taskType: string): string => {
+    switch (taskType) {
+      case 'CASCADING': return 'bg-indigo-50 text-indigo-700 border-indigo-200'
+      case 'TEAM': return 'bg-blue-50 text-blue-700 border-blue-200'
+      case 'COLLABORATION': return 'bg-teal-50 text-teal-700 border-teal-200'
+      default: return 'bg-slate-50 text-slate-600 border-slate-200'
+    }
   }
+
+  const getTaskTypeLabel = (taskType: string): string =>
+    taskType.charAt(0) + taskType.slice(1).toLowerCase()
 
   const getRecurrenceLabel = (recurrence?: string): string => {
     if (!recurrence) return 'Repeats'
@@ -1161,7 +1162,7 @@ export default function TasksPage() {
                                   : canDrag ? 'hover:shadow-md hover:-translate-y-1 shadow-sm' : 'shadow-sm'
                               } bg-white border border-gray-200 rounded-lg ${
                                 !canDrag ? 'opacity-90' : ''
-                              } ${dueDateAccent(task)}`}
+                              }`}
                               onClick={(e) => {
                                 // Only open edit if not dragging and clicked on card content
                                 if (!snapshot.isDragging) {
@@ -1169,7 +1170,7 @@ export default function TasksPage() {
                                 }
                               }}
                             >
-                              <CardContent className="p-4">
+                              <CardContent className="p-3.5">
                                 {/* New Task Indicator */}
                                 {isTaskNew(task) && !isTaskCreatedByUser(task) && (
                                   <div className="absolute -top-3 -right-3 z-10">
@@ -1188,43 +1189,17 @@ export default function TasksPage() {
                                   </div>
                                 )}
 
-                                {/* Header Section */}
-                                <div className="flex items-start justify-between mb-3">
-                                  <div className="flex items-start gap-2 flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                                      <div className="flex-shrink-0">
-                                        {getTaskTypeIcon(task.taskType)}
-                                      </div>
-                                      <div className="min-w-0 flex-1">
-                                        <div className="flex items-center gap-1 mb-1">
-                                          <h4 className="font-semibold text-base leading-tight text-gray-900 truncate">
-                                            {task.title}
-                                          </h4>
-                                          {task.recurringParentId && (
-                                            <RefreshCw className="h-3 w-3 text-blue-500 flex-shrink-0" />
-                                          )}
-                                        </div>
-                                        <div className="flex items-center gap-1 flex-wrap">
-                                          {task.parentId && (
-                                            <Badge className="text-xs bg-violet-500 text-white border-violet-600">
-                                              Subtask
-                                            </Badge>
-                                          )}
-                                          {!isTaskCreatedByUser(task) && (
-                                            <Badge variant="outline" className="text-xs">
-                                              Assigned
-                                            </Badge>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
+                                {/* Header: title + actions */}
+                                <div className="flex items-start justify-between gap-2 mb-2">
+                                  <h4 className="font-semibold text-sm leading-snug text-gray-900 line-clamp-2 flex-1 min-w-0">
+                                    {task.title}
+                                  </h4>
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                       <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="h-8 w-8 p-0 flex-shrink-0 ml-2"
+                                        className="h-7 w-7 p-0 flex-shrink-0 -mr-1 -mt-0.5"
                                         onClick={(e) => e.stopPropagation()}
                                       >
                                         <MoreHorizontal className="h-4 w-4" />
@@ -1277,119 +1252,112 @@ export default function TasksPage() {
                                   </DropdownMenu>
                                 </div>
 
-                                {/* Description */}
-                                {task.description && (
-                                  <div className="mb-3">
-                                    <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">
-                                      {task.description}
-                                    </p>
-                                  </div>
-                                )}
-
-                                {/* Progress Section */}
-                                <div className="mb-3">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <span className="text-xs font-medium text-gray-700">Progress</span>
-                                    <span className="text-xs font-semibold text-gray-900">{task.progressPercentage || 0}%</span>
-                                  </div>
-                                  <Progress
-                                    value={task.progressPercentage || 0}
-                                    className="h-2 bg-gray-200"
-                                  />
-                                </div>
-
-                                {/* Subtask count badge — click the card to view/manage subtasks in the detail modal */}
-                                {task.subtasks && task.subtasks.length > 0 && (
-                                  <div className="mb-3">
-                                    <span className="inline-flex items-center gap-1 text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                                      <ListTodo className="h-3 w-3" />
-                                      {task.subtasks.filter(s => s.status === 'COMPLETED').length}/{task.subtasks.length} subtasks
-                                    </span>
-                                  </div>
-                                )}
-
-                                {/* Badges and Due Date */}
-                                {(() => {
-                                  const _sot = new Date(); _sot.setHours(0, 0, 0, 0)
-                                  const overdue = task.dueDate && new Date(task.dueDate) < _sot && task.status !== 'COMPLETED'
-                                  return (
-                                    <div className="flex items-center justify-between mb-3">
-                                      <div className="flex items-center gap-2">
-                                        <div className={`w-2 h-2 rounded-full ${getPriorityColor(task.priority)}`} />
-                                        <span className="text-xs font-medium text-gray-700 capitalize">
-                                          {task.priority.toLowerCase()}
-                                        </span>
-                                      </div>
-                                      {task.dueDate && (
-                                        <div className={`flex items-center gap-1 text-xs ${overdue ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
-                                          <Clock className="h-3 w-3" />
-                                          <span className="font-medium">
-                                            {format(new Date(task.dueDate), 'MMM dd')}
-                                          </span>
-                                          {overdue && (
-                                            <Badge className="text-xs px-1 py-0 h-4 bg-red-500 text-white ml-1">
-                                              OVERDUE
-                                            </Badge>
-                                          )}
-                                        </div>
-                                      )}
-                                    </div>
-                                  )
-                                })()}
-
-                                {/* High-signal chips */}
-                                {((task._count?.comments ?? 0) > 0 || task.taskWeight || task.slaHours || task.recurrence || task.recurringParentId || task.meetingLink) && (
-                                  <div className="flex items-center gap-2 flex-wrap mb-3 text-muted-foreground">
-                                    {(task._count?.comments ?? 0) > 0 && (
-                                      <span className="inline-flex items-center gap-0.5 text-[10px]">
-                                        <MessageSquare className="h-3 w-3" />
-                                        {task._count!.comments}
-                                      </span>
-                                    )}
-                                    {task.taskWeight != null && (
-                                      <span className="inline-flex items-center gap-0.5 text-[10px]" title="Importance/weight">
-                                        <Star className="h-3 w-3" />
-                                        {task.taskWeight}
-                                      </span>
-                                    )}
-                                    {task.slaHours != null && (
-                                      <span className="inline-flex items-center gap-0.5 text-[10px]" title="SLA target">
-                                        <Clock className="h-3 w-3" />
-                                        {task.slaHours}h
-                                      </span>
-                                    )}
-                                    {(task.recurrence || task.recurringParentId) && (
-                                      <span className="inline-flex items-center gap-0.5 text-[10px]">
-                                        <RefreshCw className="h-3 w-3" />
-                                        {getRecurrenceLabel(task.recurrence)}
-                                      </span>
-                                    )}
-                                    {task.meetingLink && (
-                                      <a
-                                        href={task.meetingLink}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        onClick={(e) => e.stopPropagation()}
-                                        title="Join meeting"
-                                        className="inline-flex items-center gap-0.5 text-[10px] hover:text-foreground transition-colors"
-                                      >
-                                        <Video className="h-3 w-3" />
-                                      </a>
-                                    )}
-                                  </div>
-                                )}
-
-                                {/* Task Type and Team Badge */}
-                                <div className="flex items-center gap-1.5 mb-3">
-                                  <Badge variant="outline" className="text-xs">
-                                    {task.taskType.replace('_', ' ')}
+                                {/* Meta badges: type, recurring, cascading, relationship, team */}
+                                <div className="flex items-center gap-1.5 flex-wrap mb-2.5">
+                                  <Badge variant="outline" className={`text-[10px] px-1.5 h-5 gap-1 font-medium ${getTaskTypeBadgeClass(task.taskType)}`}>
+                                    {getTaskTypeIcon(task.taskType)}
+                                    {getTaskTypeLabel(task.taskType)}
                                   </Badge>
+                                  {(task.recurrence || task.recurringParentId) && (
+                                    <Badge variant="outline" className="text-[10px] px-1.5 h-5 gap-1 font-medium bg-blue-50 text-blue-700 border-blue-200">
+                                      <RefreshCw className="h-3 w-3" />
+                                      {getRecurrenceLabel(task.recurrence)}
+                                    </Badge>
+                                  )}
+                                  {task.parentId && (
+                                    <Badge className="text-[10px] px-1.5 h-5 bg-violet-500 text-white border-violet-600">
+                                      Subtask
+                                    </Badge>
+                                  )}
+                                  {!isTaskCreatedByUser(task) && (
+                                    <Badge variant="outline" className="text-[10px] px-1.5 h-5">
+                                      Assigned
+                                    </Badge>
+                                  )}
                                   {task.team && (
-                                    <Badge variant="secondary" className="text-xs">
+                                    <Badge variant="secondary" className="text-[10px] px-1.5 h-5 max-w-[120px] truncate">
                                       {task.team.name}
                                     </Badge>
                                   )}
                                 </div>
+
+                                {/* Description */}
+                                {task.description && (
+                                  <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed mb-2.5">
+                                    {task.description}
+                                  </p>
+                                )}
+
+                                {/* Progress Section */}
+                                <div className="mb-2.5">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className="text-[11px] font-medium text-gray-500">Progress</span>
+                                    <span className="text-[11px] font-semibold text-gray-700">{task.progressPercentage || 0}%</span>
+                                  </div>
+                                  <Progress
+                                    value={task.progressPercentage || 0}
+                                    className="h-1.5 bg-gray-200"
+                                  />
+                                </div>
+
+                                {/* Meta footer: priority, due date, subtasks, comments, weight, SLA, meeting */}
+                                {(() => {
+                                  const _sot = new Date(); _sot.setHours(0, 0, 0, 0)
+                                  const overdue = task.dueDate && new Date(task.dueDate) < _sot && task.status !== 'COMPLETED'
+                                  return (
+                                    <div className="flex items-center gap-x-3 gap-y-1.5 flex-wrap text-[11px] text-gray-500 mb-2.5">
+                                      <span className="inline-flex items-center gap-1">
+                                        <span className={`w-2 h-2 rounded-full ${getPriorityColor(task.priority)}`} />
+                                        <span className="font-medium text-gray-700 capitalize">{task.priority.toLowerCase()}</span>
+                                      </span>
+                                      {task.dueDate && (
+                                        <span className={`inline-flex items-center gap-1 ${overdue ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
+                                          <Clock className="h-3 w-3" />
+                                          {format(new Date(task.dueDate), 'MMM dd')}
+                                          {overdue && (
+                                            <Badge className="text-[10px] px-1 py-0 h-4 bg-red-500 text-white">OVERDUE</Badge>
+                                          )}
+                                        </span>
+                                      )}
+                                      {task.subtasks && task.subtasks.length > 0 && (
+                                        <span className="inline-flex items-center gap-1">
+                                          <ListTodo className="h-3 w-3" />
+                                          {task.subtasks.filter(s => s.status === 'COMPLETED').length}/{task.subtasks.length}
+                                        </span>
+                                      )}
+                                      {(task._count?.comments ?? 0) > 0 && (
+                                        <span className="inline-flex items-center gap-1">
+                                          <MessageSquare className="h-3 w-3" />
+                                          {task._count!.comments}
+                                        </span>
+                                      )}
+                                      {task.taskWeight != null && (
+                                        <span className="inline-flex items-center gap-1" title="Importance/weight">
+                                          <Star className="h-3 w-3" />
+                                          {task.taskWeight}
+                                        </span>
+                                      )}
+                                      {task.slaHours != null && (
+                                        <span className="inline-flex items-center gap-1" title="SLA target">
+                                          <Clock className="h-3 w-3" />
+                                          {task.slaHours}h
+                                        </span>
+                                      )}
+                                      {task.meetingLink && (
+                                        <a
+                                          href={task.meetingLink}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          onClick={(e) => e.stopPropagation()}
+                                          title="Join meeting"
+                                          className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+                                        >
+                                          <Video className="h-3 w-3" />
+                                        </a>
+                                      )}
+                                    </div>
+                                  )
+                                })()}
 
                                 {/* Assignees and Collaborators */}
                                 <div className="space-y-1.5">

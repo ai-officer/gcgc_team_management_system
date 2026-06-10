@@ -218,12 +218,12 @@ export default function TeamDetailPage() {
         <ArrowLeft className="h-4 w-4 mr-1" /> Back to Teams
       </Link>
 
-      <div className="flex items-start justify-between gap-4 mb-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-6">
         <div className="flex items-center gap-3 min-w-0">
           <span className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: team.board?.color || '#3B82F6' }} />
           <h1 className="text-2xl font-bold truncate">{team.name}</h1>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex flex-wrap items-center gap-2 justify-end">
           {team.board && (
             <Link href={`/user/tasks?board=${team.board.id}`}>
               <Button variant="outline" size="sm"><LayoutGrid className="h-4 w-4 mr-2" /> Open board</Button>

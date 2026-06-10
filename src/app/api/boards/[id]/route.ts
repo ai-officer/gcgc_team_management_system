@@ -30,8 +30,15 @@ export async function PATCH(
   try {
     const board = await prisma.kanbanBoard.findFirst({
       where: { id: params.id, ownerId: session.user.id },
+      select: { id: true, teamId: true },
     })
     if (!board) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    if (board.teamId) {
+      return NextResponse.json(
+        { error: 'Team boards are managed from the team page' },
+        { status: 409 }
+      )
+    }
 
     const body = await request.json()
     const { memberIds, ...data } = updateSchema.parse(body)
@@ -75,8 +82,15 @@ export async function DELETE(
   try {
     const board = await prisma.kanbanBoard.findFirst({
       where: { id: params.id, ownerId: session.user.id },
+      select: { id: true, teamId: true },
     })
     if (!board) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    if (board.teamId) {
+      return NextResponse.json(
+        { error: 'Delete the team to remove its board' },
+        { status: 409 }
+      )
+    }
 
     await prisma.task.updateMany({
       where: { boardId: params.id },

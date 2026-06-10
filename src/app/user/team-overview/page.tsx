@@ -26,7 +26,9 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import type { Team as ProjectTeam } from '@/types/team'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -105,6 +107,7 @@ export default function TeamOverviewPage() {
   const [teamStats, setTeamStats] = useState<TeamStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [projectTeams, setProjectTeams] = useState<ProjectTeam[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
@@ -241,6 +244,15 @@ export default function TeamOverviewPage() {
   useEffect(() => {
     fetchTeamData()
   }, [session])
+
+  // Fetch real project teams from the Teams feature
+  useEffect(() => {
+    if (!session?.user) return
+    fetch('/api/user/teams')
+      .then(r => r.ok ? r.json() : { teams: [] })
+      .then(d => setProjectTeams(d.teams || []))
+      .catch(() => {})
+  }, [session?.user])
 
   // Fetch organizational data when create mode is selected
   useEffect(() => {
@@ -2072,6 +2084,87 @@ export default function TeamOverviewPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* My Project Teams */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-blue-600" />
+            <h2 className="text-lg font-semibold text-slate-900">My Project Teams</h2>
+          </div>
+          <Link href="/user/teams">
+            <Button variant="outline" size="sm" className="gap-1.5">
+              Manage teams
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
+
+        {projectTeams.length === 0 ? (
+          <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
+            <Users className="h-10 w-10 mx-auto mb-3 text-slate-300" />
+            <p className="text-sm text-muted-foreground">
+              You haven&apos;t created or joined any project teams yet.{' '}
+              <Link href="/user/teams" className="text-blue-600 hover:underline font-medium">
+                Create one
+              </Link>
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {projectTeams.map(team => {
+              const myRole = team.members.find(m => m.userId === session?.user?.id)?.role
+              const memberCount = team._count?.members ?? team.members.length
+              const taskCount = team._count?.tasks ?? 0
+              const dotColor = team.board?.color || '#3B82F6'
+              return (
+                <Card key={team.id} className="border border-slate-200 bg-white hover:shadow-md transition-all duration-200 rounded-xl">
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span
+                        className="shrink-0 w-3 h-3 rounded-full"
+                        style={{ backgroundColor: dotColor }}
+                      />
+                      <span className="font-semibold text-slate-900 truncate text-sm">{team.name}</span>
+                      {myRole && (
+                        <Badge
+                          variant="outline"
+                          className={`ml-auto shrink-0 text-xs rounded-md ${
+                            myRole === 'LEADER'
+                              ? 'border-blue-300 text-blue-700 bg-blue-50'
+                              : 'border-slate-300 text-slate-600 bg-slate-50'
+                          }`}
+                        >
+                          {myRole}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-slate-500">
+                      <span>{memberCount} {memberCount === 1 ? 'member' : 'members'}</span>
+                      <span>·</span>
+                      <span>{taskCount} {taskCount === 1 ? 'task' : 'tasks'}</span>
+                    </div>
+                    <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
+                      <Link href={`/user/teams/${team.id}`}>
+                        <Button variant="outline" size="sm" className="h-7 text-xs">
+                          Manage
+                        </Button>
+                      </Link>
+                      {team.board && (
+                        <Link href={`/user/tasks?board=${team.board.id}`}>
+                          <Button variant="outline" size="sm" className="h-7 text-xs">
+                            Open board
+                          </Button>
+                        </Link>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* Team Stats — people-centric */}

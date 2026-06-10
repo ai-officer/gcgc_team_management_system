@@ -482,67 +482,24 @@ export default function UserProfilePage() {
         </CardContent>
       </Card>
 
-      {/* Quick Stats - Professional */}
-      <div className="grid gap-6 md:grid-cols-4">
-        <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl hover:-translate-y-1">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-blue-600"></div>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1">Department</p>
-                <p className="text-2xl font-bold text-slate-900 truncate">{profile.department || 'N/A'}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-blue-50 group-hover:bg-blue-100 transition-colors">
-                <Building2 className="h-5 w-5 text-blue-600" />
-              </div>
+      {/* Key facts — one cohesive, on-theme band (no rainbow cards) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-px rounded-xl border border-slate-200 bg-slate-200/70 overflow-hidden shadow-sm">
+        {[
+          { label: 'Department', value: profile.department, icon: Building2 },
+          { label: 'Team', value: profile.team, icon: User },
+          { label: 'Hierarchy Level', value: profile.hierarchyLevel, icon: TrendingUp },
+          { label: 'Job Level', value: profile.jobLevel, icon: Award },
+        ].map(({ label, value, icon: Icon }) => (
+          <div key={label} className="group flex items-center gap-3 bg-white p-5 transition-colors hover:bg-blue-50/40">
+            <div className="grid place-items-center h-10 w-10 rounded-lg bg-blue-50 text-blue-600 shrink-0 group-hover:bg-blue-100 transition-colors">
+              <Icon className="h-5 w-5" />
             </div>
-          </CardContent>
-        </Card>
-
-        <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl hover:-translate-y-1">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-purple-600"></div>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1">Team</p>
-                <p className="text-2xl font-bold text-slate-900 truncate">{profile.team || 'N/A'}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-purple-50 group-hover:bg-purple-100 transition-colors">
-                <User className="h-5 w-5 text-purple-600" />
-              </div>
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">{label}</p>
+              <p className="text-base font-bold text-slate-900 truncate">{value || 'N/A'}</p>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl hover:-translate-y-1">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-slate-400 to-slate-500"></div>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1">Hierarchy Level</p>
-                <p className="text-2xl font-bold text-slate-900 truncate">{profile.hierarchyLevel || 'N/A'}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-slate-100 group-hover:bg-slate-200 transition-colors">
-                <TrendingUp className="h-5 w-5 text-slate-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="group relative overflow-hidden border border-slate-200 bg-white hover:shadow-lg transition-all duration-300 cursor-pointer rounded-xl hover:-translate-y-1">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 to-amber-600"></div>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1">Job Level</p>
-                <p className="text-2xl font-bold text-slate-900 truncate">{profile.jobLevel || 'N/A'}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-amber-50 group-hover:bg-amber-100 transition-colors">
-                <Award className="h-5 w-5 text-amber-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+        ))}
       </div>
 
       {/* Tabbed Content - Professional */}
@@ -603,8 +560,8 @@ export default function UserProfilePage() {
           <Card className="border border-slate-200 rounded-xl shadow-sm">
             <CardHeader className="pb-4 border-b border-slate-100">
               <CardTitle className="flex items-center gap-2 text-lg font-semibold text-slate-900">
-                <div className="p-2 bg-purple-50 rounded-lg">
-                  <Building2 className="h-4 w-4 text-purple-600" />
+                <div className="p-2 bg-blue-50 rounded-lg">
+                  <Building2 className="h-4 w-4 text-blue-600" />
                 </div>
                 Organizational Structure
               </CardTitle>
@@ -636,8 +593,8 @@ export default function UserProfilePage() {
           <Card className="border border-slate-200 rounded-xl shadow-sm">
             <CardHeader className="pb-4 border-b border-slate-100">
               <CardTitle className="flex items-center gap-2 text-lg font-semibold text-slate-900">
-                <div className="p-2 bg-amber-50 rounded-lg">
-                  <Settings className="h-4 w-4 text-amber-600" />
+                <div className="p-2 bg-blue-50 rounded-lg">
+                  <Settings className="h-4 w-4 text-blue-600" />
                 </div>
                 Account Settings
               </CardTitle>
@@ -698,8 +655,8 @@ export default function UserProfilePage() {
           <Card className="border border-slate-200 rounded-xl shadow-sm">
             <CardHeader className="pb-4 border-b border-slate-100">
               <CardTitle className="flex items-center gap-2 text-lg font-semibold text-slate-900">
-                <div className="p-2 bg-red-50 rounded-lg">
-                  <Lock className="h-4 w-4 text-red-600" />
+                <div className="p-2 bg-slate-100 rounded-lg">
+                  <Lock className="h-4 w-4 text-slate-600" />
                 </div>
                 Change Password
               </CardTitle>

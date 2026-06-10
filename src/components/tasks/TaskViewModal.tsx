@@ -295,8 +295,8 @@ export default function TaskViewModal({
   const [loadingUsers, setLoadingUsers] = useState(false)
 
   // Progress editing state
-  const [isEditingProgress, setIsEditingProgress] = useState(false)
   const [localProgress, setLocalProgress] = useState(0)
+  const [savedProgress, setSavedProgress] = useState(0)
   const [savingProgress, setSavingProgress] = useState(false)
   const [savingReview, setSavingReview] = useState<null | 'approve' | 'sendBack'>(null)
 
@@ -391,6 +391,7 @@ export default function TaskViewModal({
         const fullTask = await response.json()
         setLocalSubtasks(fullTask.subtasks || [])
         setLocalProgress(fullTask.progressPercentage || 0)
+        setSavedProgress(fullTask.progressPercentage || 0)
       }
     } catch (error) {
       console.error('Error fetching task details:', error)
@@ -586,8 +587,6 @@ export default function TaskViewModal({
       setNewSubtaskTitle('')
       setNewSubtaskAssigneeId('')
       setNewSubtaskDeadline('')
-      // Reset progress state
-      setIsEditingProgress(false)
     }
     // Use task.id as dependency to prevent re-running when task object reference changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -647,13 +646,14 @@ export default function TaskViewModal({
       })
 
       if (response.ok) {
-        setIsEditingProgress(false)
+        setSavedProgress(localProgress)
         toast({
           title: "Progress updated",
           description: `Progress set to ${localProgress}%`,
         })
-        // Close the modal - the onOpenChange handler will refresh the task list
-        onOpenChange(false)
+        // Refresh the underlying task list without closing the modal, so the
+        // user can keep working and immediately see the saved value reflected.
+        onTaskUpdate?.()
       } else {
         const error = await response.json()
         throw new Error(error.error || 'Failed to update progress')
@@ -1174,6 +1174,30 @@ export default function TaskViewModal({
   // Users who can add subtasks: creator, assignee, team members, collaborators
   const canAddSubtasks = isTaskCreator || isTaskAssignee || isTaskTeamMember || isTaskCollaborator
 
+  // ── Progress management ──
+  // Parent tasks derive progress from their subtasks (server rolls it up), so the
+  // manual control is only meaningful for leaf tasks. Non-finishers cap at 90% —
+  // the assigner sets the final 100% when approving the review.
+  const hasSubtasks = (localSubtasks?.length ?? 0) > 0
+  const completedSubtasks = (localSubtasks ?? []).filter(s => s.status === 'COMPLETED').length
+  const maxProgress = canCompleteTask ? 100 : 90
+  const canEditProgress = canAddSubtasks && !hasSubtasks && task?.status !== 'COMPLETED'
+  const progressDirty = localProgress !== savedProgress
+  const displayProgress = (hasSubtasks || !canEditProgress) ? savedProgress : localProgress
+  const progressFillColor = (pct: number) =>
+    pct >= 100 ? 'bg-emerald-500'
+      : pct >= 75 ? 'bg-blue-500'
+      : pct >= 40 ? 'bg-amber-500'
+      : pct > 0 ? 'bg-orange-500'
+      : 'bg-slate-300'
+  const progressTextColor = (pct: number) =>
+    pct >= 100 ? 'text-emerald-600'
+      : pct >= 75 ? 'text-blue-600'
+      : pct >= 40 ? 'text-amber-600'
+      : pct > 0 ? 'text-orange-600'
+      : 'text-slate-500'
+  const PROGRESS_PRESETS = [0, 25, 50, 75, maxProgress]
+
   const renderComment = (comment: Comment, isReply = false) => {
     const isAuthor = comment.author.id === session?.user?.id
     const canDelete = isAuthor || isTaskCreator || session?.user?.role === 'ADMIN'
@@ -1605,69 +1629,102 @@ export default function TaskViewModal({
             </div>
           )}
 
-          {/* Progress Bar - Editable for assignees */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Progress</span>
-              {isEditingProgress ? (
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{localProgress}%</span>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 w-6 p-0"
-                    onClick={handleProgressUpdate}
-                    disabled={savingProgress}
-                  >
-                    {savingProgress ? (
-                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-600" />
-                    ) : (
-                      <Check className="h-3 w-3 text-green-600" />
-                    )}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 w-6 p-0"
-                    onClick={() => {
-                      setIsEditingProgress(false)
-                      setLocalProgress(task.progressPercentage)
-                    }}
-                  >
-                    <X className="h-3 w-3 text-gray-500" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{task.progressPercentage}%</span>
-                  {canAddSubtasks && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 px-2 text-xs text-gray-500 hover:text-gray-700"
-                      onClick={() => {
-                        setLocalProgress(task.progressPercentage)
-                        setIsEditingProgress(true)
-                      }}
+          {/* Progress — derived for parent tasks, editable for leaf tasks */}
+          <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-slate-700">Progress</span>
+              <span className={`text-xl font-bold tabular-nums ${progressTextColor(displayProgress)}`}>
+                {displayProgress}%
+              </span>
+            </div>
+
+            {/* Colored bar */}
+            <div className="h-2.5 w-full rounded-full bg-slate-200 overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-300 ${progressFillColor(displayProgress)}`}
+                style={{ width: `${displayProgress}%` }}
+              />
+            </div>
+
+            {hasSubtasks ? (
+              /* Parent task: progress is rolled up from subtasks */
+              <p className="flex items-center gap-1.5 text-xs text-slate-500">
+                <ListTodo className="h-3.5 w-3.5 shrink-0" />
+                Auto-calculated from subtasks · {completedSubtasks} of {localSubtasks?.length ?? 0} complete
+              </p>
+            ) : canEditProgress ? (
+              /* Leaf task: editable control */
+              <div className="space-y-3 pt-1">
+                {/* Quick-set presets */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {PROGRESS_PRESETS.map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setLocalProgress(p)}
+                      className={`px-2.5 h-7 rounded-md text-xs font-semibold border transition-colors ${
+                        localProgress === p
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600'
+                      }`}
                     >
-                      <Pencil className="h-3 w-3" />
-                    </Button>
+                      {p === 100 ? 'Complete' : `${p}%`}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Fine control */}
+                <input
+                  type="range"
+                  min={0}
+                  max={maxProgress}
+                  step={5}
+                  value={localProgress}
+                  onChange={(e) => setLocalProgress(Number(e.target.value))}
+                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                />
+
+                {/* Caption + dirty-state save */}
+                <div className="flex items-center justify-between gap-2 min-h-[28px]">
+                  <p className="text-xs text-slate-400 leading-snug">
+                    {!canCompleteTask
+                      ? 'You can set up to 90% — your reviewer marks it 100% on approval.'
+                      : 'Pick a preset or drag to set your progress.'}
+                  </p>
+                  {progressDirty && (
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs text-slate-500 hover:text-slate-700"
+                        onClick={() => setLocalProgress(savedProgress)}
+                        disabled={savingProgress}
+                      >
+                        Reset
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="h-7 px-3 text-xs"
+                        onClick={handleProgressUpdate}
+                        disabled={savingProgress}
+                      >
+                        {savingProgress ? (
+                          <>
+                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1.5" />
+                            Saving…
+                          </>
+                        ) : (
+                          <>
+                            <Check className="h-3.5 w-3.5 mr-1" />
+                            Save
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   )}
                 </div>
-              )}
-            </div>
-            {isEditingProgress ? (
-              <input
-                type="range"
-                min="0"
-                max={canCompleteTask ? 100 : 90}
-                value={localProgress}
-                onChange={(e) => setLocalProgress(Number(e.target.value))}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-              />
-            ) : (
-              <Progress value={task.progressPercentage} className="h-2" />
-            )}
+              </div>
+            ) : null}
           </div>
         </DialogHeader>
 

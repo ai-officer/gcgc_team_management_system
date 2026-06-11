@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { getRequestSession } from '@/lib/api-auth'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
-import { authOptions } from '@/lib/auth'
 
 const createTeamSchema = z.object({
   name: z.string().min(1).max(100),
@@ -19,8 +18,8 @@ const teamInclude = {
 }
 
 // GET /api/user/teams — teams the current user belongs to (any role).
-export async function GET() {
-  const session = await getServerSession(authOptions)
+export async function GET(req: NextRequest) {
+  const session = await getRequestSession(req)
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const teams = await prisma.team.findMany({
@@ -34,7 +33,7 @@ export async function GET() {
 // POST /api/user/teams — any authenticated user can create a team; they become its first LEADER.
 // Atomically creates the Team, the owner's LEADER membership, and the team's board.
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
+  const session = await getRequestSession(req)
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {

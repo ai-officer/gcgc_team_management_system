@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { getRequestSession } from '@/lib/api-auth'
 import { prisma } from '@/lib/prisma'
-import { authOptions } from '@/lib/auth'
 import { handleCorsPreFlight, corsResponse } from '@/lib/cors'
 
 export async function OPTIONS(req: NextRequest) {
@@ -10,7 +9,7 @@ export async function OPTIONS(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getRequestSession(req)
     if (!session?.user) {
       return corsResponse(req, { error: 'Unauthorized' }, { status: 401 })
     }

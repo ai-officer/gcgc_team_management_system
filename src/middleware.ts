@@ -107,9 +107,19 @@ export default async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
+  // Non-admin API routes enforce their own auth INSIDE the handler (via
+  // getRequestSession, which accepts either the NextAuth session cookie OR an
+  // `Authorization: Bearer <token>` from mobile/API clients) and must return JSON.
+  // Let them pass through — never redirect an API request to the HTML login page, or
+  // bearer-token clients (which have no cookie) get an HTML 200 instead of their data
+  // / a JSON 401.
+  if (pathname.startsWith('/api') && !pathname.startsWith('/api/admin')) {
+    return NextResponse.next()
+  }
+
   // Get the NextAuth token for user authentication
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
-  
+
   // Redirect unauthenticated users to login (for regular user routes)
   if (!token) {
     const signInUrl = new URL('/auth/signin', req.url)

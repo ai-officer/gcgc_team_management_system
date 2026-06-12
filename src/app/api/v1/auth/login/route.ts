@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
       hierarchyLevel: user.hierarchyLevel,
       image: user.image,
       iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + (60 * 60), // 1 hour expiry
+      exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 30), // 30 days (mobile/API clients)
     }
 
     const token = jwt.sign(payload, process.env.NEXTAUTH_SECRET!, {
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
     return corsResponse(request, {
       success: true,
       token,
-      expiresAt: Date.now() + (60 * 60 * 1000), // 1 hour from now
+      expiresAt: Date.now() + (60 * 60 * 24 * 30 * 1000), // 30 days from now
       user: {
         id: user.id,
         email: user.email,

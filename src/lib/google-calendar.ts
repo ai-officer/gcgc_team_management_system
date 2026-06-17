@@ -1,4 +1,5 @@
 import { google } from 'googleapis'
+import { randomBytes } from 'crypto'
 import { prisma } from '@/lib/prisma'
 
 const CALENDAR_SCOPES = [
@@ -196,17 +197,23 @@ export class GoogleCalendarService {
 
     try {
       const uuid = `${userId}-${Date.now()}`
+      // Per-channel secret. Google echoes this back in the x-goog-channel-token
+      // header on every notification, so we can authenticate webhook calls and
+      // reject anyone who merely guesses the (non-secret) channel id.
+      const channelToken = randomBytes(32).toString('hex')
       const response = await calendar.events.watch({
         calendarId: calendarId || 'primary',
         requestBody: {
           id: uuid,
           type: 'web_hook',
           address: webhookUrl,
+          token: channelToken,
         },
       })
 
       return {
         channelId: response.data.id,
+        channelToken,
         resourceId: response.data.resourceId,
         expiration: response.data.expiration,
       }

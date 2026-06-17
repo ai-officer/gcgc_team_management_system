@@ -165,6 +165,7 @@ export async function DELETE(req: NextRequest) {
         googleTokenExpiry: null,
         googleCalendarId: null,
         webhookChannelId: null,
+        webhookChannelToken: null,
         webhookResourceId: null,
         webhookExpiration: null,
         lastSyncedAt: null,

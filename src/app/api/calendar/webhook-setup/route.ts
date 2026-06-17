@@ -50,6 +50,7 @@ export async function POST(req: NextRequest) {
         where: { userId: session.user.id },
         data: {
           webhookChannelId: channelInfo.channelId,
+          webhookChannelToken: channelInfo.channelToken,
           webhookResourceId: channelInfo.resourceId,
           webhookExpiration: channelInfo.expiration
             ? new Date(parseInt(channelInfo.expiration.toString()))
@@ -103,6 +104,7 @@ export async function DELETE(req: NextRequest) {
         where: { userId: session.user.id },
         data: {
           webhookChannelId: null,
+          webhookChannelToken: null,
           webhookResourceId: null,
           webhookExpiration: null
         }

@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { googleCalendarService } from '@/lib/google-calendar'
+import { isValidChannelToken } from '@/lib/webhook-auth'
 
 // POST - Receive webhook notifications from Google Calendar
 export async function POST(req: NextRequest) {
   try {
     const headersList = headers()
     const channelId = headersList.get('x-goog-channel-id')
+    const channelToken = headersList.get('x-goog-channel-token')
     const resourceState = headersList.get('x-goog-resource-state')
 
     if (!channelId) {
@@ -23,6 +25,13 @@ export async function POST(req: NextRequest) {
 
     if (!syncSettings) {
       return NextResponse.json({ error: 'Channel not found' }, { status: 404 })
+    }
+
+    // Authenticate the notification: Google echoes the per-channel secret we set
+    // at subscribe time in x-goog-channel-token. Reject anyone who only guessed
+    // the (non-secret) channel id, before doing any expensive re-import work.
+    if (!isValidChannelToken(channelToken, syncSettings.webhookChannelToken)) {
+      return NextResponse.json({ error: 'Invalid channel token' }, { status: 401 })
     }
 
     // If resource state is 'sync', it's just a verification

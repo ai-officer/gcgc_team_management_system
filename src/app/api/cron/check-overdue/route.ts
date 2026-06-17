@@ -2,14 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { notifyTaskOverdue, notifyTaskAssigned } from '@/lib/notifications'
 import { getNextOccurrenceDate } from '@/lib/recurring'
+import { isAuthorizedCronRequest } from '@/lib/cron-auth'
 
-// Simple secret to protect the endpoint from public access.
-// Set CRON_SECRET in your .env file and pass it as ?secret=... in the cron call.
+// Secret to protect the endpoint from public access. Set CRON_SECRET in the
+// environment and pass it via the `x-cron-secret` header. Fails CLOSED: an
+// unset CRON_SECRET rejects all callers (never public).
 const CRON_SECRET = process.env.CRON_SECRET
 
 export async function GET(req: NextRequest) {
-  const secret = req.nextUrl.searchParams.get('secret')
-  if (CRON_SECRET && secret !== CRON_SECRET) {
+  const secret = req.headers.get('x-cron-secret')
+  if (!isAuthorizedCronRequest(secret, CRON_SECRET)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

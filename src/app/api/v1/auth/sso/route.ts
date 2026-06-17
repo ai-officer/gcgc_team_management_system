@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { resolveSafeCallbackUrl } from '@/lib/safe-redirect'
 import jwt from 'jsonwebtoken'
 
 /**
@@ -22,10 +23,14 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const callbackUrl = searchParams.get('callbackUrl')
 
-    // Validate callback URL
-    if (!callbackUrl) {
+    // Validate callback URL against the trusted-host allowlist BEFORE doing
+    // anything else. This blocks open-redirect token exfiltration: an
+    // attacker cannot lure a logged-in user to ...?callbackUrl=https://evil.com
+    // and receive a valid bearer token, nor smuggle it through the signin flow.
+    const safeCallback = resolveSafeCallbackUrl(callbackUrl)
+    if (!safeCallback) {
       return NextResponse.json(
-        { error: 'Missing callbackUrl parameter' },
+        { error: 'Invalid or missing callbackUrl parameter' },
         { status: 400 }
       )
     }
@@ -33,10 +38,10 @@ export async function GET(request: NextRequest) {
     // Get the current session
     const session = await getServerSession(authOptions)
 
-    // If no session, redirect to signin with the original callback
+    // If no session, redirect to signin with the (validated) callback
     if (!session || !session.user) {
       const signinUrl = new URL('/auth/signin', request.url)
-      signinUrl.searchParams.set('callbackUrl', callbackUrl)
+      signinUrl.searchParams.set('callbackUrl', safeCallback.toString())
       return NextResponse.redirect(signinUrl)
     }
 
@@ -56,11 +61,11 @@ export async function GET(request: NextRequest) {
       algorithm: 'HS256'
     })
 
-    // Redirect to callback URL with token in query parameter
-    const redirectUrl = new URL(callbackUrl)
+    // Redirect to the validated callback URL with token in query parameter
+    const redirectUrl = safeCallback
     redirectUrl.searchParams.set('gcgc_token', token)
 
-    console.log(`✅ SSO: User ${session.user.email} authenticated, redirecting to ${callbackUrl}`)
+    console.log(`✅ SSO: User ${session.user.email} authenticated, redirecting to ${redirectUrl.origin}`)
 
     return NextResponse.redirect(redirectUrl)
 

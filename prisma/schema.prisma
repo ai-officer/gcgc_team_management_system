@@ -348,6 +348,13 @@ model Task {
   team                  Team?              @relation(fields: [teamId], references: [id], onDelete: Cascade)
   seniorEvaluator       User?              @relation("TaskSeniorEvaluator", fields: [seniorEvaluatorId], references: [id])
 
+  @@index([assigneeId])
+  @@index([creatorId])
+  @@index([teamId, status])
+  @@index([boardId])
+  @@index([parentId])
+  @@index([dueDate])
+  @@index([recurringParentId])
   @@map("tasks")
 }
 
@@ -361,6 +368,7 @@ model TaskTeamMember {
   user      User           @relation("TaskTeamMembers", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([taskId, userId])
+  @@index([userId])
   @@map("task_team_members")
 }
 
@@ -373,6 +381,7 @@ model TaskCollaborator {
   user      User     @relation("TaskCollaborators", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([taskId, userId])
+  @@index([userId])
   @@map("task_collaborators")
 }
 
@@ -395,6 +404,9 @@ model Comment {
   replies   Comment[]         @relation("CommentReplies")
   reactions CommentReaction[]
 
+  @@index([taskId])
+  @@index([authorId])
+  @@index([parentId])
   @@map("comments")
 }
 
@@ -432,6 +444,10 @@ model Event {
   task               Task?     @relation(fields: [taskId], references: [id])
   team               Team?     @relation(fields: [teamId], references: [id])
 
+  @@index([creatorId])
+  @@index([taskId])
+  @@index([teamId])
+  @@index([googleCalendarEventId])
   @@map("events")
 }
 
@@ -446,6 +462,8 @@ model Activity {
   createdAt   DateTime     @default(now())
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+  @@index([entityId])
   @@map("activities")
 }
 

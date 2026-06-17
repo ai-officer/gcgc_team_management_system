@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { UserRole } from '@prisma/client'
+import { getRequestSession } from '@/lib/api-auth'
+import { pickPublicFieldsList } from '@/lib/public-projection'
+
+// Fields safe to expose to UNauthenticated callers (the public registration
+// form needs the leader roster to pick a "reports to" target). Excludes email
+// and any contact PII — those are only returned to authenticated callers.
+const PUBLIC_LEADER_FIELDS = [
+  'id', 'firstName', 'lastName', 'name', 'role', 'hierarchyLevel',
+  'division', 'department', 'section', 'team', 'positionTitle', 'isLeader', 'image',
+] as const
 
 export async function GET(request: NextRequest) {
   try {
@@ -54,9 +64,16 @@ export async function GET(request: NextRequest) {
       ]
     })
 
+    // Anonymous callers (registration form) get a PII-free projection; only
+    // authenticated callers receive emails.
+    const session = await getRequestSession(request)
+    const data = session?.user
+      ? leaders
+      : pickPublicFieldsList(leaders as unknown as Record<string, unknown>[], [...PUBLIC_LEADER_FIELDS])
+
     return NextResponse.json({
       success: true,
-      data: leaders
+      data
     })
   } catch (error) {
     console.error('Error fetching leaders:', error)

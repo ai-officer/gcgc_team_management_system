@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { UserRole } from '@prisma/client'
+import { getRequestSession } from '@/lib/api-auth'
 
 export async function GET(request: NextRequest) {
   try {
@@ -50,6 +51,11 @@ export async function GET(request: NextRequest) {
       ]
     })
 
+    // Only expose email to authenticated callers; the public registration form
+    // needs names/sections but must not receive contact PII.
+    const session = await getRequestSession(request)
+    const includeEmail = !!session?.user
+
     // Group by section and format for dropdown
     const groupedBySection = sectionHeads.reduce((acc: any, head: any) => {
       const sectionName = head.section || 'No Section'
@@ -60,7 +66,7 @@ export async function GET(request: NextRequest) {
         id: head.id,
         name: head.firstName && head.lastName ? `${head.firstName} ${head.lastName}` : head.name,
         initials: head.shortName || `${head.firstName?.[0] || ''}${head.lastName?.[0] || ''}`,
-        email: head.email,
+        email: includeEmail ? head.email : undefined,
         role: head.role,
         section: head.section,
         department: head.department,
@@ -77,7 +83,7 @@ export async function GET(request: NextRequest) {
         id: head.id,
         name: head.firstName && head.lastName ? `${head.firstName} ${head.lastName}` : head.name,
         initials: head.shortName || `${head.firstName?.[0] || ''}${head.lastName?.[0] || ''}`,
-        email: head.email,
+        email: includeEmail ? head.email : undefined,
         role: head.role,
         section: head.section,
         department: head.department,

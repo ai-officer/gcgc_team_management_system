@@ -1195,6 +1195,13 @@ export default function TaskViewModal({
       : pct >= 40 ? 'bg-amber-500'
       : pct > 0 ? 'bg-orange-500'
       : 'bg-slate-300'
+  // Hex of the above, for the editable slider's gradient track.
+  const progressFillHex = (pct: number) =>
+    pct >= 100 ? '#10b981'
+      : pct >= 75 ? '#3b82f6'
+      : pct >= 40 ? '#f59e0b'
+      : pct > 0 ? '#f97316'
+      : '#cbd5e1'
   const progressTextColor = (pct: number) =>
     pct >= 100 ? 'text-emerald-600'
       : pct >= 75 ? 'text-blue-600'
@@ -1643,23 +1650,35 @@ export default function TaskViewModal({
               </span>
             </div>
 
-            {/* Colored bar */}
-            <div className="h-2.5 w-full rounded-full bg-slate-200 overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-300 ${progressFillColor(displayProgress)}`}
-                style={{ width: `${displayProgress}%` }}
-              />
-            </div>
-
             {hasSubtasks ? (
-              /* Parent task: progress is rolled up from subtasks */
-              <p className="flex items-center gap-1.5 text-xs text-slate-500">
-                <ListTodo className="h-3.5 w-3.5 shrink-0" />
-                Auto-calculated from subtasks · {completedSubtasks} of {localSubtasks?.length ?? 0} complete
-              </p>
+              /* Parent task: rolled-up, read-only bar + caption */
+              <>
+                <div className="h-2.5 w-full rounded-full bg-slate-200 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-300 ${progressFillColor(displayProgress)}`}
+                    style={{ width: `${displayProgress}%` }}
+                  />
+                </div>
+                <p className="flex items-center gap-1.5 text-xs text-slate-500">
+                  <ListTodo className="h-3.5 w-3.5 shrink-0" />
+                  Auto-calculated from subtasks · {completedSubtasks} of {localSubtasks?.length ?? 0} complete
+                </p>
+              </>
             ) : canEditProgress ? (
-              /* Leaf task: editable control */
-              <div className="space-y-3 pt-1">
+              /* Leaf task: ONE control — the slider's filled track IS the bar */
+              <div className="space-y-3 pt-0.5">
+                {/* Merged control: drag the bar; its fill shows the value */}
+                <input
+                  type="range"
+                  min={0}
+                  max={maxProgress}
+                  step={5}
+                  value={localProgress}
+                  onChange={(e) => setLocalProgress(Number(e.target.value))}
+                  style={{ background: `linear-gradient(to right, ${progressFillHex(localProgress)} ${localProgress}%, #e2e8f0 ${localProgress}%)` }}
+                  className="w-full h-2.5 appearance-none rounded-full cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-slate-400 [&::-webkit-slider-thumb]:shadow [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-slate-400 [&::-moz-range-thumb]:border-solid [&::-moz-range-thumb]:cursor-pointer"
+                />
+
                 {/* Quick-set presets */}
                 <div className="flex items-center gap-1.5 flex-wrap">
                   {PROGRESS_PRESETS.map((p) => (
@@ -1677,17 +1696,6 @@ export default function TaskViewModal({
                     </button>
                   ))}
                 </div>
-
-                {/* Fine control */}
-                <input
-                  type="range"
-                  min={0}
-                  max={maxProgress}
-                  step={5}
-                  value={localProgress}
-                  onChange={(e) => setLocalProgress(Number(e.target.value))}
-                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                />
 
                 {/* Caption + dirty-state save */}
                 <div className="flex items-center justify-between gap-2 min-h-[28px]">
@@ -1729,7 +1737,15 @@ export default function TaskViewModal({
                   )}
                 </div>
               </div>
-            ) : null}
+            ) : (
+              /* Read-only leaf: static display bar */
+              <div className="h-2.5 w-full rounded-full bg-slate-200 overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-300 ${progressFillColor(displayProgress)}`}
+                  style={{ width: `${displayProgress}%` }}
+                />
+              </div>
+            )}
           </div>
         </DialogHeader>
 

@@ -1189,11 +1189,15 @@ export default function TasksPage() {
                                   </div>
                                 )}
 
-                                {/* Header: title + actions */}
-                                <div className="flex items-start justify-between gap-2 mb-2">
+                                {/* Header: priority dot + title + recurring + actions */}
+                                <div className="flex items-start gap-2 mb-2">
+                                  <span className={`mt-1 w-2 h-2 rounded-full shrink-0 ${getPriorityColor(task.priority)}`} title={`${task.priority.toLowerCase()} priority`} />
                                   <h4 className="font-semibold text-sm leading-snug text-gray-900 line-clamp-2 flex-1 min-w-0">
                                     {task.title}
                                   </h4>
+                                  {(task.recurrence || task.recurringParentId) && (
+                                    <RefreshCw className="h-3.5 w-3.5 text-blue-500 shrink-0 mt-0.5" />
+                                  )}
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                       <Button
@@ -1252,42 +1256,6 @@ export default function TasksPage() {
                                   </DropdownMenu>
                                 </div>
 
-                                {/* Meta badges: type, recurring, cascading, relationship, team */}
-                                <div className="flex items-center gap-1.5 flex-wrap mb-2.5">
-                                  <Badge variant="outline" className={`text-[10px] px-1.5 h-5 gap-1 font-medium ${getTaskTypeBadgeClass(task.taskType)}`}>
-                                    {getTaskTypeIcon(task.taskType)}
-                                    {getTaskTypeLabel(task.taskType)}
-                                  </Badge>
-                                  {(task.recurrence || task.recurringParentId) && (
-                                    <Badge variant="outline" className="text-[10px] px-1.5 h-5 gap-1 font-medium bg-blue-50 text-blue-700 border-blue-200">
-                                      <RefreshCw className="h-3 w-3" />
-                                      {getRecurrenceLabel(task.recurrence)}
-                                    </Badge>
-                                  )}
-                                  {task.parentId && (
-                                    <Badge className="text-[10px] px-1.5 h-5 bg-violet-500 text-white border-violet-600">
-                                      Subtask
-                                    </Badge>
-                                  )}
-                                  {!isTaskCreatedByUser(task) && (
-                                    <Badge variant="outline" className="text-[10px] px-1.5 h-5">
-                                      Assigned
-                                    </Badge>
-                                  )}
-                                  {task.team && (
-                                    <Badge variant="secondary" className="text-[10px] px-1.5 h-5 max-w-[120px] truncate">
-                                      {task.team.name}
-                                    </Badge>
-                                  )}
-                                </div>
-
-                                {/* Description */}
-                                {task.description && (
-                                  <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed mb-2.5">
-                                    {task.description}
-                                  </p>
-                                )}
-
                                 {/* Progress: inline bar + %, label dropped (redundant on a card) */}
                                 <div className="flex items-center gap-2 mb-2.5">
                                   <Progress
@@ -1304,126 +1272,38 @@ export default function TasksPage() {
                                   const _sot = new Date(); _sot.setHours(0, 0, 0, 0)
                                   const overdue = task.dueDate && new Date(task.dueDate) < _sot && task.status !== 'COMPLETED'
                                   return (
-                                    <div className="flex items-center gap-x-3 gap-y-1.5 flex-wrap text-[11px] text-gray-500 mb-2.5">
-                                      <span className="inline-flex items-center gap-1">
-                                        <span className={`w-2 h-2 rounded-full ${getPriorityColor(task.priority)}`} />
-                                        <span className="font-medium text-gray-700 capitalize">{task.priority.toLowerCase()}</span>
-                                      </span>
-                                      {task.dueDate && (
-                                        <span className={`inline-flex items-center gap-1 ${overdue ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
-                                          <Clock className="h-3 w-3" />
-                                          {format(new Date(task.dueDate), 'MMM dd')}
-                                          {overdue && (
-                                            <Badge className="text-[10px] px-1 py-0 h-4 bg-red-500 text-white">OVERDUE</Badge>
-                                          )}
-                                        </span>
-                                      )}
-                                      {task.subtasks && task.subtasks.length > 0 && (
-                                        <span className="inline-flex items-center gap-1">
-                                          <ListTodo className="h-3 w-3" />
-                                          {task.subtasks.filter(s => s.status === 'COMPLETED').length}/{task.subtasks.length}
-                                        </span>
-                                      )}
-                                      {(task._count?.comments ?? 0) > 0 && (
-                                        <span className="inline-flex items-center gap-1">
-                                          <MessageSquare className="h-3 w-3" />
-                                          {task._count!.comments}
-                                        </span>
-                                      )}
-                                      {task.taskWeight != null && (
-                                        <span className="inline-flex items-center gap-1" title="Importance/weight">
-                                          <Star className="h-3 w-3" />
-                                          {task.taskWeight}
-                                        </span>
-                                      )}
-                                      {task.slaHours != null && (
-                                        <span className="inline-flex items-center gap-1" title="SLA target">
-                                          <Clock className="h-3 w-3" />
-                                          {task.slaHours}h
-                                        </span>
-                                      )}
-                                      {task.meetingLink && (
-                                        <a
-                                          href={task.meetingLink}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          onClick={(e) => e.stopPropagation()}
-                                          title="Join meeting"
-                                          className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
-                                        >
-                                          <Video className="h-3 w-3" />
-                                        </a>
+                                    <div className="flex items-center justify-between gap-2 text-[11px] text-gray-500">
+                                      <div className="flex items-center gap-x-2.5 gap-y-1 flex-wrap min-w-0">
+                                        {task.dueDate && (
+                                          <span className={`inline-flex items-center gap-1 ${overdue ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
+                                            <Clock className="h-3 w-3" />
+                                            {format(new Date(task.dueDate), 'MMM dd')}
+                                            {overdue && (
+                                              <Badge className="text-[10px] px-1 py-0 h-4 bg-red-500 text-white">OVERDUE</Badge>
+                                            )}
+                                          </span>
+                                        )}
+                                        {task.subtasks && task.subtasks.length > 0 && (
+                                          <span className="inline-flex items-center gap-1">
+                                            <ListTodo className="h-3 w-3" />
+                                            {task.subtasks.filter(s => s.status === 'COMPLETED').length}/{task.subtasks.length}
+                                          </span>
+                                        )}
+                                      </div>
+                                      {task.assignee && (
+                                        <UserAvatar
+                                          userId={task.assignee.id}
+                                          image={task.assignee.image}
+                                          name={task.assignee.name}
+                                          email={task.assignee.email}
+                                          className="h-5 w-5 shrink-0"
+                                          fallbackClassName="text-xs"
+                                        />
                                       )}
                                     </div>
                                   )
                                 })()}
 
-                                {/* Assignees and Collaborators */}
-                                <div className="space-y-1.5">
-                                  {task.assignee && (
-                                    <div className="flex items-center gap-2">
-                                      <UserAvatar
-                                        userId={task.assignee.id}
-                                        image={task.assignee.image}
-                                        name={task.assignee.name}
-                                        email={task.assignee.email}
-                                        className="h-5 w-5"
-                                        fallbackClassName="text-xs"
-                                      />
-                                      <span className="text-xs text-muted-foreground truncate">
-                                        {task.assignee.name || task.assignee.email}
-                                      </span>
-                                    </div>
-                                  )}
-
-                                  {task.teamMembers && task.teamMembers.length > 0 && (
-                                    <div className="flex items-center gap-1">
-                                      <Users className="h-3 w-3 text-muted-foreground" />
-                                      <div className="flex -space-x-1">
-                                        {task.teamMembers.slice(0, 3).map((member) => (
-                                          <UserAvatar
-                                            key={member.userId}
-                                            userId={member.user.id}
-                                            image={member.user.image}
-                                            name={member.user.name}
-                                            email={member.user.email}
-                                            className="h-4 w-4 border border-background"
-                                            fallbackClassName="text-xs"
-                                          />
-                                        ))}
-                                        {task.teamMembers.length > 3 && (
-                                          <div className="h-4 w-4 rounded-full bg-muted flex items-center justify-center border border-background">
-                                            <span className="text-xs">+{task.teamMembers.length - 3}</span>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {task.collaborators && task.collaborators.length > 0 && (
-                                    <div className="flex items-center gap-1">
-                                      <Handshake className="h-3 w-3 text-muted-foreground" />
-                                      <div className="flex -space-x-1">
-                                        {task.collaborators.slice(0, 3).map((collaborator) => (
-                                          <UserAvatar
-                                            key={collaborator.userId}
-                                            userId={collaborator.user.id}
-                                            image={collaborator.user.image}
-                                            name={collaborator.user.name}
-                                            email={collaborator.user.email}
-                                            className="h-4 w-4 border border-background"
-                                            fallbackClassName="text-xs"
-                                          />
-                                        ))}
-                                        {task.collaborators.length > 3 && (
-                                          <div className="h-4 w-4 rounded-full bg-muted flex items-center justify-center border border-background">
-                                            <span className="text-xs">+{task.collaborators.length - 3}</span>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
                               </CardContent>
                             </Card>
                           )

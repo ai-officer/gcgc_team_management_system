@@ -915,6 +915,15 @@ export default function TasksPage() {
   }
 
   const activeBoard = activeBoardId ? boards.find(b => b.id === activeBoardId) : undefined
+  const filterUserOptions = activeBoard
+    ? activeBoard.members.map(m => ({ id: m.user.id, name: m.user.name || m.user.email, email: m.user.email, image: m.user.image }))
+    : users.map(u => ({ id: u.id, name: u.name || u.email, email: u.email, image: u.image }))
+  useEffect(() => {
+    if (selectedUser && !filterUserOptions.some(u => u.id === selectedUser)) {
+      setSelectedUser('')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeBoardId])
   const boardContext = activeBoard
     ? { boardId: activeBoard.id, boardName: activeBoard.name, teamId: activeBoard.team?.id ?? null }
     : null
@@ -1060,7 +1069,7 @@ export default function TasksPage() {
         </div>
 
         <SearchableSelect
-          options={users}
+          options={filterUserOptions}
           value={selectedUser}
           onValueChange={setSelectedUser}
           placeholder="Filter by user"

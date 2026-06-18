@@ -46,58 +46,26 @@ export async function GET(req: NextRequest) {
         },
       })
     } else {
-      // Leaders: find all teams they belong to (TeamMember.role may be MEMBER even if User.role is LEADER)
-      const leaderTeams = await prisma.teamMember.findMany({
-        where: { userId: session.user.id },
-        select: { teamId: true },
+      // Leaders: their OWN members are their direct reports in the org hierarchy
+      // (User.reportsToId), matching the dashboard's team-members definition.
+      // Project "teams" (TeamMember) are deliberately SEPARATE from reports-to and
+      // are NOT used here — a leader's workload view shows the people who report to
+      // them, not arbitrary team co-members or every member in the system.
+      uniqueUsers = await prisma.user.findMany({
+        where: {
+          isActive: true,
+          reportsToId: session.user.id,
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+          role: true,
+          positionTitle: true,
+          isActive: true,
+        },
       })
-
-      const teamIds = leaderTeams.map(t => t.teamId)
-
-      if (teamIds.length > 0) {
-        // Show all other members in their team(s)
-        const teamMembers = await prisma.teamMember.findMany({
-          where: {
-            teamId: { in: teamIds },
-            userId: { not: session.user.id },
-          },
-          select: {
-            userId: true,
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                image: true,
-                role: true,
-                positionTitle: true,
-                isActive: true,
-              },
-            },
-          },
-        })
-        uniqueUsers = Array.from(
-          new Map(teamMembers.map(tm => [tm.userId, tm.user])).values()
-        ).filter(u => u.isActive)
-      } else {
-        // Fallback: leader has no TeamMember records — show all active MEMBER-role users
-        uniqueUsers = await prisma.user.findMany({
-          where: {
-            isActive: true,
-            role: 'MEMBER',
-            id: { not: session.user.id },
-          },
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
-            role: true,
-            positionTitle: true,
-            isActive: true,
-          },
-        })
-      }
     }
 
     if (uniqueUsers.length === 0) {

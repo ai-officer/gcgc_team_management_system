@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { NotificationType } from '@prisma/client'
 import { publishNotification } from '@/lib/redis'
+import { deliverNotification } from '@/lib/notification-delivery'
 
 interface CreateNotificationParams {
   userId: string
@@ -62,6 +63,14 @@ export async function createNotification({
     } else {
       console.warn(`Redis not available, notification saved but not delivered in real-time`)
     }
+
+    // Fan out to email + web push, best-effort and non-blocking.
+    void deliverNotification(notification.userId, {
+      title: notification.title,
+      message: notification.message,
+      entityType: notification.entityType,
+      entityId: notification.entityId,
+    })
 
     return notification
   } catch (error) {

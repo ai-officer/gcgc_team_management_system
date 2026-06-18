@@ -19,6 +19,7 @@ import { Progress } from '@/components/ui/progress'
 import { useToast } from '@/hooks/use-toast'
 import { format } from 'date-fns'
 import { avatarEvents } from '@/lib/avatar-events'
+import { NotificationSettings } from '@/components/settings/NotificationSettings'
 
 interface UserProfile {
   id: string
@@ -650,6 +651,9 @@ export default function UserProfilePage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Notification Settings */}
+          <NotificationSettings />
 
           {/* Change Password Card */}
           <Card className="border border-slate-200 rounded-xl shadow-sm">

@@ -78,6 +78,7 @@ import { cn } from '@/lib/utils'
 import { format, isAfter, subDays } from 'date-fns'
 import TaskForm from '@/components/tasks/TaskForm'
 import TaskViewModal from '@/components/tasks/TaskViewModal'
+import TimelineView from '@/components/tasks/TimelineView'
 import DuplicateTaskDialog from '@/components/tasks/DuplicateTaskDialog'
 import { BulkTaskActionsDialog } from '@/components/tasks/bulk-task-actions-dialog'
 
@@ -223,6 +224,11 @@ export default function TasksPage() {
   const [showViewModal, setShowViewModal] = useState(false)
   const [taskHistory, setTaskHistory] = useState<Task[]>([])
 
+  const [viewMode, setViewMode] = useState<'board' | 'timeline'>(
+    () => (searchParams.get('view') === 'timeline' ? 'timeline' : 'board')
+  )
+  const [timelineZoom, setTimelineZoom] = useState<'month' | 'week'>('month')
+
   // Board state
   const [boards, setBoards] = useState<KanbanBoard[]>([])
   const [activeBoardId, setActiveBoardId] = useState<string | null>(() => searchParams.get('board') || null) // null = "All Tasks"
@@ -337,9 +343,10 @@ export default function TasksPage() {
     if (selectedUser) params.set('user', selectedUser)
     if (selectedTaskType) params.set('type', selectedTaskType)
     if (activeBoardId) params.set('board', activeBoardId)
+    if (viewMode === 'timeline') params.set('view', 'timeline')
     const qs = params.toString()
     router.replace(qs ? `/user/tasks?${qs}` : '/user/tasks', { scroll: false })
-  }, [searchTerm, selectedTeam, selectedUser, selectedTaskType, activeBoardId, router])
+  }, [searchTerm, selectedTeam, selectedUser, selectedTaskType, activeBoardId, viewMode, router])
 
   const fetchUsers = async () => {
     try {
@@ -1111,7 +1118,19 @@ export default function TasksPage() {
         )}
       </div>
 
+      {/* Board / Timeline toggle */}
+      <div className="inline-flex items-center gap-1 rounded-md border border-slate-200 p-0.5">
+        {(['board', 'timeline'] as const).map(m => (
+          <button key={m} onClick={() => setViewMode(m)}
+            className={`px-3 h-7 rounded text-xs font-semibold capitalize ${
+              viewMode === m ? 'bg-blue-600 text-white' : 'text-slate-600 hover:text-slate-900'}`}>
+            {m}
+          </button>
+        ))}
+      </div>
+
       {/* Kanban Board */}
+      {viewMode === 'board' && (
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 min-h-[700px]">
           {Object.entries(COLUMN_CONFIG).map(([status, config]) => {
@@ -1448,6 +1467,19 @@ export default function TasksPage() {
           })}
         </div>
       </DragDropContext>
+      )}
+
+      {viewMode === 'timeline' && (
+        <TimelineView
+          tasks={tasks as any}
+          zoom={timelineZoom}
+          onZoomChange={setTimelineZoom}
+          onTaskClick={(id) => {
+            const t = tasks.find(x => x.id === id)
+            if (t) handleTaskClick(t)
+          }}
+        />
+      )}
 
       {/* Duplicate Field Selector Dialog */}
       {pendingDuplicateTask && (

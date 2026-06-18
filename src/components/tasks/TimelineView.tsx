@@ -1,12 +1,15 @@
 // src/components/tasks/TimelineView.tsx
 'use client'
-import { useMemo } from 'react'
+import { useMemo, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { format, startOfDay, differenceInCalendarDays } from 'date-fns'
 import { UserAvatar } from '@/components/shared/UserAvatar'
 import {
   splitScheduled, groupByAssignee, buildAxis, barGeometry, axisRangeFor,
+  pxDeltaToDays, shiftDates, resizeStart, resizeEnd,
   type TimelineTask, type TimelineZoom,
 } from '@/lib/timeline'
+
+type DragMode = 'move' | 'resize-start' | 'resize-end'
 
 const STATUS_BAR: Record<string, string> = {
   TODO: 'bg-gray-400',
@@ -18,12 +21,14 @@ const ROW_H = 36
 const LEFT_W = 320
 
 export default function TimelineView({
-  tasks, zoom, onZoomChange, onTaskClick,
+  tasks, zoom, onZoomChange, onTaskClick, canEdit, onReschedule,
 }: {
   tasks: TimelineTask[]
   zoom: TimelineZoom
   onZoomChange: (z: TimelineZoom) => void
   onTaskClick?: (taskId: string) => void
+  canEdit?: (taskId: string) => boolean
+  onReschedule?: (taskId: string, dates: { startDate: string; dueDate: string }) => void
 }) {
   const today = startOfDay(new Date())
   const { scheduled, unscheduled } = useMemo(() => splitScheduled(tasks), [tasks])
@@ -31,6 +36,32 @@ export default function TimelineView({
   const axis = useMemo(() => buildAxis(range.start, range.end, zoom), [range, zoom])
   const groups = useMemo(() => groupByAssignee(scheduled), [scheduled])
   const todayLeft = differenceInCalendarDays(today, axis.start) * axis.dayWidthPx
+
+  // Drag-to-reschedule: mode is chosen by where in the bar you grab (edges = resize).
+  const [drag, setDrag] = useState<{ taskId: string; mode: DragMode; startX: number; deltaPx: number } | null>(null)
+
+  function startDrag(e: ReactPointerEvent<HTMLDivElement>, task: TimelineTask) {
+    if (!canEdit?.(task.id)) return
+    e.preventDefault()
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const mode: DragMode = x < 8 ? 'resize-start' : x > rect.width - 8 ? 'resize-end' : 'move'
+    e.currentTarget.setPointerCapture(e.pointerId)
+    setDrag({ taskId: task.id, mode, startX: e.clientX, deltaPx: 0 })
+  }
+  function moveDrag(e: ReactPointerEvent) {
+    setDrag(d => (d ? { ...d, deltaPx: e.clientX - d.startX } : d))
+  }
+  function endDrag(task: TimelineTask) {
+    const d = drag
+    setDrag(null)
+    if (!d || d.taskId !== task.id) return
+    if (Math.abs(d.deltaPx) < 3) { onTaskClick?.(task.id); return } // a click, not a drag
+    const days = pxDeltaToDays(d.deltaPx, axis)
+    if (days === 0) return
+    const fn = d.mode === 'move' ? shiftDates : d.mode === 'resize-start' ? resizeStart : resizeEnd
+    onReschedule?.(task.id, fn(task.startDate!, task.dueDate!, days))
+  }
 
   return (
     <div className="border rounded-lg overflow-hidden bg-white">
@@ -92,12 +123,38 @@ export default function TimelineView({
               <div style={{ height: ROW_H }} className="border-b bg-slate-50/40" />
               {g.tasks.map(t => {
                 const { leftPx, widthPx } = barGeometry(t.startDate!, t.dueDate!, axis)
+                const minW = axis.dayWidthPx
+                const editable = canEdit?.(t.id) ?? false
+                const dragging = drag?.taskId === t.id
+                let curLeft = leftPx
+                let curWidth = Math.max(widthPx, minW)
+                if (dragging && drag) {
+                  if (drag.mode === 'move') curLeft = leftPx + drag.deltaPx
+                  else if (drag.mode === 'resize-start') { curLeft = leftPx + drag.deltaPx; curWidth = Math.max(minW, curWidth - drag.deltaPx) }
+                  else curWidth = Math.max(minW, curWidth + drag.deltaPx)
+                }
+                const title = `${t.title} · ${format(new Date(t.startDate!), 'MMM d')}–${format(new Date(t.dueDate!), 'MMM d')}`
+                const barColor = STATUS_BAR[t.status] ?? 'bg-gray-400'
                 return (
                   <div key={t.id} style={{ height: ROW_H }} className="relative border-b">
-                    <button onClick={() => onTaskClick?.(t.id)}
-                      title={`${t.title} · ${format(new Date(t.startDate!), 'MMM d')}–${format(new Date(t.dueDate!), 'MMM d')}`}
-                      className={`absolute top-1.5 h-6 rounded ${STATUS_BAR[t.status] ?? 'bg-gray-400'} opacity-90 hover:opacity-100`}
-                      style={{ left: leftPx, width: Math.max(widthPx, axis.dayWidthPx) }} />
+                    {editable ? (
+                      <div
+                        role="button"
+                        title={title}
+                        onPointerDown={(e) => startDrag(e, t)}
+                        onPointerMove={moveDrag}
+                        onPointerUp={() => endDrag(t)}
+                        className={`absolute top-1.5 h-6 rounded ${barColor} opacity-90 hover:opacity-100 select-none ${dragging ? 'cursor-grabbing ring-2 ring-blue-400 z-10' : 'cursor-grab'}`}
+                        style={{ left: curLeft, width: curWidth, touchAction: 'none' }}
+                      >
+                        <span className="absolute inset-y-0 left-0 w-2 cursor-ew-resize" />
+                        <span className="absolute inset-y-0 right-0 w-2 cursor-ew-resize" />
+                      </div>
+                    ) : (
+                      <button onClick={() => onTaskClick?.(t.id)} title={title}
+                        className={`absolute top-1.5 h-6 rounded ${barColor} opacity-90 hover:opacity-100`}
+                        style={{ left: leftPx, width: Math.max(widthPx, minW) }} />
+                    )}
                   </div>
                 )
               })}

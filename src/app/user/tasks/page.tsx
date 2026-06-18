@@ -1288,16 +1288,15 @@ export default function TasksPage() {
                                   </p>
                                 )}
 
-                                {/* Progress Section */}
-                                <div className="mb-2.5">
-                                  <div className="flex items-center justify-between mb-1">
-                                    <span className="text-[11px] font-medium text-gray-500">Progress</span>
-                                    <span className="text-[11px] font-semibold text-gray-700">{task.progressPercentage || 0}%</span>
-                                  </div>
+                                {/* Progress: inline bar + %, label dropped (redundant on a card) */}
+                                <div className="flex items-center gap-2 mb-2.5">
                                   <Progress
                                     value={task.progressPercentage || 0}
-                                    className="h-1.5 bg-gray-200"
+                                    className="h-1.5 bg-gray-200 flex-1"
                                   />
+                                  <span className="text-[11px] font-semibold text-gray-600 tabular-nums shrink-0">
+                                    {task.progressPercentage || 0}%
+                                  </span>
                                 </div>
 
                                 {/* Meta footer: priority, due date, subtasks, comments, weight, SLA, meeting */}

@@ -72,6 +72,7 @@ export default async function middleware(req: NextRequest) {
     pathname === '/administrator/login' ||
     pathname === '/privacy-policy' ||
     pathname === '/terms-of-service' ||
+    pathname === '/sw.js' || // service worker must be served directly (web push)
     pathname.startsWith('/google') // Google Search Console verification
   ) {
     return NextResponse.next()

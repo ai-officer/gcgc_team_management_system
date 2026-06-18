@@ -1,15 +1,20 @@
-import { startOfDay, differenceInCalendarDays, eachMonthOfInterval, endOfMonth, format, max, min, addDays, subDays } from 'date-fns'
+import {
+  startOfDay, differenceInCalendarDays, eachMonthOfInterval, endOfMonth, format, max, min, addDays, subDays,
+  eachWeekOfInterval, eachQuarterOfInterval, endOfQuarter, getQuarter, eachYearOfInterval, endOfYear,
+} from 'date-fns'
 
 export type TimelineZoom = 'day' | 'week' | 'month' | 'quarter' | 'year'
 
 /** Per-zoom day-column width (px) and how far past/future to extend the axis,
  *  so the timeline always shows future periods to scroll into even with no data. */
+// dayWidthPx is chosen so one period column is ~consistent width (~125px) across
+// week/month/quarter/year; only the header granularity changes per zoom.
 export const ZOOM: Record<TimelineZoom, { dayWidthPx: number; pastDays: number; futureDays: number }> = {
-  day: { dayWidthPx: 44, pastDays: 14, futureDays: 45 },
-  week: { dayWidthPx: 18, pastDays: 14, futureDays: 90 },
-  month: { dayWidthPx: 11, pastDays: 21, futureDays: 180 },
-  quarter: { dayWidthPx: 4, pastDays: 30, futureDays: 365 },
-  year: { dayWidthPx: 1.6, pastDays: 60, futureDays: 730 },
+  day: { dayWidthPx: 40, pastDays: 14, futureDays: 45 },
+  week: { dayWidthPx: 18, pastDays: 21, futureDays: 120 },   // ~126px/week
+  month: { dayWidthPx: 4.2, pastDays: 31, futureDays: 240 }, // ~126px/month
+  quarter: { dayWidthPx: 1.4, pastDays: 60, futureDays: 540 }, // ~127px/quarter
+  year: { dayWidthPx: 0.34, pastDays: 120, futureDays: 1095 }, // ~124px/year
 }
 
 export interface TimelineTask {
@@ -69,6 +74,8 @@ export interface Axis {
   totalWidthPx: number
   months: { label: string; leftPx: number; widthPx: number }[]
   days: { date: Date; leftPx: number; dayNum: number; isWeekend: boolean }[]
+  /** Header columns for the current zoom (days, week ranges, months, quarters, years). */
+  segments: { label: string; leftPx: number; widthPx: number }[]
 }
 
 export function buildAxis(start: Date, end: Date, zoom: TimelineZoom, dayWidthOverride?: number): Axis {
@@ -89,7 +96,29 @@ export function buildAxis(start: Date, end: Date, zoom: TimelineZoom, dayWidthOv
     const dow = date.getDay()
     return { date, leftPx: i * dayWidthPx, dayNum: date.getDate(), isWeekend: dow === 0 || dow === 6 }
   })
-  return { start: s, end: e, zoom, dayWidthPx, totalWidthPx, months, days }
+  const seg = (segStart: Date, segEnd: Date, label: string) => {
+    const a = max([segStart, s])
+    const b = min([segEnd, e])
+    return { label, leftPx: differenceInCalendarDays(a, s) * dayWidthPx, widthPx: (differenceInCalendarDays(b, a) + 1) * dayWidthPx }
+  }
+  let segments: { label: string; leftPx: number; widthPx: number }[]
+  if (zoom === 'week') {
+    segments = eachWeekOfInterval({ start: s, end: e }, { weekStartsOn: 1 }).map((w) => {
+      const wStart = max([w, s])
+      const wEnd = min([addDays(w, 6), e])
+      const label = `${format(wStart, 'MMM d')} – ${format(wEnd, wStart.getMonth() === wEnd.getMonth() ? 'd' : 'MMM d')}`
+      return seg(w, addDays(w, 6), label)
+    })
+  } else if (zoom === 'quarter') {
+    segments = eachQuarterOfInterval({ start: s, end: e }).map((q) => seg(q, endOfQuarter(q), `Q${getQuarter(q)} ${format(q, 'yyyy')}`))
+  } else if (zoom === 'year') {
+    segments = eachYearOfInterval({ start: s, end: e }).map((y) => seg(y, endOfYear(y), format(y, 'yyyy')))
+  } else if (zoom === 'month') {
+    segments = months
+  } else {
+    segments = days.map((d) => ({ label: String(d.dayNum), leftPx: d.leftPx, widthPx: dayWidthPx }))
+  }
+  return { start: s, end: e, zoom, dayWidthPx, totalWidthPx, months, days, segments }
 }
 
 export function barGeometry(startDate: string, dueDate: string, axis: Axis): { leftPx: number; widthPx: number } {

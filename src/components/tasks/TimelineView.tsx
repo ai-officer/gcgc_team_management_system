@@ -39,9 +39,9 @@ export default function TimelineView({
   const axis = useMemo(() => buildAxis(range.start, range.end, zoom), [range, zoom])
   const groups = useMemo(() => groupByAssignee(scheduled), [scheduled])
   const todayLeft = differenceInCalendarDays(today, axis.start) * axis.dayWidthPx
-  // Day-level detail (numbers + per-day grid) only when columns are wide enough;
-  // zoomed-out levels (quarter/year) show month-level headers + gridlines instead.
-  const showDays = axis.dayWidthPx >= 11
+  // Day zoom shows individual day columns; every other zoom uses period segments
+  // (week ranges / months / quarters / years) for the header and gridlines.
+  const isDay = zoom === 'day'
 
   // Drag-to-reschedule: mode is chosen by where in the bar you grab (edges = resize).
   const [drag, setDrag] = useState<{ taskId: string; mode: DragMode; startX: number; deltaPx: number } | null>(null)
@@ -134,33 +134,44 @@ export default function TimelineView({
         </div>
 
         {/* Right grid */}
-        <div ref={gridRef} className="relative" style={{ width: axis.totalWidthPx }}>
-          {/* Header: month (top) + day numbers (bottom) */}
+        <div ref={gridRef} className="relative shrink-0" style={{ width: axis.totalWidthPx }}>
+          {/* Header: day zoom = month strip + day numbers; else = period segments */}
           <div className="relative z-[2] bg-slate-50 border-b" style={{ height: ROW_H }}>
-            {axis.months.map(m => (
-              <div key={m.label} className={`absolute top-0 ${showDays ? 'h-[17px]' : 'h-full'} flex items-center px-2 text-[11px] font-semibold text-slate-600 border-l border-slate-200`}
-                style={{ left: m.leftPx, width: m.widthPx }}>
-                {m.label}
-              </div>
-            ))}
-            {showDays && axis.days.map((d, i) => (
-              <div key={i}
-                className={`absolute bottom-0 h-[18px] flex items-center justify-center text-[10px] border-l border-slate-100 ${d.isWeekend ? 'bg-slate-100 text-slate-400' : 'text-slate-500'}`}
-                style={{ left: d.leftPx, width: axis.dayWidthPx }}>
-                {d.dayNum}
-              </div>
-            ))}
+            {isDay ? (
+              <>
+                {axis.months.map(m => (
+                  <div key={m.label} className="absolute top-0 h-[17px] flex items-center px-2 text-[11px] font-semibold text-slate-600 border-l border-slate-200"
+                    style={{ left: m.leftPx, width: m.widthPx }}>
+                    {m.label}
+                  </div>
+                ))}
+                {axis.days.map((d, i) => (
+                  <div key={i}
+                    className={`absolute bottom-0 h-[18px] flex items-center justify-center text-[10px] border-l border-slate-100 ${d.isWeekend ? 'bg-slate-100 text-slate-400' : 'text-slate-500'}`}
+                    style={{ left: d.leftPx, width: axis.dayWidthPx }}>
+                    {d.dayNum}
+                  </div>
+                ))}
+              </>
+            ) : (
+              axis.segments.map((seg, i) => (
+                <div key={i} className="absolute top-0 h-full flex items-center justify-center px-2 text-[11px] font-semibold text-slate-600 border-l border-slate-200 truncate"
+                  style={{ left: seg.leftPx, width: seg.widthPx }}>
+                  {seg.label}
+                </div>
+              ))
+            )}
           </div>
-          {/* Gridlines behind bars: per-day (with weekend shading) when zoomed in, else per-month */}
+          {/* Gridlines behind bars: per-day (with weekend shading) on day zoom, else per-segment */}
           <div className="absolute inset-0 pointer-events-none" style={{ top: ROW_H, zIndex: 0 }}>
-            {showDays
+            {isDay
               ? axis.days.map((d, i) => (
                   <div key={i} className={`absolute top-0 bottom-0 border-l border-slate-100 ${d.isWeekend ? 'bg-slate-50/70' : ''}`}
                     style={{ left: d.leftPx, width: axis.dayWidthPx }} />
                 ))
-              : axis.months.map(m => (
-                  <div key={m.label} className="absolute top-0 bottom-0 border-l border-slate-200"
-                    style={{ left: m.leftPx, width: m.widthPx }} />
+              : axis.segments.map((seg, i) => (
+                  <div key={i} className="absolute top-0 bottom-0 border-l border-slate-200"
+                    style={{ left: seg.leftPx, width: seg.widthPx }} />
                 ))}
           </div>
           {/* Today line */}

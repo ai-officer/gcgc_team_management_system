@@ -115,6 +115,22 @@ describe('buildAxis + barGeometry', () => {
   })
 })
 
+describe('buildAxis header segments by zoom', () => {
+  it('week zoom produces week-range segments like "Jun 1 – 7"', () => {
+    const axis = buildAxis(new Date('2026-06-01'), new Date('2026-06-21'), 'week')
+    expect(axis.segments.length).toBeGreaterThanOrEqual(3)
+    expect(axis.segments[0].label).toMatch(/^[A-Z][a-z]{2} \d{1,2} – (\d{1,2}|[A-Z][a-z]{2} \d{1,2})$/)
+  })
+  it('month zoom labels months', () => {
+    const axis = buildAxis(new Date('2026-06-01'), new Date('2026-08-31'), 'month')
+    expect(axis.segments.map(s => s.label)).toContain('Jun 2026')
+  })
+  it('quarter zoom labels quarters', () => {
+    const axis = buildAxis(new Date('2026-06-01'), new Date('2026-12-31'), 'quarter')
+    expect(axis.segments.some(s => /^Q[1-4] \d{4}$/.test(s.label))).toBe(true)
+  })
+})
+
 describe('axisRangeFor', () => {
   it('pads around the min start and max due', () => {
     const today = new Date('2026-06-15')

@@ -216,3 +216,19 @@ export async function notifyCommentAdded(
     entityType: 'task',
   })
 }
+
+export async function notifyMention(
+  userId: string,
+  taskId: string,
+  taskTitle: string,
+  mentionerName: string
+) {
+  return createNotification({
+    userId,
+    type: 'MENTION',
+    title: 'You were mentioned',
+    message: `${mentionerName} mentioned you in a comment on: "${taskTitle}"`,
+    entityId: taskId,
+    entityType: 'task',
+  })
+}

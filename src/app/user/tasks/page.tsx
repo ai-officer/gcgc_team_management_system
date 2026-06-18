@@ -931,6 +931,23 @@ export default function TasksPage() {
     ? { boardId: activeBoard.id, boardName: activeBoard.name, teamId: activeBoard.team?.id ?? null }
     : null
 
+  // Timeline drag-to-reschedule: optimistic dates, PATCH, rollback + toast on error.
+  const handleReschedule = useCallback(async (taskId: string, dates: { startDate: string; dueDate: string }) => {
+    const prev = tasks
+    setTasks(cur => cur.map(t => (t.id === taskId ? { ...t, startDate: dates.startDate, dueDate: dates.dueDate } : t)))
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dates),
+      })
+      if (!res.ok) throw new Error('reschedule failed')
+    } catch {
+      setTasks(prev)
+      toast({ title: 'Could not reschedule', description: 'The task dates were not saved. Please try again.', variant: 'destructive' })
+    }
+  }, [tasks, toast])
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -1490,6 +1507,11 @@ export default function TasksPage() {
             const t = tasks.find(x => x.id === id)
             if (t) handleTaskClick(t)
           }}
+          canEdit={(id) => {
+            const t = tasks.find(x => x.id === id)
+            return t ? canUserChangeTaskStatus(t) : false
+          }}
+          onReschedule={handleReschedule}
         />
       )}
 

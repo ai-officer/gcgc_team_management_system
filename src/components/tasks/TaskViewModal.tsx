@@ -1539,7 +1539,7 @@ export default function TaskViewModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         {/* Simple Header */}
-        <DialogHeader className="space-y-4 pr-8 overflow-hidden">
+        <DialogHeader className="space-y-3 pr-8 overflow-hidden">
           {/* Back button — shown when navigated into a subtask */}
           {onBack && (
             <button
@@ -1635,7 +1635,7 @@ export default function TaskViewModal({
           )}
 
           {/* Progress — derived for parent tasks, editable for leaf tasks */}
-          <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 space-y-3">
+          <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 space-y-2.5">
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold text-slate-700">Progress</span>
               <span className={`text-xl font-bold tabular-nums ${progressTextColor(displayProgress)}`}>
@@ -1734,7 +1734,7 @@ export default function TaskViewModal({
         </DialogHeader>
 
         {/* Content */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Description */}
           {task.description && (
             <div className="space-y-2">
@@ -1917,7 +1917,7 @@ export default function TaskViewModal({
 
           {/* Subtasks Section - Available on all tasks including subtasks */}
           {(
-            <div className="border-t pt-6 space-y-4">
+            <div className="border-t pt-4 space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="font-medium text-gray-900 flex items-center gap-2">
                   <ListTodo className="h-4 w-4" />

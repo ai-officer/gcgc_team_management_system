@@ -1,6 +1,51 @@
 import { describe, it, expect } from 'vitest'
-import { splitScheduled, groupByAssignee, buildAxis, barGeometry, axisRangeFor } from './timeline'
+import { splitScheduled, groupByAssignee, buildAxis, barGeometry, axisRangeFor, pxDeltaToDays, shiftDates, resizeStart, resizeEnd } from './timeline'
 import { differenceInCalendarDays } from 'date-fns'
+
+const dayOf = (iso: string) => iso.slice(0, 10)
+
+describe('pxDeltaToDays', () => {
+  it('rounds a pixel delta to whole days using the axis day width', () => {
+    const axis = buildAxis(new Date('2026-06-01'), new Date('2026-06-30'), 'month') // dayWidthPx 16
+    expect(pxDeltaToDays(50, axis)).toBe(3)   // 50/16 = 3.125 -> 3
+    expect(pxDeltaToDays(-40, axis)).toBe(-3) // -40/16 = -2.5 -> -3 (round half away)
+    expect(pxDeltaToDays(7, axis)).toBe(0)
+  })
+})
+
+describe('shiftDates', () => {
+  it('shifts both dates by deltaDays, preserving duration', () => {
+    const r = shiftDates('2026-06-03', '2026-06-07', 2)
+    expect(dayOf(r.startDate)).toBe('2026-06-05')
+    expect(dayOf(r.dueDate)).toBe('2026-06-09')
+  })
+})
+
+describe('resizeStart', () => {
+  it('moves the start date by deltaDays', () => {
+    const r = resizeStart('2026-06-03', '2026-06-07', 2)
+    expect(dayOf(r.startDate)).toBe('2026-06-05')
+    expect(dayOf(r.dueDate)).toBe('2026-06-07')
+  })
+  it('clamps start to not pass the due date', () => {
+    const r = resizeStart('2026-06-03', '2026-06-07', 10)
+    expect(dayOf(r.startDate)).toBe('2026-06-07')
+    expect(dayOf(r.dueDate)).toBe('2026-06-07')
+  })
+})
+
+describe('resizeEnd', () => {
+  it('moves the due date by deltaDays', () => {
+    const r = resizeEnd('2026-06-03', '2026-06-07', 3)
+    expect(dayOf(r.startDate)).toBe('2026-06-03')
+    expect(dayOf(r.dueDate)).toBe('2026-06-10')
+  })
+  it('clamps due to not precede the start date', () => {
+    const r = resizeEnd('2026-06-03', '2026-06-07', -10)
+    expect(dayOf(r.startDate)).toBe('2026-06-03')
+    expect(dayOf(r.dueDate)).toBe('2026-06-03')
+  })
+})
 
 describe('splitScheduled', () => {
   it('puts tasks with both start and due in scheduled, the rest in unscheduled', () => {

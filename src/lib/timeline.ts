@@ -97,3 +97,46 @@ export function axisRangeFor(
   const maxDue = max([today, ...dues])
   return { start: subDays(startOfDay(minStart), 3), end: addDays(startOfDay(maxDue), 7) }
 }
+
+// --- Phase 2: drag-to-reschedule pixel <-> date math ---
+
+/** Whole-day delta from a horizontal pixel delta (round half away from zero). */
+export function pxDeltaToDays(deltaPx: number, axis: Axis): number {
+  return Math.sign(deltaPx) * Math.round(Math.abs(deltaPx) / axis.dayWidthPx)
+}
+
+/** Shift both dates by deltaDays, preserving duration. Returns full ISO strings. */
+export function shiftDates(
+  startISO: string,
+  dueISO: string,
+  deltaDays: number
+): { startDate: string; dueDate: string } {
+  return {
+    startDate: addDays(new Date(startISO), deltaDays).toISOString(),
+    dueDate: addDays(new Date(dueISO), deltaDays).toISOString(),
+  }
+}
+
+/** Move the start date by deltaDays, clamped so it never passes the due date. */
+export function resizeStart(
+  startISO: string,
+  dueISO: string,
+  deltaDays: number
+): { startDate: string; dueDate: string } {
+  const due = new Date(dueISO)
+  let start = addDays(new Date(startISO), deltaDays)
+  if (start > due) start = due
+  return { startDate: start.toISOString(), dueDate: due.toISOString() }
+}
+
+/** Move the due date by deltaDays, clamped so it never precedes the start date. */
+export function resizeEnd(
+  startISO: string,
+  dueISO: string,
+  deltaDays: number
+): { startDate: string; dueDate: string } {
+  const start = new Date(startISO)
+  let due = addDays(new Date(dueISO), deltaDays)
+  if (due < start) due = start
+  return { startDate: start.toISOString(), dueDate: due.toISOString() }
+}

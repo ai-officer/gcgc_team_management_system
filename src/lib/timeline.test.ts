@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { splitScheduled, groupByAssignee, buildAxis, barGeometry, axisRangeFor, pxDeltaToDays, shiftDates, resizeStart, resizeEnd } from './timeline'
+import { splitScheduled, groupByAssignee, buildAxis, barGeometry, axisRangeFor, pxDeltaToDays, shiftDates, resizeStart, resizeEnd, scheduleAtPx } from './timeline'
 import { differenceInCalendarDays } from 'date-fns'
 
 const dayOf = (iso: string) => iso.slice(0, 10)
@@ -44,6 +44,21 @@ describe('resizeEnd', () => {
     const r = resizeEnd('2026-06-03', '2026-06-07', -10)
     expect(dayOf(r.startDate)).toBe('2026-06-03')
     expect(dayOf(r.dueDate)).toBe('2026-06-03')
+  })
+})
+
+describe('scheduleAtPx', () => {
+  it('schedules a 1-day task at the dropped pixel column', () => {
+    const axis = buildAxis(new Date('2026-06-01'), new Date('2026-06-30'), 'month') // dayWidth 16
+    const r = scheduleAtPx(2 * 16 + 3, axis) // ~day index 2 -> Jun 3
+    expect(dayOf(r.startDate)).toBe('2026-06-03')
+    expect(dayOf(r.dueDate)).toBe('2026-06-04')
+  })
+  it('clamps a drop left of the grid to the first day', () => {
+    const axis = buildAxis(new Date('2026-06-01'), new Date('2026-06-30'), 'month')
+    const r = scheduleAtPx(-50, axis)
+    expect(dayOf(r.startDate)).toBe('2026-06-01')
+    expect(dayOf(r.dueDate)).toBe('2026-06-02')
   })
 })
 

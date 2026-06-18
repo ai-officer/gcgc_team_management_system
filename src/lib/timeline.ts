@@ -140,3 +140,15 @@ export function resizeEnd(
   if (due < start) due = start
   return { startDate: start.toISOString(), dueDate: due.toISOString() }
 }
+
+/** Schedule a previously date-less task dropped at pixel `px` on the grid:
+ *  start = the day under the drop (clamped to the first day), due = start + 1 day.
+ *  Emits UTC-midnight ISO for the dropped *calendar* day (axis.start is a local
+ *  Date, so we take its calendar components to avoid a TZ day-shift on serialize). */
+export function scheduleAtPx(px: number, axis: Axis): { startDate: string; dueDate: string } {
+  const dayOffset = Math.max(0, Math.round(px / axis.dayWidthPx))
+  const d = addDays(axis.start, dayOffset)
+  const start = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
+  const due = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate() + 1))
+  return { startDate: start.toISOString(), dueDate: due.toISOString() }
+}

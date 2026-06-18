@@ -178,6 +178,14 @@ export function NotificationDropdown({ isCollapsed = false }: NotificationDropdo
           </ScrollArea>
         )}
 
+        <DropdownMenuSeparator />
+        <button
+          onClick={() => router.push('/user/notifications')}
+          className="w-full text-center text-xs font-semibold text-blue-600 hover:text-blue-700 py-2 border-t"
+        >
+          View all notifications
+        </button>
+
       </DropdownMenuContent>
     </DropdownMenu>
   )

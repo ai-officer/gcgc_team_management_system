@@ -1635,10 +1635,10 @@ export default function TaskViewModal({
           )}
 
           {/* Progress — derived for parent tasks, editable for leaf tasks */}
-          <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 space-y-2.5">
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold text-slate-700">Progress</span>
-              <span className={`text-xl font-bold tabular-nums ${progressTextColor(displayProgress)}`}>
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Progress</span>
+              <span className={`text-lg font-bold tabular-nums ${progressTextColor(displayProgress)}`}>
                 {displayProgress}%
               </span>
             </div>

@@ -58,12 +58,13 @@ export interface Axis {
   dayWidthPx: number
   totalWidthPx: number
   months: { label: string; leftPx: number; widthPx: number }[]
+  days: { date: Date; leftPx: number; dayNum: number; isWeekend: boolean }[]
 }
 
-export function buildAxis(start: Date, end: Date, zoom: TimelineZoom): Axis {
+export function buildAxis(start: Date, end: Date, zoom: TimelineZoom, dayWidthOverride?: number): Axis {
   const s = startOfDay(start)
   const e = startOfDay(end)
-  const dayWidthPx = zoom === 'week' ? 40 : 16
+  const dayWidthPx = dayWidthOverride ?? (zoom === 'week' ? 40 : 16)
   const totalDays = differenceInCalendarDays(e, s) + 1
   const totalWidthPx = totalDays * dayWidthPx
   const months = eachMonthOfInterval({ start: s, end: e }).map((m) => {
@@ -73,7 +74,12 @@ export function buildAxis(start: Date, end: Date, zoom: TimelineZoom): Axis {
     const widthPx = (differenceInCalendarDays(mEnd, mStart) + 1) * dayWidthPx
     return { label: format(m, 'MMM yyyy'), leftPx, widthPx }
   })
-  return { start: s, end: e, zoom, dayWidthPx, totalWidthPx, months }
+  const days = Array.from({ length: totalDays }, (_, i) => {
+    const date = addDays(s, i)
+    const dow = date.getDay()
+    return { date, leftPx: i * dayWidthPx, dayNum: date.getDate(), isWeekend: dow === 0 || dow === 6 }
+  })
+  return { start: s, end: e, zoom, dayWidthPx, totalWidthPx, months, days }
 }
 
 export function barGeometry(startDate: string, dueDate: string, axis: Axis): { leftPx: number; widthPx: number } {

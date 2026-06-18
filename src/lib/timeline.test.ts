@@ -103,6 +103,16 @@ describe('buildAxis + barGeometry', () => {
     expect(bar.leftPx).toBe(2 * 16)   // Jun 1 -> Jun 3 = 2 days
     expect(bar.widthPx).toBe(5 * 16)  // Jun 3..7 inclusive = 5 days
   })
+
+  it('exposes a per-day track and honors a day-width override', () => {
+    const axis = buildAxis(new Date('2026-06-01'), new Date('2026-06-30'), 'month', 30)
+    expect(axis.dayWidthPx).toBe(30)
+    expect(axis.totalWidthPx).toBe(30 * 30)
+    expect(axis.days).toHaveLength(30)
+    expect(axis.days[0].dayNum).toBe(1)
+    expect(axis.days[0].leftPx).toBe(0)
+    expect(axis.days[1].leftPx).toBe(30)
+  })
 })
 
 describe('axisRangeFor', () => {

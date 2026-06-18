@@ -1,6 +1,6 @@
 // src/components/tasks/TimelineView.tsx
 'use client'
-import { useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { format, startOfDay, differenceInCalendarDays } from 'date-fns'
 import { UserAvatar } from '@/components/shared/UserAvatar'
 import {
@@ -33,7 +33,27 @@ export default function TimelineView({
   const today = startOfDay(new Date())
   const { scheduled, unscheduled } = useMemo(() => splitScheduled(tasks), [tasks])
   const range = useMemo(() => axisRangeFor(scheduled, today), [scheduled, today.getTime()])
-  const axis = useMemo(() => buildAxis(range.start, range.end, zoom), [range, zoom])
+
+  // Measure the scroll container so day columns stretch to fill the available width.
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [containerW, setContainerW] = useState(0)
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const update = () => setContainerW(el.clientWidth)
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  const numDays = differenceInCalendarDays(range.end, range.start) + 1
+  const fitDayWidth = useMemo(() => {
+    const base = zoom === 'week' ? 44 : 22
+    const avail = Math.max(0, containerW - LEFT_W)
+    return Math.max(base, numDays > 0 ? Math.floor(avail / numDays) : base)
+  }, [zoom, containerW, numDays])
+  const axis = useMemo(() => buildAxis(range.start, range.end, zoom, fitDayWidth), [range, zoom, fitDayWidth])
   const groups = useMemo(() => groupByAssignee(scheduled), [scheduled])
   const todayLeft = differenceInCalendarDays(today, axis.start) * axis.dayWidthPx
 
@@ -105,7 +125,7 @@ export default function TimelineView({
         </div>
       </div>
 
-      <div className="flex overflow-x-auto">
+      <div ref={scrollRef} className="flex overflow-x-auto">
         {/* Left table */}
         <div className="shrink-0 sticky left-0 z-10 bg-white border-r" style={{ width: LEFT_W }}>
           <div style={{ height: ROW_H }} className="border-b bg-slate-50" />
@@ -129,20 +149,35 @@ export default function TimelineView({
 
         {/* Right grid */}
         <div ref={gridRef} className="relative" style={{ width: axis.totalWidthPx }}>
-          {/* Month header */}
-          <div className="relative bg-slate-50 border-b" style={{ height: ROW_H }}>
+          {/* Header: month (top) + day numbers (bottom) */}
+          <div className="relative z-[2] bg-slate-50 border-b" style={{ height: ROW_H }}>
             {axis.months.map(m => (
-              <div key={m.label} className="absolute top-0 h-full flex items-center px-2 text-[11px] font-medium text-slate-500 border-l"
+              <div key={m.label} className="absolute top-0 h-[17px] flex items-center px-2 text-[11px] font-semibold text-slate-600 border-l border-slate-200"
                 style={{ left: m.leftPx, width: m.widthPx }}>
                 {m.label}
               </div>
             ))}
+            {axis.days.map((d, i) => (
+              <div key={i}
+                className={`absolute bottom-0 h-[18px] flex items-center justify-center text-[10px] border-l border-slate-100 ${d.isWeekend ? 'bg-slate-100 text-slate-400' : 'text-slate-500'}`}
+                style={{ left: d.leftPx, width: axis.dayWidthPx }}>
+                {d.dayNum}
+              </div>
+            ))}
+          </div>
+          {/* Weekend shading + day gridlines (behind bars) */}
+          <div className="absolute inset-0 pointer-events-none" style={{ top: ROW_H, zIndex: 0 }}>
+            {axis.days.map((d, i) => (
+              <div key={i} className={`absolute top-0 bottom-0 border-l border-slate-100 ${d.isWeekend ? 'bg-slate-50/70' : ''}`}
+                style={{ left: d.leftPx, width: axis.dayWidthPx }} />
+            ))}
           </div>
           {/* Today line */}
           {todayLeft >= 0 && todayLeft <= axis.totalWidthPx && (
-            <div className="absolute top-0 bottom-0 w-px bg-red-400/70 z-[5]" style={{ left: todayLeft }} />
+            <div className="absolute top-0 bottom-0 w-px bg-red-400 z-[3]" style={{ left: todayLeft }} />
           )}
           {/* Bars */}
+          <div className="relative" style={{ zIndex: 1 }}>
           {groups.map(g => (
             <div key={g.key}>
               <div style={{ height: ROW_H }} className="border-b bg-slate-50/40" />
@@ -185,6 +220,7 @@ export default function TimelineView({
               })}
             </div>
           ))}
+          </div>
         </div>
       </div>
 

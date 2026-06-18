@@ -1147,17 +1147,17 @@ export default function TasksPage() {
             Clear Filters
           </Button>
         )}
-      </div>
 
-      {/* Board / Timeline toggle */}
-      <div className="inline-flex items-center gap-1 rounded-md border border-slate-200 p-0.5">
-        {(['board', 'timeline'] as const).map(m => (
-          <button key={m} onClick={() => setViewMode(m)}
-            className={`px-3 h-7 rounded text-xs font-semibold capitalize ${
-              viewMode === m ? 'bg-blue-600 text-white' : 'text-slate-600 hover:text-slate-900'}`}>
-            {m}
-          </button>
-        ))}
+        {/* Board / Timeline toggle — right side of the filters row */}
+        <div className="inline-flex items-center gap-1 rounded-md border border-slate-200 p-0.5 sm:ml-auto">
+          {(['board', 'timeline'] as const).map(m => (
+            <button key={m} onClick={() => setViewMode(m)}
+              className={`px-3 h-7 rounded text-xs font-semibold capitalize ${
+                viewMode === m ? 'bg-blue-600 text-white' : 'text-slate-600 hover:text-slate-900'}`}>
+              {m}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Kanban Board */}

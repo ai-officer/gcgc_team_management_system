@@ -66,6 +66,9 @@ model User {
   leadingMembers         LeaderMembership[]  @relation("LeaderMemberships")
   memberOfLeaders        LeaderMembership[]  @relation("MemberMemberships")
   passwordResetTokens    PasswordResetToken[]
+  emailNotifications     Boolean            @default(true)
+  pushNotifications      Boolean            @default(true)
+  pushSubscriptions      PushSubscription[]
 
   @@map("users")
 }
@@ -969,6 +972,19 @@ model LeaderMembership {
 
   @@unique([leaderId, memberId])
   @@map("leader_memberships")
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_subscriptions")
 }
 
 enum OSSBStatus {

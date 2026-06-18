@@ -1,6 +1,16 @@
 import { startOfDay, differenceInCalendarDays, eachMonthOfInterval, endOfMonth, format, max, min, addDays, subDays } from 'date-fns'
 
-export type TimelineZoom = 'week' | 'month'
+export type TimelineZoom = 'day' | 'week' | 'month' | 'quarter' | 'year'
+
+/** Per-zoom day-column width (px) and how far past/future to extend the axis,
+ *  so the timeline always shows future periods to scroll into even with no data. */
+export const ZOOM: Record<TimelineZoom, { dayWidthPx: number; pastDays: number; futureDays: number }> = {
+  day: { dayWidthPx: 44, pastDays: 14, futureDays: 45 },
+  week: { dayWidthPx: 18, pastDays: 14, futureDays: 90 },
+  month: { dayWidthPx: 11, pastDays: 21, futureDays: 180 },
+  quarter: { dayWidthPx: 4, pastDays: 30, futureDays: 365 },
+  year: { dayWidthPx: 1.6, pastDays: 60, futureDays: 730 },
+}
 
 export interface TimelineTask {
   id: string
@@ -64,7 +74,7 @@ export interface Axis {
 export function buildAxis(start: Date, end: Date, zoom: TimelineZoom, dayWidthOverride?: number): Axis {
   const s = startOfDay(start)
   const e = startOfDay(end)
-  const dayWidthPx = dayWidthOverride ?? (zoom === 'week' ? 40 : 16)
+  const dayWidthPx = dayWidthOverride ?? ZOOM[zoom].dayWidthPx
   const totalDays = differenceInCalendarDays(e, s) + 1
   const totalWidthPx = totalDays * dayWidthPx
   const months = eachMonthOfInterval({ start: s, end: e }).map((m) => {
@@ -92,16 +102,23 @@ export function barGeometry(startDate: string, dueDate: string, axis: Axis): { l
 
 export function axisRangeFor(
   tasks: Pick<TimelineTask, 'startDate' | 'dueDate'>[],
-  today: Date
+  today: Date,
+  opts: { pastDays?: number; futureDays?: number } = {}
 ): { start: Date; end: Date } {
-  const starts = tasks.map(t => t.startDate).filter(Boolean).map(d => new Date(d as string))
-  const dues = tasks.map(t => t.dueDate).filter(Boolean).map(d => new Date(d as string))
-  if (!starts.length && !dues.length) {
-    return { start: subDays(startOfDay(today), 7), end: addDays(startOfDay(today), 21) }
+  const pastDays = opts.pastDays ?? 7
+  const futureDays = opts.futureDays ?? 30
+  const dates: Date[] = []
+  for (const t of tasks) {
+    if (t.startDate) dates.push(new Date(t.startDate))
+    if (t.dueDate) dates.push(new Date(t.dueDate))
   }
-  const minStart = min([today, ...starts])
-  const maxDue = max([today, ...dues])
-  return { start: subDays(startOfDay(minStart), 3), end: addDays(startOfDay(maxDue), 7) }
+  const anchors = [today, ...dates]
+  const minAnchor = min(anchors)
+  const maxAnchor = max(anchors)
+  return {
+    start: subDays(startOfDay(minAnchor), pastDays),
+    end: addDays(startOfDay(maxAnchor), futureDays),
+  }
 }
 
 // --- Phase 2: drag-to-reschedule pixel <-> date math ---

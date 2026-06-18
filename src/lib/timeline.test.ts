@@ -6,7 +6,7 @@ const dayOf = (iso: string) => iso.slice(0, 10)
 
 describe('pxDeltaToDays', () => {
   it('rounds a pixel delta to whole days using the axis day width', () => {
-    const axis = buildAxis(new Date('2026-06-01'), new Date('2026-06-30'), 'month') // dayWidthPx 16
+    const axis = buildAxis(new Date('2026-06-01'), new Date('2026-06-30'), 'month', 16) // dayWidthPx 16
     expect(pxDeltaToDays(50, axis)).toBe(3)   // 50/16 = 3.125 -> 3
     expect(pxDeltaToDays(-40, axis)).toBe(-3) // -40/16 = -2.5 -> -3 (round half away)
     expect(pxDeltaToDays(7, axis)).toBe(0)
@@ -49,13 +49,13 @@ describe('resizeEnd', () => {
 
 describe('scheduleAtPx', () => {
   it('schedules a 1-day task at the dropped pixel column', () => {
-    const axis = buildAxis(new Date('2026-06-01'), new Date('2026-06-30'), 'month') // dayWidth 16
+    const axis = buildAxis(new Date('2026-06-01'), new Date('2026-06-30'), 'month', 16) // dayWidth 16
     const r = scheduleAtPx(2 * 16 + 3, axis) // ~day index 2 -> Jun 3
     expect(dayOf(r.startDate)).toBe('2026-06-03')
     expect(dayOf(r.dueDate)).toBe('2026-06-04')
   })
   it('clamps a drop left of the grid to the first day', () => {
-    const axis = buildAxis(new Date('2026-06-01'), new Date('2026-06-30'), 'month')
+    const axis = buildAxis(new Date('2026-06-01'), new Date('2026-06-30'), 'month', 16)
     const r = scheduleAtPx(-50, axis)
     expect(dayOf(r.startDate)).toBe('2026-06-01')
     expect(dayOf(r.dueDate)).toBe('2026-06-02')
@@ -94,7 +94,7 @@ describe('groupByAssignee', () => {
 
 describe('buildAxis + barGeometry', () => {
   it('lays out days and positions a bar within the axis', () => {
-    const axis = buildAxis(new Date('2026-06-01'), new Date('2026-06-30'), 'month')
+    const axis = buildAxis(new Date('2026-06-01'), new Date('2026-06-30'), 'month', 16)
     expect(axis.dayWidthPx).toBe(16)
     expect(axis.totalWidthPx).toBe(30 * 16) // 30 inclusive days
     expect(axis.months[0].label).toMatch(/Jun/)
@@ -119,16 +119,16 @@ describe('axisRangeFor', () => {
   it('pads around the min start and max due', () => {
     const today = new Date('2026-06-15')
     const { start, end } = axisRangeFor(
-      [{ startDate: '2026-06-10', dueDate: '2026-06-20' }], today
+      [{ startDate: '2026-06-10', dueDate: '2026-06-20' }], today, { pastDays: 3, futureDays: 7 }
     )
     expect(differenceInCalendarDays(new Date('2026-06-10'), start)).toBe(3) // 3 days pad before
     expect(differenceInCalendarDays(end, new Date('2026-06-20'))).toBe(7)   // 7 days pad after
   })
 
-  it('defaults to a window around today when no dates', () => {
+  it('uses default past/future padding around today when no dates', () => {
     const today = new Date('2026-06-15')
     const { start, end } = axisRangeFor([], today)
-    expect(differenceInCalendarDays(today, start)).toBe(7)
-    expect(differenceInCalendarDays(end, today)).toBe(21)
+    expect(differenceInCalendarDays(today, start)).toBe(7)   // default pastDays
+    expect(differenceInCalendarDays(end, today)).toBe(30)    // default futureDays
   })
 })

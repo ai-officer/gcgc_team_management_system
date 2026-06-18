@@ -1,11 +1,11 @@
 // src/components/tasks/TimelineView.tsx
 'use client'
-import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import { useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { format, startOfDay, differenceInCalendarDays } from 'date-fns'
 import { UserAvatar } from '@/components/shared/UserAvatar'
 import {
   splitScheduled, groupByAssignee, buildAxis, barGeometry, axisRangeFor,
-  pxDeltaToDays, shiftDates, resizeStart, resizeEnd, scheduleAtPx,
+  pxDeltaToDays, shiftDates, resizeStart, resizeEnd, scheduleAtPx, ZOOM,
   type TimelineTask, type TimelineZoom,
 } from '@/lib/timeline'
 
@@ -32,30 +32,16 @@ export default function TimelineView({
 }) {
   const today = startOfDay(new Date())
   const { scheduled, unscheduled } = useMemo(() => splitScheduled(tasks), [tasks])
-  const range = useMemo(() => axisRangeFor(scheduled, today), [scheduled, today.getTime()])
-
-  // Measure the scroll container so day columns stretch to fill the available width.
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const [containerW, setContainerW] = useState(0)
-  useEffect(() => {
-    const el = scrollRef.current
-    if (!el) return
-    const update = () => setContainerW(el.clientWidth)
-    update()
-    const ro = new ResizeObserver(update)
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
-
-  const numDays = differenceInCalendarDays(range.end, range.start) + 1
-  const fitDayWidth = useMemo(() => {
-    const base = zoom === 'week' ? 44 : 22
-    const avail = Math.max(0, containerW - LEFT_W)
-    return Math.max(base, numDays > 0 ? Math.floor(avail / numDays) : base)
-  }, [zoom, containerW, numDays])
-  const axis = useMemo(() => buildAxis(range.start, range.end, zoom, fitDayWidth), [range, zoom, fitDayWidth])
+  const range = useMemo(
+    () => axisRangeFor(scheduled, today, { pastDays: ZOOM[zoom].pastDays, futureDays: ZOOM[zoom].futureDays }),
+    [scheduled, today.getTime(), zoom]
+  )
+  const axis = useMemo(() => buildAxis(range.start, range.end, zoom), [range, zoom])
   const groups = useMemo(() => groupByAssignee(scheduled), [scheduled])
   const todayLeft = differenceInCalendarDays(today, axis.start) * axis.dayWidthPx
+  // Day-level detail (numbers + per-day grid) only when columns are wide enough;
+  // zoomed-out levels (quarter/year) show month-level headers + gridlines instead.
+  const showDays = axis.dayWidthPx >= 11
 
   // Drag-to-reschedule: mode is chosen by where in the bar you grab (edges = resize).
   const [drag, setDrag] = useState<{ taskId: string; mode: DragMode; startX: number; deltaPx: number } | null>(null)
@@ -114,7 +100,7 @@ export default function TimelineView({
       <div className="flex items-center justify-between px-3 py-2 border-b bg-slate-50">
         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Timeline</span>
         <div className="flex items-center gap-1">
-          {(['month', 'week'] as TimelineZoom[]).map(z => (
+          {(['day', 'week', 'month', 'quarter', 'year'] as TimelineZoom[]).map(z => (
             <button key={z} onClick={() => onZoomChange(z)}
               className={`px-2.5 h-7 rounded-md text-xs font-semibold border capitalize ${
                 zoom === z ? 'bg-blue-600 text-white border-blue-600'
@@ -125,7 +111,7 @@ export default function TimelineView({
         </div>
       </div>
 
-      <div ref={scrollRef} className="flex overflow-x-auto">
+      <div className="flex overflow-x-auto">
         {/* Left table */}
         <div className="shrink-0 sticky left-0 z-10 bg-white border-r" style={{ width: LEFT_W }}>
           <div style={{ height: ROW_H }} className="border-b bg-slate-50" />
@@ -152,12 +138,12 @@ export default function TimelineView({
           {/* Header: month (top) + day numbers (bottom) */}
           <div className="relative z-[2] bg-slate-50 border-b" style={{ height: ROW_H }}>
             {axis.months.map(m => (
-              <div key={m.label} className="absolute top-0 h-[17px] flex items-center px-2 text-[11px] font-semibold text-slate-600 border-l border-slate-200"
+              <div key={m.label} className={`absolute top-0 ${showDays ? 'h-[17px]' : 'h-full'} flex items-center px-2 text-[11px] font-semibold text-slate-600 border-l border-slate-200`}
                 style={{ left: m.leftPx, width: m.widthPx }}>
                 {m.label}
               </div>
             ))}
-            {axis.days.map((d, i) => (
+            {showDays && axis.days.map((d, i) => (
               <div key={i}
                 className={`absolute bottom-0 h-[18px] flex items-center justify-center text-[10px] border-l border-slate-100 ${d.isWeekend ? 'bg-slate-100 text-slate-400' : 'text-slate-500'}`}
                 style={{ left: d.leftPx, width: axis.dayWidthPx }}>
@@ -165,12 +151,17 @@ export default function TimelineView({
               </div>
             ))}
           </div>
-          {/* Weekend shading + day gridlines (behind bars) */}
+          {/* Gridlines behind bars: per-day (with weekend shading) when zoomed in, else per-month */}
           <div className="absolute inset-0 pointer-events-none" style={{ top: ROW_H, zIndex: 0 }}>
-            {axis.days.map((d, i) => (
-              <div key={i} className={`absolute top-0 bottom-0 border-l border-slate-100 ${d.isWeekend ? 'bg-slate-50/70' : ''}`}
-                style={{ left: d.leftPx, width: axis.dayWidthPx }} />
-            ))}
+            {showDays
+              ? axis.days.map((d, i) => (
+                  <div key={i} className={`absolute top-0 bottom-0 border-l border-slate-100 ${d.isWeekend ? 'bg-slate-50/70' : ''}`}
+                    style={{ left: d.leftPx, width: axis.dayWidthPx }} />
+                ))
+              : axis.months.map(m => (
+                  <div key={m.label} className="absolute top-0 bottom-0 border-l border-slate-200"
+                    style={{ left: m.leftPx, width: m.widthPx }} />
+                ))}
           </div>
           {/* Today line */}
           {todayLeft >= 0 && todayLeft <= axis.totalWidthPx && (

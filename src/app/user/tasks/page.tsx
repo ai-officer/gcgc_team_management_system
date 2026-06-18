@@ -79,6 +79,7 @@ import { format, isAfter, subDays } from 'date-fns'
 import TaskForm from '@/components/tasks/TaskForm'
 import TaskViewModal from '@/components/tasks/TaskViewModal'
 import TimelineView from '@/components/tasks/TimelineView'
+import type { TimelineZoom } from '@/lib/timeline'
 import DuplicateTaskDialog from '@/components/tasks/DuplicateTaskDialog'
 import { BulkTaskActionsDialog } from '@/components/tasks/bulk-task-actions-dialog'
 
@@ -227,7 +228,7 @@ export default function TasksPage() {
   const [viewMode, setViewMode] = useState<'board' | 'timeline'>(
     () => (searchParams.get('view') === 'timeline' ? 'timeline' : 'board')
   )
-  const [timelineZoom, setTimelineZoom] = useState<'month' | 'week'>('month')
+  const [timelineZoom, setTimelineZoom] = useState<TimelineZoom>('month')
 
   // Board state
   const [boards, setBoards] = useState<KanbanBoard[]>([])

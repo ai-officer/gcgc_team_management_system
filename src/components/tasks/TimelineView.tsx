@@ -17,7 +17,7 @@ const STATUS_BAR: Record<string, string> = {
   IN_REVIEW: 'bg-amber-500',
   COMPLETED: 'bg-emerald-500',
 }
-const ROW_H = 36
+const ROW_H = 44
 const LEFT_W = 320
 
 export default function TimelineView({
@@ -174,18 +174,19 @@ export default function TimelineView({
               <div style={{ height: ROW_H }} className="border-b bg-slate-50/40" />
               {g.tasks.map(t => {
                 const { leftPx, widthPx } = barGeometry(t.startDate!, t.dueDate!, axis)
-                const minW = axis.dayWidthPx
+                const MIN_BAR = 22
                 const editable = canEdit?.(t.id) ?? false
                 const dragging = drag?.taskId === t.id
                 let curLeft = leftPx
-                let curWidth = Math.max(widthPx, minW)
+                let curWidth = Math.max(widthPx, MIN_BAR)
                 if (dragging && drag) {
                   if (drag.mode === 'move') curLeft = leftPx + drag.deltaPx
-                  else if (drag.mode === 'resize-start') { curLeft = leftPx + drag.deltaPx; curWidth = Math.max(minW, curWidth - drag.deltaPx) }
-                  else curWidth = Math.max(minW, curWidth + drag.deltaPx)
+                  else if (drag.mode === 'resize-start') { curLeft = leftPx + drag.deltaPx; curWidth = Math.max(MIN_BAR, curWidth - drag.deltaPx) }
+                  else curWidth = Math.max(MIN_BAR, curWidth + drag.deltaPx)
                 }
                 const title = `${t.title} · ${format(new Date(t.startDate!), 'MMM d')}–${format(new Date(t.dueDate!), 'MMM d')}`
                 const barColor = STATUS_BAR[t.status] ?? 'bg-gray-400'
+                const labelLeft = Math.max(0, curLeft) + curWidth + 6
                 return (
                   <div key={t.id} style={{ height: ROW_H }} className="relative border-b">
                     {editable ? (
@@ -195,7 +196,7 @@ export default function TimelineView({
                         onPointerDown={(e) => startDrag(e, t)}
                         onPointerMove={moveDrag}
                         onPointerUp={() => endDrag(t)}
-                        className={`absolute top-1.5 h-6 rounded ${barColor} opacity-90 hover:opacity-100 select-none ${dragging ? 'cursor-grabbing ring-2 ring-blue-400 z-10' : 'cursor-grab'}`}
+                        className={`absolute top-2 h-7 rounded-md shadow-sm ${barColor} hover:brightness-95 select-none ${dragging ? 'cursor-grabbing ring-2 ring-blue-400 z-10' : 'cursor-grab'}`}
                         style={{ left: curLeft, width: curWidth, touchAction: 'none' }}
                       >
                         <span className="absolute inset-y-0 left-0 w-2 cursor-ew-resize" />
@@ -203,9 +204,14 @@ export default function TimelineView({
                       </div>
                     ) : (
                       <button onClick={() => onTaskClick?.(t.id)} title={title}
-                        className={`absolute top-1.5 h-6 rounded ${barColor} opacity-90 hover:opacity-100`}
-                        style={{ left: leftPx, width: Math.max(widthPx, minW) }} />
+                        className={`absolute top-2 h-7 rounded-md shadow-sm ${barColor} hover:brightness-95`}
+                        style={{ left: curLeft, width: curWidth }} />
                     )}
+                    {/* trailing title label so each bar is identifiable */}
+                    <span className="absolute top-1/2 -translate-y-1/2 text-xs text-slate-600 whitespace-nowrap truncate pointer-events-none max-w-[260px]"
+                      style={{ left: labelLeft }}>
+                      {t.title}
+                    </span>
                   </div>
                 )
               })}

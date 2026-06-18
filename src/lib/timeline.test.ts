@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { splitScheduled, groupByAssignee, buildAxis, barGeometry } from './timeline'
+import { splitScheduled, groupByAssignee, buildAxis, barGeometry, axisRangeFor } from './timeline'
+import { differenceInCalendarDays } from 'date-fns'
 
 describe('splitScheduled', () => {
   it('puts tasks with both start and due in scheduled, the rest in unscheduled', () => {
@@ -41,5 +42,23 @@ describe('buildAxis + barGeometry', () => {
     const bar = barGeometry('2026-06-03', '2026-06-07', axis)
     expect(bar.leftPx).toBe(2 * 16)   // Jun 1 -> Jun 3 = 2 days
     expect(bar.widthPx).toBe(5 * 16)  // Jun 3..7 inclusive = 5 days
+  })
+})
+
+describe('axisRangeFor', () => {
+  it('pads around the min start and max due', () => {
+    const today = new Date('2026-06-15')
+    const { start, end } = axisRangeFor(
+      [{ startDate: '2026-06-10', dueDate: '2026-06-20' }], today
+    )
+    expect(differenceInCalendarDays(new Date('2026-06-10'), start)).toBe(3) // 3 days pad before
+    expect(differenceInCalendarDays(end, new Date('2026-06-20'))).toBe(7)   // 7 days pad after
+  })
+
+  it('defaults to a window around today when no dates', () => {
+    const today = new Date('2026-06-15')
+    const { start, end } = axisRangeFor([], today)
+    expect(differenceInCalendarDays(today, start)).toBe(7)
+    expect(differenceInCalendarDays(end, today)).toBe(21)
   })
 })

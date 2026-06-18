@@ -1,4 +1,4 @@
-import { startOfDay, differenceInCalendarDays, eachMonthOfInterval, endOfMonth, format, max, min } from 'date-fns'
+import { startOfDay, differenceInCalendarDays, eachMonthOfInterval, endOfMonth, format, max, min, addDays, subDays } from 'date-fns'
 
 export type TimelineZoom = 'week' | 'month'
 
@@ -82,4 +82,18 @@ export function barGeometry(startDate: string, dueDate: string, axis: Axis): { l
   const leftPx = differenceInCalendarDays(s, axis.start) * axis.dayWidthPx
   const days = Math.max(1, differenceInCalendarDays(d, s) + 1)
   return { leftPx, widthPx: days * axis.dayWidthPx }
+}
+
+export function axisRangeFor(
+  tasks: Pick<TimelineTask, 'startDate' | 'dueDate'>[],
+  today: Date
+): { start: Date; end: Date } {
+  const starts = tasks.map(t => t.startDate).filter(Boolean).map(d => new Date(d as string))
+  const dues = tasks.map(t => t.dueDate).filter(Boolean).map(d => new Date(d as string))
+  if (!starts.length && !dues.length) {
+    return { start: subDays(startOfDay(today), 7), end: addDays(startOfDay(today), 21) }
+  }
+  const minStart = min([today, ...starts])
+  const maxDue = max([today, ...dues])
+  return { start: subDays(startOfDay(minStart), 3), end: addDays(startOfDay(maxDue), 7) }
 }

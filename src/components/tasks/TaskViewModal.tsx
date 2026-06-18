@@ -37,6 +37,7 @@ import {
 } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { Progress } from '@/components/ui/progress'
+import { splitMentions } from '@/lib/mentions'
 
 interface Task {
   id: string
@@ -1166,6 +1167,32 @@ export default function TaskViewModal({
     return status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
   }
 
+  // Names of everyone involved in the task — used to highlight @mentions in
+  // comment text. Plain const (not a hook) so it can't perturb hook ordering.
+  const mentionNames = Array.from(
+    new Set(
+      [
+        task?.assignee?.name,
+        task?.creator?.name,
+        ...(task?.teamMembers?.map(tm => tm.user?.name) ?? []),
+        ...(task?.collaborators?.map(c => c.user?.name) ?? []),
+        ...availableUsers.map(u => u.name),
+      ].filter((n): n is string => !!n && n.trim().length > 0)
+    )
+  )
+
+  // Render comment text with @mentions highlighted.
+  const renderCommentBody = (content: string) =>
+    splitMentions(content, mentionNames).map((seg, i) =>
+      seg.isMention ? (
+        <span key={i} className="font-semibold text-blue-600 bg-blue-50 rounded px-0.5">
+          {seg.value}
+        </span>
+      ) : (
+        <span key={i}>{seg.value}</span>
+      )
+    )
+
   const isTaskCreator = task?.creator?.id === session?.user?.id
   const isTaskAssignee = task?.assignee?.id === session?.user?.id
   const isTaskAssigner = task?.assignedBy?.id === session?.user?.id
@@ -1382,8 +1409,8 @@ export default function TaskViewModal({
                     </DropdownMenu>
                   )}
                 </div>
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  {comment.content}
+                <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                  {renderCommentBody(comment.content)}
                 </p>
                 {/* File Attachment Display - supports both new fileUrl and legacy imageUrl */}
                 {(() => {

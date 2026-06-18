@@ -1105,16 +1105,16 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
                   ? users.find(u => u.id === assigneeId)
                   : null
               return (
-                <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 bg-blue-100 rounded-full">
+                <div className="px-4 py-3 bg-blue-50 border-2 border-blue-200 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="p-1.5 bg-blue-100 rounded-full shrink-0">
                       <User className="h-4 w-4 text-blue-600" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-blue-900">
+                      <p className="text-sm font-semibold text-blue-900">
                         Individual Task
                       </p>
-                      <p className="text-sm text-blue-700 mt-1">
+                      <p className="text-xs text-blue-700 mt-0.5">
                         {assignedTo
                           ? `This task will be assigned to ${assignedTo.name || assignedTo.email}.`
                           : 'This task is assigned to you automatically. Perfect for personal work items.'}
@@ -1350,15 +1350,15 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
             <Collapsible>
               <Card className="border-2 border-amber-200 bg-amber-50/50">
                 <CollapsibleTrigger asChild>
-                  <CardHeader className="pb-3 cursor-pointer hover:bg-amber-100/50 transition-colors">
+                  <CardHeader className="px-4 py-3 cursor-pointer hover:bg-amber-100/50 transition-colors">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-amber-100 rounded-full">
-                          <ListTodo className="h-5 w-5 text-amber-600" />
+                        <div className="p-1.5 bg-amber-100 rounded-full shrink-0">
+                          <ListTodo className="h-4 w-4 text-amber-600" />
                         </div>
                         <div>
-                          <CardTitle className="text-base text-amber-900">Subtasks</CardTitle>
-                          <CardDescription className="text-amber-700">
+                          <CardTitle className="text-sm font-semibold text-amber-900">Subtasks</CardTitle>
+                          <CardDescription className="text-xs text-amber-700">
                             Break this task into smaller pieces and assign them to team members
                           </CardDescription>
                         </div>
@@ -1369,13 +1369,13 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
                             {pendingSubtasks.length}
                           </Badge>
                         )}
-                        <ChevronDown className="h-5 w-5 text-amber-600 transition-transform duration-200 data-[state=open]:rotate-180" />
+                        <ChevronDown className="h-4 w-4 text-amber-600 transition-transform duration-200 data-[state=open]:rotate-180" />
                       </div>
                     </div>
                   </CardHeader>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                  <CardContent className="space-y-4 pt-0">
+                  <CardContent className="space-y-4 px-4 pb-4 pt-0">
                     {/* Add Subtask Form — stacked layout */}
                     <div className="space-y-2">
                       {/* Row 1: Title + Add */}
@@ -1485,23 +1485,23 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
           <Collapsible open={moreOptionsOpen} onOpenChange={setMoreOptionsOpen}>
             <Card className="border-2">
               <CollapsibleTrigger asChild>
-                <CardHeader className="pb-3 cursor-pointer hover:bg-muted/30 transition-colors">
+                <CardHeader className="px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-muted rounded-full">
-                        <Settings2 className="h-5 w-5 text-muted-foreground" />
+                      <div className="p-1.5 bg-muted rounded-full shrink-0">
+                        <Settings2 className="h-4 w-4 text-muted-foreground" />
                       </div>
                       <div>
-                        <CardTitle className="text-base">More options</CardTitle>
-                        <CardDescription>Weight, SLA, reminders, location, and calendar settings</CardDescription>
+                        <CardTitle className="text-sm font-semibold">More options</CardTitle>
+                        <CardDescription className="text-xs">Weight, SLA, reminders, location, and calendar settings</CardDescription>
                       </div>
                     </div>
-                    <ChevronDown className={cn('h-5 w-5 text-muted-foreground transition-transform duration-200', moreOptionsOpen && 'rotate-180')} />
+                    <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform duration-200', moreOptionsOpen && 'rotate-180')} />
                   </div>
                 </CardHeader>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <CardContent className="space-y-6 pt-0">
+                <CardContent className="space-y-6 px-4 pb-4 pt-0">
                   {/* Task Weight (1-5 stars) */}
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Task Weight <span className="text-xs text-muted-foreground font-normal">(1 = low gravity, 5 = critical)</span></Label>

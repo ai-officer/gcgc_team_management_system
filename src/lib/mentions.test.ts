@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseMentions } from './mentions'
+import { parseMentions, splitMentions } from './mentions'
 
 describe('parseMentions', () => {
   it('matches a simple @mention against a candidate (case-insensitive)', () => {
@@ -42,5 +42,35 @@ describe('parseMentions', () => {
 
   it('ignores blank candidate names', () => {
     expect(parseMentions('@alice', [{ id: '1', name: '' }, { id: '2', name: 'Alice' }])).toEqual(['2'])
+  })
+})
+
+describe('splitMentions', () => {
+  it('splits a mention out of surrounding plain text (preserving casing)', () => {
+    expect(splitMentions('hi @Alice!', ['Alice'])).toEqual([
+      { value: 'hi ', isMention: false },
+      { value: '@Alice', isMention: true },
+      { value: '!', isMention: false },
+    ])
+  })
+
+  it('returns a single plain segment when nothing matches', () => {
+    expect(splitMentions('no mentions here', ['Alice'])).toEqual([
+      { value: 'no mentions here', isMention: false },
+    ])
+  })
+
+  it('does not highlight an @ preceded by a word char (email)', () => {
+    expect(splitMentions('email foo@bar.com', ['Bar'])).toEqual([
+      { value: 'email foo@bar.com', isMention: false },
+    ])
+  })
+
+  it('highlights the longest name and handles multiple mentions', () => {
+    expect(splitMentions('@John Smith and @alice', ['John', 'John Smith', 'Alice'])).toEqual([
+      { value: '@John Smith', isMention: true },
+      { value: ' and ', isMention: false },
+      { value: '@alice', isMention: true },
+    ])
   })
 })

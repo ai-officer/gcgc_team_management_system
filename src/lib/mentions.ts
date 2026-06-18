@@ -47,3 +47,50 @@ export function parseMentions(text: string, candidates: MentionCandidate[]): str
 
   return matched
 }
+
+export type MentionSegment = { value: string; isMention: boolean }
+
+/**
+ * Split comment text into plain and mentioned segments for highlighted
+ * rendering. Uses the same strict boundary rules as parseMentions so that the
+ * highlighted spans line up exactly with who actually gets notified. Segment
+ * `value` preserves the text's original casing (including the leading `@`).
+ */
+export function splitMentions(text: string, names: string[]): MentionSegment[] {
+  const sorted = names
+    .filter(n => !!n && n.trim().length > 0)
+    .sort((a, b) => b.length - a.length)
+
+  const segments: MentionSegment[] = []
+  let buffer = ''
+  const flush = () => {
+    if (buffer) {
+      segments.push({ value: buffer, isMention: false })
+      buffer = ''
+    }
+  }
+
+  let i = 0
+  while (i < text.length) {
+    const atStart = i === 0 || /\s/.test(text[i - 1])
+    if (text[i] === '@' && atStart) {
+      const rest = text.slice(i + 1)
+      const restLower = rest.toLowerCase()
+      const hit = sorted.find(name => {
+        if (!restLower.startsWith(name.toLowerCase())) return false
+        const nextChar = rest[name.length]
+        return nextChar === undefined || !/[a-z0-9]/i.test(nextChar)
+      })
+      if (hit) {
+        flush()
+        segments.push({ value: text.slice(i, i + 1 + hit.length), isMention: true })
+        i += 1 + hit.length
+        continue
+      }
+    }
+    buffer += text[i]
+    i++
+  }
+  flush()
+  return segments
+}

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Sidebar } from '@/components/layout/sidebar'
 import { ImpersonationBanner } from '@/components/shared/impersonation-banner'
+import { GlobalSearch } from '@/components/search/GlobalSearch'
 import { UserRole } from '@prisma/client'
 
 export default function UserLayout({
@@ -68,6 +69,7 @@ export default function UserLayout({
       } ml-0`}>
         <div className="container mx-auto px-4 py-8 lg:px-8 lg:py-8 max-w-none lg:max-w-7xl lg:pt-8">
           <div className="lg:hidden mb-16">{/* Spacer for mobile toggle button */}</div>
+          <div className="hidden lg:block mb-6"><GlobalSearch /></div>
           {children}
         </div>
       </main>

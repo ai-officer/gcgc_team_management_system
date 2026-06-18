@@ -1,3 +1,5 @@
+import { startOfDay, differenceInCalendarDays, eachMonthOfInterval, endOfMonth, format, max, min } from 'date-fns'
+
 export type TimelineZoom = 'week' | 'month'
 
 export interface TimelineTask {
@@ -47,4 +49,37 @@ export function splitScheduled<T extends Pick<TimelineTask, 'startDate' | 'dueDa
     else unscheduled.push(t)
   }
   return { scheduled, unscheduled }
+}
+
+export interface Axis {
+  start: Date
+  end: Date
+  zoom: TimelineZoom
+  dayWidthPx: number
+  totalWidthPx: number
+  months: { label: string; leftPx: number; widthPx: number }[]
+}
+
+export function buildAxis(start: Date, end: Date, zoom: TimelineZoom): Axis {
+  const s = startOfDay(start)
+  const e = startOfDay(end)
+  const dayWidthPx = zoom === 'week' ? 40 : 16
+  const totalDays = differenceInCalendarDays(e, s) + 1
+  const totalWidthPx = totalDays * dayWidthPx
+  const months = eachMonthOfInterval({ start: s, end: e }).map((m) => {
+    const mStart = max([m, s])
+    const mEnd = min([endOfMonth(m), e])
+    const leftPx = differenceInCalendarDays(mStart, s) * dayWidthPx
+    const widthPx = (differenceInCalendarDays(mEnd, mStart) + 1) * dayWidthPx
+    return { label: format(m, 'MMM yyyy'), leftPx, widthPx }
+  })
+  return { start: s, end: e, zoom, dayWidthPx, totalWidthPx, months }
+}
+
+export function barGeometry(startDate: string, dueDate: string, axis: Axis): { leftPx: number; widthPx: number } {
+  const s = startOfDay(new Date(startDate))
+  const d = startOfDay(new Date(dueDate))
+  const leftPx = differenceInCalendarDays(s, axis.start) * axis.dayWidthPx
+  const days = Math.max(1, differenceInCalendarDays(d, s) + 1)
+  return { leftPx, widthPx: days * axis.dayWidthPx }
 }

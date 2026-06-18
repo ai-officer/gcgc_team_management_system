@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { splitScheduled, groupByAssignee } from './timeline'
+import { splitScheduled, groupByAssignee, buildAxis, barGeometry } from './timeline'
 
 describe('splitScheduled', () => {
   it('puts tasks with both start and due in scheduled, the rest in unscheduled', () => {
@@ -28,5 +28,18 @@ describe('groupByAssignee', () => {
     expect(groups.map(g => g.label)).toEqual(['Alice', 'Bob', 'Unassigned'])
     expect(groups[0].tasks.map(t => t.id)).toEqual(['t2', 't4'])
     expect(groups[2].key).toBe('unassigned')
+  })
+})
+
+describe('buildAxis + barGeometry', () => {
+  it('lays out days and positions a bar within the axis', () => {
+    const axis = buildAxis(new Date('2026-06-01'), new Date('2026-06-30'), 'month')
+    expect(axis.dayWidthPx).toBe(16)
+    expect(axis.totalWidthPx).toBe(30 * 16) // 30 inclusive days
+    expect(axis.months[0].label).toMatch(/Jun/)
+
+    const bar = barGeometry('2026-06-03', '2026-06-07', axis)
+    expect(bar.leftPx).toBe(2 * 16)   // Jun 1 -> Jun 3 = 2 days
+    expect(bar.widthPx).toBe(5 * 16)  // Jun 3..7 inclusive = 5 days
   })
 })

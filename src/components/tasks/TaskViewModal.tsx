@@ -2121,18 +2121,17 @@ export default function TaskViewModal({
                 </div>
               ) : (
                 !showAddSubtask && (
-                  <div className="text-center py-6 text-gray-500">
-                    <ListTodo className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No subtasks yet</p>
+                  <div className="flex items-center justify-center gap-2 py-3 text-sm text-gray-400">
+                    <ListTodo className="h-4 w-4 opacity-60" />
+                    <span>No subtasks yet</span>
                     {canAddSubtasks && (
-                      <Button
-                        variant="link"
-                        size="sm"
+                      <button
+                        type="button"
                         onClick={() => setShowAddSubtask(true)}
-                        className="mt-1"
+                        className="font-medium text-blue-600 hover:underline"
                       >
-                        Add a subtask
-                      </Button>
+                        Add one
+                      </button>
                     )}
                   </div>
                 )
@@ -2637,17 +2636,17 @@ export default function TaskViewModal({
             </div>
 
             {/* Comments List with Reactions and Replies */}
-            <div className="space-y-6 max-h-[400px] overflow-y-auto">
+            <div className="space-y-4 max-h-[400px] overflow-y-auto">
               {loadingComments ? (
-                <div className="flex justify-center py-8">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-400" />
+                <div className="flex justify-center py-4">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-400" />
                 </div>
               ) : comments.length > 0 ? (
                 comments.map((comment) => renderComment(comment))
               ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">No comments yet</p>
+                <div className="flex items-center justify-center gap-2 py-3 text-sm text-gray-400">
+                  <MessageSquare className="h-4 w-4 opacity-60" />
+                  <span>No comments yet</span>
                 </div>
               )}
             </div>

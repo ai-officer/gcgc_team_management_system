@@ -264,6 +264,11 @@ export default function TaskViewModal({
   const [mentionQuery, setMentionQuery] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const editFileInputRef = useRef<HTMLInputElement>(null)
+  // Composer mention highlighting: a backdrop mirrors the textarea text with
+  // @mentions highlighted live as you type; the textarea sits on top with
+  // transparent text + visible caret, and their scroll positions stay in sync.
+  const commentInputRef = useRef<HTMLTextAreaElement>(null)
+  const commentBackdropRef = useRef<HTMLDivElement>(null)
   const [uploadingFile, setUploadingFile] = useState(false)
   const [pendingFile, setPendingFile] = useState<{
     file: File
@@ -2556,13 +2561,38 @@ export default function TaskViewModal({
             {/* Add Comment with Mentions and File Attachments */}
             <div className="space-y-3 relative">
               <div className="relative">
+                {/* Highlight backdrop — mirrors the textarea so @mentions glow
+                    live while typing. Must match the textarea's box exactly. */}
+                <div
+                  ref={commentBackdropRef}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 overflow-hidden whitespace-pre-wrap break-words rounded-md border border-transparent px-3 py-2 pr-10 text-sm leading-5 text-gray-900"
+                >
+                  {splitMentions(newComment, mentionNames).map((seg, i) =>
+                    seg.isMention ? (
+                      <span key={i} className="rounded bg-blue-100 font-semibold text-blue-700">
+                        {seg.value}
+                      </span>
+                    ) : (
+                      <span key={i}>{seg.value}</span>
+                    )
+                  )}
+                  {/* keeps the backdrop's height in step with a trailing newline */}
+                  {'​'}
+                </div>
                 <Textarea
+                  ref={commentInputRef}
                   placeholder="Write a comment... Use @ to mention someone"
                   value={newComment}
                   onChange={(e) => handleCommentChange(e.target.value)}
-                  className="min-h-[80px] resize-none pr-10"
+                  onScroll={() => {
+                    if (commentBackdropRef.current && commentInputRef.current) {
+                      commentBackdropRef.current.scrollTop = commentInputRef.current.scrollTop
+                    }
+                  }}
+                  className="relative z-[1] min-h-[80px] resize-none bg-transparent pr-10 leading-5 text-transparent caret-gray-900 selection:bg-blue-200/50 selection:text-transparent"
                 />
-                
+
                 {/* Mention Dropdown */}
                 {showMentions && mentionUsers.length > 0 && (
                   <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg z-10 max-h-40 overflow-y-auto">

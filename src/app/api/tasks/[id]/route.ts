@@ -541,7 +541,10 @@ export async function PATCH(
         where: { id: existingTask.parentId },
         data: {
           progressPercentage: allCompleted ? 90 : avgProgress,
-          ...(allCompleted ? { status: 'IN_REVIEW' } : {}),
+          // Derive the parent's status from its subtasks (its progress is already
+          // auto-calculated, so status should track too): all done -> IN_REVIEW,
+          // any progress -> IN_PROGRESS, nothing started -> TODO.
+          status: allCompleted ? 'IN_REVIEW' : avgProgress > 0 ? 'IN_PROGRESS' : 'TODO',
         },
         include: {
           assignee: { select: { id: true, name: true, email: true, image: true } },

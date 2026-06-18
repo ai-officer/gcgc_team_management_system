@@ -1,11 +1,11 @@
 // src/components/tasks/TimelineView.tsx
 'use client'
-import { useMemo, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import { useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { format, startOfDay, differenceInCalendarDays } from 'date-fns'
 import { UserAvatar } from '@/components/shared/UserAvatar'
 import {
   splitScheduled, groupByAssignee, buildAxis, barGeometry, axisRangeFor,
-  pxDeltaToDays, shiftDates, resizeStart, resizeEnd,
+  pxDeltaToDays, shiftDates, resizeStart, resizeEnd, scheduleAtPx,
   type TimelineTask, type TimelineZoom,
 } from '@/lib/timeline'
 
@@ -63,6 +63,31 @@ export default function TimelineView({
     onReschedule?.(task.id, fn(task.startDate!, task.dueDate!, days))
   }
 
+  // Unscheduled tray → drag a date-less chip onto the grid to schedule it.
+  const gridRef = useRef<HTMLDivElement>(null)
+  const [trayDrag, setTrayDrag] = useState<{ taskId: string; x: number; y: number } | null>(null)
+
+  function trayDown(e: ReactPointerEvent<HTMLDivElement>, taskId: string) {
+    if (!canEdit?.(taskId)) return
+    e.preventDefault()
+    e.currentTarget.setPointerCapture(e.pointerId)
+    setTrayDrag({ taskId, x: e.clientX, y: e.clientY })
+  }
+  function trayMove(e: ReactPointerEvent) {
+    setTrayDrag(d => (d ? { ...d, x: e.clientX, y: e.clientY } : d))
+  }
+  function trayUp(e: ReactPointerEvent, taskId: string) {
+    const d = trayDrag
+    setTrayDrag(null)
+    if (!d || d.taskId !== taskId) return
+    const grid = gridRef.current
+    if (!grid) return
+    const rect = grid.getBoundingClientRect()
+    const over = e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom
+    if (!over) return // dropped off the grid → cancel
+    onReschedule?.(taskId, scheduleAtPx(e.clientX - rect.left, axis))
+  }
+
   return (
     <div className="border rounded-lg overflow-hidden bg-white">
       {/* Toolbar */}
@@ -103,7 +128,7 @@ export default function TimelineView({
         </div>
 
         {/* Right grid */}
-        <div className="relative" style={{ width: axis.totalWidthPx }}>
+        <div ref={gridRef} className="relative" style={{ width: axis.totalWidthPx }}>
           {/* Month header */}
           <div className="relative bg-slate-50 border-b" style={{ height: ROW_H }}>
             {axis.months.map(m => (
@@ -164,8 +189,40 @@ export default function TimelineView({
       </div>
 
       {unscheduled.length > 0 && (
-        <div className="px-3 py-2 border-t text-xs text-slate-500">
-          {unscheduled.length} task{unscheduled.length === 1 ? '' : 's'} without dates (Unscheduled tray comes in Phase 3)
+        <div className="px-3 py-2 border-t">
+          <div className="text-xs font-semibold text-slate-500 mb-1.5">
+            Unscheduled ({unscheduled.length}){' '}
+            <span className="font-normal text-slate-400">— drag onto the timeline to schedule</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {unscheduled.map(t => {
+              const editable = canEdit?.(t.id) ?? false
+              return editable ? (
+                <div key={t.id} role="button" title={t.title}
+                  onPointerDown={(e) => trayDown(e, t.id)}
+                  onPointerMove={trayMove}
+                  onPointerUp={(e) => trayUp(e, t.id)}
+                  className={`px-2 h-7 rounded-md border text-xs flex items-center max-w-[200px] truncate select-none cursor-grab hover:border-blue-300 ${
+                    trayDrag?.taskId === t.id ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-700'}`}
+                  style={{ touchAction: 'none' }}>
+                  {t.title}
+                </div>
+              ) : (
+                <button key={t.id} onClick={() => onTaskClick?.(t.id)} title={t.title}
+                  className="px-2 h-7 rounded-md border border-slate-200 bg-slate-50 text-xs text-slate-500 flex items-center max-w-[200px] truncate">
+                  {t.title}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Floating ghost while dragging a tray chip */}
+      {trayDrag && (
+        <div className="fixed z-50 pointer-events-none px-2 h-6 rounded bg-blue-600 text-white text-xs flex items-center shadow-lg max-w-[200px] truncate"
+          style={{ left: trayDrag.x + 10, top: trayDrag.y + 10 }}>
+          {tasks.find(t => t.id === trayDrag.taskId)?.title ?? 'Task'}
         </div>
       )}
     </div>

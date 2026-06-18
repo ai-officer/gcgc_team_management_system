@@ -892,32 +892,12 @@ export default function TasksPage() {
     fetchTasks(false)
   }
 
-  // Only block the page on the very first load. After that, refetches happen
-  // in the background so an open TaskForm / TaskViewModal stays mounted and
-  // keeps its in-progress data when the user alt-tabs back.
-  if (loading && !hasLoadedOnce) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    )
-  }
-
-  if (error && !hasLoadedOnce) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <p className="text-red-600">{error}</p>
-        </div>
-      </div>
-    )
-  }
-
   const activeBoard = activeBoardId ? boards.find(b => b.id === activeBoardId) : undefined
   const filterUserOptions = activeBoard
     ? activeBoard.members.map(m => ({ id: m.user.id, name: m.user.name || m.user.email, email: m.user.email, image: m.user.image }))
     : users.map(u => ({ id: u.id, name: u.name || u.email, email: u.email, image: u.image }))
+  // NOTE: all hooks MUST stay above the early returns below — otherwise the hook
+  // count changes between the loading and loaded renders (React error #310).
   useEffect(() => {
     // Re-validate on activeBoard change AND when boards/users finish loading
     // async — otherwise a bookmarked ?board=X&user=Y (Y not a member of X) keeps
@@ -947,6 +927,28 @@ export default function TasksPage() {
       toast({ title: 'Could not reschedule', description: 'The task dates were not saved. Please try again.', variant: 'destructive' })
     }
   }, [tasks, toast])
+
+  // Only block the page on the very first load. After that, refetches happen
+  // in the background so an open TaskForm / TaskViewModal stays mounted and
+  // keeps its in-progress data when the user alt-tabs back.
+  if (loading && !hasLoadedOnce) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
+
+  if (error && !hasLoadedOnce) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <p className="text-red-600">{error}</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">

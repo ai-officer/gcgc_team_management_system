@@ -919,11 +919,14 @@ export default function TasksPage() {
     ? activeBoard.members.map(m => ({ id: m.user.id, name: m.user.name || m.user.email, email: m.user.email, image: m.user.image }))
     : users.map(u => ({ id: u.id, name: u.name || u.email, email: u.email, image: u.image }))
   useEffect(() => {
+    // Re-validate on activeBoard change AND when boards/users finish loading
+    // async — otherwise a bookmarked ?board=X&user=Y (Y not a member of X) keeps
+    // the stale selection because the options narrow only after boards arrive.
     if (selectedUser && !filterUserOptions.some(u => u.id === selectedUser)) {
       setSelectedUser('')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeBoardId])
+  }, [activeBoardId, boards, users])
   const boardContext = activeBoard
     ? { boardId: activeBoard.id, boardName: activeBoard.name, teamId: activeBoard.team?.id ?? null }
     : null

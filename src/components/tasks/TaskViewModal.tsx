@@ -2008,7 +2008,7 @@ export default function TaskViewModal({
                       autoFocus
                     />
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <div className="flex-1">
                       <Select
                         value={newSubtaskAssigneeId}

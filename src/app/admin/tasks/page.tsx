@@ -495,7 +495,7 @@ export default function AdminTasksPage() {
         </div>
         
         <Select value={selectedUser || "all"} onValueChange={(value) => setSelectedUser(value === "all" ? "" : value)}>
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-full sm:w-[200px]">
             <SelectValue placeholder="Filter by user" />
           </SelectTrigger>
           <SelectContent>

@@ -446,7 +446,7 @@ export default function AdminsPage() {
               {admins.map((admin) => (
                 <div
                   key={admin.id}
-                  className="flex items-center justify-between p-4 border border-slate-200 rounded-xl hover:border-slate-300 hover:shadow-sm transition-all"
+                  className="flex flex-wrap items-center gap-3 p-4 border border-slate-200 rounded-xl hover:border-slate-300 hover:shadow-sm transition-all"
                 >
                   <div className="flex items-center space-x-4">
                     <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center ring-2 ring-slate-200">

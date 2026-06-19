@@ -1198,8 +1198,8 @@ export default function AdminUsersPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center space-x-4">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[180px] max-w-sm">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
           <Input
             placeholder="Search users..."
@@ -1209,7 +1209,7 @@ export default function AdminUsersPage() {
           />
         </div>
         <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value as UserRole | 'all')}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-full sm:w-40">
             <SelectValue placeholder="Filter by role" />
           </SelectTrigger>
           <SelectContent>
@@ -1220,7 +1220,7 @@ export default function AdminUsersPage() {
           </SelectContent>
         </Select>
         <Select value={hierarchyFilter} onValueChange={(value) => setHierarchyFilter(value as HierarchyLevel | 'all')}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-full sm:w-40">
             <SelectValue placeholder="Filter by level" />
           </SelectTrigger>
           <SelectContent>

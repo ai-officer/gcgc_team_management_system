@@ -852,7 +852,7 @@ export default function TeamOverviewPage() {
         <div className="relative backdrop-blur-sm bg-white/40 border border-slate-200/60 rounded-xl shadow-sm p-8">
           <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-start">
             <div className="space-y-3">
-              <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Team Overview</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">Team Overview</h1>
               <p className="text-slate-600 text-base font-medium max-w-2xl">
                 Manage your team members, track performance, and collaborate effectively
               </p>
@@ -2222,7 +2222,7 @@ export default function TeamOverviewPage() {
 
             <div className="flex gap-3">
               <Select value={filterStatus} onValueChange={(value: FilterStatus) => setFilterStatus(value)}>
-                <SelectTrigger className="w-[180px] border-slate-200 rounded-lg">
+                <SelectTrigger className="w-full sm:w-[180px] border-slate-200 rounded-lg">
                   <div className="flex items-center gap-2">
                     <Filter className="h-4 w-4" />
                     <SelectValue placeholder="Filter status" />

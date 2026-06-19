@@ -159,8 +159,8 @@ export default function AdminHierarchyPage() {
       {selectedUsers.length > 0 && (
         <Card className="bg-blue-50 border border-blue-200 rounded-xl shadow-sm">
           <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <span className="text-sm font-medium text-blue-900">
                   {selectedUsers.length} users selected
                 </span>
@@ -191,7 +191,7 @@ export default function AdminHierarchyPage() {
                 </Select>
                 {(action === 'promote' || action === 'assign') && (
                   <Select value={targetLevel} onValueChange={(value) => setTargetLevel(value as HierarchyLevel)}>
-                    <SelectTrigger className="w-40">
+                    <SelectTrigger className="w-full sm:w-40">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

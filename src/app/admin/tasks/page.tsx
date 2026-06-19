@@ -471,7 +471,7 @@ export default function AdminTasksPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Task Management</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Task Management</h1>
           <p className="text-muted-foreground">
             Manage all tasks across the organization
           </p>

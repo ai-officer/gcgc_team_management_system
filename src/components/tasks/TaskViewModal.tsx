@@ -33,11 +33,12 @@ import {
   User, Users, Handshake, Clock, MessageSquare, Send, Edit, Copy,
   Heart, ThumbsUp, Smile, Reply, Image, Paperclip, MoreHorizontal,
   AtSign, Trash2, Pencil, X, Check, FileText, Download, File,
-  Plus, ListTodo, ChevronRight, ChevronLeft, CheckCircle2, Circle, AlertCircle, RefreshCw, RotateCcw, Eye, GitBranch, Lock
+  Plus, ListTodo, ChevronRight, ChevronLeft, CheckCircle2, Circle, AlertCircle, RefreshCw, RotateCcw, Eye, GitBranch, Lock, Repeat
 } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { Progress } from '@/components/ui/progress'
 import { splitMentions } from '@/lib/mentions'
+import { describeRecurrence, type RecurringFrequency } from '@/lib/recurring'
 
 interface Task {
   id: string
@@ -100,6 +101,7 @@ interface Task {
   }
   // Recurring task support
   recurringParentId?: string | null
+  isRecurring?: boolean
   // New feature fields
   memberSubmittedAt?: string | null
   leaderEvaluatedAt?: string | null
@@ -336,6 +338,25 @@ export default function TaskViewModal({
   const [showDueDateOverride, setShowDueDateOverride] = useState(false)
   const [newDueDate, setNewDueDate] = useState('')
   const [savingDueDate, setSavingDueDate] = useState(false)
+
+  // Recurring series management state
+  const [recurringDialogOpen, setRecurringDialogOpen] = useState(false)
+  const [recurringSettings, setRecurringSettings] = useState<{
+    id: string
+    recurringFrequency: string | null
+    recurringInterval: number | null
+    recurringDaysOfWeek: number[]
+    recurringEndDate: string | null
+    startDate: string | null
+    stopped: boolean
+  } | null>(null)
+  const [loadingRecurring, setLoadingRecurring] = useState(false)
+  const [savingRecurring, setSavingRecurring] = useState(false)
+  // Local editable copies of the settings shown in the dialog
+  const [editFrequency, setEditFrequency] = useState<string>('WEEKLY')
+  const [editInterval, setEditInterval] = useState<number>(1)
+  const [editEndDate, setEditEndDate] = useState<string>('')
+  const [editDaysOfWeek, setEditDaysOfWeek] = useState<number[]>([])
 
   // Load comments when task changes
   const fetchComments = async () => {
@@ -595,6 +616,15 @@ export default function TaskViewModal({
       setNewSubtaskDeadline('')
     }
     // Use task.id as dependency to prevent re-running when task object reference changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, task?.id])
+
+  // Auto-fetch recurring settings when the modal opens for a recurring task,
+  // so the cadence summary is visible without clicking "Manage recurrence".
+  useEffect(() => {
+    if (open && (task?.recurringParentId || task?.isRecurring)) {
+      fetchRecurringSettings()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, task?.id])
 
@@ -1572,6 +1602,98 @@ export default function TaskViewModal({
     )
   }
 
+  // Recurring series helpers
+  const isRecurringTask = !!(task?.recurringParentId || task?.isRecurring)
+
+  const fetchRecurringSettings = async () => {
+    if (!task?.id) return
+    try {
+      setLoadingRecurring(true)
+      const res = await fetch(`/api/tasks/${task.id}/recurring`)
+      if (res.ok) {
+        const data = await res.json()
+        setRecurringSettings(data)
+        setEditFrequency(data.recurringFrequency ?? 'WEEKLY')
+        setEditInterval(data.recurringInterval ?? 1)
+        setEditEndDate(data.recurringEndDate ? data.recurringEndDate.split('T')[0] : '')
+        setEditDaysOfWeek(data.recurringDaysOfWeek ?? [])
+      } else {
+        const err = await res.json()
+        toast({ title: 'Error', description: err.error, variant: 'destructive' })
+      }
+    } catch (e) {
+      console.error('Error fetching recurring settings:', e)
+    } finally {
+      setLoadingRecurring(false)
+    }
+  }
+
+  const handleOpenRecurringDialog = async () => {
+    setRecurringDialogOpen(true)
+    await fetchRecurringSettings()
+  }
+
+  const handleStopRecurring = async () => {
+    if (!task?.id) return
+    try {
+      setSavingRecurring(true)
+      const res = await fetch(`/api/tasks/${task.id}/recurring`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stop: true }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setRecurringSettings(data)
+        toast({ title: 'Recurring stopped', description: 'No new instances will be created.' })
+        setRecurringDialogOpen(false)
+        onTaskUpdate?.()
+      } else {
+        const err = await res.json()
+        toast({ title: 'Error', description: err.error, variant: 'destructive' })
+      }
+    } catch (e) {
+      console.error('Error stopping recurring:', e)
+      toast({ title: 'Error', description: 'Failed to stop recurring series.', variant: 'destructive' })
+    } finally {
+      setSavingRecurring(false)
+    }
+  }
+
+  const handleSaveRecurring = async () => {
+    if (!task?.id) return
+    try {
+      setSavingRecurring(true)
+      const body: Record<string, unknown> = {
+        recurringFrequency: editFrequency,
+        recurringInterval: editInterval,
+        recurringDaysOfWeek: editDaysOfWeek,
+        // null means "clear end date = indefinite"
+        recurringEndDate: editEndDate || null,
+      }
+      const res = await fetch(`/api/tasks/${task.id}/recurring`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setRecurringSettings(data)
+        toast({ title: 'Recurrence updated', description: 'Series settings have been saved.' })
+        setRecurringDialogOpen(false)
+        onTaskUpdate?.()
+      } else {
+        const err = await res.json()
+        toast({ title: 'Error', description: err.error, variant: 'destructive' })
+      }
+    } catch (e) {
+      console.error('Error saving recurring settings:', e)
+      toast({ title: 'Error', description: 'Failed to save recurrence settings.', variant: 'destructive' })
+    } finally {
+      setSavingRecurring(false)
+    }
+  }
+
   if (!task) return null
 
   return (
@@ -1873,6 +1995,172 @@ export default function TaskViewModal({
               })()}
             </div>
           )}
+
+          {/* Recurring Series Section */}
+          {isRecurringTask && (
+            <div className="border-t pt-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm">
+                  <Repeat className="h-4 w-4 text-blue-500" />
+                  <span className="font-medium text-gray-900">Recurring</span>
+                  {recurringSettings && (
+                    <span className="text-gray-500 text-xs">
+                      {recurringSettings.stopped
+                        ? '(stopped)'
+                        : describeRecurrence(
+                            (recurringSettings.recurringFrequency ?? 'WEEKLY') as RecurringFrequency,
+                            recurringSettings.recurringInterval ?? 1,
+                            recurringSettings.recurringDaysOfWeek ?? [],
+                            recurringSettings.recurringEndDate ? new Date(recurringSettings.recurringEndDate) : null
+                          )}
+                    </span>
+                  )}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={handleOpenRecurringDialog}
+                >
+                  Manage recurrence
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Recurring Settings Dialog */}
+          <Dialog open={recurringDialogOpen} onOpenChange={setRecurringDialogOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Manage Recurrence</DialogTitle>
+                <DialogDescription>
+                  Change frequency, end date, or stop the recurring series.
+                </DialogDescription>
+              </DialogHeader>
+              {loadingRecurring ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" />
+                </div>
+              ) : recurringSettings ? (
+                <div className="space-y-4 pt-2">
+                  {recurringSettings.stopped && (
+                    <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800">
+                      This recurring series has been stopped. No new instances will be created.
+                    </div>
+                  )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Frequency */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-gray-700">Frequency</label>
+                      <select
+                        value={editFrequency}
+                        onChange={(e) => setEditFrequency(e.target.value)}
+                        className="w-full rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        disabled={savingRecurring}
+                      >
+                        <option value="DAILY">Daily</option>
+                        <option value="WEEKLY">Weekly</option>
+                        <option value="MONTHLY">Monthly</option>
+                        <option value="YEARLY">Yearly</option>
+                      </select>
+                    </div>
+                    {/* Interval */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-gray-700">Every N periods</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={editInterval}
+                        onChange={(e) => setEditInterval(Math.max(1, parseInt(e.target.value) || 1))}
+                        className="w-full rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        disabled={savingRecurring}
+                      />
+                    </div>
+                    {/* Days of week — shown only for weekly frequency */}
+                    {editFrequency === 'WEEKLY' && (
+                      <div className="space-y-1.5 sm:col-span-2">
+                        <label className="text-xs font-medium text-gray-700">Days of week</label>
+                        <div className="flex flex-wrap gap-1">
+                          {(['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const).map((label, idx) => {
+                            const active = editDaysOfWeek.includes(idx)
+                            return (
+                              <button
+                                key={idx}
+                                type="button"
+                                disabled={savingRecurring}
+                                onClick={() =>
+                                  setEditDaysOfWeek(prev =>
+                                    active ? prev.filter(d => d !== idx) : [...prev, idx].sort((a, b) => a - b)
+                                  )
+                                }
+                                className={`px-2 py-1 rounded text-xs font-medium border transition-colors ${
+                                  active
+                                    ? 'bg-blue-600 text-white border-blue-600'
+                                    : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                                } disabled:opacity-50`}
+                              >
+                                {label}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    {/* End date — full width */}
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <label className="text-xs font-medium text-gray-700">End date (leave blank for no end)</label>
+                      <input
+                        type="date"
+                        value={editEndDate}
+                        onChange={(e) => setEditEndDate(e.target.value)}
+                        className="w-full rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        disabled={savingRecurring}
+                      />
+                    </div>
+                  </div>
+                  {/* Action buttons */}
+                  <div className="flex flex-col gap-2 pt-2">
+                    <Button
+                      className="w-full"
+                      onClick={handleSaveRecurring}
+                      disabled={savingRecurring}
+                    >
+                      {savingRecurring ? (
+                        <>
+                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2" />
+                          Saving...
+                        </>
+                      ) : (
+                        'Save changes'
+                      )}
+                    </Button>
+                    {!recurringSettings.stopped && (
+                      <Button
+                        variant="destructive"
+                        className="w-full"
+                        onClick={handleStopRecurring}
+                        disabled={savingRecurring}
+                      >
+                        Stop recurring
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      className="w-full"
+                      onClick={() => setRecurringDialogOpen(false)}
+                      disabled={savingRecurring}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="py-4 text-center text-sm text-gray-500">
+                  Could not load recurrence settings.
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
 
           {/* People Involved */}
           <div className="space-y-3">

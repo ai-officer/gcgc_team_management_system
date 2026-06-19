@@ -19,6 +19,8 @@ const STATUS_BAR: Record<string, string> = {
 }
 const ROW_H = 44
 const LEFT_W = 320
+// Placeholder rows so the grid still shows rows + columns when nothing is scheduled.
+const EMPTY_ROWS = 4
 
 export default function TimelineView({
   tasks, zoom, onZoomChange, onTaskClick, canEdit, onReschedule,
@@ -140,6 +142,11 @@ export default function TimelineView({
               ))}
             </div>
           ))}
+          {groups.length === 0 && Array.from({ length: EMPTY_ROWS }).map((_, i) => (
+            <div key={`empty-${i}`} style={{ height: ROW_H }} className="flex items-center px-3 border-b text-xs text-slate-400">
+              {i === 0 ? 'No scheduled tasks' : ''}
+            </div>
+          ))}
         </div>
 
         {/* Right grid */}
@@ -236,6 +243,9 @@ export default function TimelineView({
                 )
               })}
             </div>
+          ))}
+          {groups.length === 0 && Array.from({ length: EMPTY_ROWS }).map((_, i) => (
+            <div key={`empty-${i}`} style={{ height: ROW_H }} className="border-b" />
           ))}
           </div>
         </div>

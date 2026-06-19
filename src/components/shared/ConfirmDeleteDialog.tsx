@@ -68,7 +68,7 @@ export function ConfirmDeleteDialog({
         <div className="space-y-2 py-1">
           <Label htmlFor="confirm-delete-input" className="text-sm font-normal">
             Type{' '}
-            <span className="font-semibold text-foreground break-all">{confirmationText}</span>{' '}
+            <span className="font-semibold text-foreground break-words">{confirmationText}</span>{' '}
             to confirm
           </Label>
           <Input

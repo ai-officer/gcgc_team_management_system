@@ -935,7 +935,7 @@ export default function CalendarPage() {
                                 </button>
                                 <button
                                   onClick={() => { setIsEventDialogOpen(false); router.push(`/user/tasks?taskId=${subtask.id}`) }}
-                                  className={`text-xs flex-1 text-left break-all min-w-0 hover:underline hover:text-blue-600 transition-colors ${subtask.status === 'COMPLETED' ? 'line-through text-muted-foreground' : 'text-foreground'}`}
+                                  className={`text-xs flex-1 text-left break-words min-w-0 hover:underline hover:text-blue-600 transition-colors ${subtask.status === 'COMPLETED' ? 'line-through text-muted-foreground' : 'text-foreground'}`}
                                 >
                                   {subtask.title}
                                 </button>

@@ -329,6 +329,7 @@ async function main() {
     update: {},
     create: {
       email: 'admin@gcgc.com',
+      username: 'admin',
       password: adminPassword,
       name: 'System Administrator',
       role: UserRole.ADMIN,
@@ -343,6 +344,7 @@ async function main() {
     update: {},
     create: {
       email: 'm2@gcgc.com',
+      username: 'm2',
       password: m2Password,
       name: 'Senior Executive',
       role: UserRole.LEADER,
@@ -357,6 +359,7 @@ async function main() {
     update: {},
     create: {
       email: 'leader1@gcgc.com',
+      username: 'leader1',
       password: leader1Password,
       name: 'John Leader',
       role: UserRole.LEADER,
@@ -370,6 +373,7 @@ async function main() {
     update: {},
     create: {
       email: 'leader2@gcgc.com',
+      username: 'leader2',
       password: leader2Password,
       name: 'Jane Leader',
       role: UserRole.LEADER,
@@ -388,6 +392,7 @@ async function main() {
       update: {},
       create: {
         email: 'member1@gcgc.com',
+        username: 'member1',
         password: member1Password,
         name: 'Alice Member',
         role: UserRole.MEMBER,
@@ -399,6 +404,7 @@ async function main() {
       update: {},
       create: {
         email: 'member2@gcgc.com',
+        username: 'member2',
         password: member2Password,
         name: 'Bob Member',
         role: UserRole.MEMBER,
@@ -410,6 +416,7 @@ async function main() {
       update: {},
       create: {
         email: 'member3@gcgc.com',
+        username: 'member3',
         password: member3Password,
         name: 'Charlie Member',
         role: UserRole.MEMBER,
@@ -421,6 +428,7 @@ async function main() {
       update: {},
       create: {
         email: 'member4@gcgc.com',
+        username: 'member4',
         password: member4Password,
         name: 'Diana Member',
         role: UserRole.MEMBER,

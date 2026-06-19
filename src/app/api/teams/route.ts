@@ -119,35 +119,41 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Create team
-    const team = await prisma.team.create({
-      data: {
-        name,
-        description,
-      },
-      include: {
-        members: {
-          include: {
-            user: {
-              select: { id: true, name: true, email: true, image: true }
-            }
-          }
+    // Create team + its kanban board atomically (every team gets a board).
+    const team = await prisma.$transaction(async (tx) => {
+      const created = await tx.team.create({
+        data: {
+          name,
+          description,
+          ownerId: session.user.id,
+          board: { create: { name, ownerId: session.user.id } },
         },
-        _count: {
-          select: { members: true, tasks: true }
+        include: {
+          members: {
+            include: {
+              user: {
+                select: { id: true, name: true, email: true, image: true }
+              }
+            }
+          },
+          _count: {
+            select: { members: true, tasks: true }
+          }
         }
-      }
-    })
+      })
 
-    // Log activity
-    await prisma.activity.create({
-      data: {
-        type: 'TEAM_JOINED',
-        description: `Created team: ${name}`,
-        userId: session.user.id,
-        entityId: team.id,
-        entityType: 'team',
-      }
+      // Log activity
+      await tx.activity.create({
+        data: {
+          type: 'TEAM_JOINED',
+          description: `Created team: ${name}`,
+          userId: session.user.id,
+          entityId: created.id,
+          entityType: 'team',
+        }
+      })
+
+      return created
     })
 
     return NextResponse.json(team, { status: 201 })

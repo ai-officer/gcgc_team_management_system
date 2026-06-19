@@ -1,6 +1,6 @@
 'use client'
 
-import { Search, User, LogOut, Settings, Shield, LayoutDashboard } from 'lucide-react'
+import { Search, User, LogOut, Settings, Shield, LayoutDashboard, Menu } from 'lucide-react'
 import Link from 'next/link'
 import { useAdminSession } from '@/hooks/use-admin-session'
 import { useRouter } from 'next/navigation'
@@ -17,7 +17,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { AdminNotificationDropdown } from '@/components/notifications/AdminNotificationDropdown'
 
-export function AdminHeader() {
+interface AdminHeaderProps {
+  /** Open the mobile nav drawer (shown only below lg). */
+  onMenuClick?: () => void
+}
+
+export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
   const { data: session } = useAdminSession()
   const router = useRouter()
 
@@ -33,9 +38,19 @@ export function AdminHeader() {
 
   return (
     <header className="bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b border-gray-200/40 shadow-sm">
-      <div className="flex items-center justify-between px-6 py-4">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-4">
         {/* Page Title & Breadcrumb */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2">
+          {/* Mobile nav toggle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onMenuClick}
+            aria-label="Open navigation menu"
+            className="lg:hidden h-9 w-9 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <Menu className="w-5 h-5 text-gray-700" />
+          </Button>
           <Link
             href="/admin"
             className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"

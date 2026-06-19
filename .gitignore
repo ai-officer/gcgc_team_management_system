@@ -70,3 +70,4 @@ cookies.txt
 # local docs & worktrees
 /docs/
 /.claude/worktrees/
+.playwright-mcp/

@@ -23,6 +23,10 @@ import {
 
 interface AdminSidebarProps {
   className?: string
+  /** Mobile drawer open state (lifted to AdminLayout). Ignored on lg+ where the sidebar is always in-flow. */
+  isMobileOpen?: boolean
+  /** Close the mobile drawer (overlay click / nav click). */
+  onClose?: () => void
 }
 
 interface NavigationItem {
@@ -127,7 +131,7 @@ const navigation: NavigationItem[] = [
   }
 ]
 
-export function AdminSidebar({ className }: AdminSidebarProps) {
+export function AdminSidebar({ className, isMobileOpen = false, onClose }: AdminSidebarProps) {
   const pathname = usePathname()
   const [expandedItems, setExpandedItems] = useState<string[]>([])
 
@@ -177,23 +181,23 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
           <button
             onClick={() => toggleExpanded(item.name)}
             className={cn(
-              'flex items-center justify-between w-full px-3 md:px-2 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 text-left md:justify-center lg:justify-between',
+              'flex items-center justify-between w-full px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 text-left',
               isActive
                 ? 'bg-blue-50 text-blue-700 border-l-3 border-blue-600'
                 : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
             )}
           >
             <div className="flex items-center">
-              <item.icon 
+              <item.icon
                 className={cn(
-                  'w-5 h-5 md:mr-3 mr-0',
+                  'w-5 h-5 mr-3',
                   isActive ? 'text-blue-600' : 'text-gray-500'
-                )} 
+                )}
               />
-              <span className="lg:block md:hidden">{item.name}</span>
+              <span>{item.name}</span>
             </div>
             {hasChildren && (
-              <div className="hidden md:block">
+              <div>
                 {isExpanded ? (
                   <ChevronDown className="w-4 h-4 text-gray-400" />
                 ) : (
@@ -212,6 +216,7 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
                   <Link
                     key={child.name}
                     href={child.href || '#'}
+                    onClick={onClose}
                     className={cn(
                       'flex items-center px-3 py-2 text-sm rounded-lg transition-all duration-200',
                       childIsActive
@@ -239,53 +244,71 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
       <Link
         key={item.name}
         href={item.href || '#'}
+        onClick={onClose}
         className={cn(
-          'flex items-center px-3 md:px-2 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 md:justify-center lg:justify-start',
+          'flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200',
           isActive
             ? 'bg-blue-50 text-blue-700 border-l-3 border-blue-600'
             : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
         )}
       >
-        <item.icon 
+        <item.icon
           className={cn(
-            'w-5 h-5 md:mr-3 mr-0',
+            'w-5 h-5 mr-3',
             isActive ? 'text-blue-600' : 'text-gray-500'
-          )} 
+          )}
         />
-        <span className="lg:block md:hidden">{item.name}</span>
+        <span>{item.name}</span>
       </Link>
     )
   }
 
   return (
-    <div className={cn('flex flex-col bg-white border-r border-gray-200 shadow-sm w-64 lg:w-64 md:w-16 sm:w-16', className)}>
-      {/* Logo */}
-      <div className="flex items-center px-6 md:px-4 py-6 border-b border-gray-200">
-        <div className="flex items-center w-full md:justify-center">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center shadow-sm">
-            <div className="w-4 h-4 bg-white rounded-sm"></div>
-          </div>
-          <div className="ml-3 lg:block md:hidden">
-            <span className="text-lg font-bold text-gray-900">GCGC</span>
-            <div className="text-xs text-gray-500 font-medium">Admin Portal</div>
-          </div>
-        </div>
-      </div>
+    <>
+      {/* Mobile overlay — only below lg, only when the drawer is open */}
+      {isMobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+          aria-hidden="true"
+          onClick={onClose}
+        />
+      )}
 
-      {/* Navigation */}
-      <nav className="flex-1 px-4 md:px-2 py-6 space-y-1">
-        {navigation.map((item) => renderNavigationItem(item))}
-      </nav>
-      
-      {/* Footer */}
-      <div className="px-4 md:px-2 py-4 border-t border-gray-200 bg-gray-50/50">
-        <div className="text-xs text-gray-500 text-center lg:block md:hidden">
-          Team Management System v1.0
+      <div
+        className={cn(
+          'flex flex-col bg-white border-r border-gray-200 shadow-sm w-64 shrink-0',
+          // Off-canvas drawer below lg; static in-flow column at lg+
+          'fixed inset-y-0 left-0 z-50 transition-transform duration-200 ease-in-out',
+          'lg:static lg:z-auto lg:translate-x-0',
+          isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+          className
+        )}
+      >
+        {/* Logo */}
+        <div className="flex items-center px-6 py-6 border-b border-gray-200">
+          <div className="flex items-center w-full">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center shadow-sm shrink-0">
+              <div className="w-4 h-4 bg-white rounded-sm"></div>
+            </div>
+            <div className="ml-3">
+              <span className="text-lg font-bold text-gray-900">GCGC</span>
+              <div className="text-xs text-gray-500 font-medium">Admin Portal</div>
+            </div>
+          </div>
         </div>
-        <div className="text-xs text-gray-500 text-center lg:hidden md:block">
-          v1.0
+
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-1">
+          {navigation.map((item) => renderNavigationItem(item))}
+        </nav>
+
+        {/* Footer */}
+        <div className="px-4 py-4 border-t border-gray-200 bg-gray-50/50">
+          <div className="text-xs text-gray-500 text-center">
+            Team Management System v1.0
+          </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }

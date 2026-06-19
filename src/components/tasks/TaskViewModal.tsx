@@ -1589,11 +1589,11 @@ export default function TaskViewModal({
               Back to parent task
             </button>
           )}
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
             <div className="flex-1 space-y-2 min-w-0">
               <div className="flex items-start gap-2 min-w-0">
                 <span className="flex-shrink-0 mt-1">{getTaskTypeIcon(task.taskType)}</span>
-                <DialogTitle className="text-xl font-semibold break-all min-w-0">
+                <DialogTitle className="text-xl font-semibold break-words min-w-0">
                   {task.title}
                 </DialogTitle>
               </div>
@@ -1606,7 +1606,7 @@ export default function TaskViewModal({
             </div>
 
             {/* Action buttons - positioned to avoid X button overlap */}
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 shrink-0 flex-wrap">
               {onDuplicate && (
                 <Button variant="outline" size="sm" onClick={() => { onDuplicate(task); onOpenChange(false) }}>
                   <Copy className="h-4 w-4 mr-2" />

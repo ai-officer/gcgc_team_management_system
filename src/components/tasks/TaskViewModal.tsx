@@ -597,6 +597,11 @@ export default function TaskViewModal({
 
   useEffect(() => {
     if (open && task?.id) {
+      // Clear the previously-viewed task's data immediately so a newly-opened
+      // task never briefly shows the prior task's subtasks/comments while the
+      // fetches below are still in flight (caused "subtasks on a task with none").
+      setLocalSubtasks([])
+      setComments([])
       fetchComments()
       fetchAvailableUsers()
       fetchTaskDetails()

@@ -382,6 +382,15 @@ export async function PATCH(
       updateData.status = autoStatus
     }
 
+    // Keep progress in sync when the status is set explicitly without a matching
+    // progress — e.g. moving a card to Completed should read 100%, not its old
+    // % (the "Completed task at 45%" bug). Mirrors the create-time derivation.
+    if (updateData.status && updateData.progressPercentage === undefined) {
+      if (updateData.status === 'COMPLETED') updateData.progressPercentage = 100
+      else if (updateData.status === 'IN_REVIEW') updateData.progressPercentage = 90
+      else if (updateData.status === 'TODO') updateData.progressPercentage = 0
+    }
+
     // Resolve workQuality permission: only canComplete users may rate
     if (updateData.workQuality !== undefined && !canComplete) {
       delete (updateData as any).workQuality

@@ -102,7 +102,9 @@ export async function GET(req: NextRequest) {
     } = querySchema.parse(Object.fromEntries(searchParams))
 
     const pageNum = parseInt(page)
-    const limitNum = Math.min(parseInt(limit), 100)
+    // Cap raised to 1000 so the Kanban board can request many tasks at once
+    // (board fetches 50 × pages-loaded for its "Load more"). Default stays 10.
+    const limitNum = Math.min(parseInt(limit), 1000)
     const skip = (pageNum - 1) * limitNum
 
     // A leader explicitly viewing one of their managed members' tasks (e.g. the

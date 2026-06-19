@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -187,6 +187,11 @@ interface KanbanBoard {
   team?: { id: string; name: string } | null
 }
 
+// Kanban board pagination: fetch this many tasks per "page", with a Load more
+// button to pull the next batch. Avoids the old default-10 cap silently hiding
+// tasks beyond the first page.
+const PAGE_SIZE = 50
+
 const COLUMN_CONFIG = {
   TODO: { title: 'To Do', color: 'bg-gray-100', textColor: 'text-gray-700' },
   IN_PROGRESS: { title: 'In Progress', color: 'bg-blue-100', textColor: 'text-blue-700' },
@@ -205,6 +210,12 @@ export default function TasksPage() {
   const [loading, setLoading] = useState(true)
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Board pagination. `pagesRef` is the source of truth for how many PAGE_SIZE
+  // batches are loaded, so every fetchTasks() caller (background refresh,
+  // post-mutation refetch) re-fetches the same count instead of collapsing to 50.
+  const pagesRef = useRef(1)
+  const [totalTasks, setTotalTasks] = useState(0)
+  const [loadingMore, setLoadingMore] = useState(false)
   // Initialize filter state from URL so /user/tasks?q=…&team=…&user=…&type=…&board=…
   // is bookmarkable and survives the back button.
   const [searchTerm, setSearchTerm] = useState<string>(() => searchParams.get('q') ?? '')
@@ -281,6 +292,9 @@ export default function TasksPage() {
       if (selectedUser) params.append('userId', selectedUser)
       if (selectedTaskType) params.append('taskType', selectedTaskType)
       if (activeBoardId) params.append('boardId', activeBoardId)
+      // Fetch all currently-loaded pages in one request so refreshes preserve
+      // what the user has loaded via "Load more".
+      params.append('limit', String(PAGE_SIZE * pagesRef.current))
 
       const response = await fetch(`/api/tasks?${params}`)
 
@@ -292,6 +306,7 @@ export default function TasksPage() {
 
       const data = await response.json()
       setTasks(data.tasks || [])
+      setTotalTasks(data.pagination?.total ?? (data.tasks?.length || 0))
       setHasLoadedOnce(true)
     } catch (err) {
       console.error('Error fetching tasks:', err)
@@ -303,7 +318,15 @@ export default function TasksPage() {
     }
   }
 
+  const loadMore = async () => {
+    pagesRef.current += 1
+    setLoadingMore(true)
+    await fetchTasks(false)
+    setLoadingMore(false)
+  }
+
   useEffect(() => {
+    pagesRef.current = 1 // reset pagination when the filter/board changes
     fetchTasks()
     // Depend on session?.user?.id (a stable primitive) rather than the full
     // session object — NextAuth's refetchOnWindowFocus changes the session
@@ -1499,6 +1522,15 @@ export default function TasksPage() {
           })}
         </div>
       </DragDropContext>
+      )}
+
+      {viewMode === 'board' && tasks.length < totalTasks && (
+        <div className="flex flex-col items-center gap-1.5 mt-6">
+          <Button variant="outline" onClick={loadMore} disabled={loadingMore}>
+            {loadingMore ? 'Loading…' : 'Load more tasks'}
+          </Button>
+          <span className="text-xs text-muted-foreground">Showing {tasks.length} of {totalTasks}</span>
+        </div>
       )}
 
       {viewMode === 'timeline' && (

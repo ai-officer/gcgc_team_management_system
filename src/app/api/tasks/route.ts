@@ -8,6 +8,7 @@ import { autoSyncTask } from '@/lib/calendar-sync-helper'
 import { notifyTaskAssigned, notifySubtaskAssigned } from '@/lib/notifications'
 import { generateOccurrenceDates, buildRRuleString } from '@/lib/recurring'
 import { resolveTeamBoardLink } from '@/lib/team-board'
+import { setTaskAssignees } from '@/lib/task-assignees'
 
 const cascadeStepSchema = z.object({
   title: z.string().min(1).max(200),
@@ -615,6 +616,7 @@ export async function POST(req: NextRequest) {
             status: 'TODO',
             progressPercentage: 0,
             taskType,
+            isCascading: taskType === 'CASCADING',
             dueDate: finalDueDate,
             startDate: finalStartDate,
             assigneeId: assigneeId || session.user.id,
@@ -635,6 +637,7 @@ export async function POST(req: NextRequest) {
             reminderDays: reminderDays || [],
           },
         })
+        await setTaskAssignees(tx, templateTask.id, [assigneeId || session.user.id, ...teamMemberIds, ...collaboratorIds])
 
         // Only create the first instance; subsequent instances are created
         // automatically when the current one is marked COMPLETED.
@@ -646,6 +649,7 @@ export async function POST(req: NextRequest) {
             status: 'TODO' as const,
             progressPercentage: 0,
             taskType,
+            isCascading: taskType === 'CASCADING',
             dueDate: occurrences[0],
             startDate: occurrences[0],
             assigneeId: assigneeId || session.user.id,
@@ -676,6 +680,8 @@ export async function POST(req: NextRequest) {
             data: collaboratorIds.map(userId => ({ taskId: firstInstance.id, userId }))
           })
         }
+
+        await setTaskAssignees(tx, firstInstance.id, [assigneeId || session.user.id, ...teamMemberIds, ...collaboratorIds])
 
         return { template: templateTask, firstInstance, totalOccurrences: occurrences.length }
       })
@@ -715,6 +721,7 @@ export async function POST(req: NextRequest) {
           status: finalStatus || 'TODO',
           progressPercentage: finalProgress,
           taskType,
+          isCascading: taskType === 'CASCADING',
           dueDate: finalDueDate,
           startDate: finalStartDate,
           assigneeId: assigneeId || session.user.id, // Default to current user
@@ -760,12 +767,14 @@ export async function POST(req: NextRequest) {
         })
       }
 
+      await setTaskAssignees(tx, newTask.id, [assigneeId || session.user.id, ...teamMemberIds, ...collaboratorIds])
+
       // Create cascade steps for CASCADING tasks
       if (taskType === 'CASCADING' && cascadeSteps.length > 0) {
         for (let i = 0; i < cascadeSteps.length; i++) {
           const step = cascadeSteps[i]
           const stepOrder = i + 1
-          await tx.task.create({
+          const cascadeStep = await tx.task.create({
             data: {
               title: step.title,
               description: step.description || null,
@@ -773,6 +782,7 @@ export async function POST(req: NextRequest) {
               status: 'TODO',
               progressPercentage: 0,
               taskType: 'INDIVIDUAL',
+              isCascading: false,
               dueDate: step.dueDate ? new Date(step.dueDate) : finalDueDate,
               startDate: step.dueDate ? new Date(step.dueDate) : finalStartDate,
               assigneeId: step.assigneeId || null,
@@ -783,6 +793,7 @@ export async function POST(req: NextRequest) {
               isLocked: stepOrder > 1, // first step is unlocked, rest are locked
             },
           })
+          await setTaskAssignees(tx, cascadeStep.id, [step.assigneeId])
         }
       }
 

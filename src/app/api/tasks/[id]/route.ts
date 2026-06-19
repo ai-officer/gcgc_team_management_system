@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { canEditTask, canDeleteTask, canChangeTaskStatus, isTeamLeader } from '@/lib/permissions'
 import { autoSyncTask, deleteSyncedTask } from '@/lib/calendar-sync-helper'
 import { getNextOccurrenceDate } from '@/lib/recurring'
+import { setTaskAssignees } from '@/lib/task-assignees'
 import { notifyTaskAssigned, notifyTaskUpdated, notifyTaskCompleted, notifyTaskSubmittedForReview, notifySubtaskAssigned } from '@/lib/notifications'
 
 const updateTaskSchema = z.object({
@@ -437,6 +438,11 @@ export async function PATCH(
       delete taskUpdateData.teamMemberIds
       delete taskUpdateData.collaboratorIds
 
+      // Dual-write: keep isCascading in sync with taskType when taskType is being updated
+      if (updateData.taskType !== undefined) {
+        taskUpdateData.isCascading = updateData.taskType === 'CASCADING'
+      }
+
       // Set completion timestamps based on status transitions
       const newStatus = taskUpdateData.status
       if (newStatus === 'IN_REVIEW' && existingTask.status !== 'IN_REVIEW' && !existingTask.memberSubmittedAt) {
@@ -497,6 +503,29 @@ export async function PATCH(
             data: collaboratorData,
           })
         }
+      }
+
+      // Dual-write: re-sync TaskAssignee flat list when assignee/team/collab data is in this request.
+      // Mirror the exact same conditions the legacy taskTeamMember / taskCollaborator blocks use so
+      // the flat list always matches what those tables end up as after this PATCH.
+      const touchesAssignees =
+        updateData.assigneeId !== undefined ||
+        (updateData.taskType === 'TEAM' && updateData.teamMemberIds !== undefined) ||
+        (updateData.taskType === 'COLLABORATION' && updateData.collaboratorIds !== undefined)
+      if (touchesAssignees) {
+        const effectiveAssigneeId =
+          updateData.assigneeId !== undefined ? updateData.assigneeId : existingTask.assigneeId
+        // Only use incoming teamMemberIds when the legacy block would have rewritten them
+        const effectiveTeamMemberIds =
+          updateData.taskType === 'TEAM' && updateData.teamMemberIds !== undefined
+            ? updateData.teamMemberIds
+            : existingTask.teamMembers.map((tm: { userId: string }) => tm.userId)
+        // Only use incoming collaboratorIds when the legacy block would have rewritten them
+        const effectiveCollaboratorIds =
+          updateData.taskType === 'COLLABORATION' && updateData.collaboratorIds !== undefined
+            ? updateData.collaboratorIds
+            : existingTask.collaborators.map((c: { userId: string }) => c.userId)
+        await setTaskAssignees(tx, params.id, [effectiveAssigneeId, ...effectiveTeamMemberIds, ...effectiveCollaboratorIds])
       }
 
       // Return updated task with all relations

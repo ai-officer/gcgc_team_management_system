@@ -531,9 +531,10 @@ export default function CalendarPage() {
         </CardContent>
       </Card>
 
-      {/* Calendar — horizontally scrollable on mobile */}
+      {/* Calendar — fits the viewport on mobile (responsive CSS handles the
+          dense grid); keeps a comfortable min width on sm+ screens. */}
       <div style={{ overflowX: 'auto', overflowY: 'hidden' }}>
-        <div style={{ minWidth: 620 }}>
+        <div className="min-w-0 sm:min-w-[620px]">
           <Calendar
             localizer={localizer}
             events={events}

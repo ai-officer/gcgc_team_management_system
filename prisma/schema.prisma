@@ -47,6 +47,7 @@ model User {
   sessions           Session[]
   taskCollaborators      TaskCollaborator[]  @relation("TaskCollaborators")
   taskTeamMembers        TaskTeamMember[]    @relation("TaskTeamMembers")
+  taskAssignments        TaskAssignee[]      @relation("TaskAssignees")
   assignedTasks2         Task[]              @relation("TaskAssignedBy")
   assignedTasks          Task[]              @relation("TaskAssignee")
   createdTasks           Task[]              @relation("TaskCreator")
@@ -308,6 +309,7 @@ model Task {
   parentId              String?            // Parent task ID for subtasks
   cascadeOrder          Int?               // Step number in a CASCADING task (1, 2, 3…)
   isLocked              Boolean            @default(false) // Cascading step waiting for previous step to complete
+  isCascading           Boolean            @default(false) // Cascading is now a toggle (like recurring), not a taskType
   // Recurring task support
   isRecurring           Boolean            @default(false)
   recurringFrequency    RecurringFrequency?
@@ -345,6 +347,7 @@ model Task {
   events                Event[]
   collaborators         TaskCollaborator[]
   teamMembers           TaskTeamMember[]
+  assignees             TaskAssignee[]
   assignedBy            User?              @relation("TaskAssignedBy", fields: [assignedById], references: [id])
   assignee              User?              @relation("TaskAssignee", fields: [assigneeId], references: [id])
   creator               User               @relation("TaskCreator", fields: [creatorId], references: [id])
@@ -386,6 +389,21 @@ model TaskCollaborator {
   @@unique([taskId, userId])
   @@index([userId])
   @@map("task_collaborators")
+}
+
+// Unified, flat "Assigned To" list (1+ people, all equal — Monday.com-style).
+// Replaces the taskType-driven assignee/teamMembers/collaborators split.
+model TaskAssignee {
+  id        String   @id @default(cuid())
+  taskId    String
+  userId    String
+  createdAt DateTime @default(now())
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User     @relation("TaskAssignees", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, userId])
+  @@index([userId])
+  @@map("task_assignees")
 }
 
 model Comment {

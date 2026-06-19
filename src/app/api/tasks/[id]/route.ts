@@ -393,6 +393,28 @@ export async function PATCH(
       }
     }
 
+    // Work-quality gate: a task cannot be finalized as COMPLETED until its work
+    // quality has been rated (by the approving leader in this request, a senior
+    // override, or an existing rating). Only canComplete users reach COMPLETED
+    // here, so this enforces "rate quality before approve/complete".
+    const becomingCompleted =
+      updateData.status === 'COMPLETED' && existingTask.status !== 'COMPLETED'
+    if (becomingCompleted) {
+      const ratings = [
+        (updateData as any).workQuality,
+        (updateData as any).seniorWorkQuality,
+        (existingTask as any).workQuality,
+        (existingTask as any).seniorWorkQuality,
+      ]
+      const hasRating = ratings.some(r => r != null && r !== 'NONE')
+      if (!hasRating) {
+        return NextResponse.json(
+          { error: 'Please rate the work quality before completing this task.' },
+          { status: 400 }
+        )
+      }
+    }
+
     // Update task with transaction for related data
     const updatedTask = await prisma.$transaction(async (tx) => {
       // Prepare update data

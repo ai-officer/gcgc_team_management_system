@@ -1,6 +1,6 @@
 // src/components/tasks/TimelineView.tsx
 'use client'
-import { useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { format, startOfDay, differenceInCalendarDays } from 'date-fns'
 import { UserAvatar } from '@/components/shared/UserAvatar'
 import {
@@ -72,6 +72,15 @@ export default function TimelineView({
   // Unscheduled tray → drag a date-less chip onto the grid to schedule it.
   const gridRef = useRef<HTMLDivElement>(null)
   const [trayDrag, setTrayDrag] = useState<{ taskId: string; x: number; y: number } | null>(null)
+  // The sticky label column is full-width on desktop but must shrink on a
+  // phone so the Gantt bars aren't squeezed off-screen.
+  const [leftW, setLeftW] = useState(LEFT_W)
+  useEffect(() => {
+    const update = () => setLeftW(window.innerWidth < 640 ? 150 : LEFT_W)
+    update()
+    window.addEventListener('resize', update)
+    return () => window.removeEventListener('resize', update)
+  }, [])
 
   function trayDown(e: ReactPointerEvent<HTMLDivElement>, taskId: string) {
     if (!canEdit?.(taskId)) return
@@ -97,12 +106,12 @@ export default function TimelineView({
   return (
     <div className="border rounded-lg overflow-hidden bg-white">
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-3 py-2 border-b bg-slate-50">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Timeline</span>
-        <div className="flex items-center gap-1">
+      <div className="flex items-center justify-between gap-2 px-3 py-2 border-b bg-slate-50">
+        <span className="hidden sm:inline shrink-0 text-xs font-semibold uppercase tracking-wide text-slate-500">Timeline</span>
+        <div className="flex items-center gap-1 overflow-x-auto">
           {(['day', 'week', 'month', 'quarter', 'year'] as TimelineZoom[]).map(z => (
             <button key={z} onClick={() => onZoomChange(z)}
-              className={`px-2.5 h-7 rounded-md text-xs font-semibold border capitalize ${
+              className={`shrink-0 px-2.5 h-7 rounded-md text-xs font-semibold border capitalize ${
                 zoom === z ? 'bg-blue-600 text-white border-blue-600'
                   : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300'}`}>
               {z}
@@ -113,7 +122,7 @@ export default function TimelineView({
 
       <div className="flex overflow-x-auto">
         {/* Left table */}
-        <div className="shrink-0 sticky left-0 z-10 bg-white border-r" style={{ width: LEFT_W }}>
+        <div className="shrink-0 sticky left-0 z-10 bg-white border-r" style={{ width: leftW }}>
           <div style={{ height: ROW_H }} className="border-b bg-slate-50" />
           {groups.map(g => (
             <div key={g.key}>

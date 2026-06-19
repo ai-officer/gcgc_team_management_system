@@ -577,6 +577,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Conversely, derive progress from the chosen status so a task created
+    // directly in a later column reads that column's progress (In Review = 90%,
+    // Completed = 100%) instead of 0%. Mirrors the status⟷progress contract
+    // enforced on updates (PATCH caps In Review at 90).
+    let finalProgress = progressPercentage ?? 0
+    if (finalStatus === 'IN_REVIEW') finalProgress = 90
+    else if (finalStatus === 'COMPLETED') finalProgress = 100
+    else if (finalStatus === 'TODO') finalProgress = 0
+
     // Handle recurring task creation
     if (isRecurring && recurringFrequency && finalStartDate) {
       const endDate = recurringEndDate ? new Date(recurringEndDate) : null
@@ -702,7 +711,7 @@ export async function POST(req: NextRequest) {
           description,
           priority,
           status: finalStatus || 'TODO',
-          progressPercentage: progressPercentage || 0,
+          progressPercentage: finalProgress,
           taskType,
           dueDate: finalDueDate,
           startDate: finalStartDate,

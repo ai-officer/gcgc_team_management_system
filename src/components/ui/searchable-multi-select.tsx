@@ -139,7 +139,7 @@ export function SearchableMultiSelect({
         </PopoverTrigger>
 
         <PopoverContent
-          className="w-[400px] p-0 z-[300]"
+          className="w-[var(--radix-popover-trigger-width)] min-w-[16rem] p-0 z-[300]"
           align="start"
           sideOffset={4}
         >

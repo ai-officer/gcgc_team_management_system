@@ -31,6 +31,7 @@ import {
   MessageSquare,
   Star,
   Video,
+  Download,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -226,6 +227,7 @@ export default function TasksPage() {
   const [showTaskForm, setShowTaskForm] = useState(false)
   const [quickAddStatus, setQuickAddStatus] = useState<'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' | undefined>(undefined)
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [duplicatingTask, setDuplicatingTask] = useState<Task | null>(null)
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false)
@@ -315,6 +317,33 @@ export default function TasksPage() {
       if (showLoadingSpinner) {
         setLoading(false)
       }
+    }
+  }
+
+  // Export the current board (or All Tasks) to .xlsx, respecting the active
+  // board, user filter, and search.
+  const handleExport = async () => {
+    try {
+      setExporting(true)
+      const params = new URLSearchParams()
+      if (activeBoardId) params.append('boardId', activeBoardId)
+      if (selectedUser) params.append('userId', selectedUser)
+      if (searchTerm.trim()) params.append('search', searchTerm.trim())
+      const res = await fetch(`/api/tasks/export?${params.toString()}`)
+      if (!res.ok) throw new Error('Export failed')
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `tasks-${new Date().toISOString().slice(0, 10)}.xlsx`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      toast({ title: 'Export failed', description: 'Could not export tasks. Please try again.', variant: 'destructive' })
+    } finally {
+      setExporting(false)
     }
   }
 
@@ -995,6 +1024,10 @@ export default function TasksPage() {
           </p>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Button variant="outline" className="flex-1 sm:flex-none" onClick={handleExport} disabled={exporting} title="Export to Excel">
+            <Download className="h-4 w-4 mr-2" />
+            {exporting ? 'Exporting…' : 'Export'}
+          </Button>
           <Button variant="outline" className="flex-1 sm:flex-none" onClick={() => setBulkDialogOpen(true)}>
             <ListChecks className="h-4 w-4 mr-2" />
             Bulk

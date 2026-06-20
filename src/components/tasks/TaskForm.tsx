@@ -143,6 +143,9 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
   const [newStepTitle, setNewStepTitle] = useState('')
   const [newStepAssigneeId, setNewStepAssigneeId] = useState('')
   const [newStepDueDate, setNewStepDueDate] = useState('')
+  // Cascading is now a toggle (like Recurring), not a task type. The flat
+  // "Assigned To" list is stored in teamMemberIds / selectedTeamMembers.
+  const [isCascadingTask, setIsCascadingTask] = useState(false)
 
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskFormSchema),
@@ -210,8 +213,13 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
           progressPercentage: task.progressPercentage || 0,
           taskType: task.taskType,
           assigneeId: task.assigneeId || session?.user?.id, // PRESERVE original assignee when editing
-          teamMemberIds: task.teamMembers?.map((tm: any) => tm.userId) || [],
-          collaboratorIds: task.collaborators?.map((c: any) => c.userId) || [],
+          // Flat Assigned To = union of the old assignee + team members + collaborators
+          teamMemberIds: Array.from(new Set([
+            task.assigneeId,
+            ...(task.teamMembers?.map((tm: any) => tm.userId) || []),
+            ...(task.collaborators?.map((c: any) => c.userId) || []),
+          ].filter(Boolean) as string[])),
+          collaboratorIds: [],
           assignedById: task.assignedById || session?.user?.id,
           // New Google Calendar fields
           location: task.location || '',
@@ -229,13 +237,14 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
           recurringEndDate: null,
         })
 
-        // Set selected members and collaborators for display
-        if (task.teamMembers) {
-          setSelectedTeamMembers(task.teamMembers.map((tm: any) => tm.user))
-        }
-        if (task.collaborators) {
-          setSelectedCollaborators(task.collaborators.map((c: any) => c.user))
-        }
+        // Flat Assigned To display = union of assignee + team members + collaborators
+        const memberUsers = new Map<string, any>()
+        if ((task as any).assignee) memberUsers.set((task as any).assignee.id, (task as any).assignee)
+        task.teamMembers?.forEach((tm: any) => { if (tm.user) memberUsers.set(tm.user.id, tm.user) })
+        task.collaborators?.forEach((c: any) => { if (c.user) memberUsers.set(c.user.id, c.user) })
+        setSelectedTeamMembers(Array.from(memberUsers.values()))
+        setSelectedCollaborators([])
+        setIsCascadingTask(!!(task as any).isCascading || task.taskType === 'CASCADING')
       } else if (duplicateFrom) {
         // Duplicate mode: pre-fill from source task, reset status/progress, allow recurring
         const srcDue = duplicateFrom.dueDate ? new Date(duplicateFrom.dueDate) : undefined
@@ -251,8 +260,12 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
           progressPercentage: 0,
           taskType: duplicateFrom.taskType,
           assigneeId: duplicateFrom.assigneeId || session?.user?.id,
-          teamMemberIds: duplicateFrom.teamMembers?.map((tm: any) => tm.userId ?? tm.id) || [],
-          collaboratorIds: duplicateFrom.collaborators?.map((c: any) => c.userId ?? c.id) || [],
+          teamMemberIds: Array.from(new Set([
+            duplicateFrom.assigneeId,
+            ...(duplicateFrom.teamMembers?.map((tm: any) => tm.userId ?? tm.id) || []),
+            ...(duplicateFrom.collaborators?.map((c: any) => c.userId ?? c.id) || []),
+          ].filter(Boolean) as string[])),
+          collaboratorIds: [],
           assignedById: session?.user?.id,
           location: duplicateFrom.location || '',
           meetingLink: duplicateFrom.meetingLink || '',
@@ -268,12 +281,13 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
           recurringEndDate: null,
         })
 
-        if (duplicateFrom.teamMembers) {
-          setSelectedTeamMembers(duplicateFrom.teamMembers.map((tm: any) => tm.user ?? tm))
-        }
-        if (duplicateFrom.collaborators) {
-          setSelectedCollaborators(duplicateFrom.collaborators.map((c: any) => c.user ?? c))
-        }
+        const dupMemberUsers = new Map<string, any>()
+        if ((duplicateFrom as any).assignee) dupMemberUsers.set((duplicateFrom as any).assignee.id, (duplicateFrom as any).assignee)
+        duplicateFrom.teamMembers?.forEach((tm: any) => { const u = tm.user ?? tm; if (u?.id) dupMemberUsers.set(u.id, u) })
+        duplicateFrom.collaborators?.forEach((c: any) => { const u = c.user ?? c; if (u?.id) dupMemberUsers.set(u.id, u) })
+        setSelectedTeamMembers(Array.from(dupMemberUsers.values()))
+        setSelectedCollaborators([])
+        setIsCascadingTask(!!(duplicateFrom as any).isCascading || duplicateFrom.taskType === 'CASCADING')
         // Carry over subtasks when duplicating. DuplicateTaskDialog includes the
         // source subtasks when the "Subtasks" option is checked; without loading
         // them into pendingSubtasks they'd be silently dropped on submit.
@@ -332,6 +346,8 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
         // Clear selected arrays
         setSelectedTeamMembers([])
         setSelectedCollaborators([])
+        setIsCascadingTask(false)
+        setCascadeSteps([])
         // Clear subtasks
         setPendingSubtasks([])
         setNewSubtaskTitle('')
@@ -343,43 +359,23 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
     prevOpenRef.current = open
   }, [open, task, duplicateFrom, form, session, preSelectedMemberId])
 
-  // Handle task type changes and set appropriate defaults
+  // For brand-new tasks: default the assignee to the current user and, if opened
+  // via the "assign to member" flow, seed that member into the flat Assigned To
+  // list. Task types were removed, so there's no per-type field clearing.
   useEffect(() => {
-    if (!task && !duplicateFrom && session?.user?.id && open) { // Only for brand-new tasks
-      // For NEW tasks: an INDIVIDUAL task created via the "assign to member" flow
-      // (preSelectedMemberId) is assigned TO that member. In every other case —
-      // no pre-selected member, or a TEAM/COLLABORATION task where the creator is
-      // the leader/primary assignee — it is assigned to the current user.
-      form.setValue(
-        'assigneeId',
-        taskType === 'INDIVIDUAL' && preSelectedMemberId ? preSelectedMemberId : session.user.id
-      )
-
-      // Clear selections when changing task types (but preserve pre-selected members on first open)
-      if (taskType === 'INDIVIDUAL') {
-        setSelectedTeamMembers([])
-        setSelectedCollaborators([])
-        form.setValue('teamMemberIds', [])
-        form.setValue('collaboratorIds', [])
-        setCascadeSteps([])
-      } else if (taskType === 'TEAM') {
-        // Only clear collaborators, keep team members (they might be pre-selected)
-        setSelectedCollaborators([])
-        form.setValue('collaboratorIds', [])
-        setCascadeSteps([])
-      } else if (taskType === 'COLLABORATION') {
-        setSelectedTeamMembers([])
-        form.setValue('teamMemberIds', [])
-        setCascadeSteps([])
-      } else if (taskType === 'CASCADING') {
-        setSelectedTeamMembers([])
-        setSelectedCollaborators([])
-        form.setValue('teamMemberIds', [])
-        form.setValue('collaboratorIds', [])
+    if (!task && !duplicateFrom && session?.user?.id && open) {
+      form.setValue('assigneeId', session.user.id)
+      if (preSelectedMemberId && users.length > 0 && selectedTeamMembers.length === 0) {
+        const u = users.find(x => x.id === preSelectedMemberId)
+        if (u) {
+          setSelectedTeamMembers([u])
+          form.setValue('teamMemberIds', [u.id])
+        }
       }
     }
-    // For EDITING tasks: preserve the original assignee - do NOT override
-  }, [taskType, session?.user?.id, task, form, open, preSelectedMemberId])
+    // For EDITING tasks: preserve the original assignees - do NOT override
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id, task, duplicateFrom, form, open, preSelectedMemberId, users])
 
   // When recurring is on, auto-populate dueDate from startDate so the
   // user doesn't have to fill in a redundant "Deadline" field.
@@ -440,6 +436,24 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
       // Combine date and time if not all-day
       const submissionData = { ...data }
 
+      // Map the flat "Assigned To" (teamMemberIds) + Cascading toggle to the
+      // legacy taskType fields the API still expects (type selector was removed).
+      if (isCascadingTask) {
+        submissionData.taskType = 'CASCADING'
+      } else {
+        const assignees = data.teamMemberIds || []
+        if (assignees.length > 1) {
+          submissionData.taskType = 'TEAM'
+          submissionData.assigneeId = assignees[0]
+          submissionData.teamMemberIds = assignees.slice(1)
+        } else {
+          submissionData.taskType = 'INDIVIDUAL'
+          submissionData.assigneeId = assignees[0] ?? session?.user?.id ?? null
+          submissionData.teamMemberIds = []
+        }
+        submissionData.collaboratorIds = []
+      }
+
       if (!data.allDay) {
         // If we have a start date and time, combine them
         if (data.startDate && data.startTime) {
@@ -486,8 +500,8 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
         assigneeId: s.assigneeId,
       }))
 
-      // Include cascade steps for CASCADING tasks
-      if (data.taskType === 'CASCADING') {
+      // Include cascade steps when the Cascading toggle is on
+      if (isCascadingTask) {
         ;(submissionData as any).cascadeSteps = cascadeSteps.map(s => ({
           title: s.title,
           assigneeId: s.assigneeId || null,
@@ -512,6 +526,7 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
       form.reset()
       setPendingSubtasks([])
       setCascadeSteps([])
+      setIsCascadingTask(false)
     } catch (error) {
       console.error('Error submitting task:', error)
     } finally {
@@ -1072,20 +1087,9 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
             <Separator className="flex-1" />
           </div>
 
-          {/* Task Type — compact segmented toggle */}
+          {/* Assigned To + Cascading (replaces the old task-type cards) */}
           <section>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">Task Type</h3>
-            <div className="flex flex-wrap sm:flex-nowrap rounded-lg border divide-x overflow-hidden mb-4">
-              {(['INDIVIDUAL', 'TEAM', 'COLLABORATION', 'CASCADING'] as const).map(type => (
-                <button key={type} type="button"
-                  onClick={() => form.setValue('taskType', type)}
-                  className={cn('flex-1 basis-[50%] sm:basis-0 min-w-0 flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-3 py-2.5 text-[11px] sm:text-xs font-medium transition-colors',
-                    taskType === type ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted')}>
-                  {getTaskTypeIcon(type)}
-                  <span className="capitalize truncate">{type.toLowerCase()}</span>
-                </button>
-              ))}
-            </div>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">Assigned To</h3>
 
             {/* People-scope toggle — only when in a team board context */}
             {boardContext?.teamId && (
@@ -1097,102 +1101,39 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
               </div>
             )}
 
-            {/* Task Type Specific Fields */}
-            {taskType === 'INDIVIDUAL' && (() => {
-              const assigneeId = form.watch('assigneeId')
-              const assignedTo =
-                assigneeId && assigneeId !== session?.user?.id
-                  ? users.find(u => u.id === assigneeId)
-                  : null
-              return (
-                <div className="px-4 py-3 bg-blue-50 border-2 border-blue-200 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="p-1.5 bg-blue-100 rounded-full shrink-0">
-                      <User className="h-4 w-4 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-blue-900">
-                        Individual Task
-                      </p>
-                      <p className="text-xs text-blue-700 mt-0.5">
-                        {assignedTo
-                          ? `This task will be assigned to ${assignedTo.name || assignedTo.email}.`
-                          : 'This task is assigned to you automatically. Perfect for personal work items.'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )
-            })()}
-
-            {taskType === 'TEAM' && (
-              <Card className="border-2 border-purple-200 bg-purple-50/50">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 bg-purple-100 rounded-full">
-                      <Users className="h-5 w-5 text-purple-600" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-base text-purple-900">Team Task</CardTitle>
-                      <CardDescription className="text-purple-700">
-                        Choose who leads the task and add the members.
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Team Leader (assignee/owner) — defaults to you, but you can hand it to a member */}
-                  <div className="space-y-2">
-                    <Label className="text-base">Team Leader</Label>
-                    <Select
-                      value={form.watch('assigneeId') || session?.user?.id || ''}
-                      onValueChange={(val) => {
-                        form.setValue('assigneeId', val)
-                        // The chosen leader shouldn't also be listed as a member
-                        removeTeamMember(val)
-                      }}
-                    >
-                      <SelectTrigger className="h-11">
-                        <SelectValue placeholder="Select the team leader" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {session?.user?.id && (
-                          <SelectItem value={session.user.id}>
-                            Myself ({session.user.name || session.user.email})
-                          </SelectItem>
-                        )}
-                        {users.filter(u => u.id !== session?.user?.id).map((user) => (
-                          <SelectItem key={user.id} value={user.id}>
-                            {user.name || user.email}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-purple-700/80">
-                      The leader owns the task; everyone added below is a member.
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-base">Team Members</Label>
-                    <SearchableMultiSelect
-                      options={users.filter(u => u.id !== (form.watch('assigneeId') || session?.user?.id)) as SelectOption[]}
-                      selected={selectedTeamMembers as SelectOption[]}
-                      onSelect={(user) => addTeamMember(user as User)}
-                      onRemove={removeTeamMember}
-                      onClear={() => {
-                        setSelectedTeamMembers([])
-                        form.setValue('teamMemberIds', [])
-                      }}
-                      placeholder="Search and add team members..."
-                      emptyText="No team members available"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
+            {/* Flat "Assigned To" — one or more people (board members / all users) */}
+            {!isCascadingTask && (
+              <div className="space-y-2 mb-4">
+                <SearchableMultiSelect
+                  options={users as SelectOption[]}
+                  selected={selectedTeamMembers as SelectOption[]}
+                  onSelect={(user) => addTeamMember(user as User)}
+                  onRemove={removeTeamMember}
+                  onClear={() => { setSelectedTeamMembers([]); form.setValue('teamMemberIds', []) }}
+                  placeholder="Search and add people..."
+                  emptyText="No people available"
+                />
+                <p className="text-xs text-muted-foreground">Assign to one or more people. Leave empty to assign it to yourself.</p>
+              </div>
             )}
 
-            {taskType === 'COLLABORATION' && (
+            {/* Cascading toggle — like Recurring Schedule */}
+            <div className={cn('rounded-xl border-2 transition-colors duration-200 mb-4', isCascadingTask ? 'border-indigo-300 bg-indigo-50/40' : 'border-border bg-muted/20')}>
+              <div className="flex items-center justify-between px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <div className={cn('p-1.5 rounded-full transition-colors', isCascadingTask ? 'bg-indigo-100' : 'bg-muted')}>
+                    <GitBranch className={cn('h-4 w-4 transition-colors', isCascadingTask ? 'text-indigo-600' : 'text-muted-foreground')} />
+                  </div>
+                  <div>
+                    <p className={cn('text-sm font-semibold transition-colors', isCascadingTask ? 'text-indigo-900' : 'text-foreground')}>Cascading</p>
+                    <p className="text-xs text-muted-foreground">Break the task into ordered steps; each unlocks the next when completed.</p>
+                  </div>
+                </div>
+                <Switch checked={isCascadingTask} onCheckedChange={setIsCascadingTask} />
+              </div>
+            </div>
+
+            {false && (
               <Card className="border-2 border-green-200 bg-green-50/50">
                 <CardHeader className="pb-3">
                   <div className="flex items-start gap-3">
@@ -1227,7 +1168,7 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
               </Card>
             )}
 
-            {taskType === 'CASCADING' && (
+            {isCascadingTask && (
               <Card className="border-2 border-indigo-200 bg-indigo-50/50">
                 <CardHeader className="pb-3">
                   <div className="flex items-start gap-3">
@@ -1346,7 +1287,7 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
           </section>
 
           {/* Subtasks Section - Collapsible (only for new non-cascading tasks) */}
-          {!task && taskType !== 'CASCADING' && (
+          {!task && !isCascadingTask && (
             <Collapsible>
               <Card className="border-2 border-amber-200 bg-amber-50/50">
                 <CollapsibleTrigger asChild>

@@ -607,6 +607,29 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
     setCascadeSteps(cascadeSteps.filter(s => s.id !== id))
   }
 
+  // Recurring and Cascading are mutually exclusive behaviors. Selecting one
+  // turns off the other (and clears its fields); selecting the active one again
+  // returns the task to a plain task.
+  const clearRecurringFields = () => {
+    form.setValue('recurringFrequency', undefined)
+    form.setValue('recurringEndDate', null)
+    form.setValue('recurringDaysOfWeek', [])
+    setRecurringNoEndDate(false)
+    form.setValue('recurringInterval', 1)
+  }
+  const toggleRecurring = () => {
+    const next = !form.watch('isRecurring')
+    if (next && isCascadingTask) { setIsCascadingTask(false); setCascadeSteps([]) }
+    form.setValue('isRecurring', next)
+    if (!next) clearRecurringFields()
+  }
+  const toggleCascading = () => {
+    const next = !isCascadingTask
+    if (next && form.watch('isRecurring')) { form.setValue('isRecurring', false); clearRecurringFields() }
+    setIsCascadingTask(next)
+    if (!next) setCascadeSteps([])
+  }
+
   const getTaskTypeIcon = (type: TaskType) => {
     switch (type) {
       case 'INDIVIDUAL': return <User className="h-4 w-4" />
@@ -651,7 +674,7 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="z-[100] flex flex-col gap-0 p-0 overflow-hidden w-screen max-w-none h-[100dvh] sm:w-auto sm:max-w-2xl sm:h-auto sm:max-h-[90vh]">
+      <DialogContent className="z-[100] flex flex-col gap-0 p-0 overflow-hidden w-screen max-w-none h-[100dvh] sm:w-auto sm:max-w-4xl sm:h-auto sm:max-h-[90vh]">
         <DialogHeader className="sticky top-0 z-10 bg-background border-b px-6 pt-6 pb-4">
           <DialogTitle>{task ? 'Edit Task' : duplicateFrom ? 'Duplicate Task' : 'Create New Task'}</DialogTitle>
           <DialogDescription>
@@ -905,42 +928,43 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
                 </div>
               </div>
 
-              {/* Recurring Schedule — only for new tasks */}
+              {/* Task behavior — Recurring or Cascading (one at a time). New tasks only. */}
               {!task && (
-                <div className={cn('rounded-xl border-2 transition-colors duration-200', form.watch('isRecurring') ? 'border-blue-300 bg-blue-50/40' : 'border-border bg-muted/20')}>
-                  {/* Toggle row */}
-                  <div className="flex items-center justify-between px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className={cn('p-1.5 rounded-full transition-colors', form.watch('isRecurring') ? 'bg-blue-100' : 'bg-muted')}>
+                <div className="space-y-3">
+                  {/* Segmented selector */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={toggleRecurring}
+                      className={cn('flex items-center gap-2.5 rounded-xl border-2 px-3 py-2.5 text-left transition-colors', form.watch('isRecurring') ? 'border-blue-400 bg-blue-50' : 'border-border bg-muted/20 hover:border-blue-200')}
+                    >
+                      <div className={cn('p-1.5 rounded-full transition-colors shrink-0', form.watch('isRecurring') ? 'bg-blue-100' : 'bg-muted')}>
                         <RefreshCw className={cn('h-4 w-4 transition-colors', form.watch('isRecurring') ? 'text-blue-600' : 'text-muted-foreground')} />
                       </div>
-                      <div>
-                        <p className={cn('text-sm font-semibold transition-colors', form.watch('isRecurring') ? 'text-blue-900' : 'text-foreground')}>
-                          Recurring Schedule
-                        </p>
-                        <p className={cn('text-xs', form.watch('isRecurring') ? 'text-blue-600' : 'text-muted-foreground')}>
-                          {form.watch('isRecurring') ? 'Task repeats automatically on a set schedule' : 'Enable to repeat this task on a schedule'}
-                        </p>
+                      <div className="min-w-0">
+                        <p className={cn('text-sm font-semibold transition-colors', form.watch('isRecurring') ? 'text-blue-900' : 'text-foreground')}>Recurring</p>
+                        <p className="text-xs text-muted-foreground truncate">Repeats on a schedule</p>
                       </div>
-                    </div>
-                    <Switch
-                      checked={form.watch('isRecurring')}
-                      onCheckedChange={(checked) => {
-                        form.setValue('isRecurring', checked)
-                        if (!checked) {
-                          form.setValue('recurringFrequency', undefined)
-                          form.setValue('recurringEndDate', null)
-                          form.setValue('recurringDaysOfWeek', [])
-                          setRecurringNoEndDate(false)
-                          form.setValue('recurringInterval', 1)
-                        }
-                      }}
-                    />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={toggleCascading}
+                      className={cn('flex items-center gap-2.5 rounded-xl border-2 px-3 py-2.5 text-left transition-colors', isCascadingTask ? 'border-indigo-400 bg-indigo-50' : 'border-border bg-muted/20 hover:border-indigo-200')}
+                    >
+                      <div className={cn('p-1.5 rounded-full transition-colors shrink-0', isCascadingTask ? 'bg-indigo-100' : 'bg-muted')}>
+                        <GitBranch className={cn('h-4 w-4 transition-colors', isCascadingTask ? 'text-indigo-600' : 'text-muted-foreground')} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className={cn('text-sm font-semibold transition-colors', isCascadingTask ? 'text-indigo-900' : 'text-foreground')}>Cascading</p>
+                        <p className="text-xs text-muted-foreground truncate">Ordered, unlocking steps</p>
+                      </div>
+                    </button>
                   </div>
+                  <p className="text-xs text-muted-foreground">Optional — pick one to add a schedule or ordered steps. Click the active one again to turn it off.</p>
 
-                  {/* Expanded fields */}
+                  {/* Recurring fields */}
                   {form.watch('isRecurring') && (
-                    <div className="px-4 pb-4 space-y-4 border-t border-blue-200 pt-4">
+                    <div className="rounded-xl border-2 border-blue-300 bg-blue-50/40 px-4 pb-4 pt-4 space-y-4">
                       {/* Frequency */}
                       <div className="space-y-2">
                         <Label className="text-sm font-medium text-gray-700">Repeat frequency</Label>
@@ -1075,6 +1099,124 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
                       )}
                     </div>
                   )}
+
+                  {/* Cascading steps builder */}
+                  {isCascadingTask && (
+                    <Card className="border-2 border-indigo-200 bg-indigo-50/50">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 bg-indigo-100 rounded-full">
+                            <GitBranch className="h-5 w-5 text-indigo-600" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-base text-indigo-900">Cascading Task</CardTitle>
+                            <CardDescription className="text-indigo-700">
+                              Steps must be completed in order. Each step unlocks the next one automatically.
+                            </CardDescription>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {/* Add step form */}
+                        <div className="space-y-2">
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Step title..."
+                              value={newStepTitle}
+                              onChange={(e) => setNewStepTitle(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCascadeStep() } }}
+                              maxLength={200}
+                              className="flex-1"
+                            />
+                            <Button type="button" size="sm" onClick={addCascadeStep} disabled={!newStepTitle.trim()}>
+                              <Plus className="h-4 w-4 mr-1" /> Add Step
+                            </Button>
+                          </div>
+                          {newStepTitle.trim() && (
+                            <div className="flex gap-2 pl-1">
+                              <Select value={newStepAssigneeId} onValueChange={setNewStepAssigneeId}>
+                                <SelectTrigger className="h-8 text-xs w-[160px]">
+                                  <SelectValue placeholder="Assign to..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value={session?.user?.id || 'self'}>Myself</SelectItem>
+                                  {users.filter(u => u.id !== session?.user?.id).map((user) => (
+                                    <SelectItem key={user.id} value={user.id}>
+                                      <div className="flex items-center gap-2">
+                                        <Avatar className="h-5 w-5"><AvatarFallback className="text-xs">{(user.name || user.email)?.[0]?.toUpperCase()}</AvatarFallback></Avatar>
+                                        {user.name || user.email}
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <DatePicker
+                                date={newStepDueDate ? new Date(newStepDueDate) : undefined}
+                                onSelect={d => setNewStepDueDate(d ? format(d, 'yyyy-MM-dd') : '')}
+                                placeholder="Due date (optional)"
+                              />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Steps list */}
+                        {cascadeSteps.length > 0 ? (
+                          <div className="space-y-2">
+                            <Label className="text-sm text-indigo-800">
+                              {cascadeSteps.length} step{cascadeSteps.length !== 1 ? 's' : ''} — completed in order
+                            </Label>
+                            <div className="space-y-2">
+                              {cascadeSteps.map((step, index) => (
+                                <div
+                                  key={step.id}
+                                  className="flex items-center gap-3 p-3 bg-white rounded-lg border border-indigo-200"
+                                >
+                                  <div className="flex items-center gap-2 flex-shrink-0">
+                                    <GripVertical className="h-4 w-4 text-indigo-300" />
+                                    <div className="h-6 w-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                                      {index + 1}
+                                    </div>
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium truncate">{step.title}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {step.assignee?.name || step.assignee?.email || 'Unassigned'}
+                                      {step.dueDate && <span className="ml-2">· Due {new Date(step.dueDate).toLocaleDateString()}</span>}
+                                    </p>
+                                  </div>
+                                  {index > 0 && (
+                                    <Badge variant="outline" className="text-xs text-indigo-600 border-indigo-300 flex-shrink-0">
+                                      Locked
+                                    </Badge>
+                                  )}
+                                  {index === 0 && (
+                                    <Badge className="text-xs bg-indigo-100 text-indigo-700 hover:bg-indigo-100 flex-shrink-0">
+                                      First
+                                    </Badge>
+                                  )}
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => removeCascadeStep(step.id)}
+                                    className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-center py-4 text-indigo-600">
+                            <GitBranch className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                            <p className="text-sm">No steps added yet</p>
+                            <p className="text-xs text-muted-foreground">Add at least 2 steps to create a cascading task</p>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
               )}
             </div>
@@ -1089,10 +1231,12 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
 
           {/* Assigned To + Cascading (replaces the old task-type cards) */}
           <section>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">Assigned To</h3>
+            {!isCascadingTask && (
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">Assigned To</h3>
+            )}
 
             {/* People-scope toggle — only when in a team board context */}
-            {boardContext?.teamId && (
+            {!isCascadingTask && boardContext?.teamId && (
               <div className="flex items-center justify-end gap-2 mb-2">
                 <span className="text-xs text-muted-foreground">{showAllUsers ? 'Showing all users' : 'Showing team members only'}</span>
                 <button type="button" className="text-xs text-blue-600 hover:underline" onClick={() => setShowAllUsers(v => !v)}>
@@ -1116,22 +1260,6 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
                 <p className="text-xs text-muted-foreground">Assign to one or more people. Leave empty to assign it to yourself.</p>
               </div>
             )}
-
-            {/* Cascading toggle — like Recurring Schedule */}
-            <div className={cn('rounded-xl border-2 transition-colors duration-200 mb-4', isCascadingTask ? 'border-indigo-300 bg-indigo-50/40' : 'border-border bg-muted/20')}>
-              <div className="flex items-center justify-between px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <div className={cn('p-1.5 rounded-full transition-colors', isCascadingTask ? 'bg-indigo-100' : 'bg-muted')}>
-                    <GitBranch className={cn('h-4 w-4 transition-colors', isCascadingTask ? 'text-indigo-600' : 'text-muted-foreground')} />
-                  </div>
-                  <div>
-                    <p className={cn('text-sm font-semibold transition-colors', isCascadingTask ? 'text-indigo-900' : 'text-foreground')}>Cascading</p>
-                    <p className="text-xs text-muted-foreground">Break the task into ordered steps; each unlocks the next when completed.</p>
-                  </div>
-                </div>
-                <Switch checked={isCascadingTask} onCheckedChange={setIsCascadingTask} />
-              </div>
-            </div>
 
             {false && (
               <Card className="border-2 border-green-200 bg-green-50/50">
@@ -1168,122 +1296,6 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
               </Card>
             )}
 
-            {isCascadingTask && (
-              <Card className="border-2 border-indigo-200 bg-indigo-50/50">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 bg-indigo-100 rounded-full">
-                      <GitBranch className="h-5 w-5 text-indigo-600" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-base text-indigo-900">Cascading Task</CardTitle>
-                      <CardDescription className="text-indigo-700">
-                        Steps must be completed in order. Each step unlocks the next one automatically.
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Add step form */}
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="Step title..."
-                        value={newStepTitle}
-                        onChange={(e) => setNewStepTitle(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCascadeStep() } }}
-                        maxLength={200}
-                        className="flex-1"
-                      />
-                      <Button type="button" size="sm" onClick={addCascadeStep} disabled={!newStepTitle.trim()}>
-                        <Plus className="h-4 w-4 mr-1" /> Add Step
-                      </Button>
-                    </div>
-                    {newStepTitle.trim() && (
-                      <div className="flex gap-2 pl-1">
-                        <Select value={newStepAssigneeId} onValueChange={setNewStepAssigneeId}>
-                          <SelectTrigger className="h-8 text-xs w-[160px]">
-                            <SelectValue placeholder="Assign to..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={session?.user?.id || 'self'}>Myself</SelectItem>
-                            {users.filter(u => u.id !== session?.user?.id).map((user) => (
-                              <SelectItem key={user.id} value={user.id}>
-                                <div className="flex items-center gap-2">
-                                  <Avatar className="h-5 w-5"><AvatarFallback className="text-xs">{(user.name || user.email)?.[0]?.toUpperCase()}</AvatarFallback></Avatar>
-                                  {user.name || user.email}
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <DatePicker
-                          date={newStepDueDate ? new Date(newStepDueDate) : undefined}
-                          onSelect={d => setNewStepDueDate(d ? format(d, 'yyyy-MM-dd') : '')}
-                          placeholder="Due date (optional)"
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Steps list */}
-                  {cascadeSteps.length > 0 ? (
-                    <div className="space-y-2">
-                      <Label className="text-sm text-indigo-800">
-                        {cascadeSteps.length} step{cascadeSteps.length !== 1 ? 's' : ''} — completed in order
-                      </Label>
-                      <div className="space-y-2">
-                        {cascadeSteps.map((step, index) => (
-                          <div
-                            key={step.id}
-                            className="flex items-center gap-3 p-3 bg-white rounded-lg border border-indigo-200"
-                          >
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              <GripVertical className="h-4 w-4 text-indigo-300" />
-                              <div className="h-6 w-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold flex-shrink-0">
-                                {index + 1}
-                              </div>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate">{step.title}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {step.assignee?.name || step.assignee?.email || 'Unassigned'}
-                                {step.dueDate && <span className="ml-2">· Due {new Date(step.dueDate).toLocaleDateString()}</span>}
-                              </p>
-                            </div>
-                            {index > 0 && (
-                              <Badge variant="outline" className="text-xs text-indigo-600 border-indigo-300 flex-shrink-0">
-                                Locked
-                              </Badge>
-                            )}
-                            {index === 0 && (
-                              <Badge className="text-xs bg-indigo-100 text-indigo-700 hover:bg-indigo-100 flex-shrink-0">
-                                First
-                              </Badge>
-                            )}
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => removeCascadeStep(step.id)}
-                              className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-4 text-indigo-600">
-                      <GitBranch className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">No steps added yet</p>
-                      <p className="text-xs text-muted-foreground">Add at least 2 steps to create a cascading task</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
           </section>
 
           {/* Subtasks Section - Collapsible (only for new non-cascading tasks) */}

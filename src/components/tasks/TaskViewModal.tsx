@@ -93,6 +93,15 @@ interface Task {
       image?: string
     }
   }>
+  assignees?: Array<{
+    userId: string
+    user: {
+      id: string
+      name: string
+      email: string
+      image?: string
+    }
+  }>
   // Subtask support
   parentId?: string
   parent?: {
@@ -2188,71 +2197,42 @@ export default function TaskViewModal({
                 </div>
               )}
 
-              {/* Assignee */}
-              {task.assignee && (
-                <div className="flex items-center gap-2 text-sm">
-                  <UserAvatar
-                    userId={task.assignee.id}
-                    image={task.assignee.image}
-                    name={task.assignee.name}
-                    email={task.assignee.email}
-                    className="h-6 w-6"
-                    fallbackClassName="text-xs"
-                  />
-                  <span className="text-gray-600">Assigned to:</span>
-                  <span className="font-medium">{task.assignee.name || task.assignee.email}</span>
-                </div>
-              )}
-
-              {/* Team Members */}
-              {task.taskType === 'TEAM' && task.teamMembers && task.teamMembers.length > 0 && (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Users className="h-4 w-4 text-gray-500" />
-                    <span className="text-gray-600">Team ({task.teamMembers.length}):</span>
+              {/* Assigned to — unified flat list (de-duped union of the
+                  TaskAssignee records + dual-written legacy assignee/team/collab) */}
+              {(() => {
+                const map = new Map<string, { id: string; name?: string; email: string; image?: string }>()
+                task.assignees?.forEach((a) => { if (a.user) map.set(a.user.id, a.user) })
+                if (task.assignee) map.set(task.assignee.id, task.assignee)
+                task.teamMembers?.forEach((m) => { if (m.user) map.set(m.user.id, m.user) })
+                task.collaborators?.forEach((c) => { if (c.user) map.set(c.user.id, c.user) })
+                const people = Array.from(map.values())
+                if (people.length === 0) return null
+                return (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Users className="h-4 w-4 text-gray-500" />
+                      <span className="text-gray-600">
+                        Assigned to{people.length > 1 ? ` (${people.length})` : ''}:
+                      </span>
+                    </div>
+                    <div className="ml-6 space-y-1">
+                      {people.map((p) => (
+                        <div key={p.id} className="flex items-center gap-2 text-sm">
+                          <UserAvatar
+                            userId={p.id}
+                            image={p.image}
+                            name={p.name}
+                            email={p.email}
+                            className="h-5 w-5"
+                            fallbackClassName="text-xs"
+                          />
+                          <span className="font-medium">{p.name || p.email}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="ml-6 space-y-1">
-                    {task.teamMembers.map((member) => (
-                      <div key={member.userId} className="flex items-center gap-2 text-sm">
-                        <UserAvatar
-                          userId={member.user.id}
-                          image={member.user.image}
-                          name={member.user.name}
-                          email={member.user.email}
-                          className="h-5 w-5"
-                          fallbackClassName="text-xs"
-                        />
-                        <span>{member.user.name || member.user.email}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Collaborators */}
-              {task.taskType === 'COLLABORATION' && task.collaborators && task.collaborators.length > 0 && (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Handshake className="h-4 w-4 text-gray-500" />
-                    <span className="text-gray-600">Collaborators ({task.collaborators.length}):</span>
-                  </div>
-                  <div className="ml-6 space-y-1">
-                    {task.collaborators.map((collaborator) => (
-                      <div key={collaborator.userId} className="flex items-center gap-2 text-sm">
-                        <UserAvatar
-                          userId={collaborator.user.id}
-                          image={collaborator.user.image}
-                          name={collaborator.user.name}
-                          email={collaborator.user.email}
-                          className="h-5 w-5"
-                          fallbackClassName="text-xs"
-                        />
-                        <span>{collaborator.user.name || collaborator.user.email}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                )
+              })()}
             </div>
           </div>
 

@@ -407,6 +407,20 @@ export async function GET(req: NextRequest) {
               }
             }
           },
+          assignees: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  name: true,
+                  email: true,
+                  image: true
+                }
+              }
+            }
+          },
           _count: {
             select: { comments: true, subtasks: true }
           },
@@ -855,6 +869,20 @@ export async function POST(req: NextRequest) {
             }
           },
           collaborators: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  name: true,
+                  email: true,
+                  image: true
+                }
+              }
+            }
+          },
+          assignees: {
             include: {
               user: {
                 select: {

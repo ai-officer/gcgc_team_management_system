@@ -84,6 +84,18 @@ export async function GET(
             }
           }
         },
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                image: true
+              }
+            }
+          }
+        },
         comments: {
           include: {
             author: {

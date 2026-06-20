@@ -71,3 +71,6 @@ cookies.txt
 /docs/
 /.claude/worktrees/
 .playwright-mcp/
+
+# graphify generated output (knowledge graph artifacts + local cache)
+/graphify-out/

@@ -74,7 +74,7 @@ export default async function middleware(req: NextRequest) {
     pathname === '/terms-of-service' ||
     pathname === '/sw.js' || // service worker must be served directly (web push)
     pathname.startsWith('/google') || // Google Search Console verification
-    pathname.startsWith('/forms') // public intake forms (login-less; token-scoped)
+    pathname.startsWith('/forms/') // public intake forms (login-less; token-scoped)
   ) {
     return NextResponse.next()
   }

@@ -14,6 +14,10 @@ const LIMIT = 10
 const WINDOW_MS = 60 * 60 * 1000
 function rateLimited(ip: string): boolean {
   const now = Date.now()
+  // Bound the map: x-forwarded-for is client-controlled, so a spoofed-IP flood
+  // could otherwise grow it unbounded. This is best-effort (per-process), so the
+  // real protections are the enable-toggle + honeypot, not this limiter.
+  if (RATE.size > 10_000) RATE.clear()
   const e = RATE.get(ip)
   if (!e || now > e.resetAt) {
     RATE.set(ip, { count: 1, resetAt: now + WINDOW_MS })
@@ -28,8 +32,9 @@ const submitSchema = z.object({
   email: z.string().email().max(200),
   title: z.string().min(1).max(120),
   description: z.string().max(5000).optional(),
-  fieldValues: z.array(z.object({ fieldId: z.string(), value: z.string().nullable() })).optional(),
-  _hp: z.string().optional(), // honeypot — real users leave this empty
+  // Caps on anonymous input — a public endpoint must bound every field.
+  fieldValues: z.array(z.object({ fieldId: z.string(), value: z.string().max(2000).nullable() })).max(50).optional(),
+  _hp: z.string().max(200).optional(), // honeypot — real users leave this empty
 })
 
 export async function POST(req: NextRequest, { params }: { params: { token: string } }) {
@@ -78,7 +83,13 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
     const allowed = new Set(form.board.fields.map((f) => f.id))
     const fieldValues = (data.fieldValues || []).filter((v) => allowed.has(v.fieldId))
 
-    const assigneeId = form.defaultAssigneeId || form.board.ownerId
+    // Use the configured assignee if it's still a real user, else the board owner
+    // (a stale defaultAssigneeId would otherwise 500 on the FK).
+    let assigneeId = form.board.ownerId
+    if (form.defaultAssigneeId && form.defaultAssigneeId !== form.board.ownerId) {
+      const exists = await prisma.user.findUnique({ where: { id: form.defaultAssigneeId }, select: { id: true } })
+      if (exists) assigneeId = form.defaultAssigneeId
+    }
     const description =
       `📨 Submitted via form by ${data.name} <${data.email}>` +
       (data.description ? `\n\n${data.description}` : '')
@@ -104,12 +115,9 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
       return task
     })
 
-    // Notify the assignee (best-effort).
-    try {
-      await notifyTaskAssigned(assigneeId, created.id, data.title.trim(), 'Form submission')
-    } catch {
-      /* notification failures shouldn't fail the submission */
-    }
+    // Notify the assignee — fire-and-forget so the public submit returns
+    // immediately and never rides on email/push latency.
+    void notifyTaskAssigned(assigneeId, created.id, data.title.trim(), 'Form submission').catch(() => {})
 
     return NextResponse.json({ ok: true })
   } catch (error) {

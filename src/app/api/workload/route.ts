@@ -74,51 +74,50 @@ export async function GET(req: NextRequest) {
 
     const memberIds = uniqueUsers.map(u => u.id)
 
-    // Get task counts grouped by assignee and status for these members only
-    const taskGroups = await prisma.task.groupBy({
-      by: ['assigneeId', 'status'],
+    // Flat assignee model: count every task a member is assigned to via the
+    // TaskAssignee set (the de-duped union of direct assignee + team members +
+    // collaborators), not just the single legacy assigneeId — so team members
+    // and collaborators are credited for their work. @@unique([taskId,userId])
+    // guarantees one row per user per task, so no double counting.
+    const assigneeRows = await prisma.taskAssignee.findMany({
       where: {
-        isRecurring: false,
-        assigneeId: { in: memberIds },
-        status: { notIn: ['CANCELLED'] },
+        userId: { in: memberIds },
+        task: { isRecurring: false, status: { notIn: ['CANCELLED'] } },
       },
-      _count: { id: true },
+      select: {
+        userId: true,
+        task: { select: { status: true, dueDate: true } },
+      },
     })
 
-    // Get overdue task counts for these members
-    const overdueCounts = await prisma.task.groupBy({
-      by: ['assigneeId'],
-      where: {
-        isRecurring: false,
-        assigneeId: { in: memberIds },
-        status: { notIn: ['COMPLETED', 'CANCELLED'] },
-        dueDate: { lt: startOfToday },
-      },
-      _count: { id: true },
-    })
-
-    const overdueMap = new Map(
-      overdueCounts.map(r => [r.assigneeId, r._count.id])
-    )
+    const statsByUser = new Map<string, { byStatus: Record<string, number>; total: number; overdue: number }>()
+    for (const row of assigneeRows) {
+      let s = statsByUser.get(row.userId)
+      if (!s) {
+        s = { byStatus: {}, total: 0, overdue: 0 }
+        statsByUser.set(row.userId, s)
+      }
+      const st = row.task.status
+      s.byStatus[st] = (s.byStatus[st] || 0) + 1
+      s.total += 1
+      if (st !== 'COMPLETED' && st !== 'CANCELLED' && row.task.dueDate && row.task.dueDate < startOfToday) {
+        s.overdue += 1
+      }
+    }
 
     // Build per-user stats
     const workload = uniqueUsers.map(user => {
-      const userGroups = taskGroups.filter(g => g.assigneeId === user.id)
-      const byStatus: Record<string, number> = {}
-      let total = 0
-      for (const g of userGroups) {
-        byStatus[g.status] = g._count.id
-        total += g._count.id
-      }
+      const s = statsByUser.get(user.id)
+      const byStatus = s?.byStatus ?? {}
       return {
         ...user,
         tasks: {
-          total,
+          total: s?.total ?? 0,
           todo: byStatus['TODO'] || 0,
           inProgress: byStatus['IN_PROGRESS'] || 0,
           inReview: byStatus['IN_REVIEW'] || 0,
           completed: byStatus['COMPLETED'] || 0,
-          overdue: overdueMap.get(user.id) || 0,
+          overdue: s?.overdue ?? 0,
         },
       }
     })

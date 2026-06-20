@@ -102,6 +102,9 @@ interface Task {
     email: string
     image?: string
   }
+  teamMembers?: Array<{ userId?: string; user?: { id: string; name?: string; email: string; image?: string } }>
+  collaborators?: Array<{ userId?: string; user?: { id: string; name?: string; email: string; image?: string } }>
+  assignees?: Array<{ userId?: string; user?: { id: string; name?: string; email: string; image?: string } }>
   creator?: {
     id: string
     name?: string
@@ -353,6 +356,16 @@ export default function MemberManagementPage() {
     (task.subtasks?.some((s: any) => s.assignee?.id === memberId) ?? false)
 
   const teamMemberIdSet = teamMembers.map(m => m.id)
+
+  // Flat "Assigned To" — de-duped union of the (dual-written) assignee + team
+  // members + collaborators. The people shown on a task card.
+  const getTaskPeople = (task: Task): Array<{ id: string; name?: string; email: string; image?: string }> => {
+    const map = new Map<string, { id: string; name?: string; email: string; image?: string }>()
+    if (task.assignee) map.set(task.assignee.id, task.assignee)
+    task.teamMembers?.forEach(m => { if (m.user) map.set(m.user.id, m.user) })
+    task.collaborators?.forEach(c => { if (c.user) map.set(c.user.id, c.user) })
+    return Array.from(map.values())
+  }
 
   const PRIORITY_RANK: Record<string, number> = { URGENT: 0, HIGH: 1, MEDIUM: 2, LOW: 3 }
 
@@ -1023,19 +1036,34 @@ export default function MemberManagementPage() {
                                 </span>
                               )}
                             </div>
-                            {task.assignee && (
-                              <div className="flex items-center gap-1.5 shrink-0">
-                                <Avatar className="h-5 w-5">
-                                  <AvatarImage src={task.assignee.image || undefined} />
-                                  <AvatarFallback className="bg-blue-100 text-blue-700 text-[9px] font-bold">
-                                    {task.assignee.name ? task.assignee.name.split(' ').map(n => n[0]).join('') : task.assignee.email[0].toUpperCase()}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <span className="text-xs text-slate-500 truncate max-w-[100px]">
-                                  {task.assignee.name || task.assignee.email}
-                                </span>
-                              </div>
-                            )}
+                            {(() => {
+                              const people = getTaskPeople(task)
+                              if (people.length === 0) return null
+                              return (
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <div className="flex -space-x-1">
+                                    {people.slice(0, 4).map(p => (
+                                      <Avatar key={p.id} className="h-5 w-5 border border-white">
+                                        <AvatarImage src={p.image || undefined} />
+                                        <AvatarFallback className="bg-blue-100 text-blue-700 text-[9px] font-bold">
+                                          {p.name ? p.name.split(' ').map(n => n[0]).join('') : p.email[0].toUpperCase()}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                    ))}
+                                    {people.length > 4 && (
+                                      <div className="h-5 w-5 rounded-full bg-slate-100 border border-white flex items-center justify-center text-[9px] font-bold text-slate-500">
+                                        +{people.length - 4}
+                                      </div>
+                                    )}
+                                  </div>
+                                  {people.length === 1 && (
+                                    <span className="text-xs text-slate-500 truncate max-w-[100px]">
+                                      {people[0].name || people[0].email}
+                                    </span>
+                                  )}
+                                </div>
+                              )
+                            })()}
                           </div>
 
                           {/* Progress bar */}
@@ -1125,17 +1153,32 @@ export default function MemberManagementPage() {
                                     <div className="h-full bg-blue-400 rounded-full" style={{ width: `${task.progressPercentage}%` }} />
                                   </div>
                                 )}
-                                {task.assignee && (
-                                  <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
-                                    <Avatar className="h-5 w-5">
-                                      <AvatarImage src={task.assignee.image || undefined} />
-                                      <AvatarFallback className="bg-blue-100 text-blue-700 text-[9px] font-bold">
-                                        {task.assignee.name ? task.assignee.name.split(' ').map(n => n[0]).join('') : task.assignee.email[0].toUpperCase()}
-                                      </AvatarFallback>
-                                    </Avatar>
-                                    <span className="text-xs text-slate-500 truncate">{task.assignee.name || task.assignee.email}</span>
-                                  </div>
-                                )}
+                                {(() => {
+                                  const people = getTaskPeople(task)
+                                  if (people.length === 0) return null
+                                  return (
+                                    <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                                      <div className="flex -space-x-1">
+                                        {people.slice(0, 4).map(p => (
+                                          <Avatar key={p.id} className="h-5 w-5 border border-white">
+                                            <AvatarImage src={p.image || undefined} />
+                                            <AvatarFallback className="bg-blue-100 text-blue-700 text-[9px] font-bold">
+                                              {p.name ? p.name.split(' ').map(n => n[0]).join('') : p.email[0].toUpperCase()}
+                                            </AvatarFallback>
+                                          </Avatar>
+                                        ))}
+                                        {people.length > 4 && (
+                                          <div className="h-5 w-5 rounded-full bg-slate-100 border border-white flex items-center justify-center text-[9px] font-bold text-slate-500">
+                                            +{people.length - 4}
+                                          </div>
+                                        )}
+                                      </div>
+                                      {people.length === 1 && (
+                                        <span className="text-xs text-slate-500 truncate">{people[0].name || people[0].email}</span>
+                                      )}
+                                    </div>
+                                  )
+                                })()}
                               </div>
                             ))
                           )}

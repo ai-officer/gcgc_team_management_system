@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getRequestSession } from '@/lib/api-auth'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
-import { canEditTask, canDeleteTask, canChangeTaskStatus, isTeamLeader } from '@/lib/permissions'
+import { TeamMemberRole } from '@prisma/client'
+import { canEditTask, canDeleteTask, canChangeTaskStatus, canFinalizeTask, isTeamLeader } from '@/lib/permissions'
 import { autoSyncTask, deleteSyncedTask } from '@/lib/calendar-sync-helper'
 import { getNextOccurrenceDate } from '@/lib/recurring'
 import { setTaskAssignees } from '@/lib/task-assignees'
@@ -113,7 +114,7 @@ export async function GET(
           orderBy: [{ cascadeOrder: 'asc' }, { createdAt: 'asc' }]
         },
         parent: {
-          select: { id: true, title: true }
+          select: { id: true, title: true, creatorId: true, assigneeId: true }
         },
         _count: {
           select: { subtasks: true }
@@ -189,7 +190,36 @@ export async function GET(
       }
     }
 
-    return NextResponse.json(task)
+    // Viewer's completion/status permissions, computed server-side so the client
+    // never replicates permission logic. Flat assignee model.
+    let viewerTeamRole: TeamMemberRole | undefined
+    if (task.teamId) {
+      const vm = await prisma.teamMember.findUnique({
+        where: { userId_teamId: { userId: session.user.id, teamId: task.teamId } },
+        select: { role: true },
+      })
+      viewerTeamRole = vm?.role
+    }
+    const isParentLeaderView = !!task.parent && (
+      task.parent.creatorId === session.user.id ||
+      task.parent.assigneeId === session.user.id
+    )
+    const viewerCanComplete = canFinalizeTask({
+      userRole: session.user.role as any,
+      creatorId: task.creatorId,
+      assignedById: task.assignedById,
+      userId: session.user.id,
+      isBoardLeader: session.user.role === 'LEADER' && isTeamLeader(viewerTeamRole),
+      isParentLeader: isParentLeaderView,
+    })
+    const isAssigneeView =
+      task.assigneeId === session.user.id ||
+      task.teamMembers?.some(tm => tm.userId === session.user.id) ||
+      task.collaborators?.some(c => c.userId === session.user.id) ||
+      false
+    const viewerCanChangeStatus = viewerCanComplete || isAssigneeView
+
+    return NextResponse.json({ ...task, viewerCanComplete, viewerCanChangeStatus })
   } catch (error) {
     console.error('Task GET error:', error)
     return NextResponse.json(
@@ -241,19 +271,27 @@ export async function PATCH(
     const body = await req.json()
     const updateData = updateTaskSchema.parse(body)
 
-    // Only the assigner/creator/admin can set progress to 100% (complete the task)
-    const isAssigner = existingTask.assignedById === session.user.id
-    const isCreator = existingTask.creatorId === session.user.id
+    // Finishers (creator / assigner / board-leader / admin / parent-leader) can
+    // mark the task COMPLETED. Flat assignee model: the assignees who do the work
+    // submit for review (IN_REVIEW) but never self-complete. (taskType is no
+    // longer part of this decision — the old "TEAM task lead assignee" path is
+    // intentionally gone.)
     const isAdmin = session.user.role === 'ADMIN'
     const isLeader = session.user.role === 'LEADER'
-    // The designated Team Leader (the TEAM task's assignee) and the leader/creator
-    // of a subtask's parent can finalize (review → mark done).
-    const isTeamTaskLeader = existingTask.taskType === 'TEAM' && existingTask.assigneeId === session.user.id
     const isParentLeader = !!existingTask.parent && (
       existingTask.parent.assigneeId === session.user.id ||
       existingTask.parent.creatorId === session.user.id
     )
-    const canComplete = isAssigner || isCreator || isAdmin || (isLeader && isTeamLeader(teamMember?.role)) || isTeamTaskLeader || isParentLeader
+    const canComplete = canFinalizeTask({
+      userRole: session.user.role as any,
+      creatorId: existingTask.creatorId,
+      assignedById: existingTask.assignedById,
+      userId: session.user.id,
+      isBoardLeader: isLeader && isTeamLeader(teamMember?.role),
+      isParentLeader,
+    })
+    const isAssigner = existingTask.assignedById === session.user.id
+    const isCreator = existingTask.creatorId === session.user.id
 
     // Leaders can extend due dates for tasks assigned to their team members (multi-leader support)
     let isLeaderSubordinateOverride = false

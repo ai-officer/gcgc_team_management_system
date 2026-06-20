@@ -209,13 +209,46 @@ export function canEditTask(
   return false
 }
 
-// New function to check if user can change task status specifically
+// Finishers — who may mark a task COMPLETED (set progress to 100%).
+//
+// Task-model redesign (flat "Assigned To"): completion is reserved for the
+// people who delegate/own the work, never the assignees who do it. Assignees
+// submit for review (IN_REVIEW); a finisher reviews and marks it done. The
+// locked decision is "creator / board-leader / admin only"; we also honor:
+//   - assignedById — the delegator who handed out the task. In practice this
+//     is always a leader/creator, and the delegator is the natural reviewer,
+//     so they may finalize even when they aren't the board's designated leader
+//     (e.g. multi-leader / cross-team assignments).
+//   - isParentLeader — for a subtask, the creator/assignee of its parent is
+//     the finisher (the subtask analog of creator/board-leader).
+export function canFinalizeTask(opts: {
+  userRole: UserRole
+  creatorId: string
+  assignedById?: string | null
+  userId: string
+  isBoardLeader?: boolean   // viewer is a LEADER and the team-leader of this task's board/team
+  isParentLeader?: boolean  // viewer is the creator/assignee of this subtask's parent
+}): boolean {
+  const { userRole, creatorId, assignedById, userId, isBoardLeader, isParentLeader } = opts
+  if (userRole === 'ADMIN') return true
+  if (creatorId === userId) return true
+  if (assignedById && assignedById === userId) return true
+  if (userRole === 'LEADER' && isBoardLeader) return true
+  if (isParentLeader) return true
+  return false
+}
+
+// Who can change a task's status. Flat assignee model (taskType-agnostic):
+// finishers can move it anywhere (incl. COMPLETED); any assignee — the direct
+// assignee, a team member, or a collaborator — can move it between non-completed
+// statuses (e.g. submit for review). `taskType` is retained in the signature for
+// callers during the redesign but is no longer used.
 export function canChangeTaskStatus(
   userRole: UserRole,
   taskCreatorId: string,
   taskAssigneeId: string | null,
   userId: string,
-  taskType: string,
+  _taskType: string,
   isTeamMember: boolean,
   isCollaborator: boolean,
   teamMemberRole?: TeamMemberRole,
@@ -227,24 +260,13 @@ export function canChangeTaskStatus(
   // Task creator can always change their task status
   if (taskCreatorId === userId) return true
 
-  // Leaders can change task status for tasks in their teams
+  // Board leaders can change task status for tasks in their teams
   if (userRole === 'LEADER' && isTeamLeader(teamMemberRole)) return true
 
-  // For INDIVIDUAL tasks assigned directly to someone, they can change status
-  if (taskType === 'INDIVIDUAL' && taskAssigneeId === userId && !isTeamMember && !isCollaborator) {
-    return true
-  }
-
-  // The task assignee — including the designated Team Leader of a TEAM task —
-  // can move their task between non-completed statuses, e.g. submit it for
-  // review (IN_REVIEW). Final completion (COMPLETED) stays with the
-  // creator/assigner/admin, who review the work and mark it done.
-  if (taskAssigneeId === userId) {
-    return targetStatus !== 'COMPLETED'
-  }
-
-  // Team members and collaborators can move tasks to any non-COMPLETED status
-  if (isTeamMember || isCollaborator) {
+  // Any assignee (direct assignee, team member, or collaborator) can move the
+  // task between non-completed statuses. Final COMPLETED is a finisher action.
+  const isAssignee = taskAssigneeId === userId || isTeamMember || isCollaborator
+  if (isAssignee) {
     return targetStatus !== 'COMPLETED'
   }
 

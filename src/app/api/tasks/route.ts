@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getRequestSession } from '@/lib/api-auth'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
-import { hasPermission } from '@/lib/permissions'
+import { hasPermission, canFinalizeTask } from '@/lib/permissions'
 import { PERMISSIONS } from '@/constants'
 import { autoSyncTask } from '@/lib/calendar-sync-helper'
 import { notifyTaskAssigned, notifySubtaskAssigned } from '@/lib/notifications'
@@ -474,8 +474,35 @@ export async function GET(req: NextRequest) {
       prisma.task.count({ where })
     ])
 
+    // Attach the viewer's completion/status permissions to each task so the
+    // client renders the right controls without replicating permission logic.
+    // Flat assignee model. isParentLeader is resolved by GET /api/tasks/[id];
+    // the list is top-level tasks, so it stays false here.
+    const leaderTeams = await prisma.teamMember.findMany({
+      where: { userId: session.user.id, role: 'LEADER' },
+      select: { teamId: true },
+    })
+    const leaderTeamIds = new Set(leaderTeams.map(t => t.teamId))
+    const viewerRole = session.user.role
+    const tasksWithPerms = tasks.map((t: any) => {
+      const viewerCanComplete = canFinalizeTask({
+        userRole: viewerRole as any,
+        creatorId: t.creatorId,
+        assignedById: t.assignedById,
+        userId: session.user.id,
+        isBoardLeader: viewerRole === 'LEADER' && !!t.teamId && leaderTeamIds.has(t.teamId),
+        isParentLeader: false,
+      })
+      const isAssignee =
+        t.assigneeId === session.user.id ||
+        t.teamMembers?.some((m: any) => m.userId === session.user.id) ||
+        t.collaborators?.some((c: any) => c.userId === session.user.id) ||
+        false
+      return { ...t, viewerCanComplete, viewerCanChangeStatus: viewerCanComplete || isAssignee }
+    })
+
     return NextResponse.json({
-      tasks,
+      tasks: tasksWithPerms,
       pagination: {
         page: pageNum,
         limit: limitNum,

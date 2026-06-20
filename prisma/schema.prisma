@@ -265,8 +265,29 @@ model KanbanBoard {
   members  KanbanBoardMember[]
   statuses BoardStatus[]
   fields   BoardField[]
+  forms    IntakeForm[]
 
   @@map("kanban_boards")
+}
+
+// Public intake form (Phase: form intake). A shareable, login-less form whose
+// submissions create tasks on `board`, using the board's custom fields.
+model IntakeForm {
+  id                String   @id @default(cuid())
+  boardId           String
+  title             String
+  intro             String?
+  token             String   @unique @default(cuid()) // public, unguessable slug
+  targetStatusId    String? // BoardStatus to drop submissions into (null => first column)
+  defaultAssigneeId String? // user the created task is assigned to / notified
+  enabled           Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  board KanbanBoard @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  @@index([boardId])
+  @@map("intake_forms")
 }
 
 enum FieldType {

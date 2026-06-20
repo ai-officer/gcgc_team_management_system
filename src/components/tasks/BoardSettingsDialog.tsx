@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import { Plus, Trash2, ChevronUp, ChevronDown, Loader2 } from 'lucide-react'
+import { Plus, Trash2, ChevronUp, ChevronDown, Loader2, Copy, ExternalLink } from 'lucide-react'
 
 type Category = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' | 'CANCELLED'
 type FieldType = 'TEXT' | 'NUMBER' | 'DATE' | 'SELECT'
@@ -41,11 +41,22 @@ interface BoardField {
   position: number
 }
 
+interface IntakeForm {
+  id: string
+  title: string
+  intro: string | null
+  token: string
+  targetStatusId: string | null
+  defaultAssigneeId: string | null
+  enabled: boolean
+}
+
 interface Props {
   boardId: string
   boardName: string
   statuses: BoardStatus[]
   fields: BoardField[]
+  members?: Array<{ id: string; name?: string | null; email: string }>
   open: boolean
   onOpenChange: (open: boolean) => void
   onChanged: () => void
@@ -77,10 +88,31 @@ async function call(url: string, method: string, body?: any) {
   return res.json().catch(() => ({}))
 }
 
-export default function BoardSettingsDialog({ boardId, boardName, statuses, fields, open, onOpenChange, onChanged }: Props) {
+export default function BoardSettingsDialog({ boardId, boardName, statuses, fields, members, open, onOpenChange, onChanged }: Props) {
   const { toast } = useToast()
-  const [tab, setTab] = useState<'statuses' | 'fields'>('statuses')
+  const [tab, setTab] = useState<'statuses' | 'fields' | 'forms'>('statuses')
   const [busy, setBusy] = useState(false)
+
+  // Intake forms (fetched when the Forms tab opens)
+  const [forms, setForms] = useState<IntakeForm[]>([])
+  const [formsLoaded, setFormsLoaded] = useState(false)
+  const [nfTitle, setNfTitle] = useState('')
+  const [nfIntro, setNfIntro] = useState('')
+  const [nfTarget, setNfTarget] = useState<string>('')
+  const [nfAssignee, setNfAssignee] = useState<string>('')
+  const orderedStatusesForForm = [...statuses].filter((s) => s.category !== 'CANCELLED').sort((a, b) => a.position - b.position)
+
+  const loadForms = async () => {
+    try {
+      const res = await fetch(`/api/boards/${boardId}/forms`)
+      if (res.ok) { setForms((await res.json()).forms || []); setFormsLoaded(true) }
+    } catch { /* ignore */ }
+  }
+  useEffect(() => {
+    if (open && tab === 'forms' && !formsLoaded) loadForms()
+    if (!open) setFormsLoaded(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, tab])
 
   // Status add form
   const [newName, setNewName] = useState('')
@@ -153,6 +185,29 @@ export default function BoardSettingsDialog({ boardId, boardName, statuses, fiel
     ]).then(() => {}), 'Could not reorder')
   }
 
+  // ── Intake forms ──
+  const formUrl = (token: string) => (typeof window !== 'undefined' ? `${window.location.origin}/forms/${token}` : `/forms/${token}`)
+  const copyLink = async (token: string) => {
+    try { await navigator.clipboard.writeText(formUrl(token)); toast({ title: 'Link copied' }) }
+    catch { toast({ title: 'Copy failed', description: formUrl(token) }) }
+  }
+  const addForm = () => {
+    if (!nfTitle.trim()) return
+    guard(async () => {
+      await call(`/api/boards/${boardId}/forms`, 'POST', {
+        title: nfTitle.trim(),
+        intro: nfIntro.trim() || undefined,
+        targetStatusId: nfTarget || undefined,
+        defaultAssigneeId: nfAssignee || undefined,
+      })
+      setNfTitle(''); setNfIntro(''); setNfTarget(''); setNfAssignee('')
+      await loadForms()
+      toast({ title: 'Form created' })
+    }, 'Could not create form')
+  }
+  const patchForm = (f: IntakeForm, body: any, t: string) => guard(() => call(`/api/boards/${boardId}/forms/${f.id}`, 'PATCH', body).then(() => loadForms()), t)
+  const delForm = (f: IntakeForm) => guard(() => call(`/api/boards/${boardId}/forms/${f.id}`, 'DELETE').then(() => { loadForms(); toast({ title: 'Form deleted' }) }), 'Could not delete')
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
@@ -162,7 +217,7 @@ export default function BoardSettingsDialog({ boardId, boardName, statuses, fiel
         </DialogHeader>
 
         <div className="inline-flex items-center gap-1 rounded-md border p-0.5 self-start">
-          {(['statuses', 'fields'] as const).map((t) => (
+          {(['statuses', 'fields', 'forms'] as const).map((t) => (
             <button key={t} onClick={() => setTab(t)}
               className={`px-3 h-7 rounded text-xs font-semibold capitalize ${tab === t ? 'bg-blue-600 text-white' : 'text-slate-600 hover:text-slate-900'}`}>
               {t}
@@ -201,7 +256,7 @@ export default function BoardSettingsDialog({ boardId, boardName, statuses, fiel
               <p className="text-[11px] text-muted-foreground">Category controls behavior: a “Completed” status needs finisher permission; “In Review” sets 90% progress.</p>
             </div>
           </>
-        ) : (
+        ) : tab === 'fields' ? (
           <>
             <div className="space-y-2 max-h-[44vh] overflow-y-auto pr-1">
               {orderedFields.length === 0 && <p className="text-xs text-muted-foreground py-2">No custom fields yet. Add one below.</p>}
@@ -243,6 +298,53 @@ export default function BoardSettingsDialog({ boardId, boardName, statuses, fiel
               <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                 <input type="checkbox" checked={fRequired} onChange={(e) => setFRequired(e.target.checked)} className="h-3 w-3" /> Required
               </label>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="space-y-2 max-h-[44vh] overflow-y-auto pr-1">
+              {!formsLoaded && <p className="text-xs text-muted-foreground py-2">Loading…</p>}
+              {formsLoaded && forms.length === 0 && <p className="text-xs text-muted-foreground py-2">No intake forms yet. Create one below to collect requests via a public link.</p>}
+              {forms.map((f) => (
+                <div key={f.id} className="rounded-lg border p-2 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Input defaultValue={f.title} onBlur={(e) => { const v = e.target.value.trim(); if (v && v !== f.title) patchForm(f, { title: v }, 'Could not rename') }} className="h-8 flex-1" />
+                    <label className="flex items-center gap-1 text-[10px] text-muted-foreground shrink-0">
+                      <input type="checkbox" checked={f.enabled} disabled={busy} onChange={(e) => patchForm(f, { enabled: e.target.checked }, 'Could not update')} className="h-3 w-3" />on
+                    </label>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700 shrink-0" disabled={busy} onClick={() => delForm(f)}><Trash2 className="h-4 w-4" /></Button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Input readOnly value={formUrl(f.token)} className="h-7 text-xs flex-1 bg-muted/40" onFocus={(e) => e.target.select()} />
+                    <Button type="button" variant="outline" size="icon" className="h-7 w-7 shrink-0" onClick={() => copyLink(f.token)} title="Copy link"><Copy className="h-3.5 w-3.5" /></Button>
+                    <a href={formUrl(f.token)} target="_blank" rel="noreferrer" className="h-7 w-7 shrink-0 inline-flex items-center justify-center rounded-md border hover:bg-muted" title="Open"><ExternalLink className="h-3.5 w-3.5" /></a>
+                  </div>
+                  {!f.enabled && <p className="text-[10px] text-amber-600">Disabled — the link shows “form not available”.</p>}
+                </div>
+              ))}
+            </div>
+            <div className="border-t pt-3 space-y-2">
+              <Label className="text-xs">Create an intake form</Label>
+              <Input placeholder="Form title… (e.g. Support request)" value={nfTitle} maxLength={80} onChange={(e) => setNfTitle(e.target.value)} />
+              <Input placeholder="Intro text shown to submitters (optional)" value={nfIntro} maxLength={500} onChange={(e) => setNfIntro(e.target.value)} />
+              <div className="flex items-center gap-2">
+                <Select value={nfTarget || 'none'} onValueChange={(v) => setNfTarget(v === 'none' ? '' : v)}>
+                  <SelectTrigger className="flex-1"><SelectValue placeholder="Lands in column…" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">First column (default)</SelectItem>
+                    {orderedStatusesForForm.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={nfAssignee || 'none'} onValueChange={(v) => setNfAssignee(v === 'none' ? '' : v)}>
+                  <SelectTrigger className="flex-1"><SelectValue placeholder="Assign to…" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Board owner</SelectItem>
+                    {(members || []).map((m) => <SelectItem key={m.id} value={m.id}>{m.name || m.email}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Button onClick={addForm} disabled={!nfTitle.trim() || busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}</Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground">Anyone with the link can submit (no login). The form asks for the submitter’s name + email and your board’s custom fields, then creates a task here.</p>
             </div>
           </>
         )}

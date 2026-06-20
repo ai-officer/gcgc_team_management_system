@@ -1721,6 +1721,7 @@ export default function TasksPage() {
           boardName={activeBoard.name}
           statuses={activeBoard.statuses || []}
           fields={activeBoard.fields || []}
+          members={(activeBoard.members || []).map(m => ({ id: m.user.id, name: m.user.name, email: m.user.email }))}
           open={boardSettingsOpen}
           onOpenChange={setBoardSettingsOpen}
           onChanged={async () => { await fetchBoards(); await fetchTasks(false) }}

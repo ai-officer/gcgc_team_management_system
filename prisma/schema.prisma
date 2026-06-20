@@ -264,8 +264,53 @@ model KanbanBoard {
   tasks    Task[]
   members  KanbanBoardMember[]
   statuses BoardStatus[]
+  fields   BoardField[]
 
   @@map("kanban_boards")
+}
+
+enum FieldType {
+  TEXT
+  NUMBER
+  DATE
+  SELECT
+}
+
+// Per-board custom field (Phase 3). Values live on TaskFieldValue, stored as
+// strings and interpreted by `type` (NUMBER -> numeric, DATE -> ISO date,
+// SELECT -> one of `options`).
+model BoardField {
+  id        String    @id @default(cuid())
+  boardId   String
+  name      String
+  type      FieldType
+  options   String[]  @default([]) // choices for SELECT
+  required  Boolean   @default(false)
+  position  Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  board  KanbanBoard      @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  values TaskFieldValue[]
+
+  @@unique([boardId, name])
+  @@index([boardId])
+  @@map("board_fields")
+}
+
+model TaskFieldValue {
+  id      String @id @default(cuid())
+  taskId  String
+  fieldId String
+  value   String
+
+  task  Task       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  field BoardField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, fieldId])
+  @@index([taskId])
+  @@index([fieldId])
+  @@map("task_field_values")
 }
 
 // Per-board custom status (Phase 2). Each status pins to a TaskStatus *category*
@@ -362,6 +407,8 @@ model Task {
   // the default column for the task's category.
   customStatusId        String?
   customStatus          BoardStatus?       @relation("TaskCustomStatus", fields: [customStatusId], references: [id], onDelete: SetNull)
+  // Per-board custom field values
+  fieldValues           TaskFieldValue[]
   // Relations
   parent                Task?              @relation("TaskSubtasks", fields: [parentId], references: [id], onDelete: Cascade)
   subtasks              Task[]             @relation("TaskSubtasks")

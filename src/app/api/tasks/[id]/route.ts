@@ -7,6 +7,7 @@ import { canEditTask, canDeleteTask, canChangeTaskStatus, canFinalizeTask, isTea
 import { autoSyncTask, deleteSyncedTask } from '@/lib/calendar-sync-helper'
 import { getNextOccurrenceDate } from '@/lib/recurring'
 import { setTaskAssignees } from '@/lib/task-assignees'
+import { setTaskFieldValues } from '@/lib/task-fields'
 import { notifyTaskAssigned, notifyTaskUpdated, notifyTaskCompleted, notifyTaskSubmittedForReview, notifySubtaskAssigned } from '@/lib/notifications'
 
 const updateTaskSchema = z.object({
@@ -36,6 +37,8 @@ const updateTaskSchema = z.object({
   reminderDays: z.array(z.number().int().min(1)).optional(),
   // Per-board custom status (display column). Category still comes from `status`.
   customStatusId: z.string().nullable().optional(),
+  // Per-board custom field values
+  fieldValues: z.array(z.object({ fieldId: z.string(), value: z.string().nullable() })).optional(),
 })
 
 export async function GET(
@@ -98,6 +101,9 @@ export async function GET(
               }
             }
           }
+        },
+        fieldValues: {
+          include: { field: { select: { id: true, name: true, type: true, options: true, position: true } } },
         },
         comments: {
           include: {
@@ -503,9 +509,10 @@ export async function PATCH(
         startDate: finalStartDate,
       }
 
-      // Remove arrays from task update data
+      // Remove non-column fields from the task update data
       delete taskUpdateData.teamMemberIds
       delete taskUpdateData.collaboratorIds
+      delete taskUpdateData.fieldValues
 
       // Dual-write: keep isCascading in sync with taskType when taskType is being updated
       if (updateData.taskType !== undefined) {
@@ -532,6 +539,11 @@ export async function PATCH(
         where: { id: params.id },
         data: taskUpdateData,
       })
+
+      // Upsert per-board custom field values when provided.
+      if (updateData.fieldValues) {
+        await setTaskFieldValues(tx, params.id, updateData.fieldValues)
+      }
 
       // Update team members if taskType is TEAM and teamMemberIds provided
       if (updateData.taskType === 'TEAM' && updateData.teamMemberIds) {

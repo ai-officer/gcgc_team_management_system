@@ -9,6 +9,7 @@ import { notifyTaskAssigned, notifySubtaskAssigned } from '@/lib/notifications'
 import { generateOccurrenceDates, buildRRuleString } from '@/lib/recurring'
 import { resolveTeamBoardLink } from '@/lib/team-board'
 import { setTaskAssignees } from '@/lib/task-assignees'
+import { setTaskFieldValues } from '@/lib/task-fields'
 
 const cascadeStepSchema = z.object({
   title: z.string().min(1).max(200),
@@ -51,6 +52,8 @@ const createTaskSchema = z.object({
   reminderDays: z.array(z.number().int().min(1)).optional().default([]),
   // Kanban board
   boardId: z.string().optional().nullable(),
+  // Per-board custom field values
+  fieldValues: z.array(z.object({ fieldId: z.string(), value: z.string().nullable() })).optional(),
 })
 
 const querySchema = z.object({
@@ -421,6 +424,9 @@ export async function GET(req: NextRequest) {
               }
             }
           },
+          fieldValues: {
+            include: { field: { select: { id: true, name: true, type: true, options: true, position: true } } },
+          },
           _count: {
             select: { comments: true, subtasks: true }
           },
@@ -567,6 +573,7 @@ export async function POST(req: NextRequest) {
       slaHours,
       reminderDays,
       boardId,
+      fieldValues,
     } = createTaskSchema.parse(body)
 
     // Verify assignee exists (if provided)
@@ -723,6 +730,7 @@ export async function POST(req: NextRequest) {
         }
 
         await setTaskAssignees(tx, firstInstance.id, [assigneeId || session.user.id, ...teamMemberIds, ...collaboratorIds])
+        await setTaskFieldValues(tx, firstInstance.id, fieldValues)
 
         return { template: templateTask, firstInstance, totalOccurrences: occurrences.length }
       })
@@ -809,6 +817,7 @@ export async function POST(req: NextRequest) {
       }
 
       await setTaskAssignees(tx, newTask.id, [assigneeId || session.user.id, ...teamMemberIds, ...collaboratorIds])
+      await setTaskFieldValues(tx, newTask.id, fieldValues)
 
       // Create cascade steps for CASCADING tasks
       if (taskType === 'CASCADING' && cascadeSteps.length > 0) {

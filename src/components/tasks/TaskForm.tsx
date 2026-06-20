@@ -119,10 +119,11 @@ interface TaskFormProps {
   preSelectedMemberId?: string // Pre-selected team member for assignment
   initialDueDate?: Date // Pre-fill the due date when creating a new task
   boardContext?: { boardId: string; boardName: string; teamId: string | null } | null // active board the task will be created on
+  boardFields?: Array<{ id: string; name: string; type: 'TEXT' | 'NUMBER' | 'DATE' | 'SELECT'; options: string[]; required: boolean; position: number }> // active board's custom fields
   initialStatus?: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' // preset status (per-column quick-add)
 }
 
-export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSubmit, preSelectedMemberId, initialDueDate, boardContext, initialStatus }: TaskFormProps) {
+export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSubmit, preSelectedMemberId, initialDueDate, boardContext, boardFields, initialStatus }: TaskFormProps) {
   const { data: session } = useSession()
   const [loading, setLoading] = useState(false)
   const [users, setUsers] = useState<User[]>([])
@@ -140,6 +141,10 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
 
   // Cascade steps state
   const [cascadeSteps, setCascadeSteps] = useState<CascadeStep[]>([])
+
+  // Per-board custom field values (fieldId -> value)
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({})
+  const fields = boardFields || []
   const [newStepTitle, setNewStepTitle] = useState('')
   const [newStepAssigneeId, setNewStepAssigneeId] = useState('')
   const [newStepDueDate, setNewStepDueDate] = useState('')
@@ -245,6 +250,7 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
         setSelectedTeamMembers(Array.from(memberUsers.values()))
         setSelectedCollaborators([])
         setIsCascadingTask(!!(task as any).isCascading || task.taskType === 'CASCADING')
+        setCustomFieldValues(Object.fromEntries((((task as any).fieldValues) || []).map((v: any) => [v.fieldId, v.value])))
       } else if (duplicateFrom) {
         // Duplicate mode: pre-fill from source task, reset status/progress, allow recurring
         const srcDue = duplicateFrom.dueDate ? new Date(duplicateFrom.dueDate) : undefined
@@ -288,6 +294,7 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
         setSelectedTeamMembers(Array.from(dupMemberUsers.values()))
         setSelectedCollaborators([])
         setIsCascadingTask(!!(duplicateFrom as any).isCascading || duplicateFrom.taskType === 'CASCADING')
+        setCustomFieldValues(Object.fromEntries((((duplicateFrom as any).fieldValues) || []).map((v: any) => [v.fieldId, v.value])))
         // Carry over subtasks when duplicating. DuplicateTaskDialog includes the
         // source subtasks when the "Subtasks" option is checked; without loading
         // them into pendingSubtasks they'd be silently dropped on submit.
@@ -348,6 +355,7 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
         setSelectedCollaborators([])
         setIsCascadingTask(false)
         setCascadeSteps([])
+        setCustomFieldValues({})
         // Clear subtasks
         setPendingSubtasks([])
         setNewSubtaskTitle('')
@@ -436,6 +444,11 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
       // Combine date and time if not all-day
       const submissionData = { ...data }
 
+      // Attach per-board custom field values
+      if (fields.length > 0) {
+        ;(submissionData as any).fieldValues = fields.map((f) => ({ fieldId: f.id, value: customFieldValues[f.id] ?? '' }))
+      }
+
       // Map the flat "Assigned To" (teamMemberIds) + Cascading toggle to the
       // legacy taskType fields the API still expects (type selector was removed).
       if (isCascadingTask) {
@@ -522,6 +535,7 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
       }
 
       await onSubmit(submissionData)
+      setCustomFieldValues({})
       onOpenChange(false)
       form.reset()
       setPendingSubtasks([])
@@ -1297,6 +1311,45 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
             )}
 
           </section>
+
+          {/* Per-board custom fields */}
+          {fields.length > 0 && !isCascadingTask && (
+            <section>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">Custom fields</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {fields.map((f) => {
+                  const val = customFieldValues[f.id] ?? ''
+                  const setVal = (v: string) => setCustomFieldValues((prev) => ({ ...prev, [f.id]: v }))
+                  return (
+                    <div key={f.id} className="space-y-1.5">
+                      <Label className="text-sm">{f.name}{f.required && <span className="text-red-500 ml-0.5">*</span>}</Label>
+                      {f.type === 'TEXT' && (
+                        <Input value={val} onChange={(e) => setVal(e.target.value)} placeholder={`Enter ${f.name.toLowerCase()}…`} />
+                      )}
+                      {f.type === 'NUMBER' && (
+                        <Input type="number" value={val} onChange={(e) => setVal(e.target.value)} placeholder="0" />
+                      )}
+                      {f.type === 'DATE' && (
+                        <DatePicker
+                          date={val ? new Date(val) : undefined}
+                          onSelect={(d) => setVal(d ? format(d, 'yyyy-MM-dd') : '')}
+                          placeholder="Select date"
+                        />
+                      )}
+                      {f.type === 'SELECT' && (
+                        <Select value={val || undefined} onValueChange={setVal}>
+                          <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
+                          <SelectContent>
+                            {f.options.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
+          )}
 
           {/* Subtasks Section - Collapsible (only for new non-cascading tasks) */}
           {!task && !isCascadingTask && (

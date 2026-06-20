@@ -102,6 +102,13 @@ interface Task {
       image?: string
     }
   }>
+  // Per-board custom field values
+  fieldValues?: Array<{
+    id: string
+    fieldId: string
+    value: string
+    field?: { id: string; name: string; type: 'TEXT' | 'NUMBER' | 'DATE' | 'SELECT'; options?: string[]; position?: number }
+  }>
   // Server-computed viewer permissions (flat assignee model). Set by
   // /api/tasks (list) and /api/tasks/[id] (GET) so the client never
   // replicates completion/status permission logic.
@@ -2253,6 +2260,24 @@ export default function TaskViewModal({
                   </div>
                 )
               })()}
+
+              {/* Custom fields */}
+              {task.fieldValues && task.fieldValues.filter(fv => fv.value).length > 0 && (
+                <div className="space-y-1.5 pt-1 border-t mt-1">
+                  {task.fieldValues
+                    .slice()
+                    .sort((a, b) => (a.field?.position ?? 0) - (b.field?.position ?? 0))
+                    .filter(fv => fv.value)
+                    .map(fv => (
+                      <div key={fv.id} className="flex items-center justify-between gap-3 text-sm">
+                        <span className="text-gray-600">{fv.field?.name || 'Field'}</span>
+                        <span className="font-medium text-gray-900 truncate text-right">
+                          {fv.field?.type === 'DATE' && fv.value ? new Date(fv.value).toLocaleDateString() : fv.value}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              )}
             </div>
           </div>
 

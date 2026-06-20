@@ -81,6 +81,7 @@ export async function GET(req: NextRequest) {
         assignees: { include: { user: { select: { id: true, name: true, email: true } } } },
         teamMembers: { include: { user: { select: { id: true, name: true, email: true } } } },
         collaborators: { include: { user: { select: { id: true, name: true, email: true } } } },
+        fieldValues: { select: { fieldId: true, value: true } },
         board: { select: { name: true } },
         team: { select: { name: true } },
       },
@@ -98,6 +99,16 @@ export async function GET(req: NextRequest) {
     }
     const ymd = (d: any): string => (d ? new Date(d).toISOString().slice(0, 10) : '')
 
+    // Custom field columns — only meaningful when exporting a single board.
+    let boardFields: { id: string; name: string; type: string }[] = []
+    if (boardId && boardId !== 'none') {
+      boardFields = await prisma.boardField.findMany({
+        where: { boardId },
+        orderBy: { position: 'asc' },
+        select: { id: true, name: true, type: true },
+      })
+    }
+
     const wb = new ExcelJS.Workbook()
     const ws = wb.addWorksheet('Tasks')
     ws.columns = [
@@ -110,14 +121,16 @@ export async function GET(req: NextRequest) {
       { header: 'Due Date', key: 'due', width: 13 },
       { header: 'Progress %', key: 'progress', width: 11 },
       { header: 'Created', key: 'created', width: 13 },
+      ...boardFields.map((f) => ({ header: f.name, key: `cf_${f.id}`, width: 18 })),
     ]
     ws.getRow(1).font = { bold: true }
     ws.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEFF1F5' } }
     ws.views = [{ state: 'frozen', ySplit: 1 }]
-    ws.autoFilter = { from: 'A1', to: 'I1' }
+    ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: ws.columnCount } }
 
     for (const t of tasks) {
-      ws.addRow({
+      const valByField = new Map<string, string>(((t as any).fieldValues || []).map((v: any) => [v.fieldId, v.value]))
+      const row: Record<string, any> = {
         title: t.title,
         status: STATUS_LABEL[t.status as string] || t.status,
         board: t.board?.name || t.team?.name || '',
@@ -127,7 +140,12 @@ export async function GET(req: NextRequest) {
         due: ymd(t.dueDate),
         progress: t.progressPercentage ?? 0,
         created: ymd(t.createdAt),
-      })
+      }
+      for (const f of boardFields) {
+        const raw = valByField.get(f.id) || ''
+        row[`cf_${f.id}`] = f.type === 'DATE' && raw ? ymd(raw) : f.type === 'NUMBER' && raw ? Number(raw) : raw
+      }
+      ws.addRow(row)
     }
 
     const buffer = await wb.xlsx.writeBuffer()

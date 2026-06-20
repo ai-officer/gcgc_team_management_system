@@ -187,6 +187,15 @@ interface BoardStatus {
   isDefault: boolean
 }
 
+interface BoardField {
+  id: string
+  name: string
+  type: 'TEXT' | 'NUMBER' | 'DATE' | 'SELECT'
+  options: string[]
+  required: boolean
+  position: number
+}
+
 interface KanbanBoard {
   id: string
   name: string
@@ -198,6 +207,7 @@ interface KanbanBoard {
   _count: { tasks: number }
   team?: { id: string; name: string } | null
   statuses?: BoardStatus[]
+  fields?: BoardField[]
   canManage?: boolean
 }
 
@@ -1667,6 +1677,7 @@ export default function TasksPage() {
         duplicateFrom={duplicatingTask}
         onSubmit={editingTask ? handleUpdateTask : handleCreateTask}
         boardContext={boardContext}
+        boardFields={activeBoard?.fields || []}
         initialStatus={quickAddStatus}
       />
 
@@ -1706,6 +1717,7 @@ export default function TasksPage() {
           boardId={activeBoard.id}
           boardName={activeBoard.name}
           statuses={activeBoard.statuses || []}
+          fields={activeBoard.fields || []}
           open={boardSettingsOpen}
           onOpenChange={setBoardSettingsOpen}
           onChanged={async () => { await fetchBoards(); await fetchTasks(false) }}

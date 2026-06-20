@@ -19,6 +19,7 @@ const memberInclude = {
     },
   },
   statuses: { orderBy: { position: 'asc' as const } },
+  fields: { orderBy: { position: 'asc' as const } },
   _count: { select: { tasks: true } },
 }
 

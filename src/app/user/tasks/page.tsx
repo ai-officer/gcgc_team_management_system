@@ -620,6 +620,16 @@ export default function TasksPage() {
   const getTaskTypeLabel = (taskType: string): string =>
     taskType.charAt(0) + taskType.slice(1).toLowerCase()
 
+  // Unified "Assigned To" list — the union of the (dual-written) legacy assignee
+  // + team members + collaborators, de-duped. The flat list users now manage.
+  const getTaskAssignees = (t: Task): Array<{ id: string; name?: string; email: string; image?: string }> => {
+    const map = new Map<string, any>()
+    if (t.assignee) map.set(t.assignee.id, t.assignee)
+    t.teamMembers?.forEach((m: any) => { if (m.user) map.set(m.user.id, m.user) })
+    t.collaborators?.forEach((c: any) => { if (c.user) map.set(c.user.id, c.user) })
+    return Array.from(map.values())
+  }
+
   const getRecurrenceLabel = (recurrence?: string): string => {
     if (!recurrence) return 'Repeats'
     const upper = recurrence.toUpperCase()
@@ -1326,12 +1336,8 @@ export default function TasksPage() {
                                   </DropdownMenu>
                                 </div>
 
-                                {/* Meta badges: type, recurring, cascading, relationship, team */}
+                                {/* Meta badges: recurring, cascading, relationship, team */}
                                 <div className="flex items-center gap-1.5 flex-wrap mb-2.5">
-                                  <Badge variant="outline" className={`text-[10px] px-1.5 h-5 gap-1 font-medium ${getTaskTypeBadgeClass(task.taskType)}`}>
-                                    {getTaskTypeIcon(task.taskType)}
-                                    {getTaskTypeLabel(task.taskType)}
-                                  </Badge>
                                   {(task.recurrence || task.recurringParentId) && (
                                     <Badge variant="outline" className="text-[10px] px-1.5 h-5 gap-1 font-medium bg-blue-50 text-blue-700 border-blue-200">
                                       <RefreshCw className="h-3 w-3" />
@@ -1434,69 +1440,29 @@ export default function TasksPage() {
 
                                 {/* Assignees and Collaborators */}
                                 <div className="space-y-1.5">
-                                  {task.assignee && (
-                                    <div className="flex items-center gap-2">
-                                      <UserAvatar
-                                        userId={task.assignee.id}
-                                        image={task.assignee.image}
-                                        name={task.assignee.name}
-                                        email={task.assignee.email}
-                                        className="h-5 w-5"
-                                        fallbackClassName="text-xs"
-                                      />
-                                      <span className="text-xs text-muted-foreground truncate">
-                                        {task.assignee.name || task.assignee.email}
-                                      </span>
-                                    </div>
-                                  )}
-
-                                  {task.teamMembers && task.teamMembers.length > 0 && (
-                                    <div className="flex items-center gap-1">
-                                      <Users className="h-3 w-3 text-muted-foreground" />
-                                      <div className="flex -space-x-1">
-                                        {task.teamMembers.slice(0, 3).map((member) => (
-                                          <UserAvatar
-                                            key={member.userId}
-                                            userId={member.user.id}
-                                            image={member.user.image}
-                                            name={member.user.name}
-                                            email={member.user.email}
-                                            className="h-4 w-4 border border-background"
-                                            fallbackClassName="text-xs"
-                                          />
-                                        ))}
-                                        {task.teamMembers.length > 3 && (
-                                          <div className="h-4 w-4 rounded-full bg-muted flex items-center justify-center border border-background">
-                                            <span className="text-xs">+{task.teamMembers.length - 3}</span>
-                                          </div>
+                                  {(() => {
+                                    const people = getTaskAssignees(task)
+                                    if (people.length === 0) return null
+                                    return (
+                                      <div className="flex items-center gap-1.5">
+                                        <div className="flex -space-x-1">
+                                          {people.slice(0, 4).map((p) => (
+                                            <UserAvatar key={p.id} userId={p.id} image={p.image} name={p.name} email={p.email}
+                                              className="h-5 w-5 border border-background" fallbackClassName="text-[9px]" />
+                                          ))}
+                                          {people.length > 4 && (
+                                            <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center border border-background">
+                                              <span className="text-[9px]">+{people.length - 4}</span>
+                                            </div>
+                                          )}
+                                        </div>
+                                        {people.length === 1 && (
+                                          <span className="text-xs text-muted-foreground truncate">{people[0].name || people[0].email}</span>
                                         )}
                                       </div>
-                                    </div>
-                                  )}
+                                    )
+                                  })()}
 
-                                  {task.collaborators && task.collaborators.length > 0 && (
-                                    <div className="flex items-center gap-1">
-                                      <Handshake className="h-3 w-3 text-muted-foreground" />
-                                      <div className="flex -space-x-1">
-                                        {task.collaborators.slice(0, 3).map((collaborator) => (
-                                          <UserAvatar
-                                            key={collaborator.userId}
-                                            userId={collaborator.user.id}
-                                            image={collaborator.user.image}
-                                            name={collaborator.user.name}
-                                            email={collaborator.user.email}
-                                            className="h-4 w-4 border border-background"
-                                            fallbackClassName="text-xs"
-                                          />
-                                        ))}
-                                        {task.collaborators.length > 3 && (
-                                          <div className="h-4 w-4 rounded-full bg-muted flex items-center justify-center border border-background">
-                                            <span className="text-xs">+{task.collaborators.length - 3}</span>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  )}
                                 </div>
                               </CardContent>
                             </Card>

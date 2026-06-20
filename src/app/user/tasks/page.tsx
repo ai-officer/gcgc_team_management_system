@@ -83,6 +83,7 @@ import TimelineView from '@/components/tasks/TimelineView'
 import type { TimelineZoom } from '@/lib/timeline'
 import DuplicateTaskDialog from '@/components/tasks/DuplicateTaskDialog'
 import { BulkTaskActionsDialog } from '@/components/tasks/bulk-task-actions-dialog'
+import BoardSettingsDialog from '@/components/tasks/BoardSettingsDialog'
 
 interface Task {
   id: string
@@ -197,6 +198,7 @@ interface KanbanBoard {
   _count: { tasks: number }
   team?: { id: string; name: string } | null
   statuses?: BoardStatus[]
+  canManage?: boolean
 }
 
 // Kanban board pagination: fetch this many tasks per "page", with a Load more
@@ -263,6 +265,7 @@ export default function TasksPage() {
   const [quickAddStatus, setQuickAddStatus] = useState<'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' | undefined>(undefined)
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const [boardSettingsOpen, setBoardSettingsOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [duplicatingTask, setDuplicatingTask] = useState<Task | null>(null)
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false)
@@ -1302,8 +1305,15 @@ export default function TasksPage() {
           </Button>
         )}
 
+        {/* Customize statuses — board owner / leader / admin, board view only */}
+        {activeBoard?.canManage && viewMode === 'board' && (
+          <Button variant="outline" size="sm" className="h-8 sm:ml-auto" onClick={() => setBoardSettingsOpen(true)} title="Customize statuses">
+            <Settings2 className="h-4 w-4 mr-1.5" /> Customize
+          </Button>
+        )}
+
         {/* Board / Timeline toggle — right side of the filters row */}
-        <div className="inline-flex items-center gap-1 rounded-md border border-slate-200 p-0.5 sm:ml-auto">
+        <div className={`inline-flex items-center gap-1 rounded-md border border-slate-200 p-0.5 ${activeBoard?.canManage && viewMode === 'board' ? '' : 'sm:ml-auto'}`}>
           {(['board', 'timeline'] as const).map(m => (
             <button key={m} onClick={() => setViewMode(m)}
               className={`px-3 h-7 rounded text-xs font-semibold capitalize ${
@@ -1690,6 +1700,17 @@ export default function TasksPage() {
         }))}
         onCompleted={fetchTasks}
       />
+
+      {activeBoard?.canManage && (
+        <BoardSettingsDialog
+          boardId={activeBoard.id}
+          boardName={activeBoard.name}
+          statuses={activeBoard.statuses || []}
+          open={boardSettingsOpen}
+          onOpenChange={setBoardSettingsOpen}
+          onChanged={async () => { await fetchBoards(); await fetchTasks(false) }}
+        />
+      )}
 
       {/* Unified Task View Modal */}
       <TaskViewModal

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { seedDefaultBoardStatuses } from '@/lib/board-statuses'
 import { z } from 'zod'
 
 const createSchema = z.object({
@@ -41,7 +42,21 @@ export async function GET() {
     },
     orderBy: { createdAt: 'asc' },
   })
-  return NextResponse.json({ boards })
+
+  // Attach canManage so the client shows the Board Settings gear only to those
+  // who can edit: admins, the board owner, or a team LEADER of the board's team.
+  const leaderTeams = await prisma.teamMember.findMany({
+    where: { userId: session.user.id, role: 'LEADER' },
+    select: { teamId: true },
+  })
+  const leaderTeamIds = new Set(leaderTeams.map((t) => t.teamId))
+  const isAdmin = session.user.role === 'ADMIN'
+  const withPerms = boards.map((b) => ({
+    ...b,
+    canManage: isAdmin || b.ownerId === session.user.id || (!!b.teamId && leaderTeamIds.has(b.teamId)),
+  }))
+
+  return NextResponse.json({ boards: withPerms })
 }
 
 export async function POST(request: Request) {
@@ -52,7 +67,7 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { memberIds, ...data } = createSchema.parse(body)
 
-    const board = await prisma.kanbanBoard.create({
+    const created = await prisma.kanbanBoard.create({
       data: {
         ...data,
         ownerId: session.user.id,
@@ -60,6 +75,14 @@ export async function POST(request: Request) {
           ? { members: { create: memberIds.map(userId => ({ userId })) } }
           : {}),
       },
+      select: { id: true },
+    })
+
+    // Seed the four default statuses so the new board has columns to work with.
+    await seedDefaultBoardStatuses(prisma, created.id)
+
+    const board = await prisma.kanbanBoard.findUnique({
+      where: { id: created.id },
       include: {
         ...memberInclude,
         owner: { select: { id: true, name: true, email: true, image: true } },

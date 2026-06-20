@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { authOptions } from '@/lib/auth'
+import { seedDefaultBoardStatuses } from '@/lib/board-statuses'
 import { hasPermission } from '@/lib/permissions'
 import { PERMISSIONS } from '@/constants'
 
@@ -129,6 +130,7 @@ export async function POST(req: NextRequest) {
           board: { create: { name, ownerId: session.user.id } },
         },
         include: {
+          board: { select: { id: true } },
           members: {
             include: {
               user: {
@@ -141,6 +143,11 @@ export async function POST(req: NextRequest) {
           }
         }
       })
+
+      // Seed the new board's four default statuses.
+      if (created.board) {
+        await seedDefaultBoardStatuses(tx, created.board.id)
+      }
 
       // Log activity
       await tx.activity.create({

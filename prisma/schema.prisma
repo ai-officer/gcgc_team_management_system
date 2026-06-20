@@ -259,12 +259,37 @@ model KanbanBoard {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  owner   User                @relation("BoardOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  team    Team?               @relation("TeamBoard", fields: [teamId], references: [id], onDelete: Cascade)
-  tasks   Task[]
-  members KanbanBoardMember[]
+  owner    User                @relation("BoardOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  team     Team?               @relation("TeamBoard", fields: [teamId], references: [id], onDelete: Cascade)
+  tasks    Task[]
+  members  KanbanBoardMember[]
+  statuses BoardStatus[]
 
   @@map("kanban_boards")
+}
+
+// Per-board custom status (Phase 2). Each status pins to a TaskStatus *category*
+// so all existing logic (completion gating, progress floors, overdue) keeps
+// keying off Task.status (the category) and never breaks. The four seeded
+// defaults (isDefault=true) map 1:1 to the categories, so an un-customized board
+// behaves exactly as before.
+model BoardStatus {
+  id        String     @id @default(cuid())
+  boardId   String
+  name      String
+  category  TaskStatus
+  color     String     @default("#94A3B8")
+  position  Int        @default(0)
+  isDefault Boolean    @default(false)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  board KanbanBoard @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  tasks Task[]      @relation("TaskCustomStatus")
+
+  @@unique([boardId, name])
+  @@index([boardId])
+  @@map("board_statuses")
 }
 
 model KanbanBoardMember {
@@ -333,6 +358,10 @@ model Task {
   // Kanban board
   boardId               String?
   board                 KanbanBoard?       @relation(fields: [boardId], references: [id], onDelete: SetNull)
+  // Per-board custom status (display layer over `status`/category). Null => use
+  // the default column for the task's category.
+  customStatusId        String?
+  customStatus          BoardStatus?       @relation("TaskCustomStatus", fields: [customStatusId], references: [id], onDelete: SetNull)
   // Relations
   parent                Task?              @relation("TaskSubtasks", fields: [parentId], references: [id], onDelete: Cascade)
   subtasks              Task[]             @relation("TaskSubtasks")

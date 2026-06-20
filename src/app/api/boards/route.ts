@@ -17,6 +17,7 @@ const memberInclude = {
       user: { select: { id: true, name: true, email: true, image: true, role: true } },
     },
   },
+  statuses: { orderBy: { position: 'asc' as const } },
   _count: { select: { tasks: true } },
 }
 

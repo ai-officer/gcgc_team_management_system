@@ -92,6 +92,7 @@ interface Task {
   dueDate?: string
   startDate?: string
   status: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'
+  customStatusId?: string | null
   progressPercentage: number
   taskType: 'INDIVIDUAL' | 'TEAM' | 'COLLABORATION' | 'CASCADING'
   parentId?: string | null
@@ -176,6 +177,15 @@ interface BoardMemberUser {
   role?: string
 }
 
+interface BoardStatus {
+  id: string
+  name: string
+  category: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' | 'CANCELLED'
+  color: string
+  position: number
+  isDefault: boolean
+}
+
 interface KanbanBoard {
   id: string
   name: string
@@ -186,6 +196,7 @@ interface KanbanBoard {
   members: { userId: string; user: BoardMemberUser }[]
   _count: { tasks: number }
   team?: { id: string; name: string } | null
+  statuses?: BoardStatus[]
 }
 
 // Kanban board pagination: fetch this many tasks per "page", with a Load more
@@ -199,6 +210,30 @@ const COLUMN_CONFIG = {
   IN_REVIEW: { title: 'In Review', color: 'bg-yellow-100', textColor: 'text-yellow-700' },
   COMPLETED: { title: 'Completed', color: 'bg-green-100', textColor: 'text-green-700' },
 }
+
+// The status categories rendered as columns (CANCELLED is never a column). Used
+// to tell an "All Tasks" category column (key === category) apart from a custom
+// board-status column (key === BoardStatus id).
+const CATEGORY_KEYS = ['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED'] as const
+
+type KanbanColumn = {
+  key: string                 // BoardStatus id (board view) or category (All Tasks)
+  title: string
+  category: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'
+  isDefault: boolean
+  color?: string              // hex accent for custom statuses
+  headerClass: string         // tailwind bg (identical to before for defaults)
+  textClass: string
+}
+
+const DEFAULT_COLUMNS: KanbanColumn[] = CATEGORY_KEYS.map((cat) => ({
+  key: cat,
+  title: COLUMN_CONFIG[cat].title,
+  category: cat,
+  isDefault: true,
+  headerClass: COLUMN_CONFIG[cat].color,
+  textClass: COLUMN_CONFIG[cat].textColor,
+}))
 
 const BOARD_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316']
 
@@ -490,8 +525,13 @@ export default function TasksPage() {
     if (!result.destination) return
 
     const { draggableId, destination, source } = result
-    const newStatus = destination.droppableId as Task['status']
-    const originalStatus = source.droppableId as Task['status']
+
+    // The droppable id is a BoardStatus id (board view) or a category (All Tasks).
+    const destCol = boardColumns.find((c) => c.key === destination.droppableId)
+    const newStatus = (destCol?.category ?? destination.droppableId) as Task['status']
+    // Only set customStatusId when dropping into a real board-status column.
+    const destCustomStatusId =
+      destCol && !CATEGORY_KEYS.includes(destCol.key as any) ? destCol.key : undefined
 
     // Don't do anything if dropped in the same position
     if (destination.droppableId === source.droppableId && destination.index === source.index) {
@@ -534,7 +574,7 @@ export default function TasksPage() {
     setTasks(prev =>
       prev.map(task =>
         task.id === draggableId
-          ? { ...task, status: newStatus, progressPercentage: newProgress }
+          ? { ...task, status: newStatus, progressPercentage: newProgress, ...(destCustomStatusId ? { customStatusId: destCustomStatusId } : {}) }
           : task
       )
     )
@@ -543,7 +583,7 @@ export default function TasksPage() {
       const response = await fetch(`/api/tasks/${draggableId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus, progressPercentage: newProgress })
+        body: JSON.stringify({ status: newStatus, progressPercentage: newProgress, ...(destCustomStatusId ? { customStatusId: destCustomStatusId } : {}) })
       })
 
       if (!response.ok) {
@@ -577,7 +617,7 @@ export default function TasksPage() {
       setTasks(prev =>
         prev.map(task =>
           task.id === draggableId
-            ? { ...task, status: originalStatus }
+            ? { ...task, status: taskBeingMoved.status, progressPercentage: taskBeingMoved.progressPercentage, customStatusId: taskBeingMoved.customStatusId }
             : task
         )
       )
@@ -974,6 +1014,53 @@ export default function TasksPage() {
     ? { boardId: activeBoard.id, boardName: activeBoard.name, teamId: activeBoard.team?.id ?? null }
     : null
 
+  // Kanban columns for the current view. A selected board renders its custom
+  // statuses; "All Tasks" (or a board with no statuses) falls back to the four
+  // category defaults — so an un-customized board looks identical to before.
+  const boardColumns: KanbanColumn[] = (() => {
+    const statuses = activeBoard?.statuses
+    if (!activeBoard || !statuses || statuses.length === 0) return DEFAULT_COLUMNS
+    return [...statuses]
+      .filter((s) => s.category !== 'CANCELLED')
+      .sort((a, b) => a.position - b.position)
+      .map((s) => {
+        const cfg = COLUMN_CONFIG[s.category as keyof typeof COLUMN_CONFIG]
+        return {
+          key: s.id,
+          title: s.name,
+          category: s.category as KanbanColumn['category'],
+          isDefault: s.isDefault,
+          color: s.color,
+          headerClass: s.isDefault && cfg ? cfg.color : 'bg-muted',
+          textClass: s.isDefault && cfg ? cfg.textColor : 'text-foreground',
+        }
+      })
+  })()
+
+  // Bucket tasks into a column. Board-status columns match by customStatusId,
+  // falling back to the default column for the task's category when unset (so a
+  // task never disappears). "All Tasks" category columns match by status.
+  const getTasksForColumn = (col: KanbanColumn) => {
+    const query = searchTerm.toLowerCase().trim()
+    const byStatusId = !CATEGORY_KEYS.includes(col.key as any)
+    return tasks.filter((task) => {
+      const inCol = byStatusId
+        ? task.customStatusId === col.key ||
+          (task.customStatusId == null && col.isDefault && task.status === col.category)
+        : task.status === col.category
+      if (!inCol) return false
+      if (query) {
+        const titleMatch = task.title.toLowerCase().includes(query)
+        const descMatch = task.description?.toLowerCase().includes(query)
+        const assigneeMatch =
+          task.assignee?.name?.toLowerCase().includes(query) ||
+          task.assignee?.email?.toLowerCase().includes(query)
+        return titleMatch || descMatch || assigneeMatch
+      }
+      return true
+    })
+  }
+
   // Timeline drag-to-reschedule: optimistic dates, PATCH, rollback + toast on error.
   const handleReschedule = useCallback(async (taskId: string, dates: { startDate: string; dueDate: string }) => {
     const prev = tasks
@@ -1231,19 +1318,22 @@ export default function TasksPage() {
       {viewMode === 'board' && (
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 min-h-[700px]">
-          {Object.entries(COLUMN_CONFIG).map(([status, config]) => {
-            const columnTasks = getTasksByStatus(status as Task['status'])
+          {boardColumns.map((col) => {
+            const columnTasks = getTasksForColumn(col)
 
             return (
-              <div key={status} className="min-w-0 space-y-4">
-                <div className={`p-3 rounded-lg ${config.color} shadow-sm`}>
-                  <h3 className={`font-semibold ${config.textColor} flex items-center text-sm`}>
-                    <span>{config.title}</span>
+              <div key={col.key} className="min-w-0 space-y-4">
+                <div className={`p-3 rounded-lg ${col.headerClass} shadow-sm`}>
+                  <h3 className={`font-semibold ${col.textClass} flex items-center text-sm`}>
+                    {!col.isDefault && col.color && (
+                      <span className="mr-1.5 h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: col.color }} />
+                    )}
+                    <span>{col.title}</span>
                     <Badge variant="secondary" className="ml-2 text-xs">{columnTasks.length}</Badge>
                     <button
                       type="button"
-                      title={`Add task to ${config.title}`}
-                      onClick={() => { setQuickAddStatus(status as 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'); setShowTaskForm(true) }}
+                      title={`Add task to ${col.title}`}
+                      onClick={() => { setQuickAddStatus(col.category); setShowTaskForm(true) }}
                       className="ml-auto p-1 rounded hover:bg-black/10 transition-colors"
                     >
                       <Plus className="h-4 w-4" />
@@ -1251,7 +1341,7 @@ export default function TasksPage() {
                   </h3>
                 </div>
 
-                <Droppable droppableId={status}>
+                <Droppable droppableId={col.key}>
                   {(provided, snapshot) => (
                     <div
                       ref={provided.innerRef}

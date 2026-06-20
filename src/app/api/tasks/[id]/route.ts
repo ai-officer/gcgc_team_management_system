@@ -34,6 +34,8 @@ const updateTaskSchema = z.object({
   taskWeight: z.number().int().min(1).max(5).optional().nullable(),
   slaHours: z.number().int().min(1).optional().nullable(),
   reminderDays: z.array(z.number().int().min(1)).optional(),
+  // Per-board custom status (display column). Category still comes from `status`.
+  customStatusId: z.string().nullable().optional(),
 })
 
 export async function GET(
@@ -440,6 +442,23 @@ export async function PATCH(
       if (updateData.status === 'COMPLETED') updateData.progressPercentage = 100
       else if (updateData.status === 'IN_REVIEW') updateData.progressPercentage = 90
       else if (updateData.status === 'TODO') updateData.progressPercentage = 0
+    }
+
+    // Keep the per-board custom status in sync with the category. If the client
+    // supplied one (dragged into a specific board column), trust it. Otherwise,
+    // when the status changes and the task is on a board, point it at that
+    // board's default column for the new category so it lands correctly.
+    if (
+      updateData.customStatusId === undefined &&
+      updateData.status &&
+      updateData.status !== existingTask.status &&
+      existingTask.boardId
+    ) {
+      const def = await prisma.boardStatus.findFirst({
+        where: { boardId: existingTask.boardId, isDefault: true, category: updateData.status },
+        select: { id: true },
+      })
+      if (def) (updateData as any).customStatusId = def.id
     }
 
     // Resolve workQuality permission: only canComplete users may rate

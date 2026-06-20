@@ -273,6 +273,7 @@ export default function TasksPage() {
   const [users, setUsers] = useState<User[]>([])
   const [showTaskForm, setShowTaskForm] = useState(false)
   const [quickAddStatus, setQuickAddStatus] = useState<'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' | undefined>(undefined)
+  const [quickAddCustomStatusId, setQuickAddCustomStatusId] = useState<string | undefined>(undefined)
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [boardSettingsOpen, setBoardSettingsOpen] = useState(false)
@@ -998,6 +999,7 @@ export default function TasksPage() {
     setEditingTask(null)
     setDuplicatingTask(null)
     setQuickAddStatus(undefined)
+    setQuickAddCustomStatusId(undefined)
   }
 
   const closeViewModal = () => {
@@ -1353,7 +1355,7 @@ export default function TasksPage() {
                     <button
                       type="button"
                       title={`Add task to ${col.title}`}
-                      onClick={() => { setQuickAddStatus(col.category); setShowTaskForm(true) }}
+                      onClick={() => { setQuickAddStatus(col.category); setQuickAddCustomStatusId(CATEGORY_KEYS.includes(col.key as any) ? undefined : col.key); setShowTaskForm(true) }}
                       className="ml-auto p-1 rounded hover:bg-black/10 transition-colors"
                     >
                       <Plus className="h-4 w-4" />
@@ -1679,6 +1681,7 @@ export default function TasksPage() {
         boardContext={boardContext}
         boardFields={activeBoard?.fields || []}
         initialStatus={quickAddStatus}
+        initialCustomStatusId={quickAddCustomStatusId}
       />
 
       {/* Type-to-confirm board deletion */}

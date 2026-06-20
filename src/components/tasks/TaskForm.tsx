@@ -121,9 +121,10 @@ interface TaskFormProps {
   boardContext?: { boardId: string; boardName: string; teamId: string | null } | null // active board the task will be created on
   boardFields?: Array<{ id: string; name: string; type: 'TEXT' | 'NUMBER' | 'DATE' | 'SELECT'; options: string[]; required: boolean; position: number }> // active board's custom fields
   initialStatus?: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' // preset status (per-column quick-add)
+  initialCustomStatusId?: string // the custom board column to drop the new task into (per-column quick-add) (#26)
 }
 
-export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSubmit, preSelectedMemberId, initialDueDate, boardContext, boardFields, initialStatus }: TaskFormProps) {
+export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSubmit, preSelectedMemberId, initialDueDate, boardContext, boardFields, initialStatus, initialCustomStatusId }: TaskFormProps) {
   const { data: session } = useSession()
   const [loading, setLoading] = useState(false)
   const [users, setUsers] = useState<User[]>([])
@@ -447,6 +448,11 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
       // Attach per-board custom field values
       if (fields.length > 0) {
         ;(submissionData as any).fieldValues = fields.map((f) => ({ fieldId: f.id, value: customFieldValues[f.id] ?? '' }))
+      }
+
+      // New task created via a custom-column quick-add: drop it into that column (#26)
+      if (!task && initialCustomStatusId) {
+        ;(submissionData as any).customStatusId = initialCustomStatusId
       }
 
       // Map the flat "Assigned To" (teamMemberIds) + Cascading toggle to the

@@ -52,6 +52,8 @@ const createTaskSchema = z.object({
   reminderDays: z.array(z.number().int().min(1)).optional().default([]),
   // Kanban board
   boardId: z.string().optional().nullable(),
+  // Per-board custom status column to drop the new task into (#26)
+  customStatusId: z.string().optional().nullable(),
   // Per-board custom field values
   fieldValues: z.array(z.object({ fieldId: z.string(), value: z.string().nullable() })).optional(),
 })
@@ -573,6 +575,7 @@ export async function POST(req: NextRequest) {
       slaHours,
       reminderDays,
       boardId,
+      customStatusId,
       fieldValues,
     } = createTaskSchema.parse(body)
 
@@ -714,6 +717,7 @@ export async function POST(req: NextRequest) {
             slaHours: slaHours || null,
             reminderDays: reminderDays || [],
             boardId: link.boardId,
+            customStatusId: link.boardId ? (customStatusId ?? null) : null,
           }
         })
 
@@ -788,6 +792,7 @@ export async function POST(req: NextRequest) {
           slaHours: slaHours || null,
           reminderDays: reminderDays || [],
           boardId: link.boardId,
+          customStatusId: link.boardId ? (customStatusId ?? null) : null,
         },
       })
 

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Upload, User, Crown, ChevronDown, Eye, EyeOff } from 'lucide-react'
@@ -658,25 +659,19 @@ export function RegistrationForm() {
           {!formData.isLeader && (
             <div className="space-y-2">
               <Label htmlFor="reportsTo">Reports To (Leader) <span className="text-muted-foreground text-xs">(Optional)</span></Label>
-              <Select
-                value={formData.reportsToId}
+              <SearchableSelect
+                options={leaders}
+                value={formData.reportsToId || ''}
                 onValueChange={(value) => {
                   handleInputChange('reportsToId', value)
                   setFieldErrors(prev => ({ ...prev, reportsToId: undefined }))
                   setTouched(prev => ({ ...prev, reportsToId: true }))
                 }}
-              >
-                <SelectTrigger className={touched.reportsToId && fieldErrors.reportsToId ? 'border-destructive' : ''}>
-                  <SelectValue placeholder="Select your leader" />
-                </SelectTrigger>
-                <SelectContent>
-                  {leaders.map((leader) => (
-                    <SelectItem key={leader.id} value={leader.id}>
-                      {leader.name || `${leader.firstName} ${leader.lastName}`.trim()} ({leader.role})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Search and select your leader…"
+                emptyText="No leaders found"
+                allLabel="No leader"
+                className={`w-full ${touched.reportsToId && fieldErrors.reportsToId ? 'border-destructive' : ''}`}
+              />
               {touched.reportsToId && <FieldError error={fieldErrors.reportsToId} />}
             </div>
           )}

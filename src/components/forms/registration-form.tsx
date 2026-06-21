@@ -507,14 +507,13 @@ export function RegistrationForm() {
   }
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
+    <Card className="w-full max-w-2xl mx-auto border-slate-200 shadow-sm">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <User className="w-5 h-5" />
-          User Registration Portal
+        <CardTitle className="text-2xl font-bold tracking-tight text-slate-900">
+          Create your account
         </CardTitle>
-        <CardDescription>
-          Create your account to access the team management system
+        <CardDescription className="text-slate-500">
+          Tell us who you are and where you fit in the org. Fields marked <span className="text-red-500">*</span> are required.
         </CardDescription>
       </CardHeader>
       <CardContent>

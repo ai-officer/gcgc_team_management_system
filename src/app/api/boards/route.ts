@@ -101,7 +101,10 @@ export async function POST(request: Request) {
         owner: { select: { id: true, name: true, email: true, image: true } },
       },
     })
-    return NextResponse.json({ board }, { status: 201 })
+    // The creator owns this board, so they can always manage it. Include the
+    // flag so the freshly-created board shows the "Customize" gear immediately
+    // (the GET list computes this; the create response must too).
+    return NextResponse.json({ board: board ? { ...board, canManage: true } : board }, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Invalid input', details: error.errors }, { status: 400 })

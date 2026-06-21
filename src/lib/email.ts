@@ -1,6 +1,6 @@
 import { Resend } from 'resend'
 
-const FROM = process.env.EMAIL_FROM || 'notifications@hotelsogo-ai.com'
+const FROM = process.env.EMAIL_FROM || 'gcgc-tms@hotelsogo-ai.com'
 
 // Notification title/message derive from user content (task titles, comment text),
 // so they must be HTML-escaped before interpolating into the email body.

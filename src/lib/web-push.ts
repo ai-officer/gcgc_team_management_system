@@ -7,7 +7,7 @@ function ensureConfigured(): boolean {
   const pub = process.env.VAPID_PUBLIC_KEY
   const priv = process.env.VAPID_PRIVATE_KEY
   if (!pub || !priv) return false
-  webpush.setVapidDetails(`mailto:${process.env.EMAIL_FROM || 'notifications@hotelsogo-ai.com'}`, pub, priv)
+  webpush.setVapidDetails(`mailto:${process.env.EMAIL_FROM || 'gcgc-tms@hotelsogo-ai.com'}`, pub, priv)
   configured = true
   return true
 }

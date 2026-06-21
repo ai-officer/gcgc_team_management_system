@@ -12,6 +12,7 @@ export function plannedDeliveries(prefs: { emailNotifications: boolean; pushNoti
 function entityUrl(n: { entityType?: string | null; entityId?: string | null }): string | undefined {
   const base = process.env.NEXTAUTH_URL || ''
   if (n.entityType === 'task' && n.entityId) return `${base}/user/tasks?task=${n.entityId}`
+  if (n.entityType === 'board' && n.entityId) return `${base}/user/tasks?board=${n.entityId}`
   return base ? `${base}/user/dashboard` : undefined
 }
 

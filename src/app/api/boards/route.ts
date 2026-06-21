@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { seedDefaultBoardStatuses } from '@/lib/board-statuses'
+import { notifyAddedToBoard } from '@/lib/notifications'
 import { z } from 'zod'
 
 const createSchema = z.object({
@@ -81,6 +82,17 @@ export async function POST(request: Request) {
 
     // Seed the four default statuses so the new board has columns to work with.
     await seedDefaultBoardStatuses(prisma, created.id)
+
+    // Event-driven notification: tell each added member (not the creator) they
+    // were added to the new board. Best-effort, non-blocking.
+    if (memberIds && memberIds.length > 0) {
+      const adderName = session.user.name || 'Someone'
+      for (const uid of Array.from(new Set(memberIds))) {
+        if (uid !== session.user.id) {
+          void notifyAddedToBoard(uid, created.id, data.name, adderName).catch(() => {})
+        }
+      }
+    }
 
     const board = await prisma.kanbanBoard.findUnique({
       where: { id: created.id },

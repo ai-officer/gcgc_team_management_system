@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { notifyTaskOverdue, notifyTaskAssigned } from '@/lib/notifications'
+import { notifyTaskAssigned } from '@/lib/notifications'
 import { getNextOccurrenceDate } from '@/lib/recurring'
 import { isAuthorizedCronRequest } from '@/lib/cron-auth'
 
@@ -23,13 +23,17 @@ export async function GET(req: NextRequest) {
     const startOfToday = new Date()
     startOfToday.setHours(0, 0, 0, 0)
 
-    // Find all non-completed tasks with a due date before today
+    // Overdue *recurring instances* only — this job no longer sends overdue or
+    // deadline notifications (all user notifications are event-driven now). Its
+    // sole purpose is to advance recurring series, which is genuinely time-based
+    // and has no user action to hang off of.
     const overdueTasks = await prisma.task.findMany({
       where: {
         isRecurring: false, // skip template tasks
         status: { notIn: ['COMPLETED', 'CANCELLED'] },
         dueDate: { lt: startOfToday },
         assigneeId: { not: null },
+        recurringParentId: { not: null },
       },
       select: {
         id: true,
@@ -40,61 +44,11 @@ export async function GET(req: NextRequest) {
       },
     })
 
-    // Find upcoming tasks that have reminderDays set — check today's reminders
-    const upcomingTasks = await prisma.task.findMany({
-      where: {
-        isRecurring: false,
-        status: { notIn: ['COMPLETED', 'CANCELLED'] },
-        dueDate: { gte: startOfToday },
-        assigneeId: { not: null },
-        reminderDays: { isEmpty: false },
-      },
-      select: {
-        id: true,
-        title: true,
-        dueDate: true,
-        assigneeId: true,
-        reminderDays: true,
-      },
-    })
-
-    let notified = 0
-    let remindersSent = 0
     let recurringAdvanced = 0
     let recurringSkipped = 0
 
-    // Send custom reminderDays notifications for upcoming tasks
-    for (const task of upcomingTasks) {
-      if (!task.assigneeId || !task.dueDate) continue
-      const dueDate = new Date(task.dueDate)
-      dueDate.setHours(0, 0, 0, 0)
-      const daysUntilDue = Math.round((dueDate.getTime() - startOfToday.getTime()) / (1000 * 60 * 60 * 24))
-      if (task.reminderDays.includes(daysUntilDue)) {
-        try {
-          await notifyTaskOverdue(task.assigneeId, task.id, task.title, -daysUntilDue)
-          remindersSent++
-        } catch {
-          // Non-fatal
-        }
-      }
-    }
-
     for (const task of overdueTasks) {
       if (!task.assigneeId || !task.dueDate) continue
-
-      const daysOverdue = Math.floor(
-        (now.getTime() - new Date(task.dueDate).getTime()) / (1000 * 60 * 60 * 24)
-      )
-
-      // Only notify on day 1, day 3, and every 7 days after to avoid spam
-      if (daysOverdue === 1 || daysOverdue === 3 || daysOverdue % 7 === 0) {
-        try {
-          await notifyTaskOverdue(task.assigneeId, task.id, task.title, daysOverdue)
-          notified++
-        } catch {
-          // Non-fatal — continue processing remaining tasks
-        }
-      }
 
       // --- Auto-advance overdue recurring instances ---
       // If this is a recurring instance that wasn't completed, spawn the next
@@ -232,8 +186,6 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       checked: overdueTasks.length,
-      notified,
-      remindersSent,
       recurringAdvanced,
       recurringSkipped,
       timestamp: now.toISOString(),

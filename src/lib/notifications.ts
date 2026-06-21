@@ -100,6 +100,25 @@ export async function notifyTaskAssigned(
 }
 
 /**
+ * Notify a user that they were added to a board.
+ */
+export async function notifyAddedToBoard(
+  userId: string,
+  boardId: string,
+  boardName: string,
+  adderName: string
+) {
+  return createNotification({
+    userId,
+    type: 'BOARD_MEMBER_ADDED',
+    title: 'Added to a board',
+    message: `${adderName} added you to the board "${boardName}"`,
+    entityId: boardId,
+    entityType: 'board',
+  })
+}
+
+/**
  * Create a subtask assignment notification
  */
 export async function notifySubtaskAssigned(

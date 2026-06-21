@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { notifyTaskAssigned } from '@/lib/notifications'
 import { getNextOccurrenceDate } from '@/lib/recurring'
 import { isAuthorizedCronRequest } from '@/lib/cron-auth'
 
@@ -157,19 +156,9 @@ export async function GET(req: NextRequest) {
                   })
                 }
 
-                // Notify assignee about the new instance
-                if (newInst.assigneeId) {
-                  try {
-                    await notifyTaskAssigned(
-                      newInst.assigneeId,
-                      newInst.id,
-                      newInst.title,
-                      'System (recurring)'
-                    )
-                  } catch {
-                    // Non-fatal
-                  }
-                }
+                // Recurring instances spawn silently — they just appear on the
+                // board. No email/notification (a daily recurring task would
+                // otherwise email the assignee every single day).
 
                 recurringAdvanced++
               } else {

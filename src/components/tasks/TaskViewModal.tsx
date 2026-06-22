@@ -115,7 +115,7 @@ interface Task {
   viewerCanComplete?: boolean
   viewerCanChangeStatus?: boolean
   // Subtask support
-  parentId?: string
+  parentId?: string | null
   parent?: {
     id: string
     title: string
@@ -150,6 +150,7 @@ interface Task {
   }>
   _count?: {
     subtasks: number
+    comments: number
   }
   createdAt: string
   updatedAt: string
@@ -1265,7 +1266,9 @@ export default function TaskViewModal({
     )
 
   const isTaskCreator = task?.creator?.id === session?.user?.id
-  const isTaskAssignee = task?.assignee?.id === session?.user?.id
+  const isTaskAssignee =
+    task?.assignee?.id === session?.user?.id ||
+    (task?.assignees?.some(a => a.user?.id === session?.user?.id) ?? false)
   const isTaskAssigner = task?.assignedBy?.id === session?.user?.id
   // Completion permission is computed server-side (flat assignee model): the
   // GET-derived value is authoritative once details load, the list-provided
@@ -1776,7 +1779,7 @@ export default function TaskViewModal({
                   Duplicate
                 </Button>
               )}
-              {isTaskCreator && (
+              {(canCompleteTask || isTaskAssignee) && (
                 <Button variant="outline" size="sm" onClick={handleEdit}>
                   <Edit className="h-4 w-4 mr-2" />
                   Edit

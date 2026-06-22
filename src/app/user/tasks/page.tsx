@@ -99,6 +99,8 @@ interface Task {
   taskType: 'INDIVIDUAL' | 'TEAM' | 'COLLABORATION' | 'CASCADING'
   parentId?: string | null
   boardId?: string | null
+  viewerCanComplete?: boolean
+  viewerCanChangeStatus?: boolean
   // Google Calendar fields
   location?: string
   meetingLink?: string
@@ -127,6 +129,18 @@ interface Task {
     email: string
     image?: string
   }
+  board?: {
+    ownerId: string
+  } | null
+  assignees?: Array<{
+    userId: string
+    user: {
+      id: string
+      name: string
+      email: string
+      image?: string
+    }
+  }>
   team?: {
     id: string
     name: string
@@ -153,8 +167,18 @@ interface Task {
   subtasks?: Array<{
     id: string
     title: string
-    status: string
+    status: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'
+    priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
     progressPercentage: number
+    dueDate?: string
+    cascadeOrder?: number | null
+    isLocked?: boolean
+    assignee?: {
+      id: string
+      name: string
+      email: string
+      image?: string
+    }
   }>
   _count?: {
     subtasks: number
@@ -910,13 +934,35 @@ export default function TasksPage() {
     return isAfter(new Date(task.createdAt), threeDaysAgo)
   }
 
+  // Helper function to check if user can edit the task
+  const canUserEditTask = (task: Task) => {
+    if (task.viewerCanComplete !== undefined) {
+      if (task.viewerCanComplete) return true
+    } else {
+      if (session?.user?.role === 'ADMIN') return true
+      if (task.creator?.id === session?.user?.id) return true
+      if (task.board?.ownerId === session?.user?.id) return true
+      if (session?.user?.role === 'LEADER') return true
+    }
+    const isAssignee = task.assignee?.id === session?.user?.id || task.assignees?.some(a => a.userId === session?.user?.id)
+    if (isAssignee) return true
+    return false
+  }
+
   // Helper function to check if user can change task status (move to IN_PROGRESS or IN_REVIEW)
   const canUserChangeTaskStatus = (task: Task) => {
+    if (task.viewerCanChangeStatus !== undefined) {
+      return task.viewerCanChangeStatus
+    }
+
     // Task creator can always change status
     if (task.creator?.id === session?.user?.id) return true
 
     // Admin can change any task status
     if (session?.user?.role === 'ADMIN') return true
+
+    // Board owner can always change status
+    if (task.board?.ownerId === session?.user?.id) return true
 
     // Leaders can change status for tasks in their teams
     if (session?.user?.role === 'LEADER') return true
@@ -934,9 +980,15 @@ export default function TasksPage() {
   // Helper function to check if user can mark task as COMPLETED
   // Only the assigner (assignedBy), creator, or admin can complete a task
   const canUserCompleteTask = (task: Task) => {
+    if (task.viewerCanComplete !== undefined) {
+      return task.viewerCanComplete
+    }
+
     if (session?.user?.role === 'ADMIN') return true
     if (task.creator?.id === session?.user?.id) return true
+    if (task.board?.ownerId === session?.user?.id) return true
     if (task.assignedBy?.id === session?.user?.id) return true
+    if (session?.user?.role === 'LEADER') return true
     return false
   }
 
@@ -1419,8 +1471,8 @@ export default function TasksPage() {
                                         View Details
                                       </DropdownMenuItem>
 
-                                      {/* Edit option - only for task creators */}
-                                      {isTaskCreatedByUser(task) && (
+                                      {/* Edit option - for users who can edit */}
+                                      {canUserEditTask(task) && (
                                         <DropdownMenuItem onClick={(e) => {
                                           e.stopPropagation()
                                           openEditForm(task)

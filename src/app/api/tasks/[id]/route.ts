@@ -319,7 +319,7 @@ export async function PATCH(
 
     // Leaders can extend due dates for tasks assigned to their team members (multi-leader support)
     let isLeaderSubordinateOverride = false
-    if (isLeader && !isAssigner && !isCreator && !isAdmin && existingTask.assigneeId) {
+    if (isLeader && !isAssigner && !isCreator && !isAdmin && !isBoardLeader && !isOwner && !isParentLeader && existingTask.assigneeId) {
       const membership = await prisma.leaderMembership.findUnique({
         where: { leaderId_memberId: { leaderId: session.user.id, memberId: existingTask.assigneeId } }
       })

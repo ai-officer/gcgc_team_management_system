@@ -426,6 +426,7 @@ export async function GET(req: NextRequest) {
               }
             }
           },
+          board: { select: { ownerId: true } },
           fieldValues: {
             include: { field: { select: { id: true, name: true, type: true, options: true, position: true } } },
           },
@@ -493,18 +494,18 @@ export async function GET(req: NextRequest) {
     const leaderTeamIds = new Set(leaderTeams.map(t => t.teamId))
     const viewerRole = session.user.role
     const tasksWithPerms = tasks.map((t: any) => {
+      // Owner = board owner, or (for a board-less task) the creator.
+      const isOwner = t.board ? t.board.ownerId === session.user.id : t.creatorId === session.user.id
       const viewerCanComplete = canFinalizeTask({
-        userRole: viewerRole as any,
-        creatorId: t.creatorId,
-        assignedById: t.assignedById,
-        userId: session.user.id,
+        isAdmin: viewerRole === 'ADMIN',
         isBoardLeader: viewerRole === 'LEADER' && !!t.teamId && leaderTeamIds.has(t.teamId),
+        isOwner,
         isParentLeader: false,
       })
+      // Only the task's assignee(s) — not team members/collaborators.
       const isAssignee =
         t.assigneeId === session.user.id ||
-        t.teamMembers?.some((m: any) => m.userId === session.user.id) ||
-        t.collaborators?.some((c: any) => c.userId === session.user.id) ||
+        t.assignees?.some((a: any) => a.userId === session.user.id) ||
         false
       return { ...t, viewerCanComplete, viewerCanChangeStatus: viewerCanComplete || isAssignee }
     })

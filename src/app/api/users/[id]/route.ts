@@ -107,8 +107,27 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Users can only update their own profile unless they're an admin
-    if (session.user.id !== params.id && (!session.user.role || session.user.role !== 'ADMIN')) {
+    // Authorization: a user may update their own profile; an admin may update
+    // anyone; a leader may update a member of their OWN team (so they can
+    // correct org placement when adding/managing them). updateProfileSchema is
+    // org/profile-only (no role/email/password/isActive), so a leader cannot
+    // escalate privileges — at most they edit a managed member's org info.
+    const isSelf = session.user.id === params.id
+    const isAdmin = session.user.role === 'ADMIN'
+    let isManagedByLeader = false
+    if (!isSelf && !isAdmin && session.user.role === 'LEADER') {
+      const target = await prisma.user.findUnique({
+        where: { id: params.id },
+        select: { role: true },
+      })
+      if (target && target.role !== 'ADMIN') {
+        const membership = await prisma.leaderMembership.findUnique({
+          where: { leaderId_memberId: { leaderId: session.user.id, memberId: params.id } },
+        })
+        isManagedByLeader = !!membership
+      }
+    }
+    if (!isSelf && !isAdmin && !isManagedByLeader) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

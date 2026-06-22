@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getRequestSession } from '@/lib/api-auth'
 import { prisma } from '@/lib/prisma'
+import { OVERDUE_EXCLUDED_STATUSES } from '@/lib/overdue'
 
 export const dynamic = 'force-dynamic'
 
@@ -74,7 +75,8 @@ export async function GET(req: NextRequest) {
             ...(session.user.role === 'LEADER' ? [{ teamId: { in: teamIds } }] : [])
           ],
           dueDate: { lt: (() => { const d = new Date(); d.setHours(0,0,0,0); return d })() },
-          status: { not: 'COMPLETED' },
+          // Exclude Completed/Cancelled and In Review (awaiting approval, not overdue).
+          status: { notIn: OVERDUE_EXCLUDED_STATUSES },
           parentId: null // Only count parent tasks, not subtasks
         }
       }),

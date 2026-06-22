@@ -46,16 +46,8 @@ export async function GET(
       return NextResponse.json({ error: 'Task not found' }, { status: 404 })
     }
 
-    // Check access permissions
-    const hasAccess = task.creatorId === session.user.id || 
-                     task.assigneeId === session.user.id ||
-                     task.teamMembers?.some(tm => tm.userId === session.user.id) ||
-                     task.collaborators?.some(c => c.userId === session.user.id) ||
-                     session.user.role === 'ADMIN'
-
-    if (!hasAccess) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
+    // Everyone who is authenticated can view comments
+    const hasAccess = true
 
     // Get comments with nested structure (parent comments with their replies)
     const comments = await prisma.comment.findMany({
@@ -131,16 +123,8 @@ export async function POST(
       return NextResponse.json({ error: 'Task not found' }, { status: 404 })
     }
 
-    // Check access permissions
-    const hasAccess = task.creatorId === session.user.id || 
-                     task.assigneeId === session.user.id ||
-                     task.teamMembers?.some(tm => tm.userId === session.user.id) ||
-                     task.collaborators?.some(c => c.userId === session.user.id) ||
-                     session.user.role === 'ADMIN'
-
-    if (!hasAccess) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
+    // Everyone who is authenticated can post comments
+    const hasAccess = true
 
     const body = await req.json()
     const { content, parentId, imageUrl, fileUrl, fileName, fileType, fileSize } = createCommentSchema.parse(body)

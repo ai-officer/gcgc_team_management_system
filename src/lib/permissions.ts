@@ -183,7 +183,7 @@ export function canDeleteTask(
 export function canEditTask(
   userRole: UserRole,
   taskCreatorId: string,
-  taskAssigneeId: string | null,
+  taskAssigneeId: string | null | string[],
   userId: string,
   teamMemberRole?: TeamMemberRole
 ): boolean {
@@ -194,13 +194,12 @@ export function canEditTask(
   if (taskCreatorId === userId) return true
   
   // Task assignee can edit assigned task (only if they are also the creator OR it was directly assigned to them by a leader)
-  if (taskAssigneeId === userId) {
-    // If user is both creator and assignee, they can edit
-    if (taskCreatorId === userId) return true
-    
-    // If user is assigned by a leader (not a collaborator/team member), they can edit
-    // This will be handled by checking if the task is a direct assignment
-    return true // For now, keep existing behavior for direct assignments
+  const isAssignee = Array.isArray(taskAssigneeId)
+    ? taskAssigneeId.includes(userId)
+    : taskAssigneeId === userId
+
+  if (isAssignee) {
+    return true
   }
   
   // Team leader can edit tasks in their team
@@ -209,66 +208,43 @@ export function canEditTask(
   return false
 }
 
-// Finishers — who may mark a task COMPLETED (set progress to 100%).
+// Finishers — who may mark a task COMPLETED (the In Review -> Completed approval).
 //
-// Task-model redesign (flat "Assigned To"): completion is reserved for the
-// people who delegate/own the work, never the assignees who do it. Assignees
-// submit for review (IN_REVIEW); a finisher reviews and marks it done. The
-// locked decision is "creator / board-leader / admin only"; we also honor:
-//   - assignedById — the delegator who handed out the task. In practice this
-//     is always a leader/creator, and the delegator is the natural reviewer,
-//     so they may finalize even when they aren't the board's designated leader
-//     (e.g. multi-leader / cross-team assignments).
-//   - isParentLeader — for a subtask, the creator/assignee of its parent is
-//     the finisher (the subtask analog of creator/board-leader).
+// Policy: only the people who own/lead the work approve completion, never the
+// assignees who do it. Assignees submit for review (IN_REVIEW); a finisher
+// approves. Allowed finishers:
+//   - admin
+//   - the board's team leader (isBoardLeader)
+//   - the board owner — or, for a task with no board, its creator (isOwner).
+//     The caller folds the board-less fallback into `isOwner` so a task that
+//     was never on a board (boardId null) is still completable by its creator
+//     rather than locking to admin-only.
+//   - isParentLeader — for a subtask, the creator/assignee of its parent is the
+//     owner-equivalent finisher.
 export function canFinalizeTask(opts: {
-  userRole: UserRole
-  creatorId: string
-  assignedById?: string | null
-  userId: string
-  isBoardLeader?: boolean   // viewer is a LEADER and the team-leader of this task's board/team
-  isParentLeader?: boolean  // viewer is the creator/assignee of this subtask's parent
+  isAdmin: boolean
+  isBoardLeader?: boolean
+  isOwner?: boolean
+  isParentLeader?: boolean
 }): boolean {
-  const { userRole, creatorId, assignedById, userId, isBoardLeader, isParentLeader } = opts
-  if (userRole === 'ADMIN') return true
-  if (creatorId === userId) return true
-  if (assignedById && assignedById === userId) return true
-  if (userRole === 'LEADER' && isBoardLeader) return true
-  if (isParentLeader) return true
-  return false
+  return opts.isAdmin || !!opts.isBoardLeader || !!opts.isOwner || !!opts.isParentLeader
 }
 
-// Who can change a task's status. Flat assignee model (taskType-agnostic):
-// finishers can move it anywhere (incl. COMPLETED); any assignee — the direct
-// assignee, a team member, or a collaborator — can move it between non-completed
-// statuses (e.g. submit for review). `taskType` is retained in the signature for
-// callers during the redesign but is no longer used.
-export function canChangeTaskStatus(
-  userRole: UserRole,
-  taskCreatorId: string,
-  taskAssigneeId: string | null,
-  userId: string,
-  _taskType: string,
-  isTeamMember: boolean,
-  isCollaborator: boolean,
-  teamMemberRole?: TeamMemberRole,
+// Who can change a task's status (move it between columns).
+//
+// Policy: only the task's assignee, the board's team leader, and the board
+// owner (plus admin) can move a task. Leaders/owners/admin can move it to any
+// status, including COMPLETED. Assignees can move it between non-completed
+// statuses (e.g. submit for review) but cannot mark it COMPLETED themselves.
+// `isOwner` carries the board-less creator fallback (see canFinalizeTask).
+export function canChangeTaskStatus(opts: {
+  isAdmin: boolean
+  isAssignee: boolean
+  isBoardLeader?: boolean
+  isOwner?: boolean
   targetStatus?: string
-): boolean {
-  // Admin can change any task status
-  if (userRole === 'ADMIN') return true
-
-  // Task creator can always change their task status
-  if (taskCreatorId === userId) return true
-
-  // Board leaders can change task status for tasks in their teams
-  if (userRole === 'LEADER' && isTeamLeader(teamMemberRole)) return true
-
-  // Any assignee (direct assignee, team member, or collaborator) can move the
-  // task between non-completed statuses. Final COMPLETED is a finisher action.
-  const isAssignee = taskAssigneeId === userId || isTeamMember || isCollaborator
-  if (isAssignee) {
-    return targetStatus !== 'COMPLETED'
-  }
-
+}): boolean {
+  if (opts.isAdmin || opts.isBoardLeader || opts.isOwner) return true
+  if (opts.isAssignee) return opts.targetStatus !== 'COMPLETED'
   return false
 }

@@ -73,6 +73,8 @@ export async function POST(req: NextRequest) {
         teamId: true,
         teamMembers: { select: { userId: true } },
         collaborators: { select: { userId: true } },
+        assignees: { select: { userId: true } },
+        board: { select: { ownerId: true } },
       },
     })
     const tasksById = new Map(tasks.map(t => [t.id, t]))
@@ -97,8 +99,11 @@ export async function POST(req: NextRequest) {
       }
 
       const teamMemberRole = task.teamId ? teamRoleByTeamId.get(task.teamId) : undefined
-      const isTeamMember = task.teamMembers.some(tm => tm.userId === userId)
-      const isCollaborator = task.collaborators.some(c => c.userId === userId)
+      const isBoardLeader = userRole === 'LEADER' && isTeamLeader(teamMemberRole)
+      // Owner = board owner, or (for a board-less task) the creator.
+      const isOwner = task.board ? task.board.ownerId === userId : task.creatorId === userId
+      // Only the task's assignee(s) — not team members/collaborators — may move it.
+      const isAssignee = task.assigneeId === userId || task.assignees.some(a => a.userId === userId)
 
       try {
         if (action.type === 'delete') {
@@ -109,7 +114,8 @@ export async function POST(req: NextRequest) {
           await prisma.task.delete({ where: { id } })
           result.updated++
         } else if (action.type === 'changePriority') {
-          if (!canEditTask(userRole, task.creatorId, task.assigneeId, userId, teamMemberRole)) {
+          const assigneeIds = [task.assigneeId, ...(task.assignees?.map(a => a.userId) || [])].filter((id): id is string => !!id)
+          if (!canEditTask(userRole, task.creatorId, assigneeIds, userId, teamMemberRole)) {
             result.skipped.push({ id, reason: 'no permission to edit' })
             continue
           }
@@ -124,17 +130,13 @@ export async function POST(req: NextRequest) {
           result.updated++
         } else if (action.type === 'changeStatus') {
           if (
-            !canChangeTaskStatus(
-              userRole,
-              task.creatorId,
-              task.assigneeId,
-              userId,
-              task.taskType,
-              isTeamMember,
-              isCollaborator,
-              teamMemberRole,
-              action.payload.status
-            )
+            !canChangeTaskStatus({
+              isAdmin: userRole === 'ADMIN',
+              isAssignee,
+              isBoardLeader,
+              isOwner,
+              targetStatus: action.payload.status,
+            })
           ) {
             result.skipped.push({ id, reason: 'no permission to change status' })
             continue
@@ -143,13 +145,10 @@ export async function POST(req: NextRequest) {
             result.skipped.push({ id, reason: 'status already matches' })
             continue
           }
-          const canComplete =
-            userRole === 'ADMIN' ||
-            task.creatorId === userId ||
-            task.assignedById === userId ||
-            (userRole === 'LEADER' && isTeamLeader(teamMemberRole))
+          // Completion is a leader/owner approval; assignees can't self-complete.
+          const canComplete = userRole === 'ADMIN' || isBoardLeader || isOwner
           if (action.payload.status === 'COMPLETED' && !canComplete) {
-            result.skipped.push({ id, reason: 'only the assigner, creator, or team leader can complete' })
+            result.skipped.push({ id, reason: 'only the board leader or owner can complete' })
             continue
           }
 

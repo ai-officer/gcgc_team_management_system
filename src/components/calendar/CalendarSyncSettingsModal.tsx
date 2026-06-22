@@ -96,10 +96,6 @@ export default function CalendarSyncSettingsModal({
       const data = await response.json()
 
       if (response.ok) {
-        // If sync is being enabled, set up webhook
-        if (settings.isEnabled) {
-          await setupWebhook()
-        }
         setSettings(data.syncSettings)
         setSuccess('Settings saved successfully!')
         setTimeout(() => setSuccess(null), 3000)
@@ -110,26 +106,6 @@ export default function CalendarSyncSettingsModal({
       setError('Failed to save settings')
     } finally {
       setLoading(false)
-    }
-  }
-
-  const setupWebhook = async () => {
-    try {
-      const response = await fetch('/api/calendar/webhook-setup', {
-        method: 'POST'
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        console.log('Webhook setup successfully:', data)
-      } else {
-        console.error('Failed to setup webhook:', data.error)
-        // Don't show error to user, webhook setup is automatic
-      }
-    } catch (err) {
-      console.error('Webhook setup error:', err)
-      // Don't show error to user, webhook setup is automatic
     }
   }
 
@@ -174,9 +150,6 @@ export default function CalendarSyncSettingsModal({
       const data = await response.json()
 
       if (response.ok) {
-        // Set up webhook for real-time sync
-        await setupWebhook()
-
         // Automatically trigger initial sync
         await performInitialSync()
 
@@ -217,16 +190,6 @@ export default function CalendarSyncSettingsModal({
     setError(null)
 
     try {
-      // Stop webhook first
-      try {
-        await fetch('/api/calendar/webhook-setup', {
-          method: 'DELETE'
-        })
-      } catch (err) {
-        console.error('Failed to stop webhook:', err)
-      }
-
-      // Then disconnect calendar
       const response = await fetch('/api/calendar/sync-settings', {
         method: 'DELETE'
       })
@@ -410,8 +373,9 @@ export default function CalendarSyncSettingsModal({
                   <span className="text-blue-700 font-medium">TMS_CALENDAR Sync Active</span>
                 </div>
                 <p className="text-sm text-blue-600">
-                  Your work tasks and events are automatically synchronized with a dedicated <strong>TMS_CALENDAR</strong> in Google Calendar.
-                  Your personal calendar is NOT affected. Any changes made in either the TMS or TMS_CALENDAR will be reflected bidirectionally.
+                  Your work tasks and events push to a dedicated <strong>TMS_CALENDAR</strong> in Google Calendar automatically as you create or update them.
+                  Changes you make in TMS_CALENDAR are pulled back into TMS when you open the calendar or press <strong>Sync now</strong>.
+                  Your personal calendar is NOT affected.
                 </p>
               </div>
 
@@ -496,19 +460,20 @@ export default function CalendarSyncSettingsModal({
 
               <Separator />
 
-              {/* Real-time Sync Status */}
+              {/* Sync Status */}
               {settings.isEnabled && (
                 <div className="space-y-3">
-                  <Label className="text-base font-semibold">Real-time Sync Status</Label>
+                  <Label className="text-base font-semibold">How sync works</Label>
                   <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                      <span className="text-green-700 text-sm font-medium">TMS_CALENDAR Live Sync Active</span>
+                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      <span className="text-green-700 text-sm font-medium">TMS_CALENDAR connected</span>
                     </div>
-                    <p className="text-sm text-green-600 mt-1">
-                      All work-related changes in TMS_CALENDAR are automatically reflected in TMS and vice versa.
-                      Your personal Google Calendar is NOT synced, keeping work and personal separate.
-                    </p>
+                    <ul className="text-sm text-green-600 mt-1 space-y-1 list-disc pl-5">
+                      <li>TMS → Google: tasks and events sync automatically the moment you save them.</li>
+                      <li>Google → TMS: changes are pulled in when you open the calendar, or anytime you press <strong>Sync now</strong>.</li>
+                      <li>Only TMS_CALENDAR is touched — your personal Google calendar stays separate.</li>
+                    </ul>
                   </div>
                 </div>
               )}

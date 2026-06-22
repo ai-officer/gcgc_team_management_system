@@ -66,6 +66,8 @@ export async function GET(
         team: {
           select: { id: true, name: true }
         },
+        // Board owner determines who can move/finalize the task.
+        board: { select: { ownerId: true } },
         teamMembers: {
           include: {
             user: {
@@ -212,18 +214,20 @@ export async function GET(
       task.parent.creatorId === session.user.id ||
       task.parent.assigneeId === session.user.id
     )
+    // Owner = board owner, or (for a board-less task) the creator.
+    const isOwnerView = task.board
+      ? task.board.ownerId === session.user.id
+      : task.creatorId === session.user.id
     const viewerCanComplete = canFinalizeTask({
-      userRole: session.user.role as any,
-      creatorId: task.creatorId,
-      assignedById: task.assignedById,
-      userId: session.user.id,
+      isAdmin: session.user.role === 'ADMIN',
       isBoardLeader: session.user.role === 'LEADER' && isTeamLeader(viewerTeamRole),
+      isOwner: isOwnerView,
       isParentLeader: isParentLeaderView,
     })
+    // Only the task's assignee(s) count here — not team members/collaborators.
     const isAssigneeView =
       task.assigneeId === session.user.id ||
-      task.teamMembers?.some(tm => tm.userId === session.user.id) ||
-      task.collaborators?.some(c => c.userId === session.user.id) ||
+      task.assignees?.some(a => a.userId === session.user.id) ||
       false
     const viewerCanChangeStatus = viewerCanComplete || isAssigneeView
 
@@ -254,6 +258,9 @@ export async function PATCH(
         team: true,
         teamMembers: true,
         collaborators: true,
+        assignees: { select: { userId: true } },
+        // Board owner gates who can move/finalize the task.
+        board: { select: { ownerId: true } },
         // Parent's leader/creator can finalize this subtask (review → done)
         parent: { select: { assigneeId: true, creatorId: true } },
       }
@@ -290,12 +297,21 @@ export async function PATCH(
       existingTask.parent.assigneeId === session.user.id ||
       existingTask.parent.creatorId === session.user.id
     )
+    const isBoardLeader = isLeader && isTeamLeader(teamMember?.role)
+    // Owner = board owner, or (for a board-less task) the creator — so tasks
+    // that were never on a board stay completable by their creator.
+    const isOwner = existingTask.board
+      ? existingTask.board.ownerId === session.user.id
+      : existingTask.creatorId === session.user.id
+    // Only the task's assignee(s) — not team members/collaborators — may move it.
+    const isAssignee =
+      existingTask.assigneeId === session.user.id ||
+      existingTask.assignees?.some(a => a.userId === session.user.id) ||
+      false
     const canComplete = canFinalizeTask({
-      userRole: session.user.role as any,
-      creatorId: existingTask.creatorId,
-      assignedById: existingTask.assignedById,
-      userId: session.user.id,
-      isBoardLeader: isLeader && isTeamLeader(teamMember?.role),
+      isAdmin,
+      isBoardLeader,
+      isOwner,
       isParentLeader,
     })
     const isAssigner = existingTask.assignedById === session.user.id
@@ -333,30 +349,22 @@ export async function PATCH(
       }, { status: 403 })
     }
 
-    // Check if user is team member or collaborator
-    const isTeamMember = existingTask.teamMembers?.some(tm => tm.userId === session.user.id) || false
-    const isCollaborator = existingTask.collaborators?.some(c => c.userId === session.user.id) || false
-    
-    // If trying to change status, use stricter permissions
+    // If trying to change status, enforce move permissions.
     if (updateData.status && updateData.status !== existingTask.status) {
       if (!session.user.role) {
         return NextResponse.json({ error: 'User role is required' }, { status: 403 })
       }
-      
-      // Finishers (creator / assigner / admin / team leader / parent leader) can
-      // move the task to any status, including COMPLETED. Everyone else is
-      // governed by canChangeTaskStatus (which caps them below COMPLETED).
-      if (!canComplete && !canChangeTaskStatus(
-        session.user.role,
-        existingTask.creatorId,
-        existingTask.assigneeId,
-        session.user.id,
-        existingTask.taskType,
-        isTeamMember,
-        isCollaborator,
-        teamMember?.role,
-        updateData.status
-      )) {
+
+      // Finishers (admin / board leader / board owner / parent leader) can move
+      // the task to any status, including COMPLETED. The assignee can move it
+      // between non-completed statuses; everyone else is blocked.
+      if (!canComplete && !canChangeTaskStatus({
+        isAdmin,
+        isAssignee,
+        isBoardLeader,
+        isOwner,
+        targetStatus: updateData.status,
+      })) {
         return NextResponse.json({
           error: 'You cannot change the status of this task. Please add a comment to communicate with the task owner.'
         }, { status: 403 })
@@ -380,7 +388,7 @@ export async function PATCH(
     } else if (!canComplete && !canEditTask(
       session.user.role,
       existingTask.creatorId,
-      existingTask.assigneeId,
+      [existingTask.assigneeId, ...(existingTask.assignees?.map(a => a.userId) || [])].filter((id): id is string => !!id),
       session.user.id,
       teamMember?.role
     )) {

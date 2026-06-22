@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # GCGC Team Management System - Production Deployment Script
-# Target Server: ***REDACTED_PRODUCTION_IP*** (i-5ts5z9v1p0b82nz8whpr)
+# Target Server: 8.220.150.34 (i-5ts5z9v1p0b82nz8whpr)
 
 set -e
 
@@ -17,7 +17,7 @@ BRANCH="main"
 ENV_FILE="deployment/.env.production"
 
 echo "📋 Configuration:"
-echo "   Server: ***REDACTED_PRODUCTION_IP*** (via SSH alias: $REMOTE_HOST)"
+echo "   Server: 8.220.150.34 (via SSH alias: $REMOTE_HOST)"
 echo "   Directory: $REMOTE_DIR"
 echo "   Branch: $BRANCH"
 echo ""
@@ -135,7 +135,7 @@ if [ $? -eq 0 ]; then
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "✅ PRODUCTION deployment completed successfully!"
     echo ""
-    echo "🌐 Application URL: http://***REDACTED_PRODUCTION_IP***"
+    echo "🌐 Application URL: https://tms.hotelsogo-ai.com"
     echo ""
     echo "📊 Useful commands:"
     echo "   View logs:      ssh $REMOTE_HOST 'pm2 logs $APP_NAME'"

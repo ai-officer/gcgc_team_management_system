@@ -30,11 +30,21 @@ export async function GET(req: NextRequest) {
         email: true,
         firstName: true,
         lastName: true,
+        middleName: true,
         name: true,
         image: true,
         role: true,
+        contactNumber: true,
         hierarchyLevel: true,
         positionTitle: true,
+        // Org placement — needed so the Add Member dialog pre-fills these for an
+        // existing account (otherwise Division/Job Level render empty), and so
+        // the "has anything changed?" diff doesn't fire a spurious profile update.
+        division: true,
+        department: true,
+        section: true,
+        team: true,
+        jobLevel: true,
         createdAt: true
       },
       orderBy: [

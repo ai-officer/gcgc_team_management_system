@@ -636,9 +636,26 @@ export default function TeamOverviewPage() {
     if (!userToAdd) return
 
     try {
-      // First, if there were any changes to user information, update the user
+      // Add to the team FIRST. This creates the leader→member link, which is
+      // what authorizes the leader to then correct the member's org info.
+      // (Updating before the link exists would be Forbidden.)
+      const response = await fetch('/api/user/team-members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: userToAdd.id })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to add team member')
+      }
+
+      const newMember = await response.json()
+
+      // For an existing user, if the leader corrected any profile/org info,
+      // persist it now that they manage the member. Non-fatal: the member is
+      // already on the team, so a failed update only means uncorrected info.
       if (addMemberMode === 'select') {
-        // For existing users, check if any information was changed and update
         const originalUser = availableUsers.find(u => u.id === userToAdd.id)
         const hasChanges = originalUser && (
           originalUser.name !== userToAdd.name ||
@@ -655,44 +672,51 @@ export default function TeamOverviewPage() {
         )
 
         if (hasChanges) {
-          const updateResponse = await fetch(`/api/users/${userToAdd.id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              name: userToAdd.name,
-              firstName: userToAdd.firstName,
-              lastName: userToAdd.lastName,
-              contactNumber: userToAdd.contactNumber,
-              positionTitle: userToAdd.positionTitle,
-              hierarchyLevel: userToAdd.hierarchyLevel,
-              division: (userToAdd as any).division,
-              department: (userToAdd as any).department,
-              section: (userToAdd as any).section,
-              team: (userToAdd as any).team,
-              jobLevel: (userToAdd as any).jobLevel
-            })
-          })
+          // Only send fields that actually have a value. The profile schema
+          // rejects nulls, and sending null first/last name would make the API
+          // recompute (and wipe) the display name. Empty fields are simply
+          // left untouched.
+          const candidate: Record<string, any> = {
+            firstName: userToAdd.firstName,
+            lastName: userToAdd.lastName,
+            contactNumber: userToAdd.contactNumber,
+            positionTitle: userToAdd.positionTitle,
+            hierarchyLevel: userToAdd.hierarchyLevel,
+            division: (userToAdd as any).division,
+            department: (userToAdd as any).department,
+            section: (userToAdd as any).section,
+            team: (userToAdd as any).team,
+            jobLevel: (userToAdd as any).jobLevel,
+          }
+          const updatePayload = Object.fromEntries(
+            Object.entries(candidate).filter(([, v]) => v !== null && v !== undefined && v !== '')
+          )
 
-          if (!updateResponse.ok) {
-            const errorData = await updateResponse.json()
-            throw new Error(errorData.error || 'Failed to update user information')
+          try {
+            const updateResponse = await fetch(`/api/users/${userToAdd.id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(updatePayload)
+            })
+
+            if (!updateResponse.ok) {
+              const errorData = await updateResponse.json().catch(() => ({}))
+              toast({
+                title: "Member added",
+                description: `Added to your team, but the profile changes couldn't be saved: ${errorData.error || 'unknown error'}.`,
+                variant: "destructive"
+              })
+            }
+          } catch {
+            toast({
+              title: "Member added",
+              description: "Added to your team, but the profile changes couldn't be saved.",
+              variant: "destructive"
+            })
           }
         }
       }
 
-      // Then add the user to the team
-      const response = await fetch('/api/user/team-members', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: userToAdd.id })
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to add team member')
-      }
-
-      const newMember = await response.json()
       setTeamMembers(prev => [...prev, newMember])
       setAvailableUsers(prev => prev.filter(user => user.id !== userToAdd.id))
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAdminSession } from '@/lib/auth/get-admin-session'
 import { prisma } from '@/lib/prisma'
 import { UserRole } from '@prisma/client'
+import { OVERDUE_EXCLUDED_STATUSES } from '@/lib/overdue'
 
 export async function GET(req: NextRequest) {
   try {
@@ -73,7 +74,8 @@ export async function GET(req: NextRequest) {
       prisma.task.count({
         where: {
           isRecurring: { not: true },
-          status: { notIn: ['COMPLETED', 'CANCELLED'] },
+          // In Review tasks are awaiting approval, not overdue — exclude them.
+          status: { notIn: OVERDUE_EXCLUDED_STATUSES },
           dueDate: { lt: (() => { const d = new Date(); d.setHours(0,0,0,0); return d })() }
         }
       })

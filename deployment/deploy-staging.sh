@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # GCGC Team Management System - Staging Deployment Script
-# Target Server: ***REDACTED_STAGING_IP*** (i-5tsj3f83uq7wal98hk9c)
+# Target Server: 8.220.141.16 (i-5tsj3f83uq7wal98hk9c)
 
 set -e
 
@@ -17,7 +17,7 @@ BRANCH="staging"
 ENV_FILE="deployment/.env.staging"
 
 echo "📋 Configuration:"
-echo "   Server: ***REDACTED_STAGING_IP*** (via SSH alias: $REMOTE_HOST)"
+echo "   Server: 8.220.141.16 (via SSH alias: $REMOTE_HOST)"
 echo "   Directory: $REMOTE_DIR"
 echo "   Branch: $BRANCH"
 echo ""
@@ -121,7 +121,7 @@ if [ $? -eq 0 ]; then
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "✅ STAGING deployment completed successfully!"
     echo ""
-    echo "🌐 Application URL: http://***REDACTED_STAGING_IP***"
+    echo "🌐 Application URL: https://tms-staging.hotelsogo-ai.com"
     echo ""
     echo "📊 Useful commands:"
     echo "   View logs:      ssh $REMOTE_HOST 'pm2 logs $APP_NAME'"

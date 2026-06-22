@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getRequestSession } from '@/lib/api-auth'
 import { prisma } from '@/lib/prisma'
+import { isOverdueStatus } from '@/lib/overdue'
 
 export async function GET(req: NextRequest) {
   try {
@@ -100,7 +101,7 @@ export async function GET(req: NextRequest) {
       const st = row.task.status
       s.byStatus[st] = (s.byStatus[st] || 0) + 1
       s.total += 1
-      if (st !== 'COMPLETED' && st !== 'CANCELLED' && row.task.dueDate && row.task.dueDate < startOfToday) {
+      if (isOverdueStatus(st) && row.task.dueDate && row.task.dueDate < startOfToday) {
         s.overdue += 1
       }
     }

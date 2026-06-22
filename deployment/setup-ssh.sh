@@ -10,7 +10,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 # Check if .pem file exists
-PEM_SOURCE="/Users/kyleisaacmendoza/Downloads/sogo-infra-key.pem"
+PEM_SOURCE="/Users/kyleisaacmendoza/Documents/Second Brain/sogo-infra-key.pem"
 PEM_DEST="$HOME/.ssh/sogo-infra-key.pem"
 
 if [ ! -f "$PEM_SOURCE" ]; then
@@ -65,7 +65,7 @@ else
 
 # GCGC Staging Server
 Host gcgc-staging
-    HostName ***REDACTED_STAGING_IP***
+    HostName 8.220.141.16
     User root
     IdentityFile ~/.ssh/sogo-infra-key.pem
     ServerAliveInterval 60
@@ -73,7 +73,7 @@ Host gcgc-staging
 
 # GCGC Production Server
 Host gcgc-production
-    HostName ***REDACTED_PRODUCTION_IP***
+    HostName 8.220.150.34
     User root
     IdentityFile ~/.ssh/sogo-infra-key.pem
     ServerAliveInterval 60

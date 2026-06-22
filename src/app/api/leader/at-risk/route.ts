@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { isOverdueStatus } from '@/lib/overdue'
 
 const NEAR_DEADLINE_DAYS = 3
 
@@ -53,7 +54,7 @@ export async function GET() {
 
     const enriched = tasks.map(t => ({
       ...t,
-      isOverdue: t.dueDate! < now,
+      isOverdue: t.dueDate! < now && isOverdueStatus(t.status),
     }))
 
     return NextResponse.json({ tasks: enriched })

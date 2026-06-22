@@ -40,7 +40,15 @@ export async function GET() {
     include: {
       ...memberInclude,
       owner: { select: { id: true, name: true, email: true, image: true } },
-      team: { select: { id: true, name: true } },
+      team: {
+        include: {
+          members: {
+            include: {
+              user: { select: { id: true, name: true, email: true, image: true, role: true } },
+            },
+          },
+        },
+      },
     },
     orderBy: { createdAt: 'asc' },
   })

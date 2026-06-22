@@ -84,6 +84,7 @@ import type { TimelineZoom } from '@/lib/timeline'
 import DuplicateTaskDialog from '@/components/tasks/DuplicateTaskDialog'
 import { BulkTaskActionsDialog } from '@/components/tasks/bulk-task-actions-dialog'
 import BoardSettingsDialog from '@/components/tasks/BoardSettingsDialog'
+import { isOverdueStatus } from '@/lib/overdue'
 
 interface Task {
   id: string
@@ -205,7 +206,11 @@ interface KanbanBoard {
   owner?: BoardMemberUser
   members: { userId: string; user: BoardMemberUser }[]
   _count: { tasks: number }
-  team?: { id: string; name: string } | null
+  team?: {
+    id: string
+    name: string
+    members?: { userId: string; role: string; user: BoardMemberUser }[]
+  } | null
   statuses?: BoardStatus[]
   fields?: BoardField[]
   canManage?: boolean
@@ -1012,7 +1017,9 @@ export default function TasksPage() {
 
   const activeBoard = activeBoardId ? boards.find(b => b.id === activeBoardId) : undefined
   const filterUserOptions = activeBoard
-    ? activeBoard.members.map(m => ({ id: m.user.id, name: m.user.name || m.user.email, email: m.user.email, image: m.user.image }))
+    ? activeBoard.team?.members
+      ? activeBoard.team.members.map(m => ({ id: m.user.id, name: m.user.name || m.user.email, email: m.user.email, image: m.user.image }))
+      : activeBoard.members.map(m => ({ id: m.user.id, name: m.user.name || m.user.email, email: m.user.email, image: m.user.image }))
     : users.map(u => ({ id: u.id, name: u.name || u.email, email: u.email, image: u.image }))
   // NOTE: all hooks MUST stay above the early returns below — otherwise the hook
   // count changes between the loading and loaded renders (React error #310).
@@ -1161,7 +1168,8 @@ export default function TasksPage() {
         {boards.map(board => {
           const isOwner = board.ownerId === session?.user?.id
           const isTeamBoard = !!board.team
-          const memberCount = board.members?.length ?? 0
+          const membersList = isTeamBoard ? (board.team?.members || []) : (board.members || [])
+          const memberCount = membersList.length
           return (
             <div key={board.id} className="relative group flex items-center shrink-0">
               <button
@@ -1180,7 +1188,7 @@ export default function TasksPage() {
                 {/* Member avatars */}
                 {memberCount > 0 && (
                   <div className="flex -space-x-1 ml-1">
-                    {board.members.slice(0, 3).map(m => (
+                    {membersList.slice(0, 3).map(m => (
                       <Avatar key={m.userId} className="h-4 w-4 border border-white ring-0">
                         <AvatarImage src={m.user.image} />
                         <AvatarFallback className="text-[8px]">
@@ -1527,7 +1535,7 @@ export default function TasksPage() {
                                 {/* Meta footer: priority, due date, subtasks, comments, weight, SLA, meeting */}
                                 {(() => {
                                   const _sot = new Date(); _sot.setHours(0, 0, 0, 0)
-                                  const overdue = task.dueDate && new Date(task.dueDate) < _sot && task.status !== 'COMPLETED'
+                                  const overdue = task.dueDate && new Date(task.dueDate) < _sot && isOverdueStatus(task.status)
                                   return (
                                     <div className="flex items-center gap-x-3 gap-y-1.5 flex-wrap text-[11px] text-gray-500 mb-2.5">
                                       <span className="inline-flex items-center gap-1">
@@ -1721,7 +1729,7 @@ export default function TasksPage() {
           boardName={activeBoard.name}
           statuses={activeBoard.statuses || []}
           fields={activeBoard.fields || []}
-          members={(activeBoard.members || []).map(m => ({ id: m.user.id, name: m.user.name, email: m.user.email }))}
+          members={((activeBoard.team ? activeBoard.team.members : activeBoard.members) || []).map(m => ({ id: m.user.id, name: m.user.name, email: m.user.email }))}
           open={boardSettingsOpen}
           onOpenChange={setBoardSettingsOpen}
           onChanged={async () => { await fetchBoards(); await fetchTasks(false) }}

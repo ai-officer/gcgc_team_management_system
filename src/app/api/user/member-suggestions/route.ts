@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getRequestSession } from '@/lib/api-auth'
 import { prisma } from '@/lib/prisma'
+import { isOverdueStatus } from '@/lib/overdue'
 
 export const dynamic = 'force-dynamic'
 
@@ -87,7 +88,7 @@ export async function GET(req: NextRequest) {
 
       // Calculate overdue tasks
       const now = new Date()
-      const overdueTasks = tasks.filter(t => t.dueDate && new Date(t.dueDate) < now).length
+      const overdueTasks = tasks.filter(t => t.dueDate && new Date(t.dueDate) < now && isOverdueStatus(t.status)).length
 
       // Calculate availability score (lower is better - more available)
       // Formula: total tasks + (urgent * 3) + (high * 2) + overdue tasks + (in_progress * 1.5)

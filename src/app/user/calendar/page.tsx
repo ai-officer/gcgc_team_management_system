@@ -1,13 +1,13 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { Calendar, momentLocalizer, Views } from 'react-big-calendar'
 import moment from 'moment'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
-import { Calendar as CalendarIcon, AlertCircle, Settings, Wifi, WifiOff, RefreshCw, FileText, Clock, Users, User, Tag, CheckCircle2, AlertTriangle, Flag, X, ChevronRight, Plus } from 'lucide-react'
+import { Calendar as CalendarIcon, AlertCircle, Settings, RefreshCw, FileText, Clock, Users, User, Tag, CheckCircle2, AlertTriangle, Flag, X, ChevronRight, Plus } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -118,6 +118,10 @@ export default function CalendarPage() {
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false)
   const [isSyncSettingsOpen, setIsSyncSettingsOpen] = useState(false)
   const [togglingSubtaskId, setTogglingSubtaskId] = useState<string | null>(null)
+  // Google Calendar sync (on-open + manual model — no webhooks/cron)
+  const [syncSettings, setSyncSettings] = useState<any>(null)
+  const [isManualSyncing, setIsManualSyncing] = useState(false)
+  const autoImportRef = useRef(false)
   // Day sidebar
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [isDaySidebarOpen, setIsDaySidebarOpen] = useState(false)
@@ -202,6 +206,10 @@ export default function CalendarPage() {
         syncSettingsResponse.ok ? syncSettingsResponse.json() : { syncSettings: null },
         holidaysResponse.ok ? holidaysResponse.json() : { holidays: [] }
       ])
+
+      // Keep the latest Google sync settings so the on-open import effect can
+      // decide whether a background pull from Google is due.
+      setSyncSettings(syncData?.syncSettings ?? null)
 
       const calendarEvents: CalendarEvent[] = []
 
@@ -332,11 +340,46 @@ export default function CalendarPage() {
     }
   }, [session])
 
-  const { status, triggerManualSync, isConnected } = useCalendarSync(fetchCalendarData)
+  // Keep the socket hook for live refresh on task changes; calendar import is
+  // now pull-based (on open + manual), so we don't rely on its connection state.
+  useCalendarSync(fetchCalendarData)
 
   useEffect(() => {
     fetchCalendarData()
   }, [fetchCalendarData])
+
+  // On-open import: if Google sync is enabled and the last import is stale,
+  // pull changes from Google in the background once per mount, then refresh.
+  // Runs after fetchCalendarData has loaded syncSettings into state. The ref
+  // guard means the post-import refresh can't retrigger another import.
+  useEffect(() => {
+    if (!syncSettings?.isEnabled || autoImportRef.current) return
+    const last = syncSettings.lastSyncedAt ? new Date(syncSettings.lastSyncedAt).getTime() : 0
+    if (Date.now() - last < 3 * 60 * 1000) return // imported recently — skip
+    autoImportRef.current = true
+    fetch('/api/calendar/sync-from-google', { method: 'POST' })
+      .then((r) => { if (r.ok) fetchCalendarData() })
+      .catch(() => { /* best-effort: on-open import never blocks the view */ })
+  }, [syncSettings, fetchCalendarData])
+
+  // Manual "Sync now": two-way pull + push, then refresh. HTTP-based so it
+  // works regardless of the websocket layer.
+  const handleSyncNow = useCallback(async () => {
+    if (!syncSettings?.isEnabled || isManualSyncing) return
+    setIsManualSyncing(true)
+    try {
+      await Promise.all([
+        fetch('/api/calendar/sync-from-google', { method: 'POST' }),
+        fetch('/api/calendar/sync-to-google', { method: 'POST' }),
+      ])
+      await fetchCalendarData()
+      toast({ title: 'Calendar synced', description: 'Pulled the latest from Google Calendar.' })
+    } catch {
+      toast({ title: 'Sync failed', description: 'Could not sync with Google Calendar.', variant: 'destructive' })
+    } finally {
+      setIsManualSyncing(false)
+    }
+  }, [syncSettings, isManualSyncing, fetchCalendarData, toast])
 
   const handleSelectEvent = (event: CalendarEvent) => {
     setSelectedEvent(event)
@@ -454,25 +497,20 @@ export default function CalendarPage() {
                 : "View your schedule and task deadlines"
               }
             </p>
-            <div className="flex items-center gap-2">
-              {isConnected ? (
+            {syncSettings?.isEnabled && (
+              <div className="flex items-center gap-2">
                 <Badge variant="outline" className="flex items-center gap-1 bg-green-50 text-green-700 border-green-200">
-                  <Wifi className="h-3 w-3" />
-                  Live
+                  <CalendarIcon className="h-3 w-3" />
+                  Google connected
                 </Badge>
-              ) : (
-                <Badge variant="outline" className="flex items-center gap-1 bg-gray-50 text-gray-500">
-                  <WifiOff className="h-3 w-3" />
-                  Offline
-                </Badge>
-              )}
-              {status.isSyncing && (
-                <Badge variant="outline" className="flex items-center gap-1">
-                  <RefreshCw className="h-3 w-3 animate-spin" />
-                  Syncing...
-                </Badge>
-              )}
-            </div>
+                {isManualSyncing && (
+                  <Badge variant="outline" className="flex items-center gap-1">
+                    <RefreshCw className="h-3 w-3 animate-spin" />
+                    Syncing...
+                  </Badge>
+                )}
+              </div>
+            )}
           </div>
         </div>
         <div className="grid grid-cols-3 sm:flex sm:flex-wrap gap-2 w-full sm:w-auto">
@@ -480,6 +518,18 @@ export default function CalendarPage() {
             onTaskCreated={fetchCalendarData}
             className="text-xs sm:text-sm px-2.5 sm:px-4"
           />
+          {syncSettings?.isEnabled && (
+            <Button
+              variant="outline"
+              onClick={handleSyncNow}
+              disabled={isManualSyncing}
+              className="text-xs sm:text-sm px-2.5 sm:px-4"
+            >
+              <RefreshCw className={`h-4 w-4 shrink-0 sm:mr-2 ${isManualSyncing ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Sync now</span>
+              <span className="sm:hidden truncate">Sync now</span>
+            </Button>
+          )}
           <Button
             variant="outline"
             onClick={() => setIsSyncSettingsOpen(true)}
@@ -487,7 +537,7 @@ export default function CalendarPage() {
           >
             <Settings className="h-4 w-4 shrink-0 sm:mr-2" />
             <span className="hidden sm:inline">Google Calendar Sync</span>
-            <span className="sm:hidden truncate">Sync</span>
+            <span className="sm:hidden truncate">Settings</span>
           </Button>
         </div>
       </div>

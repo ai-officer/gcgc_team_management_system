@@ -186,11 +186,15 @@ export async function GET(req: NextRequest) {
         // 1. Top-level tasks they're involved in (parentId = null)
         // 2. Parent tasks that have a subtask assigned to this user
         //    (subtasks are shown inline on the parent card, never as standalone cards)
+        // Only include team tasks if a specific board or team filter is active.
+        // For the 'All Tasks' view (where boardId and teamId are absent), we show only tasks the user is personally related to.
+        const showTeamTasks = (boardId && boardId !== 'none') || !!teamId
+
         where.OR = [
           // Top-level tasks where user is involved
           {
             OR: [
-              ...(teamIds.length > 0 ? [{ teamId: { in: teamIds } }] : []),
+              ...(showTeamTasks && teamIds.length > 0 ? [{ teamId: { in: teamIds } }] : []),
               ...managedMemberClause,
               { assigneeId: session.user.id },
               { creatorId: session.user.id },

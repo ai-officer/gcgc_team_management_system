@@ -274,7 +274,7 @@ export default function TasksPage() {
   const [searchTerm, setSearchTerm] = useState<string>(() => searchParams.get('q') ?? '')
   const [selectedTeam, setSelectedTeam] = useState<string>(() => searchParams.get('team') ?? '')
   const [selectedUser, setSelectedUser] = useState<string>(() => searchParams.get('user') ?? '')
-  const [selectedTaskType, setSelectedTaskType] = useState<string>(() => searchParams.get('type') ?? '')
+
   const [users, setUsers] = useState<User[]>([])
   const [showTaskForm, setShowTaskForm] = useState(false)
   const [quickAddStatus, setQuickAddStatus] = useState<'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' | undefined>(undefined)
@@ -346,7 +346,7 @@ export default function TasksPage() {
       const params = new URLSearchParams()
       if (selectedTeam) params.append('teamId', selectedTeam)
       if (selectedUser) params.append('userId', selectedUser)
-      if (selectedTaskType) params.append('taskType', selectedTaskType)
+
       if (activeBoardId) params.append('boardId', activeBoardId)
       // Fetch all currently-loaded pages in one request so refreshes preserve
       // what the user has loaded via "Load more".
@@ -416,7 +416,7 @@ export default function TasksPage() {
     // reference on alt-tab even when identity is unchanged. The previous
     // `[session, ...]` deps re-fired this effect, flipping `loading` to true
     // and unmounting the TaskForm dialog (and its in-progress RHF state).
-  }, [session?.user?.id, selectedTeam, selectedUser, selectedTaskType, activeBoardId])
+  }, [session?.user?.id, selectedTeam, selectedUser, activeBoardId])
 
   // Refetch tasks when page becomes visible (e.g., navigating back from Calendar)
   useEffect(() => {
@@ -448,12 +448,11 @@ export default function TasksPage() {
     if (searchTerm) params.set('q', searchTerm)
     if (selectedTeam) params.set('team', selectedTeam)
     if (selectedUser) params.set('user', selectedUser)
-    if (selectedTaskType) params.set('type', selectedTaskType)
     if (activeBoardId) params.set('board', activeBoardId)
     if (viewMode === 'timeline') params.set('view', 'timeline')
     const qs = params.toString()
     router.replace(qs ? `/user/tasks?${qs}` : '/user/tasks', { scroll: false })
-  }, [searchTerm, selectedTeam, selectedUser, selectedTaskType, activeBoardId, viewMode, router])
+  }, [searchTerm, selectedTeam, selectedUser, activeBoardId, viewMode, router])
 
   const fetchUsers = async () => {
     try {
@@ -1277,47 +1276,15 @@ export default function TasksPage() {
           className="w-full sm:w-[200px]"
         />
 
-        <Select value={selectedTaskType || "all"} onValueChange={(value) => setSelectedTaskType(value === "all" ? "" : value)}>
-          <SelectTrigger className="w-full sm:w-[200px]">
-            <SelectValue placeholder="Filter by task type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All task types</SelectItem>
-            <SelectItem value="INDIVIDUAL">
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                <span>Individual</span>
-              </div>
-            </SelectItem>
-            <SelectItem value="TEAM">
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                <span>Team</span>
-              </div>
-            </SelectItem>
-            <SelectItem value="COLLABORATION">
-              <div className="flex items-center gap-2">
-                <Handshake className="h-4 w-4" />
-                <span>Collaboration</span>
-              </div>
-            </SelectItem>
-            <SelectItem value="CASCADING">
-              <div className="flex items-center gap-2">
-                <GitBranch className="h-4 w-4" />
-                <span>Cascading</span>
-              </div>
-            </SelectItem>
-          </SelectContent>
-        </Select>
 
-        {(selectedUser || selectedTaskType || searchTerm) && (
+
+        {(selectedUser || searchTerm) && (
           <Button
             variant="outline"
             size="sm"
             className="w-full sm:w-auto"
             onClick={() => {
               setSelectedUser('')
-              setSelectedTaskType('')
               setSearchTerm('')
             }}
           >

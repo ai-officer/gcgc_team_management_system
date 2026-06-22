@@ -30,6 +30,7 @@ echo ""
 
 # Copy .pem file to .ssh directory
 if [ "$PEM_SOURCE" != "$PEM_DEST" ]; then
+    rm -f "$PEM_DEST"
     cp "$PEM_SOURCE" "$PEM_DEST"
     echo "✅ Copied SSH key to $PEM_DEST"
 else

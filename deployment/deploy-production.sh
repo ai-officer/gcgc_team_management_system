@@ -41,15 +41,17 @@ echo "✅ Environment file found"
 echo ""
 
 # Double confirmation for production
-echo "⚠️  ⚠️  ⚠️  WARNING: PRODUCTION DEPLOYMENT  ⚠️  ⚠️  ⚠️"
-echo ""
-echo "This will deploy to the LIVE PRODUCTION server!"
-echo "This may cause brief downtime for users."
-echo ""
-read -p "Type 'DEPLOY' to continue: " CONFIRM
-if [ "$CONFIRM" != "DEPLOY" ]; then
-    echo "❌ Deployment cancelled"
-    exit 1
+if [ "$FORCE" != "yes" ]; then
+    echo "⚠️  ⚠️  ⚠️  WARNING: PRODUCTION DEPLOYMENT  ⚠️  ⚠️  ⚠️"
+    echo ""
+    echo "This will deploy to the LIVE PRODUCTION server!"
+    echo "This may cause brief downtime for users."
+    echo ""
+    read -p "Type 'DEPLOY' to continue: " CONFIRM
+    if [ "$CONFIRM" != "DEPLOY" ]; then
+        echo "❌ Deployment cancelled"
+        exit 1
+    fi
 fi
 
 echo ""

@@ -41,11 +41,13 @@ echo "✅ Environment file found"
 echo ""
 
 # Confirm deployment
-read -p "⚠️  Deploy to STAGING server? (y/n) " -n 1 -r
-echo ""
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "❌ Deployment cancelled"
-    exit 1
+if [ "$FORCE" != "yes" ]; then
+    read -p "⚠️  Deploy to STAGING server? (y/n) " -n 1 -r
+    echo ""
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "❌ Deployment cancelled"
+        exit 1
+    fi
 fi
 
 echo ""

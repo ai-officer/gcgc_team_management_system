@@ -82,16 +82,16 @@ export function LeaderWorkloadWidget() {
 
   return (
     <Card className="border border-slate-200 bg-white shadow-sm rounded-xl">
-      <CardHeader className="pb-4 border-b border-slate-100">
+      <CardHeader className="py-3 px-4 border-b border-slate-100">
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="space-y-1">
-            <CardTitle className="flex items-center gap-2 text-lg font-semibold text-slate-900">
-              <div className="p-2 bg-amber-50 rounded-lg">
-                <Users className="h-4 w-4 text-amber-600" />
+          <div className="space-y-0.5">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+              <div className="p-1.5 bg-amber-50 rounded-md">
+                <Users className="h-3.5 w-3.5 text-amber-600" />
               </div>
               Team workload
             </CardTitle>
-            <CardDescription className="text-sm text-slate-600">
+            <CardDescription className="text-xs text-slate-500">
               {flagged.length > 0
                 ? `${flagged.length} member${flagged.length === 1 ? '' : 's'} flagged — overdue or ≥ ${OVERLOAD_THRESHOLD} active tasks`
                 : 'Everyone is comfortably loaded'}
@@ -100,9 +100,10 @@ export function LeaderWorkloadWidget() {
           <Button
             variant="ghost"
             size="sm"
+            className="h-7 text-xs"
             onClick={() => router.push('/user/member-management')}
           >
-            Manage <ArrowRight className="h-4 w-4 ml-1" />
+            Manage <ArrowRight className="h-3.5 w-3.5 ml-1" />
           </Button>
         </div>
       </CardHeader>
@@ -113,36 +114,36 @@ export function LeaderWorkloadWidget() {
             return (
               <li
                 key={r.id}
-                className={`flex items-center gap-3 p-4 ${isFlagged ? 'bg-amber-50/50' : ''}`}
+                className={`flex items-center gap-2.5 px-4 py-2 ${isFlagged ? 'bg-amber-50/50' : ''}`}
               >
                 <UserAvatar
                   userId={r.id}
                   image={r.image}
                   name={r.name}
                   email={r.email}
-                  className="h-10 w-10 ring-1 ring-slate-200"
-                  fallbackClassName="text-xs bg-gradient-to-br from-blue-400 to-purple-500 text-white font-semibold"
+                  className="h-8 w-8 ring-1 ring-slate-200"
+                  fallbackClassName="text-[10px] bg-gradient-to-br from-blue-400 to-purple-500 text-white font-semibold"
                 />
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-slate-900 truncate">
+                  <div className="text-sm font-medium text-slate-900 truncate leading-tight">
                     {r.name || r.email}
                   </div>
                   {r.positionTitle && (
-                    <div className="text-xs text-slate-500 truncate">{r.positionTitle}</div>
+                    <div className="text-[11px] text-slate-500 truncate leading-tight">{r.positionTitle}</div>
                   )}
                 </div>
-                <div className="flex items-center gap-2 flex-wrap justify-end">
-                  <Badge variant="outline" className="font-normal">
+                <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                  <Badge variant="outline" className="font-normal text-[11px] px-1.5 py-0">
                     {r.active} active
                   </Badge>
                   {r.tasks.overdue > 0 && (
-                    <Badge className="bg-red-100 text-red-700 hover:bg-red-100 font-normal">
+                    <Badge className="bg-red-100 text-red-700 hover:bg-red-100 font-normal text-[11px] px-1.5 py-0">
                       <AlertTriangle className="h-3 w-3 mr-1" />
                       {r.tasks.overdue} overdue
                     </Badge>
                   )}
                   {r.active >= OVERLOAD_THRESHOLD && r.tasks.overdue === 0 && (
-                    <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 font-normal">
+                    <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 font-normal text-[11px] px-1.5 py-0">
                       Overloaded
                     </Badge>
                   )}

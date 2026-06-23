@@ -73,16 +73,16 @@ export function AtRiskTasksWidget() {
 
   return (
     <Card className="border border-slate-200 bg-white shadow-sm rounded-xl">
-      <CardHeader className="pb-4 border-b border-slate-100">
+      <CardHeader className="py-3 px-4 border-b border-slate-100">
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="space-y-1">
-            <CardTitle className="flex items-center gap-2 text-lg font-semibold text-slate-900">
-              <div className="p-2 bg-red-50 rounded-lg">
-                <AlertTriangle className="h-4 w-4 text-red-600" />
+          <div className="space-y-0.5">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+              <div className="p-1.5 bg-red-50 rounded-md">
+                <AlertTriangle className="h-3.5 w-3.5 text-red-600" />
               </div>
               At-risk tasks
             </CardTitle>
-            <CardDescription className="text-sm text-slate-600">
+            <CardDescription className="text-xs text-slate-500">
               {overdue.length > 0
                 ? `${overdue.length} overdue · ${upcoming.length} due within 3 days`
                 : `${upcoming.length} task${upcoming.length === 1 ? '' : 's'} due within 3 days`}
@@ -91,9 +91,10 @@ export function AtRiskTasksWidget() {
           <Button
             variant="ghost"
             size="sm"
+            className="h-7 text-xs"
             onClick={() => router.push('/user/tasks')}
           >
-            View all <ArrowRight className="h-4 w-4 ml-1" />
+            View all <ArrowRight className="h-3.5 w-3.5 ml-1" />
           </Button>
         </div>
       </CardHeader>
@@ -102,7 +103,7 @@ export function AtRiskTasksWidget() {
           {sorted.map(task => (
             <li
               key={task.id}
-              className={`flex items-center gap-3 p-4 ${task.isOverdue ? 'bg-red-50/40' : ''}`}
+              className={`flex items-center gap-2.5 px-4 py-2 ${task.isOverdue ? 'bg-red-50/40' : ''}`}
             >
               {task.assignee ? (
                 <UserAvatar
@@ -110,36 +111,36 @@ export function AtRiskTasksWidget() {
                   image={task.assignee.image}
                   name={task.assignee.name}
                   email={task.assignee.email}
-                  className="h-9 w-9 ring-1 ring-slate-200 flex-shrink-0"
-                  fallbackClassName="text-xs bg-gradient-to-br from-blue-400 to-purple-500 text-white font-semibold"
+                  className="h-8 w-8 ring-1 ring-slate-200 flex-shrink-0"
+                  fallbackClassName="text-[10px] bg-gradient-to-br from-blue-400 to-purple-500 text-white font-semibold"
                 />
               ) : (
-                <div className="h-9 w-9 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
+                <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
                   <span className="text-xs text-slate-400">—</span>
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-900 truncate">{task.title}</p>
-                <div className="flex items-center gap-1.5 mt-0.5 text-xs text-slate-500">
+                <p className="text-sm font-medium text-slate-900 truncate leading-tight">{task.title}</p>
+                <div className="flex items-center gap-1.5 text-[11px] text-slate-500 leading-tight">
                   {task.team && <span className="truncate">{task.team.name}</span>}
                   {task.team && <span>·</span>}
                   <span>{statusLabel[task.status] ?? task.status}</span>
                 </div>
               </div>
-              <div className="flex items-center gap-2 flex-wrap justify-end flex-shrink-0">
+              <div className="flex items-center gap-1.5 flex-wrap justify-end flex-shrink-0">
                 {task.isOverdue ? (
-                  <Badge className="bg-red-100 text-red-700 hover:bg-red-100 font-normal">
+                  <Badge className="bg-red-100 text-red-700 hover:bg-red-100 font-normal text-[11px] px-1.5 py-0">
                     <AlertTriangle className="h-3 w-3 mr-1" />
                     Overdue
                   </Badge>
                 ) : (
-                  <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 font-normal">
+                  <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 font-normal text-[11px] px-1.5 py-0">
                     <Clock className="h-3 w-3 mr-1" />
                     {formatDistanceToNow(new Date(task.dueDate), { addSuffix: true })}
                   </Badge>
                 )}
                 {task.priority === 'URGENT' && (
-                  <Badge className="bg-red-600 text-white hover:bg-red-600 font-normal text-xs">
+                  <Badge className="bg-red-600 text-white hover:bg-red-600 font-normal text-[11px] px-1.5 py-0">
                     Urgent
                   </Badge>
                 )}

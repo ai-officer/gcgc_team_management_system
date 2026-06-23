@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
 import { authOptions } from '@/lib/auth'
+import { isAllowedEmailDomain, ALLOWED_EMAIL_MESSAGE } from '@/lib/allowed-email-domains'
 import { z } from 'zod'
 
 const updateProfileSchema = z.object({
@@ -9,6 +10,9 @@ const updateProfileSchema = z.object({
   lastName: z.string().optional(),
   middleName: z.string().optional(),
   contactNumber: z.string().optional(),
+  // Login identity — only editable by the account owner or an admin (enforced below).
+  email: z.string().trim().email('Please enter a valid email address').optional(),
+  username: z.string().trim().min(3, 'Username must be at least 3 characters').max(30, 'Username must be 30 characters or fewer').regex(/^[a-zA-Z0-9._-]+$/, 'Username can only contain letters, numbers, and . _ -').optional(),
   positionTitle: z.string().optional(),
   division: z.string().optional(),
   department: z.string().optional(),
@@ -133,6 +137,36 @@ export async function PATCH(
 
     const body = await req.json()
     const validatedData = updateProfileSchema.parse(body)
+
+    // Login identity (email / username) may only be changed by the account owner
+    // or an admin — never by a leader editing a managed member, who is limited to
+    // org/profile fields and must not be able to take over a member's login.
+    const changingIdentity = validatedData.email !== undefined || validatedData.username !== undefined
+    if (changingIdentity && !isSelf && !isAdmin) {
+      return NextResponse.json({ error: 'Only the account owner or an admin can change email or username' }, { status: 403 })
+    }
+
+    // Email must be from an allowed domain.
+    if (validatedData.email !== undefined && !isAllowedEmailDomain(validatedData.email)) {
+      return NextResponse.json({ error: ALLOWED_EMAIL_MESSAGE }, { status: 400 })
+    }
+
+    // Uniqueness checks (email + username are @unique) — give a clean message
+    // instead of a raw Prisma P2002 constraint error.
+    if (validatedData.email !== undefined) {
+      const taken = await prisma.user.findFirst({
+        where: { email: validatedData.email, NOT: { id: params.id } },
+        select: { id: true },
+      })
+      if (taken) return NextResponse.json({ error: 'That email address is already in use' }, { status: 409 })
+    }
+    if (validatedData.username !== undefined) {
+      const taken = await prisma.user.findFirst({
+        where: { username: validatedData.username, NOT: { id: params.id } },
+        select: { id: true },
+      })
+      if (taken) return NextResponse.json({ error: 'That username is already taken' }, { status: 409 })
+    }
 
     // Get current user data to compute full name
     let computedName: string | null = null

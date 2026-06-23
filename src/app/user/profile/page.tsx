@@ -113,7 +113,8 @@ export default function UserProfilePage() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to update profile')
+        const e = await response.json().catch(() => ({}))
+        throw new Error(e.error || 'Failed to update profile')
       }
 
       const updatedData = await response.json()
@@ -134,13 +135,15 @@ export default function UserProfilePage() {
 
       toast({
         title: 'Success',
-        description: 'Profile updated successfully',
+        description: field === 'email'
+          ? 'Email updated. You may need to sign in again with your new email.'
+          : 'Profile updated successfully',
       })
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error updating profile:', err)
       toast({
         title: 'Error',
-        description: 'Failed to update profile',
+        description: err?.message || 'Failed to update profile',
         variant: 'destructive',
       })
     } finally {
@@ -328,9 +331,9 @@ export default function UserProfilePage() {
     const value = editedProfile[field] as string || ''
 
     return (
-      <div className="flex items-center justify-between p-4 rounded-lg hover:bg-slate-50 transition-colors group border-0">
+      <div className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors group border-0">
         <div className="flex items-center gap-3 flex-1">
-          <div className="p-2 rounded-lg bg-slate-100">
+          <div className="p-1.5 rounded-lg bg-slate-100">
             <Icon className="h-4 w-4 text-slate-500" />
           </div>
           <div className="flex-1">
@@ -387,20 +390,20 @@ export default function UserProfilePage() {
   }
 
   return (
-    <div className="space-y-8 pb-8">
+    <div className="space-y-5 pb-8">
       {/* Hero Header with Cover - Professional */}
       <Card className="overflow-hidden border border-slate-200 rounded-xl shadow-sm">
-        <div className="h-32 sm:h-48 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 relative overflow-hidden">
+        <div className="h-20 sm:h-28 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 relative overflow-hidden">
           <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
           <div className="absolute -bottom-6 -right-6 h-40 w-40 rounded-full bg-white/10" />
           <div className="absolute -top-4 -left-4 h-24 w-24 rounded-full bg-white/10" />
         </div>
         <CardContent className="relative pb-6">
-          <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4 -mt-16 sm:-mt-20">
+          <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4 -mt-12 sm:-mt-14">
             <div className="relative group">
               <Avatar
                 key={profile.image || 'no-image'}
-                className="h-32 w-32 border-4 border-white ring-2 ring-slate-200 rounded-xl shadow-lg"
+                className="h-24 w-24 border-4 border-white ring-2 ring-slate-200 rounded-xl shadow-lg"
               >
                 {/* Force browser to reload image by using unique key on AvatarImage */}
                 <AvatarImage
@@ -434,7 +437,7 @@ export default function UserProfilePage() {
 
             <div className="flex-1 text-center sm:text-left">
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
-                <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{profile.name}</h1>
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{profile.name}</h1>
                 <div className="flex items-center gap-2 justify-center sm:justify-start">
                   <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 font-medium rounded-md">
                     <Shield className="h-3 w-3 mr-1" />
@@ -491,9 +494,9 @@ export default function UserProfilePage() {
           { label: 'Hierarchy Level', value: profile.hierarchyLevel, icon: TrendingUp },
           { label: 'Job Level', value: profile.jobLevel, icon: Award },
         ].map(({ label, value, icon: Icon }) => (
-          <div key={label} className="group flex items-center gap-3 bg-white p-5 transition-colors hover:bg-blue-50/40">
-            <div className="grid place-items-center h-10 w-10 rounded-lg bg-blue-50 text-blue-600 shrink-0 group-hover:bg-blue-100 transition-colors">
-              <Icon className="h-5 w-5" />
+          <div key={label} className="group flex items-center gap-3 bg-white p-3.5 transition-colors hover:bg-blue-50/40">
+            <div className="grid place-items-center h-9 w-9 rounded-lg bg-blue-50 text-blue-600 shrink-0 group-hover:bg-blue-100 transition-colors">
+              <Icon className="h-4 w-4" />
             </div>
             <div className="min-w-0">
               <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">{label}</p>
@@ -535,22 +538,22 @@ export default function UserProfilePage() {
         {/* Personal Information Tab */}
         <TabsContent value="personal" className="space-y-4">
           <Card className="border border-slate-200 rounded-xl shadow-sm">
-            <CardHeader className="pb-4 border-b border-slate-100">
-              <CardTitle className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+            <CardHeader className="pb-3 border-b border-slate-100">
+              <CardTitle className="flex items-center gap-2 text-base font-semibold text-slate-900">
                 <div className="p-2 bg-blue-50 rounded-lg">
                   <User className="h-4 w-4 text-blue-600" />
                 </div>
                 Personal Information
               </CardTitle>
               <CardDescription className="text-sm text-slate-600 font-medium mt-1">
-                Your personal information. Contact an administrator to make changes.
+                Update your personal details. Position title and organizational placement are managed by an administrator.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-1">
-              <InlineEditField field="firstName" label="First Name" icon={User} editable={false} />
-              <InlineEditField field="lastName" label="Last Name" icon={User} editable={false} />
-              <InlineEditField field="middleName" label="Middle Name" icon={User} editable={false} />
-              <InlineEditField field="contactNumber" label="Contact Number" icon={Phone} type="tel" editable={false} />
+              <InlineEditField field="firstName" label="First Name" icon={User} />
+              <InlineEditField field="lastName" label="Last Name" icon={User} />
+              <InlineEditField field="middleName" label="Middle Name" icon={User} />
+              <InlineEditField field="contactNumber" label="Contact Number" icon={Phone} type="tel" />
               <InlineEditField field="positionTitle" label="Position Title" icon={Briefcase} editable={false} />
             </CardContent>
           </Card>
@@ -559,8 +562,8 @@ export default function UserProfilePage() {
         {/* Organization Tab */}
         <TabsContent value="organization" className="space-y-4">
           <Card className="border border-slate-200 rounded-xl shadow-sm">
-            <CardHeader className="pb-4 border-b border-slate-100">
-              <CardTitle className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+            <CardHeader className="pb-3 border-b border-slate-100">
+              <CardTitle className="flex items-center gap-2 text-base font-semibold text-slate-900">
                 <div className="p-2 bg-blue-50 rounded-lg">
                   <Building2 className="h-4 w-4 text-blue-600" />
                 </div>
@@ -592,20 +595,20 @@ export default function UserProfilePage() {
         {/* Account Tab */}
         <TabsContent value="account" className="space-y-4">
           <Card className="border border-slate-200 rounded-xl shadow-sm">
-            <CardHeader className="pb-4 border-b border-slate-100">
-              <CardTitle className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+            <CardHeader className="pb-3 border-b border-slate-100">
+              <CardTitle className="flex items-center gap-2 text-base font-semibold text-slate-900">
                 <div className="p-2 bg-blue-50 rounded-lg">
                   <Settings className="h-4 w-4 text-blue-600" />
                 </div>
                 Account Settings
               </CardTitle>
               <CardDescription className="text-sm text-slate-600 font-medium mt-1">
-                Account credentials and security information
+                Account credentials and security information. Changing your email may require signing in again.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-1">
-              <InlineEditField field="email" label="Email Address" icon={Mail} type="email" editable={false} />
-              <InlineEditField field="username" label="Username" icon={User} editable={false} />
+              <InlineEditField field="email" label="Email Address" icon={Mail} type="email" />
+              <InlineEditField field="username" label="Username" icon={User} />
 
               <Separator className="my-4" />
 
@@ -657,8 +660,8 @@ export default function UserProfilePage() {
 
           {/* Change Password Card */}
           <Card className="border border-slate-200 rounded-xl shadow-sm">
-            <CardHeader className="pb-4 border-b border-slate-100">
-              <CardTitle className="flex items-center gap-2 text-lg font-semibold text-slate-900">
+            <CardHeader className="pb-3 border-b border-slate-100">
+              <CardTitle className="flex items-center gap-2 text-base font-semibold text-slate-900">
                 <div className="p-2 bg-slate-100 rounded-lg">
                   <Lock className="h-4 w-4 text-slate-600" />
                 </div>

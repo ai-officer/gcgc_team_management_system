@@ -1412,14 +1412,24 @@ export default function TasksPage() {
       {/* Kanban Board */}
       {viewMode === 'board' && (
       <DragDropContext onDragEnd={handleDragEnd}>
-        {/* Horizontal-scrolling column row — supports any number of statuses
-            without wrapping to a second row (Jira-style board). */}
-        <div className="flex gap-4 md:gap-6 min-h-[700px] overflow-x-auto pb-3 -mx-1 px-1">
+        {/* ≤4 statuses: a responsive grid that fills the width. >4 (custom
+            statuses): a horizontally-scrolling row of fixed-width columns so
+            they never wrap to a second row. */}
+        <div className={
+          boardColumns.length > 4
+            ? 'flex gap-4 md:gap-6 min-h-[700px] overflow-x-auto pb-3 -mx-1 px-1'
+            : `grid grid-cols-1 md:grid-cols-2 ${
+                boardColumns.length >= 4 ? 'lg:grid-cols-4'
+                : boardColumns.length === 3 ? 'lg:grid-cols-3'
+                : boardColumns.length === 2 ? 'lg:grid-cols-2'
+                : 'lg:grid-cols-1'
+              } gap-3 md:gap-6 min-h-[700px]`
+        }>
           {boardColumns.map((col) => {
             const columnTasks = getTasksForColumn(col)
 
             return (
-              <div key={col.key} className="w-[280px] sm:w-[300px] shrink-0 space-y-4">
+              <div key={col.key} className={boardColumns.length > 4 ? 'w-[280px] sm:w-[300px] shrink-0 space-y-4' : 'min-w-0 space-y-4'}>
                 <div className={`p-3 rounded-lg ${col.headerClass} shadow-sm`}>
                   <h3 className={`font-semibold ${col.textClass} flex items-center text-sm`}>
                     {!col.isDefault && col.color && (

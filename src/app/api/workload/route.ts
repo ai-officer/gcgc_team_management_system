@@ -83,7 +83,7 @@ export async function GET(req: NextRequest) {
     const assigneeRows = await prisma.taskAssignee.findMany({
       where: {
         userId: { in: memberIds },
-        task: { isRecurring: false, status: { notIn: ['CANCELLED'] } },
+        task: { isRecurring: false, status: { notIn: ['CANCELLED', 'BACKLOG'] } },
       },
       select: {
         userId: true,

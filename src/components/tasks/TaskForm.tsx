@@ -39,7 +39,7 @@ import { useToast } from '@/hooks/use-toast'
 
 // Types
 type TaskType = 'INDIVIDUAL' | 'TEAM' | 'COLLABORATION' | 'CASCADING'
-type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'
+type TaskStatus = 'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'
 type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
 
 interface User {
@@ -92,7 +92,7 @@ const taskFormSchema = z.object({
   description: z.string().optional(),
   dueDate: z.date({ required_error: 'Deadline is required' }),
   startDate: z.date().optional(),
-  status: z.enum(['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED']),
+  status: z.enum(['BACKLOG', 'TODO', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED']),
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']),
   progressPercentage: z.number().min(0).max(100),
   taskType: z.enum(['INDIVIDUAL', 'TEAM', 'COLLABORATION', 'CASCADING']),
@@ -138,7 +138,7 @@ interface TaskFormProps {
   initialDueDate?: Date // Pre-fill the due date when creating a new task
   boardContext?: { boardId: string; boardName: string; teamId: string | null } | null // active board the task will be created on
   boardFields?: Array<{ id: string; name: string; type: 'TEXT' | 'NUMBER' | 'DATE' | 'SELECT'; options: string[]; required: boolean; position: number }> // active board's custom fields
-  initialStatus?: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' // preset status (per-column quick-add)
+  initialStatus?: 'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' // preset status (per-column quick-add)
   initialCustomStatusId?: string // the custom board column to drop the new task into (per-column quick-add) (#26)
 }
 

@@ -36,7 +36,7 @@ export async function GET() {
     const tasks = await prisma.task.findMany({
       where: {
         teamId: { in: teamIds },
-        status: { notIn: ['COMPLETED'] },
+        status: { notIn: ['COMPLETED', 'BACKLOG'] },
         dueDate: { not: null, lte: soonCutoff },
       },
       select: {

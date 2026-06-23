@@ -32,6 +32,8 @@ import {
   Star,
   Video,
   Download,
+  Archive,
+  RotateCcw,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -93,7 +95,7 @@ interface Task {
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
   dueDate?: string
   startDate?: string
-  status: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'
+  status: 'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'
   customStatusId?: string | null
   progressPercentage: number
   taskType: 'INDIVIDUAL' | 'TEAM' | 'COLLABORATION' | 'CASCADING'
@@ -167,7 +169,7 @@ interface Task {
   subtasks?: Array<{
     id: string
     title: string
-    status: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'
+    status: 'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'
     priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
     progressPercentage: number
     dueDate?: string
@@ -206,7 +208,7 @@ interface BoardMemberUser {
 interface BoardStatus {
   id: string
   name: string
-  category: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' | 'CANCELLED'
+  category: 'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' | 'CANCELLED'
   color: string
   position: number
   isDefault: boolean
@@ -246,21 +248,23 @@ interface KanbanBoard {
 const PAGE_SIZE = 50
 
 const COLUMN_CONFIG = {
+  BACKLOG: { title: 'Backlog', color: 'bg-slate-100', textColor: 'text-slate-600' },
   TODO: { title: 'To Do', color: 'bg-gray-100', textColor: 'text-gray-700' },
   IN_PROGRESS: { title: 'In Progress', color: 'bg-blue-100', textColor: 'text-blue-700' },
   IN_REVIEW: { title: 'In Review', color: 'bg-yellow-100', textColor: 'text-yellow-700' },
   COMPLETED: { title: 'Completed', color: 'bg-green-100', textColor: 'text-green-700' },
 }
 
-// The status categories rendered as columns (CANCELLED is never a column). Used
-// to tell an "All Tasks" category column (key === category) apart from a custom
-// board-status column (key === BoardStatus id).
+// The status categories rendered as columns. BACKLOG and CANCELLED are never
+// columns — Backlog is a hidden archive (its own panel), not a board column.
+// Used to tell an "All Tasks" category column (key === category) apart from a
+// custom board-status column (key === BoardStatus id).
 const CATEGORY_KEYS = ['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED'] as const
 
 type KanbanColumn = {
   key: string                 // BoardStatus id (board view) or category (All Tasks)
   title: string
-  category: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'
+  category: 'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'
   isDefault: boolean
   color?: string              // hex accent for custom statuses
   headerClass: string         // tailwind bg (identical to before for defaults)
@@ -305,9 +309,10 @@ export default function TasksPage() {
 
   const [users, setUsers] = useState<User[]>([])
   const [showTaskForm, setShowTaskForm] = useState(false)
-  const [quickAddStatus, setQuickAddStatus] = useState<'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' | undefined>(undefined)
+  const [quickAddStatus, setQuickAddStatus] = useState<'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' | undefined>(undefined)
   const [quickAddCustomStatusId, setQuickAddCustomStatusId] = useState<string | undefined>(undefined)
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false)
+  const [showBacklog, setShowBacklog] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [boardSettingsOpen, setBoardSettingsOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
@@ -821,6 +826,38 @@ export default function TasksPage() {
     }
   }
 
+  // Archive a task to the Backlog (hidden from the board). Restore brings it
+  // back to To Do. Clearing customStatusId detaches it from any column.
+  const moveTaskToBacklog = async (task: Task) => {
+    try {
+      const res = await fetch(`/api/tasks/${task.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'BACKLOG', progressPercentage: 0, customStatusId: null }),
+      })
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Failed to move task')
+      await fetchTasks(false); fetchBoards()
+      toast({ title: 'Moved to Backlog', description: 'Archived. Restore it anytime from the Backlog panel.' })
+    } catch (e: any) {
+      toast({ title: 'Error', description: e?.message || 'Could not move to Backlog', variant: 'destructive' })
+    }
+  }
+
+  const restoreFromBacklog = async (task: Task) => {
+    try {
+      const res = await fetch(`/api/tasks/${task.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'TODO', progressPercentage: 0, customStatusId: null }),
+      })
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Failed to restore task')
+      await fetchTasks(false); fetchBoards()
+      toast({ title: 'Restored to To Do' })
+    } catch (e: any) {
+      toast({ title: 'Error', description: e?.message || 'Could not restore task', variant: 'destructive' })
+    }
+  }
+
   const handleUpdateTask = async (taskData: any) => {
     if (!editingTask) return
 
@@ -1098,7 +1135,8 @@ export default function TasksPage() {
     const statuses = activeBoard?.statuses
     if (!activeBoard || !statuses || statuses.length === 0) return DEFAULT_COLUMNS
     return [...statuses]
-      .filter((s) => s.category !== 'CANCELLED')
+      // BACKLOG is a hidden archive, CANCELLED is never shown — neither is a column.
+      .filter((s) => s.category !== 'CANCELLED' && s.category !== 'BACKLOG')
       .sort((a, b) => a.position - b.position)
       .map((s) => {
         const cfg = COLUMN_CONFIG[s.category as keyof typeof COLUMN_CONFIG]
@@ -1188,6 +1226,10 @@ export default function TasksPage() {
           </p>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Button variant="outline" className="flex-1 sm:flex-none" onClick={() => setShowBacklog(true)} title="View archived (backlog) tasks">
+            <Archive className="h-4 w-4 mr-2" />
+            Backlog{tasks.filter(t => t.status === 'BACKLOG').length > 0 ? ` (${tasks.filter(t => t.status === 'BACKLOG').length})` : ''}
+          </Button>
           <Button variant="outline" className="flex-1 sm:flex-none" onClick={handleExport} disabled={exporting} title="Export to Excel">
             <Download className="h-4 w-4 mr-2" />
             {exporting ? 'Exporting…' : 'Export'}
@@ -1370,12 +1412,14 @@ export default function TasksPage() {
       {/* Kanban Board */}
       {viewMode === 'board' && (
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 min-h-[700px]">
+        {/* Horizontal-scrolling column row — supports any number of statuses
+            without wrapping to a second row (Jira-style board). */}
+        <div className="flex gap-4 md:gap-6 min-h-[700px] overflow-x-auto pb-3 -mx-1 px-1">
           {boardColumns.map((col) => {
             const columnTasks = getTasksForColumn(col)
 
             return (
-              <div key={col.key} className="min-w-0 space-y-4">
+              <div key={col.key} className="w-[280px] sm:w-[300px] shrink-0 space-y-4">
                 <div className={`p-3 rounded-lg ${col.headerClass} shadow-sm`}>
                   <h3 className={`font-semibold ${col.textClass} flex items-center text-sm`}>
                     {!col.isDefault && col.color && (
@@ -1494,6 +1538,17 @@ export default function TasksPage() {
                                         <Copy className="h-4 w-4 mr-2" />
                                         Duplicate
                                       </DropdownMenuItem>
+
+                                      {/* Move to Backlog (archive) — hides it from the board until restored */}
+                                      {canUserChangeTaskStatus(task) && task.status !== 'BACKLOG' && (
+                                        <DropdownMenuItem onClick={(e) => {
+                                          e.stopPropagation()
+                                          moveTaskToBacklog(task)
+                                        }}>
+                                          <Archive className="h-4 w-4 mr-2" />
+                                          Move to Backlog
+                                        </DropdownMenuItem>
+                                      )}
 
                                       {/* Delete option - shown if user can delete */}
                                       {canDeleteTask(task) && (
@@ -1745,6 +1800,40 @@ export default function TasksPage() {
         }))}
         onCompleted={fetchTasks}
       />
+
+      {/* Backlog (archive) panel — tasks hidden from the board, restorable to To Do */}
+      <Dialog open={showBacklog} onOpenChange={setShowBacklog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Archive className="h-5 w-5 text-slate-500" /> Backlog</DialogTitle>
+            <DialogDescription>Archived tasks, hidden from the board. Restore one to move it back to To Do.</DialogDescription>
+          </DialogHeader>
+          {(() => {
+            const backlog = tasks.filter(t => t.status === 'BACKLOG')
+            if (backlog.length === 0) return <p className="py-10 text-center text-sm text-muted-foreground">No tasks in the backlog.</p>
+            return (
+              <div className="space-y-2 max-h-[55vh] overflow-y-auto pr-1">
+                {backlog.map(t => (
+                  <div key={t.id} className="flex items-center gap-2 rounded-lg border border-slate-200 p-2.5 hover:border-slate-300 transition-colors">
+                    <button onClick={() => { setShowBacklog(false); handleTaskClick(t) }} className="flex-1 min-w-0 text-left">
+                      <div className="text-sm font-medium text-slate-900 truncate">{t.title}</div>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <Badge className={`text-[10px] ${getPriorityColor(t.priority)} border font-medium`}>{t.priority}</Badge>
+                        {t.team && <span className="text-[11px] text-slate-500 truncate">{t.team.name}</span>}
+                      </div>
+                    </button>
+                    {canUserChangeTaskStatus(t) && (
+                      <Button variant="outline" size="sm" className="h-7 text-xs shrink-0" onClick={() => restoreFromBacklog(t)}>
+                        <RotateCcw className="h-3.5 w-3.5 mr-1" /> Restore
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )
+          })()}
+        </DialogContent>
+      </Dialog>
 
       {activeBoard?.canManage && (
         <BoardSettingsDialog

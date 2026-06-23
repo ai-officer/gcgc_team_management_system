@@ -13,7 +13,7 @@ import { notifyTaskAssigned, notifyTaskUpdated, notifyTaskCompleted, notifyTaskS
 const updateTaskSchema = z.object({
   title: z.string().min(1).max(100).optional(),
   description: z.string().optional(),
-  status: z.enum(['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED', 'CANCELLED']).optional(),
+  status: z.enum(['BACKLOG', 'TODO', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED', 'CANCELLED']).optional(),
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional(),
   dueDate: z.string().datetime().optional(),
   startDate: z.string().datetime().optional(),

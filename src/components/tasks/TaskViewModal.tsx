@@ -47,7 +47,7 @@ interface Task {
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
   dueDate?: string
   startDate?: string
-  status: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'
+  status: 'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'
   progressPercentage: number
   taskType: 'INDIVIDUAL' | 'TEAM' | 'COLLABORATION' | 'CASCADING'
   // Google Calendar fields
@@ -135,7 +135,7 @@ interface Task {
   subtasks?: Array<{
     id: string
     title: string
-    status: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'
+    status: 'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED'
     priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
     progressPercentage: number
     dueDate?: string

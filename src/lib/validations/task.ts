@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 // Enums
-export const taskStatusEnum = z.enum(['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED', 'CANCELLED'], {
+export const taskStatusEnum = z.enum(['BACKLOG', 'TODO', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED', 'CANCELLED'], {
   required_error: 'Task status is required',
   invalid_type_error: 'Invalid task status'
 })

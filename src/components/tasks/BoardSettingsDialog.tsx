@@ -21,7 +21,7 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { Plus, Trash2, ChevronUp, ChevronDown, Loader2, Copy, ExternalLink } from 'lucide-react'
 
-type Category = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' | 'CANCELLED'
+type Category = 'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' | 'CANCELLED'
 type FieldType = 'TEXT' | 'NUMBER' | 'DATE' | 'SELECT'
 
 interface BoardStatus {

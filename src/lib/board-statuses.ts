@@ -4,6 +4,7 @@ type Db = PrismaClient | Prisma.TransactionClient
 
 // The four defaults seeded on every board (isDefault), mapping 1:1 to the
 // TaskStatus categories so an un-customized board behaves exactly as before.
+// BACKLOG is intentionally NOT a board column — it's a hidden archive state.
 export const DEFAULT_BOARD_STATUSES: { name: string; category: TaskStatus; color: string; position: number }[] = [
   { name: 'To Do', category: 'TODO', color: '#94A3B8', position: 0 },
   { name: 'In Progress', category: 'IN_PROGRESS', color: '#3B82F6', position: 1 },

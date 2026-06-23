@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
       prisma.task.count({
         where: {
           assigneeId: userId,
-          status: { not: 'COMPLETED' }
+          status: { notIn: ['COMPLETED', 'BACKLOG'] }
         }
       }),
       
@@ -71,7 +71,7 @@ export async function GET(req: NextRequest) {
       session.user.role === 'LEADER' ? prisma.task.count({
         where: {
           teamId: { in: teamIds },
-          status: { not: 'COMPLETED' }
+          status: { notIn: ['COMPLETED', 'BACKLOG'] }
         }
       }) : 0,
 
@@ -157,7 +157,7 @@ export async function GET(req: NextRequest) {
             gte: new Date(),
             lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
           },
-          status: { not: 'COMPLETED' }
+          status: { notIn: ['COMPLETED', 'BACKLOG'] }
         },
         include: {
           assignee: {

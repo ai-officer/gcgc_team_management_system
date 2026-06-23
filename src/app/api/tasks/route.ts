@@ -24,7 +24,7 @@ const createTaskSchema = z.object({
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']),
   dueDate: z.string().datetime().optional(),
   startDate: z.string().datetime().optional(),
-  status: z.enum(['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED', 'CANCELLED']).optional(),
+  status: z.enum(['BACKLOG', 'TODO', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED', 'CANCELLED']).optional(),
   progressPercentage: z.number().min(0).max(100).optional(),
   taskType: z.enum(['INDIVIDUAL', 'TEAM', 'COLLABORATION', 'CASCADING']),
   // Cascading task steps
@@ -660,7 +660,7 @@ export async function POST(req: NextRequest) {
     let finalProgress = progressPercentage ?? 0
     if (finalStatus === 'IN_REVIEW') finalProgress = 90
     else if (finalStatus === 'COMPLETED') finalProgress = 100
-    else if (finalStatus === 'TODO') finalProgress = 0
+    else if (finalStatus === 'TODO' || finalStatus === 'BACKLOG') finalProgress = 0
 
     // Handle recurring task creation
     if (isRecurring && recurringFrequency && finalStartDate) {

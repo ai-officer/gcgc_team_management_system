@@ -2,6 +2,7 @@
 'use client'
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { format, startOfDay, differenceInCalendarDays } from 'date-fns'
+import { ChevronDown, ChevronRight, Users } from 'lucide-react'
 import { UserAvatar } from '@/components/shared/UserAvatar'
 import {
   splitScheduled, groupByAssignee, buildAxis, barGeometry, axisRangeFor,
@@ -40,6 +41,20 @@ export default function TimelineView({
   )
   const axis = useMemo(() => buildAxis(range.start, range.end, zoom), [range, zoom])
   const groups = useMemo(() => groupByAssignee(scheduled), [scheduled])
+
+  // Per-user collapse (minimize a user's task rows) and a user visibility filter.
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+  const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(new Set())
+  const [showUserFilter, setShowUserFilter] = useState(false)
+  const visibleGroups = useMemo(() => groups.filter(g => !hiddenKeys.has(g.key)), [groups, hiddenKeys])
+  const toggleCollapse = (key: string) =>
+    setCollapsed(s => { const n = new Set(s); n.has(key) ? n.delete(key) : n.add(key); return n })
+  const toggleUser = (key: string) =>
+    setHiddenKeys(s => { const n = new Set(s); n.has(key) ? n.delete(key) : n.add(key); return n })
+  const allCollapsed = visibleGroups.length > 0 && visibleGroups.every(g => collapsed.has(g.key))
+  const toggleAllCollapsed = () =>
+    setCollapsed(allCollapsed ? new Set() : new Set(visibleGroups.map(g => g.key)))
+
   const todayLeft = differenceInCalendarDays(today, axis.start) * axis.dayWidthPx
   // Day zoom shows individual day columns; every other zoom uses period segments
   // (week ranges / months / quarters / years) for the header and gridlines.
@@ -110,15 +125,44 @@ export default function TimelineView({
       {/* Toolbar */}
       <div className="flex items-center justify-between gap-2 px-3 py-2 border-b bg-slate-50">
         <span className="hidden sm:inline shrink-0 text-xs font-semibold uppercase tracking-wide text-slate-500">Timeline</span>
-        <div className="flex items-center gap-1 overflow-x-auto">
-          {(['day', 'week', 'month', 'quarter', 'year'] as TimelineZoom[]).map(z => (
-            <button key={z} onClick={() => onZoomChange(z)}
-              className={`shrink-0 px-2.5 h-7 rounded-md text-xs font-semibold border capitalize ${
-                zoom === z ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300'}`}>
-              {z}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 overflow-x-auto">
+            {(['day', 'week', 'month', 'quarter', 'year'] as TimelineZoom[]).map(z => (
+              <button key={z} onClick={() => onZoomChange(z)}
+                className={`shrink-0 px-2.5 h-7 rounded-md text-xs font-semibold border capitalize ${
+                  zoom === z ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300'}`}>
+                {z}
+              </button>
+            ))}
+          </div>
+          {groups.length > 0 && (
+            <>
+              <button onClick={toggleAllCollapsed} title="Collapse or expand every user"
+                className="shrink-0 px-2.5 h-7 rounded-md text-xs font-semibold border bg-white text-slate-600 border-slate-200 hover:border-blue-300">
+                {allCollapsed ? 'Expand all' : 'Collapse all'}
+              </button>
+              <div className="relative shrink-0">
+                <button onClick={() => setShowUserFilter(v => !v)} title="Filter which users are shown"
+                  className="flex items-center gap-1 px-2.5 h-7 rounded-md text-xs font-semibold border bg-white text-slate-600 border-slate-200 hover:border-blue-300">
+                  <Users className="h-3.5 w-3.5" />
+                  {groups.length - hiddenKeys.size}/{groups.length}
+                </button>
+                {showUserFilter && (
+                  <div className="absolute right-0 mt-1 z-30 w-56 max-h-72 overflow-y-auto rounded-md border bg-white shadow-lg p-1">
+                    <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Show users</div>
+                    {groups.map(g => (
+                      <label key={g.key} className="flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-slate-50 rounded cursor-pointer">
+                        <input type="checkbox" checked={!hiddenKeys.has(g.key)} onChange={() => toggleUser(g.key)} className="h-3.5 w-3.5 accent-blue-600" />
+                        <span className="truncate flex-1 text-slate-700">{g.label}</span>
+                        <span className="text-slate-400">{g.tasks.length}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -126,15 +170,19 @@ export default function TimelineView({
         {/* Left table */}
         <div className="shrink-0 sticky left-0 z-10 bg-white border-r" style={{ width: leftW }}>
           <div style={{ height: ROW_H }} className="border-b bg-slate-50" />
-          {groups.map(g => (
+          {visibleGroups.map(g => (
             <div key={g.key}>
-              <div style={{ height: ROW_H }} className="flex items-center gap-2 px-3 bg-slate-50/70 border-b text-xs font-semibold text-slate-600">
+              <div style={{ height: ROW_H }} className="flex items-center gap-1.5 px-3 bg-slate-50/70 border-b text-xs font-semibold text-slate-600">
+                <button onClick={() => toggleCollapse(g.key)} title={collapsed.has(g.key) ? 'Expand tasks' : 'Collapse tasks'}
+                  className="p-0.5 -ml-1 rounded hover:bg-slate-200 shrink-0 text-slate-500">
+                  {collapsed.has(g.key) ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                </button>
                 {g.assignee
                   ? <UserAvatar userId={g.assignee.id} image={g.assignee.image} name={g.assignee.name} email={g.assignee.email} className="h-5 w-5" fallbackClassName="text-[10px]" />
                   : <span className="h-5 w-5 rounded-full bg-slate-200 inline-block" />}
-                {g.label} <span className="text-slate-400">({g.tasks.length})</span>
+                <span className="truncate">{g.label}</span> <span className="text-slate-400 shrink-0">({g.tasks.length})</span>
               </div>
-              {g.tasks.map(t => (
+              {!collapsed.has(g.key) && g.tasks.map(t => (
                 <button key={t.id} onClick={() => onTaskClick?.(t.id)} style={{ height: ROW_H }}
                   className="w-full flex items-center px-3 pl-10 border-b text-xs text-gray-700 hover:bg-slate-50 text-left truncate">
                   {t.title}
@@ -142,7 +190,7 @@ export default function TimelineView({
               ))}
             </div>
           ))}
-          {groups.length === 0 && Array.from({ length: EMPTY_ROWS }).map((_, i) => (
+          {visibleGroups.length === 0 && Array.from({ length: EMPTY_ROWS }).map((_, i) => (
             <div key={`empty-${i}`} style={{ height: ROW_H }} className="flex items-center px-3 border-b text-xs text-slate-400">
               {i === 0 ? 'No scheduled tasks' : ''}
             </div>
@@ -196,10 +244,10 @@ export default function TimelineView({
           )}
           {/* Bars */}
           <div className="relative" style={{ zIndex: 1 }}>
-          {groups.map(g => (
+          {visibleGroups.map(g => (
             <div key={g.key}>
               <div style={{ height: ROW_H }} className="border-b bg-slate-50/40" />
-              {g.tasks.map(t => {
+              {!collapsed.has(g.key) && g.tasks.map(t => {
                 const { leftPx, widthPx } = barGeometry(t.startDate!, t.dueDate!, axis)
                 const MIN_BAR = 22
                 const editable = canEdit?.(t.id) ?? false
@@ -244,7 +292,7 @@ export default function TimelineView({
               })}
             </div>
           ))}
-          {groups.length === 0 && Array.from({ length: EMPTY_ROWS }).map((_, i) => (
+          {visibleGroups.length === 0 && Array.from({ length: EMPTY_ROWS }).map((_, i) => (
             <div key={`empty-${i}`} style={{ height: ROW_H }} className="border-b" />
           ))}
           </div>

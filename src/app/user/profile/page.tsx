@@ -17,6 +17,7 @@ import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Progress } from '@/components/ui/progress'
 import { useToast } from '@/hooks/use-toast'
+import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { avatarEvents } from '@/lib/avatar-events'
 import { NotificationSettings } from '@/components/settings/NotificationSettings'
@@ -331,59 +332,47 @@ export default function UserProfilePage() {
     const value = editedProfile[field] as string || ''
 
     return (
-      <div className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors group border-0">
-        <div className="flex items-center gap-3 flex-1">
-          <div className="p-1.5 rounded-lg bg-slate-100">
-            <Icon className="h-4 w-4 text-slate-500" />
+      <div
+        onClick={() => { if (editable && !isEditing) handleFieldEdit(field) }}
+        className={cn(
+          'group rounded-lg border p-3 transition-all',
+          isEditing
+            ? 'border-blue-300 bg-blue-50/30 ring-1 ring-blue-200'
+            : editable
+              ? 'border-slate-200 bg-white hover:border-blue-300 hover:shadow-sm cursor-pointer'
+              : 'border-slate-100 bg-slate-50/60'
+        )}
+      >
+        <div className="flex items-center gap-2 mb-1.5">
+          <div className={cn('grid place-items-center h-6 w-6 rounded-md shrink-0', editable ? 'bg-blue-50' : 'bg-slate-100')}>
+            <Icon className={cn('h-3.5 w-3.5', editable ? 'text-blue-500' : 'text-slate-400')} />
           </div>
-          <div className="flex-1">
-            <Label className="text-xs text-slate-500 font-medium">{label}</Label>
-            {isEditing ? (
-              <Input
-                type={type}
-                value={value}
-                onChange={(e) => setEditedProfile(prev => ({ ...prev, [field]: e.target.value }))}
-                className="mt-1 h-9 rounded-lg font-medium"
-                autoFocus
-              />
-            ) : (
-              <p className="font-bold text-sm mt-0.5">{value || 'Not set'}</p>
-            )}
-          </div>
+          <Label className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold flex-1">{label}</Label>
+          {!editable ? (
+            <Lock className="h-3 w-3 text-slate-300 shrink-0" />
+          ) : !isEditing ? (
+            <Edit2 className="h-3.5 w-3.5 text-slate-300 group-hover:text-blue-500 transition-colors shrink-0" />
+          ) : null}
         </div>
-        {editable && (
-          <div className="flex gap-1">
-            {isEditing ? (
-              <>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => handleFieldSave(field)}
-                  disabled={saving}
-                  className="h-8 w-8 p-0"
-                >
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => handleFieldCancel(field)}
-                  className="h-8 w-8 p-0"
-                >
-                  <X className="h-4 w-4 text-red-600" />
-                </Button>
-              </>
-            ) : (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => handleFieldEdit(field)}
-                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <Edit2 className="h-4 w-4" />
-              </Button>
-            )}
+        {isEditing ? (
+          <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+            <Input
+              type={type}
+              value={value}
+              onChange={(e) => setEditedProfile(prev => ({ ...prev, [field]: e.target.value }))}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleFieldSave(field); if (e.key === 'Escape') handleFieldCancel(field) }}
+              className="h-8 text-sm rounded-md"
+              autoFocus
+            />
+            <Button size="sm" variant="ghost" onClick={() => handleFieldSave(field)} disabled={saving} className="h-8 w-8 p-0 shrink-0">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => handleFieldCancel(field)} className="h-8 w-8 p-0 shrink-0">
+              <X className="h-4 w-4 text-red-500" />
+            </Button>
           </div>
+        ) : (
+          <p className={cn('text-sm', value ? 'font-semibold text-slate-900' : 'text-slate-400 italic')}>{value || 'Not set'}</p>
         )}
       </div>
     )
@@ -549,7 +538,7 @@ export default function UserProfilePage() {
                 Update your personal details. Position title and organizational placement are managed by an administrator.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-1">
+            <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <InlineEditField field="firstName" label="First Name" icon={User} />
               <InlineEditField field="lastName" label="Last Name" icon={User} />
               <InlineEditField field="middleName" label="Middle Name" icon={User} />
@@ -573,7 +562,7 @@ export default function UserProfilePage() {
                 Your position within the organizational hierarchy. Contact an administrator to request changes.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-1">
+            <CardContent className="space-y-2">
               <InlineEditField field="division" label="Division" icon={Building2} editable={false} />
               <InlineEditField field="department" label="Department" icon={Building2} editable={false} />
               <InlineEditField field="section" label="Section" icon={Building2} editable={false} />
@@ -606,7 +595,7 @@ export default function UserProfilePage() {
                 Account credentials and security information. Changing your email may require signing in again.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-1">
+            <CardContent className="space-y-2">
               <InlineEditField field="email" label="Email Address" icon={Mail} type="email" />
               <InlineEditField field="username" label="Username" icon={User} />
 

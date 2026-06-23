@@ -30,6 +30,11 @@ export async function GET(req: NextRequest) {
 
     const teamIds = userTeams.map(tm => tm.teamId)
 
+    // 8 weeks back (start of that day) — window for the completion trend chart.
+    const trendStart = new Date()
+    trendStart.setDate(trendStart.getDate() - 7 * 8)
+    trendStart.setHours(0, 0, 0, 0)
+
     // Get dashboard statistics
     const [
       myTasks,
@@ -38,7 +43,10 @@ export async function GET(req: NextRequest) {
       overdueTasks,
       recentTasks,
       teamMembers,
-      upcomingDeadlines
+      upcomingDeadlines,
+      statusGroups,
+      priorityGroups,
+      completedRecent
     ] = await Promise.all([
       // My assigned tasks
       prisma.task.count({
@@ -168,8 +176,49 @@ export async function GET(req: NextRequest) {
         },
         orderBy: { dueDate: 'asc' },
         take: 5
-      })
+      }),
+
+      // My tasks grouped by status (for the status donut)
+      prisma.task.groupBy({
+        by: ['status'],
+        where: { assigneeId: userId, parentId: null },
+        _count: { _all: true },
+      }),
+
+      // My open tasks grouped by priority (for the priority bar)
+      prisma.task.groupBy({
+        by: ['priority'],
+        where: { assigneeId: userId, status: { not: 'COMPLETED' }, parentId: null },
+        _count: { _all: true },
+      }),
+
+      // My completions over the last 8 weeks (bucketed in JS for the trend line)
+      prisma.task.findMany({
+        where: { assigneeId: userId, status: 'COMPLETED', updatedAt: { gte: trendStart } },
+        select: { updatedAt: true },
+      }),
     ])
+
+    // ── Shape chart data ──
+    const statusBreakdown = (['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED'] as const).map((s) => ({
+      status: s,
+      count: statusGroups.find((g) => g.status === s)?._count._all ?? 0,
+    }))
+
+    const priorityBreakdown = (['URGENT', 'HIGH', 'MEDIUM', 'LOW'] as const).map((p) => ({
+      priority: p,
+      count: priorityGroups.find((g) => g.priority === p)?._count._all ?? 0,
+    }))
+
+    // Eight weekly buckets, oldest → newest. weekStart anchors each bucket.
+    const completionTrend = Array.from({ length: 8 }, (_, i) => {
+      const start = new Date(trendStart)
+      start.setDate(start.getDate() + i * 7)
+      const end = new Date(start)
+      end.setDate(end.getDate() + 7)
+      const count = completedRecent.filter((t) => t.updatedAt >= start && t.updatedAt < end).length
+      return { weekStart: start.toISOString(), label: `${start.getMonth() + 1}/${start.getDate()}`, count }
+    })
 
     return NextResponse.json({
       stats: {
@@ -182,7 +231,10 @@ export async function GET(req: NextRequest) {
       recentTasks,
       teamMembers,
       upcomingDeadlines,
-      teams: userTeams.map(tm => tm.team)
+      teams: userTeams.map(tm => tm.team),
+      statusBreakdown,
+      priorityBreakdown,
+      completionTrend,
     })
   } catch (error) {
     console.error('Dashboard API error:', error)

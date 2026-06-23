@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { CheckSquare, Clock, Users, AlertCircle, ArrowRight, Star, Zap, Target, Activity, Award, Calendar as CalendarIcon, RefreshCw, Plus } from 'lucide-react'
+import { CheckSquare, Clock, AlertCircle, ArrowRight, Star, Zap, Target, Activity, Award, Calendar as CalendarIcon, Plus } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
@@ -11,8 +11,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { UserAvatar } from '@/components/shared/UserAvatar'
 import { Button } from '@/components/ui/button'
 import CreateTaskButton from '@/components/tasks/CreateTaskButton'
-import { LeaderWorkloadWidget } from '@/components/dashboard/leader-workload-widget'
 import { AtRiskTasksWidget } from '@/components/dashboard/at-risk-tasks-widget'
+import { StatusDonut, CompletionTrend, PriorityBar, WorkloadBar } from '@/components/dashboard/dashboard-charts'
+import { cn } from '@/lib/utils'
 import { format, formatDistanceToNow } from 'date-fns'
 import { TASK_PRIORITY_COLORS, TASK_STATUS_COLORS } from '@/constants'
 
@@ -68,6 +69,34 @@ interface DashboardData {
   teamMembers: TeamMember[]
   upcomingDeadlines: Task[]
   teams: Array<{ id: string; name: string }>
+  statusBreakdown: Array<{ status: string; count: number }>
+  priorityBreakdown: Array<{ priority: string; count: number }>
+  completionTrend: Array<{ weekStart: string; label: string; count: number }>
+}
+
+// Uniform wrapper so every chart/list card in a row shares the same chrome and
+// stretches to equal height (fixes the mismatched-card-height problem).
+function ChartCard({ title, subtitle, action, children, className }: {
+  title: string
+  subtitle?: string
+  action?: ReactNode
+  children: ReactNode
+  className?: string
+}) {
+  return (
+    <Card className={cn('border border-slate-200 bg-white shadow-sm rounded-xl flex flex-col', className)}>
+      <CardHeader className="pb-2 pt-4 px-5">
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <CardTitle className="text-sm font-semibold text-slate-900">{title}</CardTitle>
+            {subtitle && <CardDescription className="text-xs text-slate-500 mt-0.5">{subtitle}</CardDescription>}
+          </div>
+          {action}
+        </div>
+      </CardHeader>
+      <CardContent className="px-5 pb-5 pt-1 flex-1">{children}</CardContent>
+    </Card>
+  )
 }
 
 export default function UserDashboard() {
@@ -76,19 +105,11 @@ export default function UserDashboard() {
   const [loading, setLoading] = useState(true)
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [currentTime, setCurrentTime] = useState(new Date())
+  // Captured once on mount — used for the greeting + date (no need to tick).
+  const [currentTime] = useState(new Date())
   const openTask = (taskId: string) => {
     router.push(`/user/tasks?taskId=${taskId}`)
   }
-
-  // Live clock - update every second
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date())
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [])
 
   useEffect(() => {
     if (!session?.user) return
@@ -166,6 +187,15 @@ export default function UserDashboard() {
     fetchDashboardData()
   }
 
+  // Auto-refresh when the tab regains focus, so the dashboard is current
+  // without a manual Refresh button.
+  useEffect(() => {
+    const onFocus = () => refreshDashboard()
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session])
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -225,24 +255,9 @@ export default function UserDashboard() {
                   <CalendarIcon className="h-4 w-4 text-slate-400" />
                   <span className="font-medium">{format(currentTime, 'EEEE, MMMM do')}</span>
                 </span>
-                <span className="h-4 w-px bg-slate-300/70 hidden sm:block" />
-                <span className="inline-flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-slate-400" />
-                  <span className="font-medium tabular-nums">{format(currentTime, 'h:mm:ss a')}</span>
-                </span>
               </div>
             </div>
             <div className="flex gap-2 sm:gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={refreshDashboard}
-                disabled={loading}
-                className="flex-1 sm:flex-none border-slate-300 bg-white/70 hover:bg-white text-slate-700 shadow-sm transition-all duration-200 hover:shadow-md"
-              >
-                <RefreshCw className={`h-4 w-4 sm:mr-2 ${loading ? 'animate-spin' : ''}`} />
-                <span className="hidden sm:inline">Refresh</span>
-              </Button>
               <CreateTaskButton size="sm" className="flex-1 sm:flex-none" onTaskCreated={refreshDashboard} />
             </div>
           </div>
@@ -279,7 +294,7 @@ export default function UserDashboard() {
               <Progress value={calculateTaskCompletionRate()} className="h-2 bg-slate-100" />
             </div>
             <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-              <span className="text-xs text-slate-500">In progress</span>
+              <span className="text-xs text-slate-500">View all tasks</span>
               <ArrowRight className="h-4 w-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
             </div>
           </CardContent>
@@ -302,10 +317,16 @@ export default function UserDashboard() {
               <div className="text-4xl font-bold text-slate-900">{dashboardData.stats.myCompletedTasks}</div>
               <span className="text-sm text-slate-500 font-medium">done</span>
             </div>
-            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 rounded-md w-fit">
-              <Star className="h-3.5 w-3.5 text-emerald-600" />
-              <span className="text-xs text-emerald-700 font-semibold">Excellent progress!</span>
-            </div>
+            {dashboardData.stats.myCompletedTasks > 0 ? (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 rounded-md w-fit">
+                <Star className="h-3.5 w-3.5 text-emerald-600" />
+                <span className="text-xs text-emerald-700 font-semibold">Nice work this month</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 rounded-md w-fit">
+                <span className="text-xs text-slate-500 font-medium">Nothing completed yet</span>
+              </div>
+            )}
             <div className="flex items-center justify-between pt-2 border-t border-slate-100">
               <span className="text-xs text-slate-500">This month</span>
             </div>
@@ -419,11 +440,37 @@ export default function UserDashboard() {
         </Card>
       </div>
 
-      {isLeader && <LeaderWorkloadWidget />}
+      {/* Insights — charts (equal-height row) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-stretch motion-safe:animate-slide-up" style={{ animationDelay: '120ms', animationFillMode: 'backwards' }}>
+        <ChartCard title="Tasks by status" subtitle="Where your work sits">
+          <StatusDonut data={dashboardData.statusBreakdown} />
+        </ChartCard>
+        <ChartCard title="Completion trend" subtitle="Completed per week · last 8 weeks">
+          <CompletionTrend data={dashboardData.completionTrend} />
+        </ChartCard>
+        <ChartCard title="Open tasks by priority" subtitle="What needs attention first">
+          <PriorityBar data={dashboardData.priorityBreakdown} />
+        </ChartCard>
+      </div>
+
+      {/* Leader: team workload chart + at-risk list */}
+      {isLeader && (
+        <ChartCard
+          title="Team workload"
+          subtitle="Active + overdue tasks per member"
+          action={(
+            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => router.push('/user/member-management')}>
+              Manage <ArrowRight className="h-3.5 w-3.5 ml-1" />
+            </Button>
+          )}
+        >
+          <WorkloadBar />
+        </ChartCard>
+      )}
       {isLeader && <AtRiskTasksWidget />}
 
       <div
-        className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start motion-safe:animate-slide-up"
+        className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch motion-safe:animate-slide-up"
         style={{ animationDelay: '160ms', animationFillMode: 'backwards' }}
       >
         {/* Professional Recent Tasks */}
@@ -557,11 +604,9 @@ export default function UserDashboard() {
           </Card>
         </div>
 
-        {/* Flat Design Sidebar - Blue Theme */}
-        <div className="space-y-4">
-
-          {/* Upcoming Deadlines */}
-          <Card className="border border-slate-200 bg-white rounded-xl overflow-hidden">
+        {/* Upcoming Deadlines */}
+        <div className="h-full">
+          <Card className="border border-slate-200 bg-white rounded-xl overflow-hidden h-full flex flex-col">
             <CardHeader className="pb-3 pt-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2 text-base font-semibold text-slate-800">
@@ -572,12 +617,12 @@ export default function UserDashboard() {
                 </CardTitle>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-slate-500 font-medium bg-slate-100 px-2 py-0.5 rounded-full">Next 7 days</span>
-                  {dashboardData.upcomingDeadlines.length > 3 && (
+                  {dashboardData.upcomingDeadlines.length > 5 && (
                     <button
                       onClick={() => router.push('/user/tasks')}
                       className="text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
                     >
-                      +{dashboardData.upcomingDeadlines.length - 3} more
+                      +{dashboardData.upcomingDeadlines.length - 5} more
                     </button>
                   )}
                 </div>
@@ -591,7 +636,7 @@ export default function UserDashboard() {
                   <p className="text-xs text-emerald-600 font-medium">You&apos;re all caught up!</p>
                 </div>
               ) : (
-                dashboardData.upcomingDeadlines.slice(0, 3).map((task) => {
+                dashboardData.upcomingDeadlines.slice(0, 5).map((task) => {
                   const dueDate = task.dueDate ? new Date(task.dueDate) : null
                   const isUrgent = dueDate && dueDate.getTime() - new Date().getTime() < 2 * 24 * 60 * 60 * 1000
                   return (
@@ -622,108 +667,6 @@ export default function UserDashboard() {
                     </div>
                   )
                 })
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Quick Actions */}
-          <Card className="border border-slate-200 bg-white rounded-xl overflow-hidden">
-            <CardHeader className="pb-3 pt-4">
-              <CardTitle className="flex items-center gap-2 text-base font-semibold text-slate-800">
-                <div className="p-2 bg-blue-50 rounded-lg">
-                  <Zap className="h-4 w-4 text-blue-600" />
-                </div>
-                Quick Actions
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-1.5 pt-0">
-              <Button
-                onClick={() => router.push('/user/tasks')}
-                className="w-full justify-start h-auto p-3 rounded-lg bg-slate-50 hover:bg-blue-50 border border-transparent hover:border-blue-100 transition-all"
-                variant="ghost"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-1.5 bg-blue-100 rounded-md">
-                    <CheckSquare className="h-3.5 w-3.5 text-blue-600" />
-                  </div>
-                  <div className="text-left">
-                    <div className="font-semibold text-sm text-slate-800">Manage Tasks</div>
-                    <div className="text-xs text-slate-500">Create and track progress</div>
-                  </div>
-                </div>
-                <ArrowRight className="h-4 w-4 ml-auto text-slate-400" />
-              </Button>
-
-              <Button
-                onClick={() => router.push('/user/calendar')}
-                className="w-full justify-start h-auto p-3 rounded-lg bg-slate-50 hover:bg-blue-50 border border-transparent hover:border-blue-100 transition-all"
-                variant="ghost"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-1.5 bg-blue-100 rounded-md">
-                    <CalendarIcon className="h-3.5 w-3.5 text-blue-600" />
-                  </div>
-                  <div className="text-left">
-                    <div className="font-semibold text-sm text-slate-800">View Calendar</div>
-                    <div className="text-xs text-slate-500">Check your schedule</div>
-                  </div>
-                </div>
-                <ArrowRight className="h-4 w-4 ml-auto text-slate-400" />
-              </Button>
-
-              <Button
-                onClick={() => router.push('/user/profile')}
-                className="w-full justify-start h-auto p-3 rounded-lg bg-slate-50 hover:bg-blue-50 border border-transparent hover:border-blue-100 transition-all"
-                variant="ghost"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-1.5 bg-blue-100 rounded-md">
-                    <Users className="h-3.5 w-3.5 text-blue-600" />
-                  </div>
-                  <div className="text-left">
-                    <div className="font-semibold text-sm text-slate-800">View Profile</div>
-                    <div className="text-xs text-slate-500">Manage your account</div>
-                  </div>
-                </div>
-                <ArrowRight className="h-4 w-4 ml-auto text-slate-400" />
-              </Button>
-
-              {isLeader && (
-                <>
-                  <Button
-                    onClick={() => router.push('/user/team-overview')}
-                    className="w-full justify-start h-auto p-3 rounded-lg bg-slate-50 hover:bg-blue-50 border border-transparent hover:border-blue-100 transition-all"
-                    variant="ghost"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="p-1.5 bg-purple-100 rounded-md">
-                        <Users className="h-3.5 w-3.5 text-purple-600" />
-                      </div>
-                      <div className="text-left">
-                        <div className="font-semibold text-sm text-slate-800">Team Overview</div>
-                        <div className="text-xs text-slate-500">Monitor team progress</div>
-                      </div>
-                    </div>
-                    <ArrowRight className="h-4 w-4 ml-auto text-slate-400" />
-                  </Button>
-
-                  <Button
-                    onClick={() => router.push('/user/member-management')}
-                    className="w-full justify-start h-auto p-3 rounded-lg bg-slate-50 hover:bg-blue-50 border border-transparent hover:border-blue-100 transition-all"
-                    variant="ghost"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="p-1.5 bg-emerald-100 rounded-md">
-                        <Target className="h-3.5 w-3.5 text-emerald-600" />
-                      </div>
-                      <div className="text-left">
-                        <div className="font-semibold text-sm text-slate-800">Assign Tasks</div>
-                        <div className="text-xs text-slate-500">Delegate to team</div>
-                      </div>
-                    </div>
-                    <ArrowRight className="h-4 w-4 ml-auto text-slate-400" />
-                  </Button>
-                </>
               )}
             </CardContent>
           </Card>

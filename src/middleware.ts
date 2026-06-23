@@ -73,6 +73,7 @@ export default async function middleware(req: NextRequest) {
     pathname === '/privacy-policy' ||
     pathname === '/terms-of-service' ||
     pathname === '/sw.js' || // service worker must be served directly (web push)
+    /\.(?:png|jpe?g|gif|svg|ico|webp|avif|json|txt|woff2?|ttf|map)$/i.test(pathname) || // static assets (notification icon, manifest, fonts) — fetched without a session
     pathname.startsWith('/google') || // Google Search Console verification
     pathname.startsWith('/forms/') // public intake forms (login-less; token-scoped)
   ) {

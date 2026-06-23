@@ -56,6 +56,13 @@ const createTaskSchema = z.object({
   customStatusId: z.string().optional().nullable(),
   // Per-board custom field values
   fieldValues: z.array(z.object({ fieldId: z.string(), value: z.string().nullable() })).optional(),
+  // File attachments (uploaded to OSS via /api/upload/task-file before submit)
+  attachments: z.array(z.object({
+    fileUrl: z.string().url(),
+    fileName: z.string().min(1).max(255),
+    fileType: z.string().optional().nullable(),
+    fileSize: z.number().int().nonnegative().optional().nullable(),
+  })).max(20, 'Cannot attach more than 20 files').optional().default([]),
 })
 
 const querySchema = z.object({
@@ -582,7 +589,17 @@ export async function POST(req: NextRequest) {
       boardId,
       customStatusId,
       fieldValues,
+      attachments,
     } = createTaskSchema.parse(body)
+
+    // Normalize attachment rows once; reused by whichever creation path runs.
+    const attachmentRows = (attachments ?? []).map((a) => ({
+      fileUrl: a.fileUrl,
+      fileName: a.fileName,
+      fileType: a.fileType ?? null,
+      fileSize: a.fileSize ?? null,
+      uploadedById: session.user.id,
+    }))
 
     // Verify assignee exists (if provided)
     if (assigneeId) {
@@ -741,6 +758,14 @@ export async function POST(req: NextRequest) {
         await setTaskAssignees(tx, firstInstance.id, [assigneeId || session.user.id, ...teamMemberIds, ...collaboratorIds])
         await setTaskFieldValues(tx, firstInstance.id, fieldValues)
 
+        // Attachments live on the visible instance. Future occurrences spawned
+        // from the template on completion do not inherit them.
+        if (attachmentRows.length > 0) {
+          await tx.taskAttachment.createMany({
+            data: attachmentRows.map((a) => ({ ...a, taskId: firstInstance.id }))
+          })
+        }
+
         return { template: templateTask, firstInstance, totalOccurrences: occurrences.length }
       })
 
@@ -828,6 +853,13 @@ export async function POST(req: NextRequest) {
 
       await setTaskAssignees(tx, newTask.id, [assigneeId || session.user.id, ...teamMemberIds, ...collaboratorIds])
       await setTaskFieldValues(tx, newTask.id, fieldValues)
+
+      // Persist file attachments on the new task
+      if (attachmentRows.length > 0) {
+        await tx.taskAttachment.createMany({
+          data: attachmentRows.map((a) => ({ ...a, taskId: newTask.id }))
+        })
+      }
 
       // Create cascade steps for CASCADING tasks
       if (taskType === 'CASCADING' && cascadeSteps.length > 0) {

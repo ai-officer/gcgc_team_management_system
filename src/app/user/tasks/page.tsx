@@ -276,7 +276,11 @@ const DEFAULT_COLUMNS: KanbanColumn[] = CATEGORY_KEYS.map((cat) => ({
   textClass: COLUMN_CONFIG[cat].textColor,
 }))
 
-const BOARD_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316']
+const BOARD_COLORS = [
+  '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316',
+  '#6366F1', '#14B8A6', '#84CC16', '#EAB308', '#22C55E', '#0EA5E9', '#A855F7', '#F43F5E',
+  '#D946EF', '#DC2626', '#64748B', '#78716C',
+]
 
 export default function TasksPage() {
   const { data: session } = useSession()
@@ -1834,7 +1838,7 @@ export default function TasksPage() {
             </div>
             <div className="space-y-2">
               <Label>Color</Label>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {BOARD_COLORS.map(color => (
                   <button
                     key={color}
@@ -1895,7 +1899,7 @@ export default function TasksPage() {
               </div>
               <div className="space-y-2">
                 <Label>Color</Label>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {BOARD_COLORS.map(color => (
                     <button
                       key={color}

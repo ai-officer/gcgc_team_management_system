@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { format } from 'date-fns'
-import { CalendarIcon, Plus, X, Users, User, Handshake, ListTodo, Trash2, ChevronDown, Settings2, RefreshCw, Loader2, GitBranch, GripVertical } from 'lucide-react'
+import { CalendarIcon, Plus, X, Users, User, Handshake, ListTodo, Trash2, ChevronDown, Settings2, RefreshCw, Loader2, GitBranch, GripVertical, Paperclip, FileText } from 'lucide-react'
 import { DatePicker } from '@/components/ui/date-picker'
 import { TimePicker } from '@/components/ui/time-picker'
 import { SearchableMultiSelect, SelectOption } from '@/components/ui/searchable-multi-select'
@@ -35,6 +35,7 @@ import {
 import { cn } from '@/lib/utils'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { generateOccurrenceDates } from '@/lib/recurring'
+import { useToast } from '@/hooks/use-toast'
 
 // Types
 type TaskType = 'INDIVIDUAL' | 'TEAM' | 'COLLABORATION' | 'CASCADING'
@@ -63,6 +64,23 @@ interface CascadeStep {
   assigneeId: string
   assignee?: User
   dueDate?: string
+}
+
+interface AttachmentItem {
+  id?: string              // present once persisted to the DB (edit mode)
+  tempId?: string          // local key while uploading / before persist
+  fileUrl: string
+  fileName: string
+  fileType?: string | null
+  fileSize?: number | null
+  uploading?: boolean      // transient: shown with a spinner
+}
+
+function formatFileSize(bytes?: number | null): string {
+  if (!bytes && bytes !== 0) return ''
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
 
@@ -152,6 +170,14 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
   // Cascading is now a toggle (like Recurring), not a task type. The flat
   // "Assigned To" list is stored in teamMemberIds / selectedTeamMembers.
   const [isCascadingTask, setIsCascadingTask] = useState(false)
+
+  // Attachments. While creating, files are held locally and sent in the submit
+  // payload. While editing (task already exists), add/remove hit the dedicated
+  // /api/tasks/[id]/attachments endpoint immediately so the change is durable.
+  const [attachments, setAttachments] = useState<AttachmentItem[]>([])
+  const attachmentInputRef = useRef<HTMLInputElement>(null)
+
+  const { toast } = useToast()
 
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskFormSchema),
@@ -252,6 +278,13 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
         setSelectedCollaborators([])
         setIsCascadingTask(!!(task as any).isCascading || task.taskType === 'CASCADING')
         setCustomFieldValues(Object.fromEntries((((task as any).fieldValues) || []).map((v: any) => [v.fieldId, v.value])))
+        setAttachments(((task as any).attachments || []).map((a: any) => ({
+          id: a.id,
+          fileUrl: a.fileUrl,
+          fileName: a.fileName,
+          fileType: a.fileType,
+          fileSize: a.fileSize,
+        })))
       } else if (duplicateFrom) {
         // Duplicate mode: pre-fill from source task, reset status/progress, allow recurring
         const srcDue = duplicateFrom.dueDate ? new Date(duplicateFrom.dueDate) : undefined
@@ -296,6 +329,8 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
         setSelectedCollaborators([])
         setIsCascadingTask(!!(duplicateFrom as any).isCascading || duplicateFrom.taskType === 'CASCADING')
         setCustomFieldValues(Object.fromEntries((((duplicateFrom as any).fieldValues) || []).map((v: any) => [v.fieldId, v.value])))
+        // Duplicated tasks start with no attachments (copying OSS files is out of scope).
+        setAttachments([])
         // Carry over subtasks when duplicating. DuplicateTaskDialog includes the
         // source subtasks when the "Subtasks" option is checked; without loading
         // them into pendingSubtasks they'd be silently dropped on submit.
@@ -357,6 +392,7 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
         setIsCascadingTask(false)
         setCascadeSteps([])
         setCustomFieldValues({})
+        setAttachments([])
         // Clear subtasks
         setPendingSubtasks([])
         setNewSubtaskTitle('')
@@ -385,6 +421,26 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
     // For EDITING tasks: preserve the original assignees - do NOT override
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id, task, duplicateFrom, form, open, preSelectedMemberId, users])
+
+  // In edit mode, load the task's attachments from the dedicated endpoint. The
+  // `task` prop usually comes from the list query, which does not include them,
+  // so relying on `task.attachments` alone would show an empty list for tasks
+  // that actually have files.
+  useEffect(() => {
+    if (open && task?.id) {
+      fetch(`/api/tasks/${task.id}/attachments`)
+        .then((r) => (r.ok ? r.json() : { attachments: [] }))
+        .then((d) => setAttachments((d.attachments || []).map((a: any) => ({
+          id: a.id,
+          fileUrl: a.fileUrl,
+          fileName: a.fileName,
+          fileType: a.fileType,
+          fileSize: a.fileSize,
+        }))))
+        .catch(() => { /* keep whatever the prop-based init set */ })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, task?.id])
 
   // When recurring is on, auto-populate dueDate from startDate so the
   // user doesn't have to fill in a redundant "Deadline" field.
@@ -436,6 +492,61 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
       }
     } catch (error) {
       console.error('Error fetching users:', error)
+    }
+  }
+
+  // Upload a single file to OSS and return its metadata.
+  const uploadOneAttachment = async (file: File) => {
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await fetch('/api/upload/task-file', { method: 'POST', body: fd })
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}))
+      throw new Error(e.error || 'Upload failed')
+    }
+    return res.json() as Promise<{ fileUrl: string; fileName: string; fileType: string; fileSize: number }>
+  }
+
+  const handleAttachmentSelect = async (files: FileList | null) => {
+    if (!files || files.length === 0) return
+    const list = Array.from(files)
+    // Reset the input so the same file can be picked again later.
+    if (attachmentInputRef.current) attachmentInputRef.current.value = ''
+    for (const file of list) {
+      const tempId = `${file.name}-${file.size}-${file.lastModified}-${attachments.length}`
+      setAttachments((prev) => [...prev, { tempId, fileUrl: '', fileName: file.name, fileType: file.type, fileSize: file.size, uploading: true }])
+      try {
+        const meta = await uploadOneAttachment(file)
+        // In edit mode the task already exists — persist immediately so the file
+        // survives even if the user closes the form without saving other fields.
+        let persistedId: string | undefined
+        if (task?.id) {
+          const res = await fetch(`/api/tasks/${task.id}/attachments`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fileUrl: meta.fileUrl, fileName: meta.fileName, fileType: meta.fileType, fileSize: meta.fileSize }),
+          })
+          if (res.ok) persistedId = (await res.json()).attachment?.id
+        }
+        setAttachments((prev) => prev.map((a) => a.tempId === tempId
+          ? { id: persistedId, fileUrl: meta.fileUrl, fileName: meta.fileName, fileType: meta.fileType, fileSize: meta.fileSize }
+          : a))
+      } catch (err: any) {
+        setAttachments((prev) => prev.filter((a) => a.tempId !== tempId))
+        toast({ title: 'Attachment failed', description: err.message || 'Could not upload file', variant: 'destructive' })
+      }
+    }
+  }
+
+  const handleRemoveAttachment = async (item: AttachmentItem) => {
+    const key = item.tempId ?? item.id
+    setAttachments((prev) => prev.filter((a) => (a.tempId ?? a.id) !== key))
+    if (task?.id && item.id) {
+      try {
+        await fetch(`/api/tasks/${task.id}/attachments?attachmentId=${item.id}`, { method: 'DELETE' })
+      } catch {
+        // Best-effort: the local list is already updated.
+      }
     }
   }
 
@@ -519,6 +630,15 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
         assigneeId: s.assigneeId,
       }))
 
+      // Attachments ride in the payload only on CREATE (the task doesn't exist
+      // yet). On EDIT they're already persisted live via the dedicated endpoint.
+      // Skip any file still uploading.
+      if (!task) {
+        ;(submissionData as any).attachments = attachments
+          .filter(a => a.fileUrl && !a.uploading)
+          .map(a => ({ fileUrl: a.fileUrl, fileName: a.fileName, fileType: a.fileType ?? null, fileSize: a.fileSize ?? null }))
+      }
+
       // Include cascade steps when the Cascading toggle is on
       if (isCascadingTask) {
         ;(submissionData as any).cascadeSteps = cascadeSteps.map(s => ({
@@ -547,6 +667,7 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
       setPendingSubtasks([])
       setCascadeSteps([])
       setIsCascadingTask(false)
+      setAttachments([])
     } catch (error) {
       console.error('Error submitting task:', error)
     } finally {
@@ -736,6 +857,57 @@ export default function TaskForm({ open, onOpenChange, task, duplicateFrom, onSu
                   rows={3}
                   className="resize-none"
                 />
+              </div>
+
+              {/* Attachments */}
+              <div className="space-y-2">
+                <Label className="text-base flex items-center gap-1.5">
+                  <Paperclip className="h-4 w-4 text-muted-foreground" />
+                  Attachments
+                  <span className="text-muted-foreground text-xs font-normal">(optional)</span>
+                </Label>
+                <input
+                  ref={attachmentInputRef}
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => handleAttachmentSelect(e.target.files)}
+                />
+                {attachments.length > 0 && (
+                  <div className="space-y-1.5">
+                    {attachments.map((a) => (
+                      <div key={a.id ?? a.tempId} className="flex items-center gap-2 rounded-md border bg-muted/30 px-2.5 py-1.5 text-sm">
+                        {a.uploading
+                          ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />
+                          : <FileText className="h-4 w-4 text-muted-foreground shrink-0" />}
+                        {a.uploading ? (
+                          <span className="flex-1 truncate text-muted-foreground">{a.fileName}</span>
+                        ) : (
+                          <a href={a.fileUrl} target="_blank" rel="noreferrer" className="flex-1 truncate text-blue-600 hover:underline" title={a.fileName}>
+                            {a.fileName}
+                          </a>
+                        )}
+                        {a.fileSize != null && <span className="text-xs text-muted-foreground shrink-0">{formatFileSize(a.fileSize)}</span>}
+                        {!a.uploading && (
+                          <button type="button" onClick={() => handleRemoveAttachment(a)} className="text-muted-foreground hover:text-red-500 shrink-0" title="Remove">
+                            <X className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs"
+                  onClick={() => attachmentInputRef.current?.click()}
+                  disabled={attachments.some((a) => a.uploading)}
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" /> Add files
+                </Button>
+                <p className="text-[11px] text-muted-foreground">Up to 20 files, 50MB each.</p>
               </div>
 
               {/* Priority — always shown, segmented buttons */}

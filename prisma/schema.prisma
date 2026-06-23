@@ -52,6 +52,7 @@ model User {
   assignedTasks          Task[]              @relation("TaskAssignee")
   createdTasks           Task[]              @relation("TaskCreator")
   seniorEvaluatedTasks   Task[]              @relation("TaskSeniorEvaluator")
+  taskAttachments        TaskAttachment[]    @relation("TaskAttachmentUploader")
   teamMembers            TeamMember[]
   ossbRequests           OSSBRequest[]
   reportsTo              User?               @relation("UserReportsTo", fields: [reportsToId], references: [id])
@@ -439,6 +440,7 @@ model Task {
   dependencies          TaskDependency[]   @relation("DependentTask")
   blockedBy             TaskDependency[]   @relation("BlockerTask")
   deliverables          TaskDeliverable[]
+  attachments           TaskAttachment[]
   procurements          TaskProcurement[]
   evaluations           TaskEvaluation[]
   comments              Comment[]
@@ -460,6 +462,23 @@ model Task {
   @@index([dueDate])
   @@index([recurringParentId])
   @@map("tasks")
+}
+
+model TaskAttachment {
+  id           String   @id @default(cuid())
+  taskId       String
+  fileUrl      String   // URL to file in OSS
+  fileName     String   // Original filename
+  fileType     String?  // MIME type
+  fileSize     Int?     // Size in bytes
+  uploadedById String
+  createdAt    DateTime @default(now())
+  task         Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  uploadedBy   User     @relation("TaskAttachmentUploader", fields: [uploadedById], references: [id])
+
+  @@index([taskId])
+  @@index([uploadedById])
+  @@map("task_attachments")
 }
 
 model TaskTeamMember {

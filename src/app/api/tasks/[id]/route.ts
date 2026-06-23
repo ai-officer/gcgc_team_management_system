@@ -107,6 +107,12 @@ export async function GET(
         fieldValues: {
           include: { field: { select: { id: true, name: true, type: true, options: true, position: true } } },
         },
+        attachments: {
+          include: {
+            uploadedBy: { select: { id: true, name: true, email: true } }
+          },
+          orderBy: { createdAt: 'asc' }
+        },
         comments: {
           include: {
             author: {

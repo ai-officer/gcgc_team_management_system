@@ -340,6 +340,12 @@ export default function TaskViewModal({
   const [depSearchQuery, setDepSearchQuery] = useState('')
   const [depSearchResults, setDepSearchResults] = useState<Dependency[]>([])
 
+  // Attachments state
+  const [attachments, setAttachments] = useState<Array<{ id: string; fileUrl: string; fileName: string; fileType?: string | null; fileSize?: number | null }>>([])
+  const [loadingAttachments, setLoadingAttachments] = useState(false)
+  const [uploadingAttachment, setUploadingAttachment] = useState(false)
+  const attachmentInputRef = useRef<HTMLInputElement>(null)
+
   // Deliverables state
   const [deliverables, setDeliverables] = useState<Deliverable[]>([])
   const [loadingDeliverables, setLoadingDeliverables] = useState(false)
@@ -464,6 +470,15 @@ export default function TaskViewModal({
     } catch (e) { console.error(e) } finally { setLoadingDeps(false) }
   }
 
+  const fetchAttachments = async () => {
+    if (!task?.id) return
+    try {
+      setLoadingAttachments(true)
+      const res = await fetch(`/api/tasks/${task.id}/attachments`)
+      if (res.ok) { const d = await res.json(); setAttachments(d.attachments || []) }
+    } catch (e) { console.error(e) } finally { setLoadingAttachments(false) }
+  }
+
   const fetchDeliverables = async () => {
     if (!task?.id) return
     try {
@@ -507,6 +522,35 @@ export default function TaskViewModal({
     if (!task?.id) return
     const res = await fetch(`/api/tasks/${task.id}/dependencies?dependsOnId=${dependsOnId}`, { method: 'DELETE' })
     if (res.ok) { await fetchDependencies(); toast({ title: 'Dependency removed' }) }
+  }
+
+  const handleAddAttachmentFiles = async (files: FileList | null) => {
+    if (!task?.id || !files || files.length === 0) return
+    const list = Array.from(files)
+    if (attachmentInputRef.current) attachmentInputRef.current.value = ''
+    setUploadingAttachment(true)
+    try {
+      for (const file of list) {
+        const fd = new FormData()
+        fd.append('file', file)
+        const up = await fetch('/api/upload/task-file', { method: 'POST', body: fd })
+        if (!up.ok) { const e = await up.json().catch(() => ({})); toast({ title: 'Upload failed', description: e.error, variant: 'destructive' }); continue }
+        const meta = await up.json()
+        const res = await fetch(`/api/tasks/${task.id}/attachments`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileUrl: meta.fileUrl, fileName: meta.fileName, fileType: meta.fileType, fileSize: meta.fileSize }),
+        })
+        if (!res.ok) { const e = await res.json().catch(() => ({})); toast({ title: 'Error', description: e.error, variant: 'destructive' }) }
+      }
+      await fetchAttachments()
+    } finally { setUploadingAttachment(false) }
+  }
+
+  const handleRemoveAttachment = async (attachmentId: string) => {
+    if (!task?.id) return
+    const res = await fetch(`/api/tasks/${task.id}/attachments?attachmentId=${attachmentId}`, { method: 'DELETE' })
+    if (res.ok) { await fetchAttachments(); toast({ title: 'Attachment removed' }) }
   }
 
   const handleToggleDeliverable = async (deliverable: Deliverable) => {
@@ -638,6 +682,7 @@ export default function TaskViewModal({
       fetchAvailableUsers()
       fetchTaskDetails()
       fetchDependencies()
+      fetchAttachments()
       fetchDeliverables()
       fetchProcurements()
       setNewComment('')
@@ -1284,6 +1329,18 @@ export default function TaskViewModal({
 
   // Users who can add subtasks: creator, assignee, team members, collaborators
   const canAddSubtasks = isTaskCreator || isTaskAssignee || isTaskTeamMember || isTaskCollaborator
+
+  // Anyone involved in the task can add or edit its dependencies: the creator,
+  // assignee(s), the assigner, team members, collaborators — plus admins and
+  // anyone with finisher permission (board/parent leaders, computed server-side).
+  const canEditDependencies =
+    canCompleteTask ||
+    isTaskCreator ||
+    isTaskAssignee ||
+    isTaskAssigner ||
+    isTaskTeamMember ||
+    isTaskCollaborator ||
+    session?.user?.role === 'ADMIN'
 
   // ── Progress management ──
   // Parent tasks derive progress from their subtasks (server rolls it up), so the
@@ -2632,7 +2689,7 @@ export default function TaskViewModal({
                 <AlertCircle className="h-4 w-4 text-orange-500" />
                 Dependencies ({dependencies.blockedBy.length} blocking this task)
               </h4>
-              {canCompleteTask && (
+              {canEditDependencies && (
                 <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setDepSearchQuery(depSearchQuery ? '' : ' ')}>
                   <Plus className="h-3 w-3 mr-1" />Add
                 </Button>
@@ -2648,7 +2705,7 @@ export default function TaskViewModal({
             )}
 
             {/* Search for dependency */}
-            {canCompleteTask && (
+            {canEditDependencies && (
               <div className="space-y-1">
                 <Input
                   placeholder="Search tasks to add as dependency..."
@@ -2680,7 +2737,7 @@ export default function TaskViewModal({
                     {dep.status === 'COMPLETED' ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500 flex-shrink-0" /> : <Circle className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />}
                     <span className={`flex-1 truncate ${dep.status === 'COMPLETED' ? 'line-through text-gray-400' : 'text-gray-700'}`}>{dep.title}</span>
                     <span className={`px-1.5 py-0.5 rounded text-xs ${dep.status === 'COMPLETED' ? 'bg-green-50 text-green-700' : dep.status === 'IN_PROGRESS' ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>{dep.status.replace('_', ' ')}</span>
-                    {canCompleteTask && (
+                    {canEditDependencies && (
                       <button onClick={() => handleRemoveDependency(dep.id)} className="text-gray-400 hover:text-red-500">
                         <X className="h-3 w-3" />
                       </button>
@@ -2690,6 +2747,53 @@ export default function TaskViewModal({
               </div>
             ) : (
               <p className="text-xs text-gray-400">No blocking dependencies</p>
+            )}
+          </div>
+
+          {/* Attachments Section */}
+          <div className="border-t pt-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="font-medium text-gray-900 flex items-center gap-2 text-sm">
+                <Paperclip className="h-4 w-4 text-blue-500" />
+                Attachments ({attachments.length})
+              </h4>
+              {canEditDependencies && (
+                <>
+                  <input
+                    ref={attachmentInputRef}
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => handleAddAttachmentFiles(e.target.files)}
+                  />
+                  <Button variant="outline" size="sm" className="h-7 text-xs" disabled={uploadingAttachment} onClick={() => attachmentInputRef.current?.click()}>
+                    {uploadingAttachment ? <div className="animate-spin h-3 w-3 rounded-full border-b-2 border-gray-400 mr-1" /> : <Plus className="h-3 w-3 mr-1" />}
+                    Add
+                  </Button>
+                </>
+              )}
+            </div>
+
+            {loadingAttachments ? (
+              <div className="flex justify-center py-2"><div className="animate-spin h-4 w-4 rounded-full border-b-2 border-gray-400" /></div>
+            ) : attachments.length > 0 ? (
+              <div className="space-y-1">
+                {attachments.map(a => (
+                  <div key={a.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded text-xs group">
+                    <span className="shrink-0">{getFileIcon(a.fileType || undefined)}</span>
+                    <a href={a.fileUrl} target="_blank" rel="noreferrer" className="flex-1 truncate text-blue-600 hover:underline" title={a.fileName}>{a.fileName}</a>
+                    {a.fileSize != null && <span className="text-gray-400 shrink-0">{formatFileSize(a.fileSize ?? undefined)}</span>}
+                    <a href={a.fileUrl} target="_blank" rel="noreferrer" download className="text-gray-400 hover:text-gray-700 shrink-0" title="Download"><Download className="h-3.5 w-3.5" /></a>
+                    {canEditDependencies && (
+                      <button onClick={() => handleRemoveAttachment(a.id)} className="text-gray-300 hover:text-red-500 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" title="Remove">
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-400">No attachments</p>
             )}
           </div>
 

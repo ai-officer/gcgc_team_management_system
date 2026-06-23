@@ -239,7 +239,7 @@ export async function PATCH(
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Invalid data', details: error.errors },
+        { error: error.errors[0]?.message || 'Invalid data', details: error.errors },
         { status: 400 }
       )
     }

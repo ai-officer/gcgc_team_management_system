@@ -31,6 +31,7 @@ export default function TeamsPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [name, setName] = useState('')
   const [color, setColor] = useState(COLOR_CHOICES[0])
+  const [category, setCategory] = useState('')
   const [creating, setCreating] = useState(false)
 
   const fetchTeams = useCallback(async () => {
@@ -58,7 +59,7 @@ export default function TeamsPage() {
       const res = await fetch('/api/user/teams', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), color }),
+        body: JSON.stringify({ name: name.trim(), color, category: category.trim() || undefined }),
       })
       if (res.ok) {
         const data = await res.json()
@@ -66,6 +67,7 @@ export default function TeamsPage() {
         setShowCreate(false)
         setName('')
         setColor(COLOR_CHOICES[0])
+        setCategory('')
         toast({ title: `Team "${data.team.name}" created` })
       } else {
         const err = await res.json().catch(() => ({}))
@@ -253,6 +255,18 @@ export default function TeamsPage() {
                 maxLength={100}
                 onKeyDown={e => { if (e.key === 'Enter') createTeam() }}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="team-category">Category <span className="text-muted-foreground font-normal">(optional)</span></Label>
+              <Input
+                id="team-category"
+                value={category}
+                onChange={e => setCategory(e.target.value)}
+                placeholder="e.g. Finance, Marketing — leave blank for none"
+                maxLength={60}
+                onKeyDown={e => { if (e.key === 'Enter') createTeam() }}
+              />
+              <p className="text-xs text-muted-foreground">Groups this board under a label in your board switcher. Only you see it.</p>
             </div>
             <div className="space-y-2">
               <Label>Board color</Label>

@@ -7,6 +7,9 @@ const createTeamSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().max(500).optional(),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).default('#3B82F6'),
+  // Optional per-user category for the team's board, applied to the creator's
+  // switcher only. Blank = no category.
+  category: z.string().trim().max(60).optional(),
 })
 
 const teamInclude = {
@@ -37,7 +40,8 @@ export async function POST(req: NextRequest) {
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
-    const { name, description, color } = createTeamSchema.parse(await req.json())
+    const { name, description, color, category } = createTeamSchema.parse(await req.json())
+    const categoryValue = category && category.length > 0 ? category : null
 
     const team = await prisma.$transaction(async (tx) => {
       const created = await tx.team.create({
@@ -50,6 +54,19 @@ export async function POST(req: NextRequest) {
         },
         include: teamInclude,
       })
+
+      // If the creator picked a category, attach it to their own board pin so
+      // the new board lands under that category in their switcher.
+      if (categoryValue && created.board) {
+        await tx.boardPin.create({
+          data: {
+            userId: session.user.id,
+            boardId: created.board.id,
+            category: categoryValue,
+            starred: false,
+          },
+        })
+      }
 
       await tx.activity.create({
         data: {

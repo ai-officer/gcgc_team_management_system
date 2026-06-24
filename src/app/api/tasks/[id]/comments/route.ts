@@ -7,7 +7,7 @@ import { parseMentions } from '@/lib/mentions'
 import { notifyMention } from '@/lib/notifications'
 
 const createCommentSchema = z.object({
-  content: z.string().max(1000, 'Comment too long').default(''),
+  content: z.string().max(500, 'Comment must be 500 characters or fewer').default(''),
   parentId: z.string().optional(),
   imageUrl: z.string().url().optional().nullable(), // Legacy support
   fileUrl: z.string().url().optional().nullable(),

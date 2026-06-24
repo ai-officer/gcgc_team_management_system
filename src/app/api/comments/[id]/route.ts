@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { deleteFromOSS, getObjectKeyFromUrl } from '@/lib/oss'
 
 const updateCommentSchema = z.object({
-  content: z.string().min(1).max(1000).optional(),
+  content: z.string().min(1).max(500, 'Comment must be 500 characters or fewer').optional(),
   imageUrl: z.string().nullable().optional(), // Legacy support
   fileUrl: z.string().nullable().optional(),
   fileName: z.string().max(255).nullable().optional(),

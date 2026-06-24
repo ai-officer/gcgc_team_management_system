@@ -265,6 +265,27 @@ const getEffectiveFileUrl = (comment: Comment): string | undefined => {
   return comment.fileUrl || comment.imageUrl
 }
 
+// Max length for any comment/reply/edit.
+const COMMENT_MAX = 500
+
+// Grow a textarea to fit its content (no inner scrollbar).
+function autoGrowTextarea(el: HTMLTextAreaElement | null) {
+  if (!el) return
+  el.style.height = 'auto'
+  el.style.height = `${el.scrollHeight}px`
+}
+
+// Live character counter that warns as the limit approaches / is reached.
+function CharCount({ value, max = COMMENT_MAX }: { value: string; max?: number }) {
+  const len = value.length
+  const cls = len >= max ? 'text-red-600 font-semibold' : len >= max * 0.9 ? 'text-amber-600' : 'text-gray-400'
+  return (
+    <span className={`text-xs tabular-nums ${cls}`}>
+      {len}/{max}{len >= max ? ' · limit reached' : ''}
+    </span>
+  )
+}
+
 export default function TaskViewModal({
   open,
   onOpenChange,
@@ -293,6 +314,9 @@ export default function TaskViewModal({
   // transparent text + visible caret, and their scroll positions stay in sync.
   const commentInputRef = useRef<HTMLTextAreaElement>(null)
   const commentBackdropRef = useRef<HTMLDivElement>(null)
+  // Auto-grow the comment composer to fit its content (incl. programmatic
+  // changes like inserting an @mention), so it never shows an inner scrollbar.
+  useEffect(() => { autoGrowTextarea(commentInputRef.current) }, [newComment])
   const [uploadingFile, setUploadingFile] = useState(false)
   const [pendingFile, setPendingFile] = useState<{
     file: File
@@ -1395,11 +1419,15 @@ export default function TaskViewModal({
               /* Edit Mode UI */
               <div className="bg-blue-50 rounded-lg p-3 space-y-3">
                 <Textarea
+                  ref={autoGrowTextarea}
                   value={editCommentText}
+                  maxLength={COMMENT_MAX}
                   onChange={(e) => setEditCommentText(e.target.value)}
-                  className="min-h-[60px] resize-none text-sm bg-white"
+                  onInput={(e) => autoGrowTextarea(e.currentTarget)}
+                  className="min-h-[60px] max-h-[40vh] resize-none text-sm bg-white"
                   placeholder="Edit your comment..."
                 />
+                <div className="flex justify-end"><CharCount value={editCommentText} /></div>
 
                 {/* Edit File Section */}
                 <div className="space-y-2">
@@ -1664,12 +1692,16 @@ export default function TaskViewModal({
             {replyingTo === comment.id && (
               <div className="space-y-2">
                 <Textarea
+                  ref={autoGrowTextarea}
                   placeholder="Write a reply..."
                   value={replyText}
+                  maxLength={COMMENT_MAX}
                   onChange={(e) => setReplyText(e.target.value)}
-                  className="min-h-[60px] resize-none text-sm"
+                  onInput={(e) => autoGrowTextarea(e.currentTarget)}
+                  className="min-h-[60px] max-h-[40vh] resize-none text-sm"
                 />
-                <div className="flex justify-end gap-2">
+                <div className="flex items-center justify-end gap-2">
+                  <span className="mr-auto"><CharCount value={replyText} /></span>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -3009,13 +3041,14 @@ export default function TaskViewModal({
                   ref={commentInputRef}
                   placeholder="Write a comment... Use @ to mention someone"
                   value={newComment}
+                  maxLength={COMMENT_MAX}
                   onChange={(e) => handleCommentChange(e.target.value)}
                   onScroll={() => {
                     if (commentBackdropRef.current && commentInputRef.current) {
                       commentBackdropRef.current.scrollTop = commentInputRef.current.scrollTop
                     }
                   }}
-                  className="relative z-[1] min-h-[80px] resize-none bg-transparent pr-10 leading-5 text-transparent caret-gray-900 selection:bg-blue-200/50 selection:text-transparent"
+                  className="relative z-[1] min-h-[80px] max-h-[40vh] resize-none bg-transparent pr-10 leading-5 text-transparent caret-gray-900 selection:bg-blue-200/50 selection:text-transparent"
                 />
 
                 {/* Mention Dropdown */}
@@ -3113,6 +3146,7 @@ export default function TaskViewModal({
                   </Button>
                 </div>
 
+                <CharCount value={newComment} />
                 <Button
                   onClick={() => handleAddComment()}
                   disabled={(!newComment.trim() && !pendingFile) || submittingComment}

@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { Sidebar } from '@/components/layout/sidebar'
 import { ImpersonationBanner } from '@/components/shared/impersonation-banner'
 import { GlobalSearch } from '@/components/search/GlobalSearch'
+import { HelpWidget } from '@/components/help/HelpWidget'
 import { UserRole } from '@prisma/client'
 
 export default function UserLayout({
@@ -73,6 +74,7 @@ export default function UserLayout({
           {children}
         </div>
       </main>
+      <HelpWidget />
     </div>
   )
 }

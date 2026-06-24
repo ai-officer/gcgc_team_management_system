@@ -34,6 +34,7 @@ import {
   Download,
   Archive,
   RotateCcw,
+  ChevronDown,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -240,6 +241,7 @@ interface KanbanBoard {
   statuses?: BoardStatus[]
   fields?: BoardField[]
   canManage?: boolean
+  isStarred?: boolean
 }
 
 // Kanban board pagination: fetch this many tasks per "page", with a Load more
@@ -313,6 +315,18 @@ export default function TasksPage() {
   const [quickAddCustomStatusId, setQuickAddCustomStatusId] = useState<string | undefined>(undefined)
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false)
   const [showBacklog, setShowBacklog] = useState(false)
+  // Board switcher: search + recently-opened boards (recents persist per browser).
+  const [showBoardSwitcher, setShowBoardSwitcher] = useState(false)
+  const [boardSearch, setBoardSearch] = useState('')
+  const [recentBoardIds, setRecentBoardIds] = useState<string[]>([])
+
+  useEffect(() => {
+    try {
+      const r = JSON.parse(localStorage.getItem('tms:recentBoards') || '[]')
+      if (Array.isArray(r)) setRecentBoardIds(r.filter((x): x is string => typeof x === 'string'))
+    } catch { /* ignore */ }
+  }, [])
+
   const [exporting, setExporting] = useState(false)
   const [boardSettingsOpen, setBoardSettingsOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
@@ -517,6 +531,24 @@ export default function TasksPage() {
       fetchBoards()
     }
   }, [session, fetchBoards])
+
+  // Track recently-opened boards (per browser) for the switcher's quick tabs.
+  useEffect(() => {
+    if (!activeBoardId) return
+    setRecentBoardIds(prev => {
+      const next = [activeBoardId, ...prev.filter(id => id !== activeBoardId)].slice(0, 8)
+      try { localStorage.setItem('tms:recentBoards', JSON.stringify(next)) } catch { /* ignore */ }
+      return next
+    })
+  }, [activeBoardId])
+
+  const selectBoard = (id: string | null) => { setActiveBoardId(id); setShowBoardSwitcher(false); setBoardSearch('') }
+  const toggleBoardStar = async (board: KanbanBoard) => {
+    try {
+      const res = await fetch(`/api/boards/${board.id}/star`, { method: board.isStarred ? 'DELETE' : 'POST' })
+      if (res.ok) fetchBoards()
+    } catch { /* ignore */ }
+  }
 
   const createBoard = async () => {
     if (!newBoardName.trim()) return
@@ -1215,6 +1247,71 @@ export default function TasksPage() {
     )
   }
 
+  // ── Board switcher data ──
+  const starredBoards = boards.filter(b => b.isStarred)
+  const recentBoards = recentBoardIds
+    .map(id => boards.find(b => b.id === id))
+    .filter((b): b is KanbanBoard => !!b)
+  let quickTabs = [...starredBoards, ...recentBoards.filter(b => !b.isStarred)]
+  if (activeBoardId && !quickTabs.some(b => b.id === activeBoardId)) {
+    const ab = boards.find(b => b.id === activeBoardId)
+    if (ab) quickTabs = [ab, ...quickTabs]
+  }
+  quickTabs = quickTabs.slice(0, 6)
+
+  const boardQuery = boardSearch.trim().toLowerCase()
+  const searchedBoards = boardQuery ? boards.filter(b => b.name.toLowerCase().includes(boardQuery)) : boards
+  const swStarred = searchedBoards.filter(b => b.isStarred)
+  const swRecent = recentBoards.filter(b => !b.isStarred && searchedBoards.includes(b))
+  const swTeamGroups: Record<string, KanbanBoard[]> = {}
+  searchedBoards.filter(b => !b.isStarred && b.team && !swRecent.includes(b)).forEach(b => {
+    const n = b.team!.name
+    ;(swTeamGroups[n] ||= []).push(b)
+  })
+  const swPersonal = searchedBoards.filter(b => !b.isStarred && !b.team && !swRecent.includes(b))
+
+  const renderBoardRow = (board: KanbanBoard) => {
+    const isOwner = board.ownerId === session?.user?.id
+    return (
+      <div key={board.id} className={cn('group flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-50', activeBoardId === board.id && 'bg-blue-50')}>
+        <button onClick={(e) => { e.stopPropagation(); toggleBoardStar(board) }} title={board.isStarred ? 'Unstar' : 'Star'} className="shrink-0 text-gray-300 hover:text-amber-400 transition-colors">
+          <Star className={cn('h-4 w-4', board.isStarred && 'fill-amber-400 text-amber-400')} />
+        </button>
+        <button onClick={() => selectBoard(board.id)} className="flex-1 min-w-0 flex items-center gap-2 text-left">
+          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: board.color }} />
+          <span className="truncate text-sm text-gray-800">{board.name}</span>
+          <span className="text-xs text-gray-400 shrink-0">({board._count.tasks})</span>
+          {board.team && <span className="text-[10px] bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded-full leading-none shrink-0">team</span>}
+        </button>
+        {board.team ? (
+          <Link href={`/user/teams/${board.team.id}`} onClick={() => setShowBoardSwitcher(false)} className="shrink-0 text-gray-300 hover:text-gray-600" title="Manage team">
+            <Settings2 className="h-3.5 w-3.5" />
+          </Link>
+        ) : isOwner ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="shrink-0 text-gray-300 hover:text-gray-600" onClick={(e) => e.stopPropagation()}><MoreHorizontal className="h-3.5 w-3.5" /></button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuItem onClick={() => { setEditingBoard(board); setEditingBoardMemberIds(board.members.map(m => m.userId)); setShowBoardSwitcher(false) }}>
+                <Settings2 className="h-4 w-4 mr-2" /> Edit Board
+              </DropdownMenuItem>
+              <DropdownMenuItem className="text-red-600" onClick={() => { setBoardPendingDelete(board); setShowBoardSwitcher(false) }}>
+                <Trash2 className="h-4 w-4 mr-2" /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
+      </div>
+    )
+  }
+  const renderBoardGroup = (label: string, list: KanbanBoard[]) => list.length === 0 ? null : (
+    <div key={label} className="mb-1">
+      <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400">{label}</div>
+      {list.map(renderBoardRow)}
+    </div>
+  )
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -1245,111 +1342,82 @@ export default function TasksPage() {
         </div>
       </div>
 
-      {/* Board Tab Strip */}
-      <div className="flex items-center gap-1 overflow-x-auto pb-1 border-b border-gray-200">
-        {/* All Tasks tab */}
-        <button
-          onClick={() => setActiveBoardId(null)}
-          className={cn(
-            'shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-t-lg text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px',
-            activeBoardId === null
-              ? 'border-blue-600 text-blue-700 bg-blue-50/50'
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-          )}
-        >
-          <ListTodo className="h-4 w-4" />
-          All Tasks
-        </button>
-
-        {/* Board tabs */}
-        {boards.map(board => {
-          const isOwner = board.ownerId === session?.user?.id
-          const isTeamBoard = !!board.team
-          const membersList = isTeamBoard ? (board.team?.members || []) : (board.members || [])
-          const memberCount = membersList.length
-          return (
-            <div key={board.id} className="relative group flex items-center shrink-0">
-              <button
-                onClick={() => setActiveBoardId(board.id)}
-                className={cn(
-                  'flex items-center gap-1.5 pl-3 pr-8 py-2 rounded-t-lg text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px',
-                  activeBoardId === board.id
-                    ? 'text-gray-900 bg-gray-50'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                )}
-                style={activeBoardId === board.id ? { borderBottomColor: board.color } : {}}
-              >
-                <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: board.color }} />
-                {board.name}
-                <span className="ml-1 text-xs text-gray-400 font-normal">({board._count.tasks})</span>
-                {/* Member avatars */}
-                {memberCount > 0 && (
-                  <div className="flex -space-x-1 ml-1">
-                    {membersList.slice(0, 3).map(m => (
-                      <Avatar key={m.userId} className="h-4 w-4 border border-white ring-0">
-                        <AvatarImage src={m.user.image} />
-                        <AvatarFallback className="text-[8px]">
-                          {m.user.name?.[0] ?? m.user.email[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                    ))}
-                    {memberCount > 3 && (
-                      <span className="h-4 w-4 rounded-full bg-gray-200 border border-white text-[8px] flex items-center justify-center text-gray-600">
-                        +{memberCount - 3}
-                      </span>
-                    )}
-                  </div>
-                )}
-                {/* Team or shared badge */}
-                {isTeamBoard ? (
-                  <span className="ml-1 text-[10px] bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded-full font-medium leading-none">team</span>
-                ) : !isOwner ? (
-                  <span className="ml-1 text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full font-medium leading-none">shared</span>
-                ) : null}
-              </button>
-              {/* Team boards are managed on the team page; personal boards keep owner edit/delete */}
-              {isTeamBoard ? (
-                <Link
-                  href={`/user/teams/${board.team!.id}`}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:bg-gray-200 transition-all"
-                  title="Manage team"
-                  onClick={(e) => e.stopPropagation()}
+      {/* Board Switcher — searchable dropdown (left) + quick tabs (starred/recent) */}
+      <div className="flex items-stretch gap-1 border-b border-gray-200">
+        {/* Switch board — searchable dropdown; scales to any number of boards */}
+        <div className="relative shrink-0 self-center pb-1">
+          <button
+            onClick={() => setShowBoardSwitcher(v => !v)}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg whitespace-nowrap"
+          >
+            <ChevronDown className="h-4 w-4 text-gray-400 shrink-0" />
+            <span className="max-w-[180px] truncate">
+              {activeBoardId ? (boards.find(b => b.id === activeBoardId)?.name ?? 'Board') : 'All Tasks'}
+            </span>
+            <span className="text-xs text-gray-400">({boards.length})</span>
+          </button>
+          {showBoardSwitcher && (
+            <>
+              <div className="fixed inset-0 z-20" onClick={() => setShowBoardSwitcher(false)} />
+              <div className="absolute left-0 mt-1 z-30 w-80 max-h-[70vh] overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-xl p-2">
+                <div className="relative mb-2">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    autoFocus
+                    value={boardSearch}
+                    onChange={(e) => setBoardSearch(e.target.value)}
+                    placeholder="Search boards…"
+                    className="w-full pl-8 pr-2 h-8 rounded-md border border-gray-200 text-sm focus:outline-none focus:border-blue-300"
+                  />
+                </div>
+                {/* All Tasks (cross-board view) */}
+                <button
+                  onClick={() => selectBoard(null)}
+                  className={cn('w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm mb-1', activeBoardId === null ? 'bg-blue-50 text-blue-700' : 'text-gray-800 hover:bg-gray-50')}
                 >
-                  <Settings2 className="h-3.5 w-3.5 text-gray-500" />
-                </Link>
-              ) : isOwner ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:bg-gray-200 transition-all">
-                      <MoreHorizontal className="h-3.5 w-3.5 text-gray-500" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-44">
-                    <DropdownMenuItem onClick={() => {
-                      setEditingBoard(board)
-                      setEditingBoardMemberIds(board.members.map(m => m.userId))
-                    }}>
-                      <Settings2 className="h-4 w-4 mr-2" /> Edit Board
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="text-red-600" onClick={() => setBoardPendingDelete(board)}>
-                      <Trash2 className="h-4 w-4 mr-2" /> Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : null}
-            </div>
-          )
-        })}
+                  <ListTodo className="h-4 w-4 text-gray-500" />
+                  <span className="flex-1 text-left">All Tasks</span>
+                </button>
+                {renderBoardGroup('Starred', swStarred)}
+                {renderBoardGroup('Recent', swRecent)}
+                {Object.entries(swTeamGroups).map(([name, list]) => renderBoardGroup(name, list))}
+                {renderBoardGroup('Personal', swPersonal)}
+                {searchedBoards.length === 0 && (
+                  <p className="px-2 py-6 text-center text-xs text-gray-400">No boards match “{boardSearch}”.</p>
+                )}
+                <button
+                  onClick={() => { setShowCreateBoard(true); setShowBoardSwitcher(false) }}
+                  className="mt-1 w-full flex items-center gap-2 px-2 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md"
+                >
+                  <Plus className="h-4 w-4" /> New personal board
+                </button>
+              </div>
+            </>
+          )}
+        </div>
 
-        {/* New Board button — personal board (team boards are created from the Teams page) */}
-        <button
-          onClick={() => setShowCreateBoard(true)}
-          title="Create a personal board (just for you, or share it with people you pick). To create a team with its own shared board, use the Teams page."
-          className="shrink-0 flex items-center gap-1 px-3 py-2 text-sm text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors whitespace-nowrap ml-1"
-        >
-          <Plus className="h-4 w-4" />
-          New personal board
-        </button>
+        {/* Quick tabs: starred + recently-opened boards (capped) */}
+        <div className="flex items-center gap-1 overflow-x-auto pb-1 flex-1 min-w-0">
+          {quickTabs.map(board => (
+            <button
+              key={board.id}
+              onClick={() => selectBoard(board.id)}
+              className={cn(
+                'shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-t-lg text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px',
+                activeBoardId === board.id
+                  ? 'text-gray-900 bg-gray-50'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+              )}
+              style={activeBoardId === board.id ? { borderBottomColor: board.color } : {}}
+              title={board.name}
+            >
+              {board.isStarred && <Star className="h-3 w-3 fill-amber-400 text-amber-400 shrink-0" />}
+              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: board.color }} />
+              <span className="max-w-[160px] truncate">{board.name}</span>
+              <span className="text-xs text-gray-400 font-normal">({board._count.tasks})</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Filters */}

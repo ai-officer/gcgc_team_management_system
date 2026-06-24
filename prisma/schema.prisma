@@ -53,6 +53,7 @@ model User {
   createdTasks           Task[]              @relation("TaskCreator")
   seniorEvaluatedTasks   Task[]              @relation("TaskSeniorEvaluator")
   taskAttachments        TaskAttachment[]    @relation("TaskAttachmentUploader")
+  boardPins              BoardPin[]          @relation("UserBoardPins")
   teamMembers            TeamMember[]
   ossbRequests           OSSBRequest[]
   reportsTo              User?               @relation("UserReportsTo", fields: [reportsToId], references: [id])
@@ -268,8 +269,24 @@ model KanbanBoard {
   statuses BoardStatus[]
   fields   BoardField[]
   forms    IntakeForm[]
+  pins     BoardPin[]
 
   @@map("kanban_boards")
+}
+
+// Per-user "starred" boards — lets each user pin the boards they use most so
+// the switcher stays usable as the number of boards grows.
+model BoardPin {
+  id        String      @id @default(cuid())
+  userId    String
+  boardId   String
+  createdAt DateTime    @default(now())
+  user      User        @relation("UserBoardPins", fields: [userId], references: [id], onDelete: Cascade)
+  board     KanbanBoard @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, boardId])
+  @@index([userId])
+  @@map("board_pins")
 }
 
 // Public intake form (Phase: form intake). A shareable, login-less form whose

@@ -274,12 +274,14 @@ model KanbanBoard {
   @@map("kanban_boards")
 }
 
-// Per-user "starred" boards — lets each user pin the boards they use most so
-// the switcher stays usable as the number of boards grows.
+// Per-user board preferences for the switcher: a star (favorite) and an
+// optional free-text category the user assigns to organize their own board list.
 model BoardPin {
   id        String      @id @default(cuid())
   userId    String
   boardId   String
+  starred   Boolean     @default(false)
+  category  String?     // user-defined grouping label (e.g. "Finance", "Side projects")
   createdAt DateTime    @default(now())
   user      User        @relation("UserBoardPins", fields: [userId], references: [id], onDelete: Cascade)
   board     KanbanBoard @relation(fields: [boardId], references: [id], onDelete: Cascade)

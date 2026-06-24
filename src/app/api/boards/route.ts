@@ -62,17 +62,18 @@ export async function GET() {
   const leaderTeamIds = new Set(leaderTeams.map((t) => t.teamId))
   const isAdmin = session.user.role === 'ADMIN'
 
-  // Which of these boards the current user has starred (for the switcher).
+  // The current user's per-board prefs (star + category) for the switcher.
   const pins = await prisma.boardPin.findMany({
     where: { userId: session.user.id },
-    select: { boardId: true },
+    select: { boardId: true, starred: true, category: true },
   })
-  const pinnedSet = new Set(pins.map((p) => p.boardId))
+  const pinMap = new Map(pins.map((p) => [p.boardId, p]))
 
   const withPerms = boards.map((b) => ({
     ...b,
     canManage: isAdmin || b.ownerId === session.user.id || (!!b.teamId && leaderTeamIds.has(b.teamId)),
-    isStarred: pinnedSet.has(b.id),
+    isStarred: !!pinMap.get(b.id)?.starred,
+    category: pinMap.get(b.id)?.category ?? null,
   }))
 
   return NextResponse.json({ boards: withPerms })

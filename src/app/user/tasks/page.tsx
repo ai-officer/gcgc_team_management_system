@@ -35,6 +35,7 @@ import {
   Archive,
   RotateCcw,
   ChevronDown,
+  Tag,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -242,6 +243,7 @@ interface KanbanBoard {
   fields?: BoardField[]
   canManage?: boolean
   isStarred?: boolean
+  category?: string | null
 }
 
 // Kanban board pagination: fetch this many tasks per "page", with a Load more
@@ -319,6 +321,7 @@ export default function TasksPage() {
   const [showBoardSwitcher, setShowBoardSwitcher] = useState(false)
   const [boardSearch, setBoardSearch] = useState('')
   const [recentBoardIds, setRecentBoardIds] = useState<string[]>([])
+  const [categoryEditId, setCategoryEditId] = useState<string | null>(null)
 
   useEffect(() => {
     try {
@@ -546,6 +549,21 @@ export default function TasksPage() {
   const toggleBoardStar = async (board: KanbanBoard) => {
     try {
       const res = await fetch(`/api/boards/${board.id}/star`, { method: board.isStarred ? 'DELETE' : 'POST' })
+      if (res.ok) fetchBoards()
+    } catch { /* ignore */ }
+  }
+  // Per-user category: a free-text label this user assigns to a board to group
+  // their own switcher. Personal to the caller; doesn't affect other users.
+  const setBoardCategory = async (board: KanbanBoard, value: string) => {
+    const v = value.trim()
+    setCategoryEditId(null)
+    if ((v || null) === (board.category ?? null)) return
+    try {
+      const res = await fetch(`/api/boards/${board.id}/category`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category: v || null }),
+      })
       if (res.ok) fetchBoards()
     } catch { /* ignore */ }
   }
@@ -1263,12 +1281,20 @@ export default function TasksPage() {
   const searchedBoards = boardQuery ? boards.filter(b => b.name.toLowerCase().includes(boardQuery)) : boards
   const swStarred = searchedBoards.filter(b => b.isStarred)
   const swRecent = recentBoards.filter(b => !b.isStarred && searchedBoards.includes(b))
-  const swTeamGroups: Record<string, KanbanBoard[]> = {}
-  searchedBoards.filter(b => !b.isStarred && b.team && !swRecent.includes(b)).forEach(b => {
-    const n = b.team!.name
-    ;(swTeamGroups[n] ||= []).push(b)
+  // Group the rest by the user's own category. If a board has no category, fall
+  // back to its team name (team boards) or "Personal" (own boards).
+  const swGroups: Record<string, KanbanBoard[]> = {}
+  searchedBoards.filter(b => !b.isStarred && !swRecent.includes(b)).forEach(b => {
+    const key = b.category?.trim() || (b.team ? b.team.name : 'Personal')
+    ;(swGroups[key] ||= []).push(b)
   })
-  const swPersonal = searchedBoards.filter(b => !b.isStarred && !b.team && !swRecent.includes(b))
+  // Stable order: categories alphabetical, with the catch-all "Personal" last.
+  const swGroupKeys = Object.keys(swGroups).sort((a, b) =>
+    a === 'Personal' ? 1 : b === 'Personal' ? -1 : a.localeCompare(b))
+  // The user's existing categories, for the inline editor's autocomplete.
+  const allCategories = Array.from(
+    new Set(boards.map(b => b.category?.trim()).filter((c): c is string => !!c))
+  ).sort((a, b) => a.localeCompare(b))
 
   const renderBoardRow = (board: KanbanBoard) => {
     const isOwner = board.ownerId === session?.user?.id
@@ -1283,6 +1309,35 @@ export default function TasksPage() {
           <span className="text-xs text-gray-400 shrink-0">({board._count.tasks})</span>
           {board.team && <span className="text-[10px] bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded-full leading-none shrink-0">team</span>}
         </button>
+        {categoryEditId === board.id ? (
+          <input
+            autoFocus
+            list="board-category-list"
+            defaultValue={board.category ?? ''}
+            placeholder="Category…"
+            maxLength={60}
+            onClick={(e) => e.stopPropagation()}
+            onBlur={(e) => setBoardCategory(board, e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') setBoardCategory(board, e.currentTarget.value)
+              else if (e.key === 'Escape') setCategoryEditId(null)
+            }}
+            className="shrink-0 w-24 h-6 text-xs px-1.5 rounded border border-blue-300 focus:outline-none focus:ring-1 focus:ring-blue-400"
+          />
+        ) : (
+          <button
+            onClick={(e) => { e.stopPropagation(); setCategoryEditId(board.id) }}
+            title={board.category ? `Category: ${board.category}` : 'Set category'}
+            className={cn(
+              'shrink-0 flex items-center gap-1 text-[11px] transition-colors',
+              board.category ? 'text-gray-600 hover:text-blue-600' : 'text-gray-300 hover:text-blue-600',
+            )}
+          >
+            {board.category
+              ? <span className="max-w-[7rem] truncate px-1.5 py-0.5 bg-gray-100 rounded">{board.category}</span>
+              : <Tag className="h-3.5 w-3.5" />}
+          </button>
+        )}
         {board.team ? (
           <Link href={`/user/teams/${board.team.id}`} onClick={() => setShowBoardSwitcher(false)} className="shrink-0 text-gray-300 hover:text-gray-600" title="Manage team">
             <Settings2 className="h-3.5 w-3.5" />
@@ -1378,10 +1433,12 @@ export default function TasksPage() {
                   <ListTodo className="h-4 w-4 text-gray-500" />
                   <span className="flex-1 text-left">All Tasks</span>
                 </button>
+                <datalist id="board-category-list">
+                  {allCategories.map(c => <option key={c} value={c} />)}
+                </datalist>
                 {renderBoardGroup('Starred', swStarred)}
                 {renderBoardGroup('Recent', swRecent)}
-                {Object.entries(swTeamGroups).map(([name, list]) => renderBoardGroup(name, list))}
-                {renderBoardGroup('Personal', swPersonal)}
+                {swGroupKeys.map(name => renderBoardGroup(name, swGroups[name]))}
                 {searchedBoards.length === 0 && (
                   <p className="px-2 py-6 text-center text-xs text-gray-400">No boards match “{boardSearch}”.</p>
                 )}

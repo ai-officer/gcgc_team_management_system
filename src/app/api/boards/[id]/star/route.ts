@@ -15,8 +15,8 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
 
   await prisma.boardPin.upsert({
     where: { userId_boardId: { userId: session.user.id, boardId: params.id } },
-    create: { userId: session.user.id, boardId: params.id },
-    update: {},
+    create: { userId: session.user.id, boardId: params.id, starred: true },
+    update: { starred: true },
   })
   return NextResponse.json({ starred: true })
 }
@@ -25,6 +25,11 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  await prisma.boardPin.deleteMany({ where: { userId: session.user.id, boardId: params.id } })
+  // Keep the row (it may hold a category); just clear the star.
+  await prisma.boardPin.upsert({
+    where: { userId_boardId: { userId: session.user.id, boardId: params.id } },
+    create: { userId: session.user.id, boardId: params.id, starred: false },
+    update: { starred: false },
+  })
   return NextResponse.json({ starred: false })
 }

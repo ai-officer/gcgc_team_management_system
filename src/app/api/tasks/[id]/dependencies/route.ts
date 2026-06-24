@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getTaskInvolvement } from '@/lib/task-access'
 import { z } from 'zod'
 
 const addDependencySchema = z.object({
@@ -18,6 +19,12 @@ export async function GET(
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    // Authorization: only people involved in this task may view/modify its
+    // dependencies (prevents IDOR via a guessed/known task id).
+    const { task: accessTask, involved } = await getTaskInvolvement(params.id, session.user.id, session.user.role === 'ADMIN')
+    if (!accessTask) return NextResponse.json({ error: 'Task not found' }, { status: 404 })
+    if (!involved) return NextResponse.json({ error: 'You are not involved in this task' }, { status: 403 })
 
     const [blockedBy, blocking] = await Promise.all([
       prisma.taskDependency.findMany({
@@ -58,6 +65,12 @@ export async function POST(
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    // Authorization: only people involved in this task may view/modify its
+    // dependencies (prevents IDOR via a guessed/known task id).
+    const { task: accessTask, involved } = await getTaskInvolvement(params.id, session.user.id, session.user.role === 'ADMIN')
+    if (!accessTask) return NextResponse.json({ error: 'Task not found' }, { status: 404 })
+    if (!involved) return NextResponse.json({ error: 'You are not involved in this task' }, { status: 403 })
 
     const body = await request.json()
     const { dependsOnId } = addDependencySchema.parse(body)
@@ -109,6 +122,12 @@ export async function DELETE(
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    // Authorization: only people involved in this task may view/modify its
+    // dependencies (prevents IDOR via a guessed/known task id).
+    const { task: accessTask, involved } = await getTaskInvolvement(params.id, session.user.id, session.user.role === 'ADMIN')
+    if (!accessTask) return NextResponse.json({ error: 'Task not found' }, { status: 404 })
+    if (!involved) return NextResponse.json({ error: 'You are not involved in this task' }, { status: 403 })
 
     const { searchParams } = new URL(request.url)
     const dependsOnId = searchParams.get('dependsOnId')

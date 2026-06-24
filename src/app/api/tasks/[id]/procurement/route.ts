@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getTaskInvolvement } from '@/lib/task-access'
 import { uploadToOSS } from '@/lib/oss'
 
 const BLOCKED_EXTENSIONS = [
@@ -21,6 +22,11 @@ export async function GET(
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    // Only people involved in the task may read its procurement records.
+    const { task, involved } = await getTaskInvolvement(params.id, session.user.id, session.user.role === 'ADMIN')
+    if (!task) return NextResponse.json({ error: 'Task not found' }, { status: 404 })
+    if (!involved) return NextResponse.json({ error: 'You are not involved in this task' }, { status: 403 })
 
     const procurements = await prisma.taskProcurement.findMany({
       where: { taskId: params.id },
@@ -48,8 +54,9 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const task = await prisma.task.findUnique({ where: { id: params.id }, select: { id: true } })
+    const { task, involved } = await getTaskInvolvement(params.id, session.user.id, session.user.role === 'ADMIN')
     if (!task) return NextResponse.json({ error: 'Task not found' }, { status: 404 })
+    if (!involved) return NextResponse.json({ error: 'You are not involved in this task' }, { status: 403 })
 
     const formData = await request.formData()
     const type = formData.get('type') as string

@@ -3,6 +3,7 @@ import { PrismaAdapter } from '@auth/prisma-adapter'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import GoogleProvider from 'next-auth/providers/google'
 import bcrypt from 'bcryptjs'
+import { rateLimit, clearRateLimit } from '@/lib/rate-limit'
 import { prisma } from '@/lib/prisma'
 import { UserRole } from '@prisma/client'
 
@@ -15,9 +16,24 @@ export const authOptions: NextAuthOptions = {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' }
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) {
           return null
+        }
+
+        // Brute-force / credential-stuffing protection: throttle by account
+        // (email) and by client IP, mirroring the admin login. In-memory per
+        // instance (best-effort across the 2 cluster workers).
+        const emailKey = credentials.email.toLowerCase().trim()
+        const hdrs = (req?.headers ?? {}) as Record<string, string | string[] | undefined>
+        const xffRaw = hdrs['x-forwarded-for']
+        const xff = Array.isArray(xffRaw) ? xffRaw[0] : xffRaw
+        const ip = xff?.split(',')[0]?.trim() || (hdrs['x-real-ip'] as string | undefined)?.trim() || 'unknown'
+        const WINDOW = 15 * 60 * 1000
+        const ipRl = rateLimit(`login-ip:${ip}`, { windowMs: WINDOW, max: 30 })
+        const emailRl = rateLimit(`login-email:${emailKey}`, { windowMs: WINDOW, max: 10 })
+        if (!ipRl.allowed || !emailRl.allowed) {
+          throw new Error('Too many login attempts. Please try again in a few minutes.')
         }
 
         const user = await prisma.user.findUnique({
@@ -40,6 +56,9 @@ export const authOptions: NextAuthOptions = {
         if (!user.isActive) {
           throw new Error('Account is deactivated')
         }
+
+        // Successful login — reset this account's failed-attempt counter.
+        clearRateLimit(`login-email:${emailKey}`)
 
         return {
           id: user.id,

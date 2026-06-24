@@ -705,3 +705,25 @@
     height: 140px;
   }
 }
+
+/* Thin, subtle scrollbar for scroll containers — notably the Kanban columns.
+   On Windows scrollbars are always visible (no auto-hide overlay like macOS),
+   so the default chunky bar looks heavy; this keeps it slim and quiet. */
+.thin-scrollbar {
+  scrollbar-width: thin;                            /* Firefox */
+  scrollbar-color: hsl(215 16% 80%) transparent;    /* thumb / track */
+}
+.thin-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background-color: hsl(215 16% 80%);
+  border-radius: 9999px;
+}
+.thin-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: hsl(215 16% 70%);
+}

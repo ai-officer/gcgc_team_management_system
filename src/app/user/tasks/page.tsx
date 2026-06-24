@@ -1713,7 +1713,7 @@ export default function TasksPage() {
             they never wrap to a second row. */}
         <div className={
           boardColumns.length > 4
-            ? 'flex gap-4 md:gap-6 min-h-[700px] overflow-x-auto pb-3 -mx-1 px-1'
+            ? 'flex gap-4 md:gap-6 min-h-[700px] overflow-x-auto thin-scrollbar pb-3 -mx-1 px-1'
             : `grid grid-cols-1 md:grid-cols-2 ${
                 boardColumns.length >= 4 ? 'lg:grid-cols-4'
                 : boardColumns.length === 3 ? 'lg:grid-cols-3'
@@ -1749,7 +1749,7 @@ export default function TasksPage() {
                     <div
                       ref={provided.innerRef}
                       {...provided.droppableProps}
-                      className={`space-y-3 h-[620px] overflow-y-auto p-2 rounded-lg transition-colors ${
+                      className={`space-y-3 h-[620px] overflow-y-auto overflow-x-hidden thin-scrollbar p-2 rounded-lg transition-colors ${
                         snapshot.isDraggingOver ? 'bg-muted/20 border-2 border-dashed border-primary/30' : ''
                       }`}
                     >
@@ -1783,7 +1783,7 @@ export default function TasksPage() {
                               <CardContent className="p-3.5">
                                 {/* New Task Indicator */}
                                 {isTaskNew(task) && !isTaskCreatedByUser(task) && (
-                                  <div className="absolute -top-3 -right-3 z-10">
+                                  <div className="absolute -top-2 -right-2 z-10">
                                     <div className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold shadow-lg animate-pulse">
                                       NEW
                                     </div>

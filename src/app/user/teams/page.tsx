@@ -213,23 +213,22 @@ export default function TeamsPage() {
                     </div>
                   </div>
 
+                  {/* Actions: "Open board" is the primary CTA (consistent blue —
+                      readable contrast, unlike a per-team colored fill); team color
+                      stays as the accent bar + tile. "Manage" is the quieter secondary. */}
                   <div className="flex items-center gap-2 pt-2.5 border-t border-slate-100">
-                    <Link href={`/user/teams/${team.id}`} className="flex-1">
-                      <Button variant="outline" size="sm" className="h-7 text-xs w-full">
-                        Manage
-                      </Button>
-                    </Link>
                     {team.board && (
                       <Link href={`/user/tasks?board=${team.board.id}`} className="flex-1">
-                        <Button
-                          size="sm"
-                          className="h-7 text-xs w-full text-white border-0 hover:opacity-90"
-                          style={{ backgroundColor: dotColor }}
-                        >
+                        <Button size="sm" className="h-7 text-xs w-full bg-blue-600 hover:bg-blue-700 text-white">
                           Open board
                         </Button>
                       </Link>
                     )}
+                    <Link href={`/user/teams/${team.id}`} className={team.board ? 'shrink-0' : 'flex-1'}>
+                      <Button variant="outline" size="sm" className="h-7 text-xs w-full">
+                        Manage
+                      </Button>
+                    </Link>
                   </div>
                 </CardContent>
               </Card>

@@ -79,6 +79,8 @@ const querySchema = z.object({
   includeSubtasks: z.string().optional(), // Include subtasks in results (default: false)
   boardId: z.string().optional(), // Filter by board ('none' = unassigned)
   includeManagedMembers: z.string().optional(), // Leader: also include tasks assigned to managed members (Member Management aggregate)
+  dueDateFrom: z.string().optional(), // YYYY-MM-DD inclusive lower bound on dueDate
+  dueDateTo: z.string().optional(),   // YYYY-MM-DD inclusive upper bound on dueDate
 })
 
 export async function GET(req: NextRequest) {
@@ -112,6 +114,8 @@ export async function GET(req: NextRequest) {
       includeSubtasks,
       boardId,
       includeManagedMembers,
+      dueDateFrom,
+      dueDateTo,
     } = querySchema.parse(Object.fromEntries(searchParams))
 
     const pageNum = parseInt(page)
@@ -250,7 +254,23 @@ export async function GET(req: NextRequest) {
     } else if (boardId) {
       where.boardId = boardId
     }
-    
+
+    // Due-date range filter (inclusive). The 'to' bound extends to end-of-day so
+    // the whole selected day is included. Once a range is set, tasks without a
+    // dueDate are naturally excluded.
+    if (dueDateFrom || dueDateTo) {
+      const dueRange: { gte?: Date; lte?: Date } = {}
+      if (dueDateFrom) {
+        const from = new Date(`${dueDateFrom}T00:00:00`)
+        if (!isNaN(from.getTime())) dueRange.gte = from
+      }
+      if (dueDateTo) {
+        const to = new Date(`${dueDateTo}T23:59:59.999`)
+        if (!isNaN(to.getTime())) dueRange.lte = to
+      }
+      if (dueRange.gte || dueRange.lte) where.dueDate = dueRange
+    }
+
     // Filter by specific user involvement
     if (userId) {
       const userFilterConditions = [

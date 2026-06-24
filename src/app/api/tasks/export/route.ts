@@ -34,12 +34,28 @@ export async function GET(req: NextRequest) {
     const boardId = searchParams.get('boardId') || undefined
     const userId = searchParams.get('userId') || undefined
     const search = searchParams.get('search')?.trim() || undefined
+    const dueDateFrom = searchParams.get('dueDateFrom') || undefined
+    const dueDateTo = searchParams.get('dueDateTo') || undefined
     const me = session.user.id
 
     const and: any[] = []
 
     const where: any = { isRecurring: false, parentId: null }
     if (boardId) where.boardId = boardId === 'none' ? null : boardId
+
+    // Due-date range (inclusive; 'to' extends to end-of-day), matching the board.
+    if (dueDateFrom || dueDateTo) {
+      const dueRange: { gte?: Date; lte?: Date } = {}
+      if (dueDateFrom) {
+        const f = new Date(`${dueDateFrom}T00:00:00`)
+        if (!isNaN(f.getTime())) dueRange.gte = f
+      }
+      if (dueDateTo) {
+        const t = new Date(`${dueDateTo}T23:59:59.999`)
+        if (!isNaN(t.getTime())) dueRange.lte = t
+      }
+      if (dueRange.gte || dueRange.lte) where.dueDate = dueRange
+    }
 
     // "Filter by user" — restrict to tasks the chosen user is involved in.
     if (userId) {

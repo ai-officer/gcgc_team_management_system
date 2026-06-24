@@ -43,6 +43,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { UserAvatar } from '@/components/shared/UserAvatar'
 import { Progress } from '@/components/ui/progress'
@@ -291,6 +292,137 @@ const BOARD_COLORS = [
   '#D946EF', '#DC2626', '#64748B', '#78716C',
 ]
 
+// Format a Date as a local YYYY-MM-DD string (matches <input type="date">).
+const ymd = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
+/**
+ * Due-date range filter: quick presets plus a custom From/To picker, surfaced
+ * as a popover in the filter bar. Commits the selected range to the parent via
+ * onChange; the parent passes it to the tasks API as dueDateFrom/dueDateTo.
+ */
+function DueDateRangeFilter({
+  from,
+  to,
+  onChange,
+}: {
+  from: string
+  to: string
+  onChange: (from: string, to: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [draftFrom, setDraftFrom] = useState(from)
+  const [draftTo, setDraftTo] = useState(to)
+  const active = !!(from || to)
+
+  // Re-seed the draft inputs from the committed value whenever the popover opens.
+  useEffect(() => {
+    if (open) {
+      setDraftFrom(from)
+      setDraftTo(to)
+    }
+  }, [open, from, to])
+
+  const applyPreset = (preset: 'overdue' | 'today' | 'week' | 'month') => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    let f = ''
+    let t = ''
+    if (preset === 'overdue') {
+      const yesterday = new Date(today)
+      yesterday.setDate(today.getDate() - 1)
+      t = ymd(yesterday) // anything due before today
+    } else if (preset === 'today') {
+      f = ymd(today)
+      t = ymd(today)
+    } else if (preset === 'week') {
+      // Monday–Sunday of the current week.
+      const monday = new Date(today)
+      monday.setDate(today.getDate() - ((today.getDay() + 6) % 7))
+      const sunday = new Date(monday)
+      sunday.setDate(monday.getDate() + 6)
+      f = ymd(monday)
+      t = ymd(sunday)
+    } else {
+      const first = new Date(today.getFullYear(), today.getMonth(), 1)
+      const last = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+      f = ymd(first)
+      t = ymd(last)
+    }
+    onChange(f, t)
+    setOpen(false)
+  }
+
+  const label = !active
+    ? 'Due date'
+    : from && to
+      ? `${from} → ${to}`
+      : from
+        ? `From ${from}`
+        : `Until ${to}`
+
+  const PRESETS = [
+    ['overdue', 'Overdue'],
+    ['today', 'Today'],
+    ['week', 'This week'],
+    ['month', 'This month'],
+  ] as const
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className={`w-full sm:w-auto justify-start gap-2 ${active ? 'border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100' : ''}`}
+        >
+          <Calendar className="h-4 w-4 shrink-0" />
+          <span className="truncate max-w-[170px]">{label}</span>
+          {active && (
+            <span
+              role="button"
+              tabIndex={0}
+              aria-label="Clear due date filter"
+              className="ml-1 rounded-sm opacity-60 hover:opacity-100"
+              onClick={(e) => { e.stopPropagation(); onChange('', '') }}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); onChange('', '') } }}
+            >
+              <X className="h-3.5 w-3.5" />
+            </span>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-72 p-3">
+        <p className="text-xs font-semibold text-gray-500 mb-2">Filter by due date</p>
+        <div className="grid grid-cols-2 gap-1.5 mb-3">
+          {PRESETS.map(([key, lbl]) => (
+            <Button key={key} type="button" variant="outline" size="sm" className="h-8 text-xs" onClick={() => applyPreset(key)}>
+              {lbl}
+            </Button>
+          ))}
+        </div>
+        <div className="space-y-2 border-t pt-3">
+          <div className="flex items-center gap-2">
+            <Label htmlFor="due-from" className="w-10 text-xs text-gray-500">From</Label>
+            <Input id="due-from" type="date" value={draftFrom} max={draftTo || undefined} onChange={(e) => setDraftFrom(e.target.value)} className="h-9 text-sm" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="due-to" className="w-10 text-xs text-gray-500">To</Label>
+            <Input id="due-to" type="date" value={draftTo} min={draftFrom || undefined} onChange={(e) => setDraftTo(e.target.value)} className="h-9 text-sm" />
+          </div>
+        </div>
+        <div className="flex justify-between gap-2 mt-3">
+          <Button type="button" variant="ghost" size="sm" className="text-gray-500" onClick={() => { onChange('', ''); setOpen(false) }}>
+            Clear
+          </Button>
+          <Button type="button" size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={() => { onChange(draftFrom, draftTo); setOpen(false) }}>
+            Apply
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
 export default function TasksPage() {
   const { data: session } = useSession()
   const { toast } = useToast()
@@ -311,6 +443,10 @@ export default function TasksPage() {
   const [searchTerm, setSearchTerm] = useState<string>(() => searchParams.get('q') ?? '')
   const [selectedTeam, setSelectedTeam] = useState<string>(() => searchParams.get('team') ?? '')
   const [selectedUser, setSelectedUser] = useState<string>(() => searchParams.get('user') ?? '')
+  // Due-date range filter (YYYY-MM-DD strings; '' = unset). Server-side, so it
+  // works across all pages of a board rather than only the loaded ones.
+  const [dueDateFrom, setDueDateFrom] = useState<string>(() => searchParams.get('from') ?? '')
+  const [dueDateTo, setDueDateTo] = useState<string>(() => searchParams.get('to') ?? '')
 
   const [users, setUsers] = useState<User[]>([])
   const [showTaskForm, setShowTaskForm] = useState(false)
@@ -397,6 +533,8 @@ export default function TasksPage() {
       const params = new URLSearchParams()
       if (selectedTeam) params.append('teamId', selectedTeam)
       if (selectedUser) params.append('userId', selectedUser)
+      if (dueDateFrom) params.append('dueDateFrom', dueDateFrom)
+      if (dueDateTo) params.append('dueDateTo', dueDateTo)
 
       if (activeBoardId) params.append('boardId', activeBoardId)
       // Fetch all currently-loaded pages in one request so refreshes preserve
@@ -433,6 +571,8 @@ export default function TasksPage() {
       const params = new URLSearchParams()
       if (activeBoardId) params.append('boardId', activeBoardId)
       if (selectedUser) params.append('userId', selectedUser)
+      if (dueDateFrom) params.append('dueDateFrom', dueDateFrom)
+      if (dueDateTo) params.append('dueDateTo', dueDateTo)
       if (searchTerm.trim()) params.append('search', searchTerm.trim())
       const res = await fetch(`/api/tasks/export?${params.toString()}`)
       if (!res.ok) throw new Error('Export failed')
@@ -467,7 +607,7 @@ export default function TasksPage() {
     // reference on alt-tab even when identity is unchanged. The previous
     // `[session, ...]` deps re-fired this effect, flipping `loading` to true
     // and unmounting the TaskForm dialog (and its in-progress RHF state).
-  }, [session?.user?.id, selectedTeam, selectedUser, activeBoardId])
+  }, [session?.user?.id, selectedTeam, selectedUser, activeBoardId, dueDateFrom, dueDateTo])
 
   // Refetch tasks when page becomes visible (e.g., navigating back from Calendar)
   useEffect(() => {
@@ -499,11 +639,13 @@ export default function TasksPage() {
     if (searchTerm) params.set('q', searchTerm)
     if (selectedTeam) params.set('team', selectedTeam)
     if (selectedUser) params.set('user', selectedUser)
+    if (dueDateFrom) params.set('from', dueDateFrom)
+    if (dueDateTo) params.set('to', dueDateTo)
     if (activeBoardId) params.set('board', activeBoardId)
     if (viewMode === 'timeline') params.set('view', 'timeline')
     const qs = params.toString()
     router.replace(qs ? `/user/tasks?${qs}` : '/user/tasks', { scroll: false })
-  }, [searchTerm, selectedTeam, selectedUser, activeBoardId, viewMode, router])
+  }, [searchTerm, selectedTeam, selectedUser, dueDateFrom, dueDateTo, activeBoardId, viewMode, router])
 
   const fetchUsers = async () => {
     try {
@@ -1522,9 +1664,13 @@ export default function TasksPage() {
           className="w-full sm:w-[200px]"
         />
 
+        <DueDateRangeFilter
+          from={dueDateFrom}
+          to={dueDateTo}
+          onChange={(f, t) => { setDueDateFrom(f); setDueDateTo(t) }}
+        />
 
-
-        {(selectedUser || searchTerm) && (
+        {(selectedUser || searchTerm || dueDateFrom || dueDateTo) && (
           <Button
             variant="outline"
             size="sm"
@@ -1532,6 +1678,8 @@ export default function TasksPage() {
             onClick={() => {
               setSelectedUser('')
               setSearchTerm('')
+              setDueDateFrom('')
+              setDueDateTo('')
             }}
           >
             Clear Filters
@@ -1601,7 +1749,7 @@ export default function TasksPage() {
                     <div
                       ref={provided.innerRef}
                       {...provided.droppableProps}
-                      className={`space-y-3 min-h-[550px] p-2 rounded-lg transition-colors ${
+                      className={`space-y-3 h-[620px] overflow-y-auto p-2 rounded-lg transition-colors ${
                         snapshot.isDraggingOver ? 'bg-muted/20 border-2 border-dashed border-primary/30' : ''
                       }`}
                     >
@@ -1744,8 +1892,13 @@ export default function TasksPage() {
                                     </Badge>
                                   )}
                                   {task.team && (
-                                    <Badge variant="secondary" className="text-[10px] px-1.5 h-5 max-w-[120px] truncate">
-                                      {task.team.name}
+                                    <Badge
+                                      variant="secondary"
+                                      title={task.team.name}
+                                      className="text-[10px] px-1.5 h-5 gap-1 inline-flex items-center max-w-[160px]"
+                                    >
+                                      <Users className="h-3 w-3 shrink-0 opacity-70" />
+                                      <span className="truncate">{task.team.name}</span>
                                     </Badge>
                                   )}
                                 </div>

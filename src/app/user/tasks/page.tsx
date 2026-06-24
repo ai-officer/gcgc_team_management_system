@@ -36,6 +36,7 @@ import {
   RotateCcw,
   ChevronDown,
   Tag,
+  X,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -554,6 +555,17 @@ export default function TasksPage() {
   }
   // Per-user category: a free-text label this user assigns to a board to group
   // their own switcher. Personal to the caller; doesn't affect other users.
+  // Close a board's quick tab: drop it from recents, and if it's starred,
+  // unstar it so it leaves the strip. The board stays available in the switcher.
+  const closeBoardTab = (board: KanbanBoard) => {
+    setRecentBoardIds(prev => {
+      const next = prev.filter(id => id !== board.id)
+      try { localStorage.setItem('tms:recentBoards', JSON.stringify(next)) } catch { /* ignore */ }
+      return next
+    })
+    if (board.isStarred) void toggleBoardStar(board)
+    if (activeBoardId === board.id) selectBoard(null)
+  }
   const setBoardCategory = async (board: KanbanBoard, value: string) => {
     const v = value.trim()
     setCategoryEditId(null)
@@ -1460,7 +1472,7 @@ export default function TasksPage() {
               key={board.id}
               onClick={() => selectBoard(board.id)}
               className={cn(
-                'shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-t-lg text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px',
+                'group shrink-0 flex items-center gap-1.5 pl-3 pr-2 py-2 rounded-t-lg text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px',
                 activeBoardId === board.id
                   ? 'text-gray-900 bg-gray-50'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100'
@@ -1472,6 +1484,17 @@ export default function TasksPage() {
               <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: board.color }} />
               <span className="max-w-[160px] truncate">{board.name}</span>
               <span className="text-xs text-gray-400 font-normal">({board._count.tasks})</span>
+              <span
+                role="button"
+                tabIndex={0}
+                aria-label={`Close ${board.name} tab`}
+                title="Close tab"
+                onClick={(e) => { e.stopPropagation(); closeBoardTab(board) }}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); closeBoardTab(board) } }}
+                className="shrink-0 ml-0.5 flex items-center justify-center h-4 w-4 rounded text-gray-400 opacity-0 group-hover:opacity-100 hover:bg-gray-200 hover:text-gray-700 transition-opacity"
+              >
+                <X className="h-3 w-3" />
+              </span>
             </button>
           ))}
         </div>

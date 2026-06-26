@@ -2072,6 +2072,16 @@ export default function TasksPage() {
         />
       )}
 
+      {/* Load more — also in timeline view (it shares the paginated task list) */}
+      {viewMode === 'timeline' && tasks.length < totalTasks && (
+        <div className="flex flex-col items-center gap-1.5 mt-4">
+          <Button variant="outline" onClick={loadMore} disabled={loadingMore}>
+            {loadingMore ? 'Loading…' : 'Load more tasks'}
+          </Button>
+          <span className="text-xs text-muted-foreground">Showing {tasks.length} of {totalTasks}</span>
+        </div>
+      )}
+
       {/* Duplicate Field Selector Dialog */}
       {pendingDuplicateTask && (
         <DuplicateTaskDialog

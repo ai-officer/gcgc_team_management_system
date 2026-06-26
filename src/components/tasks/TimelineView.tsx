@@ -255,7 +255,7 @@ export default function TimelineView({
         </div>
       </div>
 
-      <div ref={scrollRef} className="flex overflow-auto" style={{ maxHeight: bodyH }}>
+      <div ref={scrollRef} className="flex items-start overflow-auto" style={{ maxHeight: bodyH }}>
         {/* Left table */}
         <div className="shrink-0 sticky left-0 z-10 bg-white border-r" style={{ width: leftW }}>
           <div style={{ height: ROW_H }} className="sticky top-0 z-20 border-b bg-slate-50" />

@@ -141,6 +141,14 @@ export default function TimelineView({
     return () => window.removeEventListener('resize', measure)
   }, [unscheduled.length, groups.length, zoom, leftW])
 
+  // Open the timeline scrolled to ~today, so current tasks are visible instead
+  // of the far-left edge of an axis that older tasks may have stretched back.
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    el.scrollLeft = Math.max(0, differenceInCalendarDays(today, axis.start) * axis.dayWidthPx - 120)
+  }, [zoom, axis.start.getTime(), axis.dayWidthPx, axis.totalWidthPx])
+
   function trayDown(e: ReactPointerEvent<HTMLDivElement>, taskId: string) {
     if (!canEdit?.(taskId)) return
     e.preventDefault()

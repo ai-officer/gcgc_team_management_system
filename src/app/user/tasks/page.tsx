@@ -925,8 +925,11 @@ export default function TasksPage() {
       if (query) {
         const titleMatch = task.title.toLowerCase().includes(query)
         const descMatch = task.description?.toLowerCase().includes(query)
-        const assigneeMatch = task.assignee?.name?.toLowerCase().includes(query) ||
-                             task.assignee?.email?.toLowerCase().includes(query)
+        const assigneeMatch =
+          task.assignee?.name?.toLowerCase().includes(query) ||
+          task.assignee?.email?.toLowerCase().includes(query) ||
+          task.assignees?.some(a =>
+            a.user?.name?.toLowerCase().includes(query) || a.user?.email?.toLowerCase().includes(query))
         return titleMatch || descMatch || assigneeMatch
       }
 
@@ -1376,7 +1379,9 @@ export default function TasksPage() {
         const descMatch = task.description?.toLowerCase().includes(query)
         const assigneeMatch =
           task.assignee?.name?.toLowerCase().includes(query) ||
-          task.assignee?.email?.toLowerCase().includes(query)
+          task.assignee?.email?.toLowerCase().includes(query) ||
+          task.assignees?.some(a =>
+            a.user?.name?.toLowerCase().includes(query) || a.user?.email?.toLowerCase().includes(query))
         return titleMatch || descMatch || assigneeMatch
       }
       return true

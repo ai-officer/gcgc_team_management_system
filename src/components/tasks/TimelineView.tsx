@@ -1,13 +1,13 @@
 // src/components/tasks/TimelineView.tsx
 'use client'
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
-import { format, startOfDay, differenceInCalendarDays } from 'date-fns'
-import { ChevronDown, ChevronRight, Users } from 'lucide-react'
+import { format, startOfDay, startOfWeek, startOfMonth, differenceInCalendarDays } from 'date-fns'
+import { ChevronDown, ChevronRight, Users, ArrowUp, ArrowDown } from 'lucide-react'
 import { UserAvatar } from '@/components/shared/UserAvatar'
 import {
-  splitScheduled, groupByAssignee, buildAxis, barGeometry, axisRangeFor,
+  splitScheduled, groupTimeline, sortTimelineTasks, buildAxis, barGeometry, axisRangeFor,
   pxDeltaToDays, shiftDates, resizeStart, resizeEnd, scheduleAtPx, ZOOM,
-  type TimelineTask, type TimelineZoom,
+  type TimelineTask, type TimelineZoom, type GroupDimension, type SortKey, type SortDir,
 } from '@/lib/timeline'
 
 type DragMode = 'move' | 'resize-start' | 'resize-end'
@@ -40,7 +40,24 @@ export default function TimelineView({
     [scheduled, today.getTime(), zoom]
   )
   const axis = useMemo(() => buildAxis(range.start, range.end, zoom), [range, zoom])
-  const groups = useMemo(() => groupByAssignee(scheduled), [scheduled])
+  // Arrange: group-by dimension + sort key/direction (persisted across visits).
+  const [groupDim, setGroupDim] = useState<GroupDimension>(
+    () => (typeof window !== 'undefined' ? (localStorage.getItem('timeline-group') as GroupDimension) : null) || 'assignee'
+  )
+  const [sortKey, setSortKey] = useState<SortKey>(
+    () => (typeof window !== 'undefined' ? (localStorage.getItem('timeline-sort') as SortKey) : null) || 'dueDate'
+  )
+  const [sortDir, setSortDir] = useState<SortDir>(
+    () => (typeof window !== 'undefined' ? (localStorage.getItem('timeline-sortdir') as SortDir) : null) || 'asc'
+  )
+  useEffect(() => { localStorage.setItem('timeline-group', groupDim) }, [groupDim])
+  useEffect(() => { localStorage.setItem('timeline-sort', sortKey) }, [sortKey])
+  useEffect(() => { localStorage.setItem('timeline-sortdir', sortDir) }, [sortDir])
+
+  const groups = useMemo(
+    () => groupTimeline(sortTimelineTasks(scheduled, sortKey, sortDir), groupDim),
+    [scheduled, groupDim, sortKey, sortDir]
+  )
 
   // Per-user collapse (minimize a user's task rows) and a user visibility filter.
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
@@ -88,6 +105,13 @@ export default function TimelineView({
 
   // Unscheduled tray → drag a date-less chip onto the grid to schedule it.
   const gridRef = useRef<HTMLDivElement>(null)
+  // Horizontal scroll container, so "Jump to" can scroll the grid to a date.
+  const scrollRef = useRef<HTMLDivElement>(null)
+  function jumpTo(target: 'today' | 'week' | 'month') {
+    const date = target === 'today' ? today : target === 'week' ? startOfWeek(today, { weekStartsOn: 1 }) : startOfMonth(today)
+    const left = Math.max(0, differenceInCalendarDays(date, axis.start) * axis.dayWidthPx - 16)
+    scrollRef.current?.scrollTo({ left, behavior: 'smooth' })
+  }
   const [trayDrag, setTrayDrag] = useState<{ taskId: string; x: number; y: number } | null>(null)
   // The sticky label column is full-width on desktop but must shrink on a
   // phone so the Gantt bars aren't squeezed off-screen.
@@ -125,7 +149,7 @@ export default function TimelineView({
       {/* Toolbar */}
       <div className="flex items-center justify-between gap-2 px-3 py-2 border-b bg-slate-50">
         <span className="hidden sm:inline shrink-0 text-xs font-semibold uppercase tracking-wide text-slate-500">Timeline</span>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-1 overflow-x-auto">
             {(['day', 'week', 'month', 'quarter', 'year'] as TimelineZoom[]).map(z => (
               <button key={z} onClick={() => onZoomChange(z)}
@@ -136,6 +160,45 @@ export default function TimelineView({
               </button>
             ))}
           </div>
+
+          {/* Arrange: group by */}
+          <select value={groupDim} onChange={e => setGroupDim(e.target.value as GroupDimension)}
+            title="Group rows by"
+            className="shrink-0 h-7 rounded-md border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-600 hover:border-blue-300">
+            <option value="assignee">Group: Assignee</option>
+            <option value="status">Group: Status</option>
+            <option value="priority">Group: Priority</option>
+            <option value="team">Group: Team</option>
+            <option value="none">Group: None</option>
+          </select>
+
+          {/* Arrange: sort by + direction */}
+          <div className="flex items-center gap-1 shrink-0">
+            <select value={sortKey} onChange={e => setSortKey(e.target.value as SortKey)}
+              title="Sort tasks by"
+              className="h-7 rounded-md border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-600 hover:border-blue-300">
+              <option value="dueDate">Sort: Due date</option>
+              <option value="startDate">Sort: Start date</option>
+              <option value="priority">Sort: Priority</option>
+              <option value="title">Sort: Title</option>
+            </select>
+            <button onClick={() => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))}
+              title={sortDir === 'asc' ? 'Ascending' : 'Descending'}
+              className="grid place-items-center h-7 w-7 rounded-md border border-slate-200 bg-white text-slate-600 hover:border-blue-300">
+              {sortDir === 'asc' ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />}
+            </button>
+          </div>
+
+          {/* Jump to a date range */}
+          <div className="flex items-center gap-1 shrink-0">
+            {([['today', 'Today'], ['week', 'This week'], ['month', 'This month']] as const).map(([k, label]) => (
+              <button key={k} onClick={() => jumpTo(k)} title={`Jump to ${label}`}
+                className="shrink-0 px-2.5 h-7 rounded-md text-xs font-semibold border bg-white text-slate-600 border-slate-200 hover:border-blue-300">
+                {label}
+              </button>
+            ))}
+          </div>
+
           {groups.length > 0 && (
             <>
               <button onClick={toggleAllCollapsed} title="Collapse or expand every user"
@@ -166,7 +229,7 @@ export default function TimelineView({
         </div>
       </div>
 
-      <div className="flex overflow-x-auto">
+      <div ref={scrollRef} className="flex overflow-x-auto">
         {/* Left table */}
         <div className="shrink-0 sticky left-0 z-10 bg-white border-r" style={{ width: leftW }}>
           <div style={{ height: ROW_H }} className="border-b bg-slate-50" />
@@ -179,7 +242,9 @@ export default function TimelineView({
                 </button>
                 {g.assignee
                   ? <UserAvatar userId={g.assignee.id} image={g.assignee.image} name={g.assignee.name} email={g.assignee.email} className="h-5 w-5" fallbackClassName="text-[10px]" />
-                  : <span className="h-5 w-5 rounded-full bg-slate-200 inline-block" />}
+                  : g.color
+                    ? <span className="h-3 w-3 rounded-full inline-block shrink-0" style={{ backgroundColor: g.color }} />
+                    : <span className="h-5 w-5 rounded-full bg-slate-200 inline-block" />}
                 <span className="truncate">{g.label}</span> <span className="text-slate-400 shrink-0">({g.tasks.length})</span>
               </div>
               {!collapsed.has(g.key) && g.tasks.map(t => (

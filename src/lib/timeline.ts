@@ -21,9 +21,11 @@ export interface TimelineTask {
   id: string
   title: string
   status: string
+  priority?: string | null
   startDate?: string | null
   dueDate?: string | null
   assignee?: { id: string; name: string; email: string; image?: string } | null
+  team?: { id: string; name: string } | null
 }
 
 export interface AssigneeGroup<T> {
@@ -52,6 +54,104 @@ export function groupByAssignee<T extends { assignee?: TimelineTask['assignee'] 
     groups.push({ key: 'unassigned', label: 'Unassigned', assignee: null, tasks: unassigned })
   }
   return groups
+}
+
+// ── Arrange: group-by + sort-by ──────────────────────────────────────────────
+
+export type GroupDimension = 'assignee' | 'status' | 'priority' | 'team' | 'none'
+export type SortKey = 'dueDate' | 'startDate' | 'priority' | 'title'
+export type SortDir = 'asc' | 'desc'
+
+/** A generic timeline row group. `assignee`/`color` are optional hints the view
+ *  uses to render the group header (avatar for assignee, dot for status/priority). */
+export interface TimelineGroup<T> {
+  key: string
+  label: string
+  tasks: T[]
+  assignee?: TimelineTask['assignee']
+  color?: string
+}
+
+const STATUS_ORDER = ['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED', 'BACKLOG', 'CANCELLED']
+const STATUS_LABEL: Record<string, string> = {
+  TODO: 'To Do', IN_PROGRESS: 'In Progress', IN_REVIEW: 'In Review',
+  COMPLETED: 'Completed', BACKLOG: 'Backlog', CANCELLED: 'Cancelled',
+}
+const STATUS_COLOR: Record<string, string> = {
+  TODO: '#9CA3AF', IN_PROGRESS: '#3B82F6', IN_REVIEW: '#F59E0B',
+  COMPLETED: '#10B981', BACKLOG: '#94A3B8', CANCELLED: '#EF4444',
+}
+const PRIORITY_ORDER = ['URGENT', 'HIGH', 'MEDIUM', 'LOW']
+const PRIORITY_LABEL: Record<string, string> = { URGENT: 'Urgent', HIGH: 'High', MEDIUM: 'Medium', LOW: 'Low' }
+const PRIORITY_COLOR: Record<string, string> = { URGENT: '#EF4444', HIGH: '#F97316', MEDIUM: '#EAB308', LOW: '#94A3B8' }
+const PRIORITY_RANK: Record<string, number> = { URGENT: 0, HIGH: 1, MEDIUM: 2, LOW: 3 }
+
+function groupByKeyed<T>(
+  tasks: T[],
+  keyFn: (t: T) => string,
+  order: string[],
+  labels: Record<string, string>,
+  colors?: Record<string, string>
+): TimelineGroup<T>[] {
+  const m = new Map<string, T[]>()
+  for (const t of tasks) {
+    const k = keyFn(t)
+    const arr = m.get(k) ?? []
+    arr.push(t)
+    m.set(k, arr)
+  }
+  const rank = (k: string) => { const i = order.indexOf(k); return i < 0 ? 999 : i }
+  return Array.from(m.keys())
+    .sort((a, b) => rank(a) - rank(b) || a.localeCompare(b))
+    .map(k => ({ key: k, label: labels[k] ?? k, tasks: m.get(k)!, color: colors?.[k] }))
+}
+
+function groupByTeam<T extends { team?: { id: string; name: string } | null }>(tasks: T[]): TimelineGroup<T>[] {
+  const named = new Map<string, TimelineGroup<T>>()
+  const noTeam: T[] = []
+  for (const t of tasks) {
+    const tm = t.team
+    if (!tm) { noTeam.push(t); continue }
+    const g = named.get(tm.id) ?? { key: tm.id, label: tm.name, tasks: [] }
+    g.tasks.push(t)
+    named.set(tm.id, g)
+  }
+  const groups = Array.from(named.values()).sort((a, b) => a.label.toLowerCase().localeCompare(b.label.toLowerCase()))
+  if (noTeam.length) groups.push({ key: 'no-team', label: 'No team', tasks: noTeam })
+  return groups
+}
+
+/** Group timeline tasks by the chosen dimension, in a sensible order. */
+export function groupTimeline<T extends {
+  status: string; priority?: string | null; assignee?: TimelineTask['assignee']; team?: { id: string; name: string } | null
+}>(tasks: T[], dim: GroupDimension): TimelineGroup<T>[] {
+  switch (dim) {
+    case 'none': return tasks.length ? [{ key: 'all', label: 'All tasks', tasks }] : []
+    case 'status': return groupByKeyed(tasks, t => t.status || 'TODO', STATUS_ORDER, STATUS_LABEL, STATUS_COLOR)
+    case 'priority': return groupByKeyed(tasks, t => t.priority || 'MEDIUM', PRIORITY_ORDER, PRIORITY_LABEL, PRIORITY_COLOR)
+    case 'team': return groupByTeam(tasks)
+    case 'assignee':
+    default: return groupByAssignee(tasks)
+  }
+}
+
+/** Sort tasks within a group (or the whole list when ungrouped). */
+export function sortTimelineTasks<T extends {
+  title: string; startDate?: string | null; dueDate?: string | null; priority?: string | null
+}>(tasks: T[], key: SortKey, dir: SortDir): T[] {
+  const sign = dir === 'asc' ? 1 : -1
+  const val = (t: T): number | string => {
+    if (key === 'dueDate') return t.dueDate ? new Date(t.dueDate).getTime() : Number.POSITIVE_INFINITY
+    if (key === 'startDate') return t.startDate ? new Date(t.startDate).getTime() : Number.POSITIVE_INFINITY
+    if (key === 'priority') return PRIORITY_RANK[t.priority || 'MEDIUM'] ?? 2
+    return t.title.toLowerCase()
+  }
+  return [...tasks].sort((a, b) => {
+    const va = val(a), vb = val(b)
+    if (va < vb) return -1 * sign
+    if (va > vb) return 1 * sign
+    return 0
+  })
 }
 
 export function splitScheduled<T extends Pick<TimelineTask, 'startDate' | 'dueDate'>>(

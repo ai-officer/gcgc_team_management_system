@@ -229,10 +229,10 @@ export default function TimelineView({
         </div>
       </div>
 
-      <div ref={scrollRef} className="flex overflow-auto max-h-[70vh]">
+      <div ref={scrollRef} className="flex overflow-x-auto">
         {/* Left table */}
         <div className="shrink-0 sticky left-0 z-10 bg-white border-r" style={{ width: leftW }}>
-          <div style={{ height: ROW_H }} className="sticky top-0 z-20 border-b bg-slate-50" />
+          <div style={{ height: ROW_H }} className="border-b bg-slate-50" />
           {visibleGroups.map(g => (
             <div key={g.key}>
               <div style={{ height: ROW_H }} className="flex items-center gap-1.5 px-3 bg-slate-50/70 border-b text-xs font-semibold text-slate-600">
@@ -265,7 +265,7 @@ export default function TimelineView({
         {/* Right grid */}
         <div ref={gridRef} className="relative shrink-0" style={{ width: axis.totalWidthPx }}>
           {/* Header: day zoom = month strip + day numbers; else = period segments */}
-          <div className="sticky top-0 z-[5] bg-slate-50 border-b" style={{ height: ROW_H }}>
+          <div className="relative z-[2] bg-slate-50 border-b" style={{ height: ROW_H }}>
             {isDay ? (
               <>
                 {axis.months.map(m => (

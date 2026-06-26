@@ -123,6 +123,24 @@ export default function TimelineView({
     return () => window.removeEventListener('resize', update)
   }, [])
 
+  // Cap the body to fill the remaining viewport so the timeline body — not the
+  // page — is the vertical scroll region. That's what lets the sticky date
+  // header actually stay put; a page-level scroll would carry it out of view.
+  const trayRef = useRef<HTMLDivElement>(null)
+  const [bodyH, setBodyH] = useState<number | undefined>(undefined)
+  useEffect(() => {
+    const measure = () => {
+      const el = scrollRef.current
+      if (!el) return
+      const rectTop = el.getBoundingClientRect().top
+      const trayH = trayRef.current?.offsetHeight ?? 0
+      setBodyH(Math.max(260, window.innerHeight - rectTop - trayH - 16))
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [unscheduled.length, groups.length, zoom, leftW])
+
   function trayDown(e: ReactPointerEvent<HTMLDivElement>, taskId: string) {
     if (!canEdit?.(taskId)) return
     e.preventDefault()
@@ -229,10 +247,10 @@ export default function TimelineView({
         </div>
       </div>
 
-      <div ref={scrollRef} className="flex overflow-x-auto">
+      <div ref={scrollRef} className="flex overflow-auto" style={{ maxHeight: bodyH }}>
         {/* Left table */}
         <div className="shrink-0 sticky left-0 z-10 bg-white border-r" style={{ width: leftW }}>
-          <div style={{ height: ROW_H }} className="border-b bg-slate-50" />
+          <div style={{ height: ROW_H }} className="sticky top-0 z-20 border-b bg-slate-50" />
           {visibleGroups.map(g => (
             <div key={g.key}>
               <div style={{ height: ROW_H }} className="flex items-center gap-1.5 px-3 bg-slate-50/70 border-b text-xs font-semibold text-slate-600">
@@ -265,7 +283,7 @@ export default function TimelineView({
         {/* Right grid */}
         <div ref={gridRef} className="relative shrink-0" style={{ width: axis.totalWidthPx }}>
           {/* Header: day zoom = month strip + day numbers; else = period segments */}
-          <div className="relative z-[2] bg-slate-50 border-b" style={{ height: ROW_H }}>
+          <div className="sticky top-0 z-[5] bg-slate-50 border-b" style={{ height: ROW_H }}>
             {isDay ? (
               <>
                 {axis.months.map(m => (
@@ -365,7 +383,7 @@ export default function TimelineView({
       </div>
 
       {unscheduled.length > 0 && (
-        <div className="px-3 py-2 border-t">
+        <div ref={trayRef} className="px-3 py-2 border-t">
           <div className="text-xs font-semibold text-slate-500 mb-1.5">
             Unscheduled ({unscheduled.length}){' '}
             <span className="font-normal text-slate-400">— drag onto the timeline to schedule</span>

@@ -33,7 +33,7 @@ import {
   User, Users, Handshake, Clock, MessageSquare, Send, Edit, Copy,
   Heart, ThumbsUp, Smile, Reply, Image, Paperclip, MoreHorizontal,
   AtSign, Trash2, Pencil, X, Check, FileText, Download, File,
-  Plus, ListTodo, ChevronRight, ChevronLeft, CheckCircle2, Circle, AlertCircle, RefreshCw, RotateCcw, Eye, GitBranch, Lock, Repeat
+  Plus, ListTodo, ChevronRight, ChevronLeft, CheckCircle2, Circle, AlertCircle, RefreshCw, RotateCcw, Eye, GitBranch, Lock, Repeat, FolderInput
 } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { Progress } from '@/components/ui/progress'
@@ -223,6 +223,7 @@ interface TaskViewModalProps {
   task: Task | null
   onEdit?: (task: Task) => void
   onDuplicate?: (task: Task) => void
+  onMove?: (task: Task) => void
   onTaskUpdate?: () => void | Promise<void>
   onSubtaskClick?: (subtaskId: string) => void
   onBack?: () => void
@@ -292,6 +293,7 @@ export default function TaskViewModal({
   task,
   onEdit,
   onDuplicate,
+  onMove,
   onTaskUpdate,
   onSubtaskClick,
   onBack,
@@ -1866,6 +1868,12 @@ export default function TaskViewModal({
                 <Button variant="outline" size="sm" onClick={() => { onDuplicate(task); onOpenChange(false) }}>
                   <Copy className="h-4 w-4 mr-2" />
                   Duplicate
+                </Button>
+              )}
+              {onMove && (
+                <Button variant="outline" size="sm" onClick={() => { onMove(task); onOpenChange(false) }}>
+                  <FolderInput className="h-4 w-4 mr-2" />
+                  Move
                 </Button>
               )}
               {(canCompleteTask || isTaskAssignee) && (

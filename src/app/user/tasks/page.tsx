@@ -36,6 +36,7 @@ import {
   RotateCcw,
   ChevronDown,
   Tag,
+  FolderInput,
   X,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -88,6 +89,7 @@ import TaskViewModal from '@/components/tasks/TaskViewModal'
 import TimelineView from '@/components/tasks/TimelineView'
 import type { TimelineZoom } from '@/lib/timeline'
 import DuplicateTaskDialog from '@/components/tasks/DuplicateTaskDialog'
+import { MoveToBoardDialog } from '@/components/tasks/MoveToBoardDialog'
 import { BulkTaskActionsDialog } from '@/components/tasks/bulk-task-actions-dialog'
 import BoardSettingsDialog from '@/components/tasks/BoardSettingsDialog'
 import { isOverdueStatus } from '@/lib/overdue'
@@ -472,6 +474,7 @@ export default function TasksPage() {
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [duplicatingTask, setDuplicatingTask] = useState<Task | null>(null)
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false)
+  const [movingTask, setMovingTask] = useState<Task | null>(null)
   const [pendingDuplicateTask, setPendingDuplicateTask] = useState<Task | null>(null)
   const [deletingTask, setDeletingTask] = useState<Task | null>(null)
   const [deleteScope, setDeleteScope] = useState<'single' | 'series'>('single')
@@ -1845,6 +1848,17 @@ export default function TasksPage() {
                                         Duplicate
                                       </DropdownMenuItem>
 
+                                      {/* Move to another team / personal board */}
+                                      {canUserEditTask(task) && (
+                                        <DropdownMenuItem onClick={(e) => {
+                                          e.stopPropagation()
+                                          setMovingTask(task)
+                                        }}>
+                                          <FolderInput className="h-4 w-4 mr-2" />
+                                          Move to board…
+                                        </DropdownMenuItem>
+                                      )}
+
                                       {/* Move to Backlog (archive) — hides it from the board until restored */}
                                       {canUserChangeTaskStatus(task) && task.status !== 'BACKLOG' && (
                                         <DropdownMenuItem onClick={(e) => {
@@ -2068,6 +2082,16 @@ export default function TasksPage() {
         />
       )}
 
+      {/* Move task to another board */}
+      <MoveToBoardDialog
+        open={!!movingTask}
+        onOpenChange={(open) => { if (!open) setMovingTask(null) }}
+        taskIds={movingTask ? [movingTask.id] : []}
+        currentBoardId={movingTask?.boardId}
+        taskTitle={movingTask?.title}
+        onMoved={() => { setMovingTask(null); fetchTasks(false); fetchBoards() }}
+      />
+
       {/* Task Form Dialog */}
       <TaskForm
         open={showTaskForm}
@@ -2166,6 +2190,7 @@ export default function TasksPage() {
         task={viewingTask}
         onEdit={handleEditFromView}
         onDuplicate={(task) => { setShowViewModal(false); openDuplicateForm(task as Task) }}
+        onMove={(task) => { setShowViewModal(false); setMovingTask(task as Task) }}
         onTaskUpdate={() => fetchTasks(false)}
         onSubtaskClick={handleSubtaskClick}
         onBack={taskHistory.length > 0 ? handleGoBack : undefined}

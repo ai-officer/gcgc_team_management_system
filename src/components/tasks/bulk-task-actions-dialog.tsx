@@ -20,7 +20,9 @@ const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'] as const
 
 type Status = typeof STATUSES[number]
 type Priority = typeof PRIORITIES[number]
-type BulkType = 'changeStatus' | 'changePriority' | 'delete'
+type BulkType = 'changeStatus' | 'changePriority' | 'delete' | 'moveToBoard'
+
+interface BoardOption { id: string; name: string; teamId?: string | null; team?: { name?: string | null } | null }
 
 export interface BulkTask {
   id: string
@@ -46,8 +48,10 @@ export function BulkTaskActionsDialog({ open, onOpenChange, tasks, onCompleted }
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [result, setResult] = useState<{ updated: number; skipped: { id: string; reason: string }[] } | null>(null)
+  const [boards, setBoards] = useState<BoardOption[]>([])
+  const [selectedBoardId, setSelectedBoardId] = useState<string>('')
 
-  // Reset state every time the dialog re-opens.
+  // Reset state every time the dialog re-opens, and load boards for the picker.
   useEffect(() => {
     if (open) {
       setSelected(new Set())
@@ -55,8 +59,13 @@ export function BulkTaskActionsDialog({ open, onOpenChange, tasks, onCompleted }
       setActionType('changeStatus')
       setStatus('IN_PROGRESS')
       setPriority('MEDIUM')
+      setSelectedBoardId('')
       setResult(null)
       setSubmitError(null)
+      fetch('/api/boards')
+        .then(r => (r.ok ? r.json() : { boards: [] }))
+        .then(d => setBoards(d.boards || []))
+        .catch(() => setBoards([]))
     }
   }, [open])
 
@@ -98,8 +107,12 @@ export function BulkTaskActionsDialog({ open, onOpenChange, tasks, onCompleted }
     const plural = n === 1 ? '' : 's'
     if (actionType === 'changeStatus') return `Set ${n} task${plural} to ${status}`
     if (actionType === 'changePriority') return `Set ${n} task${plural} priority to ${priority}`
+    if (actionType === 'moveToBoard') {
+      const b = boards.find(x => x.id === selectedBoardId)
+      return `Move ${n} task${plural}${b ? ` to ${b.name}` : ' to board'}`
+    }
     return `Delete ${n} task${plural}`
-  }, [actionType, status, priority, selected.size])
+  }, [actionType, status, priority, selected.size, selectedBoardId, boards])
 
   const handleSubmit = async () => {
     if (selected.size === 0) return
@@ -115,6 +128,7 @@ export function BulkTaskActionsDialog({ open, onOpenChange, tasks, onCompleted }
       }
       if (actionType === 'changeStatus') body.payload = { status }
       if (actionType === 'changePriority') body.payload = { priority }
+      if (actionType === 'moveToBoard') body.payload = { boardId: selectedBoardId }
 
       const res = await fetch('/api/tasks/bulk', {
         method: 'POST',
@@ -156,6 +170,7 @@ export function BulkTaskActionsDialog({ open, onOpenChange, tasks, onCompleted }
               <SelectContent>
                 <SelectItem value="changeStatus">Change status</SelectItem>
                 <SelectItem value="changePriority">Change priority</SelectItem>
+                <SelectItem value="moveToBoard">Move to board</SelectItem>
                 <SelectItem value="delete">Delete</SelectItem>
               </SelectContent>
             </Select>
@@ -180,6 +195,21 @@ export function BulkTaskActionsDialog({ open, onOpenChange, tasks, onCompleted }
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {PRIORITIES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          {actionType === 'moveToBoard' && (
+            <div className="space-y-2">
+              <Label>Destination board</Label>
+              <Select value={selectedBoardId} onValueChange={setSelectedBoardId}>
+                <SelectTrigger><SelectValue placeholder="Select a board…" /></SelectTrigger>
+                <SelectContent>
+                  {boards.map(b => (
+                    <SelectItem key={b.id} value={b.id}>
+                      {b.name}{b.team?.name ? ` · ${b.team.name}` : ' · Personal'}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -258,7 +288,7 @@ export function BulkTaskActionsDialog({ open, onOpenChange, tasks, onCompleted }
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={submitting || selected.size === 0}
+            disabled={submitting || selected.size === 0 || (actionType === 'moveToBoard' && !selectedBoardId)}
             variant={actionType === 'delete' ? 'destructive' : 'default'}
           >
             {submitting ? (

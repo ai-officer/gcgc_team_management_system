@@ -7,6 +7,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { canEditTask, canDeleteTask, canChangeTaskStatus, isTeamLeader } from '@/lib/permissions'
 import { notifyTaskCompleted, notifyTaskUpdated, notifyTaskSubmittedForReview } from '@/lib/notifications'
+import { loadAccessibleBoard, moveTaskAndSubtasks } from '@/lib/task-move'
 
 const MAX_BATCH_SIZE = 100
 
@@ -24,6 +25,11 @@ const bulkSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('delete'),
     taskIds: z.array(z.string().min(1)).min(1).max(MAX_BATCH_SIZE),
+  }),
+  z.object({
+    type: z.literal('moveToBoard'),
+    taskIds: z.array(z.string().min(1)).min(1).max(MAX_BATCH_SIZE),
+    payload: z.object({ boardId: z.string().nullable() }), // null = detach from board
   }),
 ])
 
@@ -66,6 +72,7 @@ export async function POST(req: NextRequest) {
         title: true,
         status: true,
         priority: true,
+        boardId: true,
         creatorId: true,
         assigneeId: true,
         assignedById: true,
@@ -88,6 +95,25 @@ export async function POST(req: NextRequest) {
         })
       : []
     const teamRoleByTeamId = new Map(memberships.map(m => [m.teamId, m.role]))
+
+    // For moveToBoard: validate target-board access once, and precompute the
+    // target's default-column-per-category map (used for every moved task).
+    let moveTargetTeamId: string | null = null
+    let moveStatusMap = new Map<string, string>()
+    if (action.type === 'moveToBoard') {
+      if (action.payload.boardId) {
+        const board = await loadAccessibleBoard(action.payload.boardId, userId, userRole === 'ADMIN')
+        if (!board) {
+          return NextResponse.json({ error: 'You do not have access to that board' }, { status: 403 })
+        }
+        moveTargetTeamId = board.teamId
+        const defs = await prisma.boardStatus.findMany({
+          where: { boardId: action.payload.boardId, isDefault: true },
+          select: { id: true, category: true },
+        })
+        moveStatusMap = new Map(defs.map(d => [d.category as string, d.id]))
+      }
+    }
 
     const submitterName = session.user.name || session.user.email || 'Someone'
 
@@ -181,6 +207,21 @@ export async function POST(req: NextRequest) {
               `changed status to ${action.payload.status}`
             )
           }
+          result.updated++
+        } else if (action.type === 'moveToBoard') {
+          const assigneeIds = [task.assigneeId, ...(task.assignees?.map(a => a.userId) || [])].filter((x): x is string => !!x)
+          const canMove = userRole === 'ADMIN' || isOwner || canEditTask(userRole, task.creatorId, assigneeIds, userId, teamMemberRole)
+          if (!canMove) {
+            result.skipped.push({ id, reason: 'no permission to move' })
+            continue
+          }
+          if (task.boardId === action.payload.boardId) {
+            result.skipped.push({ id, reason: 'already on that board' })
+            continue
+          }
+          await prisma.$transaction(tx =>
+            moveTaskAndSubtasks(tx, id, action.payload.boardId, moveTargetTeamId, moveStatusMap)
+          )
           result.updated++
         }
       } catch (err) {

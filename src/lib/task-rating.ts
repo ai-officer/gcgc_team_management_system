@@ -7,35 +7,60 @@ import { prisma } from '@/lib/prisma'
  * board* can rate a member's work — not only the board owner or task creator.
  * "In the board" means any of:
  *   - the board owner,
- *   - a member of the board's team (any team-role — being a global LEADER is
- *     enough; you no longer have to be the team's LEADER), or
- *   - an explicit KanbanBoardMember.
+ *   - an explicit KanbanBoardMember, or
+ *   - a member of the BOARD's team (board↔team is 1:1 via KanbanBoard.teamId).
  *
  * Plus everyone who can already finalize the task (admin / board-leader / owner
  * / parent-leader) — `canFinalize` folds that set in.
  *
- * The board-membership lookup is scoped server-side so a global LEADER can NOT
- * rate a task on a board they have no access to (guards the IDOR pattern this
- * codebase has already had to fix). Completion permission is intentionally NOT
+ * IMPORTANT — scope to the *board's* team, NOT the task's `teamId`. Tasks created
+ * before team↔board derivation existed have `teamId = null` even though they sit
+ * on a team board (see resolveTeamBoardLink, "teamId was always null here"). Using
+ * the task's teamId would leave every such *old* task unrateable by team leaders
+ * who aren't explicit board members. The board's teamId is always correct.
+ *
+ * Board access is verified server-side so a global LEADER can NOT rate a task on
+ * a board they have no access to. Completion permission is intentionally NOT
  * widened here — only rating.
  */
 export async function resolveCanRateWorkQuality(opts: {
   canFinalize: boolean
   isLeader: boolean
-  isOwner: boolean
-  hasTeamMembership: boolean
-  boardId: string | null
   userId: string
+  boardId: string | null
+  boardOwnerId: string | null
+  boardTeamId: string | null
+  // Fallback team for board-less tasks (those never attached to a kanban board).
+  taskTeamId: string | null
 }): Promise<boolean> {
   if (opts.canFinalize) return true
   if (!opts.isLeader) return false
-  // A LEADER who owns the board, or belongs to the board's team, is in the board.
-  if (opts.isOwner || opts.hasTeamMembership) return true
-  if (!opts.boardId) return false
-  // Otherwise check explicit board membership (personal/shared boards).
-  const member = await prisma.kanbanBoardMember.findUnique({
-    where: { boardId_userId: { boardId: opts.boardId, userId: opts.userId } },
-    select: { id: true },
-  })
-  return !!member
+
+  if (opts.boardId) {
+    // Board task: "in the board" = owner, explicit member, or board-team member.
+    if (opts.boardOwnerId && opts.boardOwnerId === opts.userId) return true
+    const member = await prisma.kanbanBoardMember.findUnique({
+      where: { boardId_userId: { boardId: opts.boardId, userId: opts.userId } },
+      select: { id: true },
+    })
+    if (member) return true
+    if (opts.boardTeamId) {
+      const tm = await prisma.teamMember.findUnique({
+        where: { userId_teamId: { userId: opts.userId, teamId: opts.boardTeamId } },
+        select: { id: true },
+      })
+      if (tm) return true
+    }
+    return false
+  }
+
+  // Board-less task: fall back to membership in the task's own team.
+  if (opts.taskTeamId) {
+    const tm = await prisma.teamMember.findUnique({
+      where: { userId_teamId: { userId: opts.userId, teamId: opts.taskTeamId } },
+      select: { id: true },
+    })
+    return !!tm
+  }
+  return false
 }

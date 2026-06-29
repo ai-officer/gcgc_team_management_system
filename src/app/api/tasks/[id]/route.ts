@@ -67,8 +67,9 @@ export async function GET(
         team: {
           select: { id: true, name: true }
         },
-        // Board owner determines who can move/finalize the task.
-        board: { select: { ownerId: true } },
+        // Board owner determines who can move/finalize the task; teamId scopes
+        // who counts as "in the board" for rating (board's team, not task.teamId).
+        board: { select: { ownerId: true, teamId: true } },
         teamMembers: {
           include: {
             user: {
@@ -210,14 +211,12 @@ export async function GET(
     // Viewer's completion/status permissions, computed server-side so the client
     // never replicates permission logic. Flat assignee model.
     let viewerTeamRole: TeamMemberRole | undefined
-    let viewerIsTeamMember = false
     if (task.teamId) {
       const vm = await prisma.teamMember.findUnique({
         where: { userId_teamId: { userId: session.user.id, teamId: task.teamId } },
         select: { role: true },
       })
       viewerTeamRole = vm?.role
-      viewerIsTeamMember = !!vm
     }
     const isParentLeaderView = !!task.parent && (
       task.parent.creatorId === session.user.id ||
@@ -243,10 +242,11 @@ export async function GET(
     const viewerCanRate = await resolveCanRateWorkQuality({
       canFinalize: viewerCanComplete,
       isLeader: session.user.role === 'LEADER',
-      isOwner: isOwnerView,
-      hasTeamMembership: viewerIsTeamMember,
-      boardId: task.boardId,
       userId: session.user.id,
+      boardId: task.boardId,
+      boardOwnerId: task.board?.ownerId ?? null,
+      boardTeamId: task.board?.teamId ?? null,
+      taskTeamId: task.teamId,
     })
 
     return NextResponse.json({ ...task, viewerCanComplete, viewerCanChangeStatus, viewerCanRate })
@@ -277,8 +277,8 @@ export async function PATCH(
         teamMembers: true,
         collaborators: true,
         assignees: { select: { userId: true } },
-        // Board owner gates who can move/finalize the task.
-        board: { select: { ownerId: true } },
+        // Board owner gates who can move/finalize; teamId scopes board-rating.
+        board: { select: { ownerId: true, teamId: true } },
         // Parent's leader/creator can finalize this subtask (review → done)
         parent: { select: { assigneeId: true, creatorId: true } },
       }
@@ -341,10 +341,11 @@ export async function PATCH(
     const canRate = await resolveCanRateWorkQuality({
       canFinalize: canComplete,
       isLeader,
-      isOwner,
-      hasTeamMembership: !!teamMember,
-      boardId: existingTask.boardId,
       userId: session.user.id,
+      boardId: existingTask.boardId,
+      boardOwnerId: existingTask.board?.ownerId ?? null,
+      boardTeamId: existingTask.board?.teamId ?? null,
+      taskTeamId: existingTask.teamId,
     })
 
     // Leaders can extend due dates for tasks assigned to their team members (multi-leader support)

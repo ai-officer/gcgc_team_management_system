@@ -350,7 +350,7 @@ export default function TaskViewModal({
   const [availableUsers, setAvailableUsers] = useState<Array<{id: string, name: string, email: string, image?: string}>>([])
   const [loadingUsers, setLoadingUsers] = useState(false)
   // Viewer permissions from GET /api/tasks/[id] (authoritative once details load)
-  const [viewerPerms, setViewerPerms] = useState<{ canComplete?: boolean; canChangeStatus?: boolean }>({})
+  const [viewerPerms, setViewerPerms] = useState<{ canComplete?: boolean; canChangeStatus?: boolean; canRate?: boolean }>({})
 
   // Progress editing state
   const [localProgress, setLocalProgress] = useState(0)
@@ -480,6 +480,7 @@ export default function TaskViewModal({
         setViewerPerms({
           canComplete: fullTask.viewerCanComplete,
           canChangeStatus: fullTask.viewerCanChangeStatus,
+          canRate: fullTask.viewerCanRate,
         })
       }
     } catch (error) {
@@ -1350,6 +1351,13 @@ export default function TaskViewModal({
     viewerPerms.canComplete ??
     task?.viewerCanComplete ??
     (isTaskCreator || isTaskAssigner || session?.user?.role === 'ADMIN')
+  // Rating is broader than completion: every LEADER in the task's board may rate
+  // a member's work. The server (GET /api/tasks/[id]) is authoritative and
+  // verifies board access; before it loads, fall back to completion permission.
+  const canRateWork =
+    viewerPerms.canRate ??
+    (task as any)?.viewerCanRate ??
+    canCompleteTask
   const isTaskTeamMember = task?.teamMembers?.some(tm => tm.user.id === session?.user?.id)
   const isTaskCollaborator = task?.collaborators?.some(c => c.user.id === session?.user?.id)
 
@@ -2680,8 +2688,8 @@ export default function TaskViewModal({
                 ]
                 return (
                   <div className="space-y-3">
-                    {/* Leader rating */}
-                    {canCompleteTask && (
+                    {/* Leader rating — any leader in the board can rate */}
+                    {canRateWork && (
                       <div className="space-y-1">
                         <p className="text-xs text-gray-500">Leader Rating</p>
                         <div className="flex gap-2">
@@ -2698,8 +2706,9 @@ export default function TaskViewModal({
                         {task.workQuality && <p className="text-xs text-gray-500">Current: <span className="font-medium capitalize">{task.workQuality.toLowerCase()}</span></p>}
                       </div>
                     )}
-                    {/* Senior override */}
-                    {(session?.user?.role === 'ADMIN' || (session?.user?.role === 'LEADER' && !canCompleteTask)) && task.workQuality && (
+                    {/* Senior override — for admins and leaders who aren't the
+                        primary board rater (avoids showing two rating controls). */}
+                    {(session?.user?.role === 'ADMIN' || (session?.user?.role === 'LEADER' && !canRateWork)) && task.workQuality && (
                       <div className="space-y-1">
                         <p className="text-xs text-gray-500">Senior Leader Override</p>
                         <div className="flex gap-2">

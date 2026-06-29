@@ -7,6 +7,7 @@ import { canEditTask, canDeleteTask, canChangeTaskStatus, canFinalizeTask, isTea
 import { autoSyncTask, deleteSyncedTask } from '@/lib/calendar-sync-helper'
 import { getNextOccurrenceDate } from '@/lib/recurring'
 import { setTaskAssignees } from '@/lib/task-assignees'
+import { resolveCanRateWorkQuality } from '@/lib/task-rating'
 import { setTaskFieldValues } from '@/lib/task-fields'
 import { notifyTaskAssigned, notifyTaskUpdated, notifyTaskCompleted, notifyTaskSubmittedForReview, notifySubtaskAssigned } from '@/lib/notifications'
 
@@ -209,12 +210,14 @@ export async function GET(
     // Viewer's completion/status permissions, computed server-side so the client
     // never replicates permission logic. Flat assignee model.
     let viewerTeamRole: TeamMemberRole | undefined
+    let viewerIsTeamMember = false
     if (task.teamId) {
       const vm = await prisma.teamMember.findUnique({
         where: { userId_teamId: { userId: session.user.id, teamId: task.teamId } },
         select: { role: true },
       })
       viewerTeamRole = vm?.role
+      viewerIsTeamMember = !!vm
     }
     const isParentLeaderView = !!task.parent && (
       task.parent.creatorId === session.user.id ||
@@ -236,8 +239,17 @@ export async function GET(
       task.assignees?.some(a => a.userId === session.user.id) ||
       false
     const viewerCanChangeStatus = viewerCanComplete || isAssigneeView
+    // Rating is broader than completion: every LEADER in the board may rate.
+    const viewerCanRate = await resolveCanRateWorkQuality({
+      canFinalize: viewerCanComplete,
+      isLeader: session.user.role === 'LEADER',
+      isOwner: isOwnerView,
+      hasTeamMembership: viewerIsTeamMember,
+      boardId: task.boardId,
+      userId: session.user.id,
+    })
 
-    return NextResponse.json({ ...task, viewerCanComplete, viewerCanChangeStatus })
+    return NextResponse.json({ ...task, viewerCanComplete, viewerCanChangeStatus, viewerCanRate })
   } catch (error) {
     console.error('Task GET error:', error)
     return NextResponse.json(
@@ -323,6 +335,18 @@ export async function PATCH(
     const isAssigner = existingTask.assignedById === session.user.id
     const isCreator = existingTask.creatorId === session.user.id
 
+    // Who may rate work quality: every LEADER in the task's board (not just the
+    // board/task creator), plus the existing finishers. Broader than canComplete
+    // — completion permission is unchanged. Board access is verified server-side.
+    const canRate = await resolveCanRateWorkQuality({
+      canFinalize: canComplete,
+      isLeader,
+      isOwner,
+      hasTeamMembership: !!teamMember,
+      boardId: existingTask.boardId,
+      userId: session.user.id,
+    })
+
     // Leaders can extend due dates for tasks assigned to their team members (multi-leader support)
     let isLeaderSubordinateOverride = false
     if (isLeader && !isAssigner && !isCreator && !isAdmin && !isBoardLeader && !isOwner && !isParentLeader && existingTask.assigneeId) {
@@ -382,8 +406,22 @@ export async function PATCH(
       return NextResponse.json({ error: 'User role is required' }, { status: 403 })
     }
     
+    // A board leader rating work quality (only workQuality/seniorWorkQuality in
+    // the payload) is permitted even if they aren't a general editor/finisher of
+    // this task. canRate already verified board access, so this isn't an open
+    // door. Must come before the canEditTask gate, which rejects board leaders
+    // who hold only a MEMBER role on the task's team.
+    const requestedUpdateKeys = Object.keys(updateData).filter(
+      k => updateData[k as keyof typeof updateData] !== undefined
+    )
+    const isRatingOnlyUpdate =
+      requestedUpdateKeys.length > 0 &&
+      requestedUpdateKeys.every(k => k === 'workQuality' || k === 'seniorWorkQuality')
+
     // Leader overriding due date of a subordinate's task: allow only dueDate change
-    if (isLeaderSubordinateOverride) {
+    if (canRate && isRatingOnlyUpdate) {
+      // Skip canEditTask — rating-only update by an authorized board rater.
+    } else if (isLeaderSubordinateOverride) {
       const allowedKeys = new Set(['dueDate', 'startDate'])
       const requestedKeys = Object.keys(updateData).filter(k => updateData[k as keyof typeof updateData] !== undefined)
       const hasDisallowedFields = requestedKeys.some(k => !allowedKeys.has(k))
@@ -481,8 +519,9 @@ export async function PATCH(
       if (def) (updateData as any).customStatusId = def.id
     }
 
-    // Resolve workQuality permission: only canComplete users may rate
-    if (updateData.workQuality !== undefined && !canComplete) {
+    // Resolve workQuality permission: every board leader (canRate) may rate,
+    // not just finishers. Board access was verified when computing canRate.
+    if (updateData.workQuality !== undefined && !canRate) {
       delete (updateData as any).workQuality
     }
     // Senior override: any LEADER or ADMIN who is not the direct assigner
